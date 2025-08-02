@@ -1,35 +1,30 @@
 name: Scrape V2Ray Configs
-
 on:
   schedule:
-    - cron: '0 */4 * * *' # هر ۴ ساعت یک بار اجرا می‌شود
+    - cron: '0 */4 * * *'
   workflow_dispatch:
-
 jobs:
   scrape:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-
       - name: Install dependencies
-        run: pip install requests
-
+        run: pip install requests supabase
       - name: Run scraper
         env:
           GITLAB_API_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
           GITLAB_SNIPPET_ID: ${{ secrets.GITLAB_SNIPPET_ID }}
           GH_PAT: ${{ secrets.GH_PAT }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: python scraper.py
-
       - name: Commit and push if changed
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
