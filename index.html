@@ -4,12 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>V2V</title>
-    <meta name="description" content="دریافت روزانه اشتراک‌های رایگان V2Ray، VLESS و Trojan برای V2RayNG و سایر کلاینت‌ها. فقط با یک کلیک کپی کنید." />
-    <meta property="og:title" content="اشتراک رایگان V2Ray" />
-    <meta property="og:description" content="کانفیگ‌های بروز V2Ray، VLESS و Trojan برای کاربران ایرانی. قابل استفاده در همه کلاینت‌ها." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://v2ray-sub-mbrgh87.vercel.app/logo.png" />
-    <link rel="icon" href="/favicon.ico" />
+    <meta name="description" content="دریافت و تست زنده اشتراک‌های رایگان و هوشمند V2Ray، VLESS و Trojan." />
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
     <style>
@@ -29,118 +24,38 @@
             margin: 0;
             padding: 20px;
         }
-        main {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 1em;
-            font-size: 2.5em;
-        }
-        h2 {
-            color: var(--primary-color);
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-top: 2.5em;
-        }
-        .action-button {
-            background-color: var(--primary-color);
-            color: #000;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            display: block;
-            width: 100%;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-        .action-button:hover { opacity: 0.9; }
-        .action-button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
-        .config-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        .config-card {
-            background-color: var(--card-color);
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .config-details {
-            padding: 15px;
-            flex-grow: 1;
-        }
-        .config-name {
-            font-weight: bold;
-            font-size: 1.1em;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .config-country {
-            font-size: 0.9em;
-            color: #aaa;
-            margin-top: 5px;
-        }
-        .actions {
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 15px;
-            background-color: rgba(0,0,0,0.2);
-        }
-        .action-btn {
-            background-color: var(--btn-bg);
-            color: var(--text-color);
-            border: 1px solid #444;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.2s;
-            padding: 8px 15px;
-            flex-grow: 1;
-            margin: 0 5px;
-        }
+        main { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 1em; font-size: 2.5em; }
+        .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .config-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; }
+        .config-details { padding: 15px; flex-grow: 1; }
+        .config-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .config-country { font-size: 0.9em; color: #aaa; margin-top: 5px; }
+        .actions { display: flex; justify-content: space-around; padding: 10px 15px; background-color: rgba(0,0,0,0.2); }
+        .action-btn { background-color: var(--btn-bg); color: var(--text-color); border: 1px solid #444; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; padding: 8px 15px; flex-grow: 1; margin: 0 5px; }
         .action-btn:hover { background-color: var(--btn-hover-bg); }
-        .info-box {
-            text-align: center; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 5px; background-color: var(--card-color);
-        }
+        .info-box { text-align: center; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 5px; background-color: var(--card-color); }
         .info-box.error { color: var(--error-color); }
-        .modal {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8);
-            justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background-color: var(--card-color); color: var(--text-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center;
-            position: relative;
-        }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+        .modal-content { background-color: var(--card-color); color: var(--text-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; position: relative; }
         .close-btn { position: absolute; top: 10px; left: 20px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
         #modal-qr-code { background: white; padding: 10px; border-radius: 4px; margin: 15px auto 0; }
+        footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; }
+        .footer-text { color: #888; font-size: 0.9em; font-style: italic; }
     </style>
 </head>
 <body>
-
     <main>
         <h1>
-             <span style="color: #28a745;">V</span><span style="color: #ffffff;">2</span><span style="color: #dc3545;">V</span>
+            <span style="color: #28a745;">V</span><span style="color: #ffffff;">2</span><span style="color: #dc3545;">V</span>
         </h1>
-        <button id="liveFetchButton" class="action-button">🔎 درخواست کانفیگ بر اساس اینترنت شما</button>
-        <button id="copyAllButton" class="action-button" style="display: none;">📋 کپی همه کانفیگ‌ها</button>
-        <div id="info" class="info-box"></div>
+        <div id="info" class="info-box">در حال بارگذاری کانفیگ‌ها از بهترین منبع...</div>
         <div id="configs-container"></div>
-        
-        <div id="live-results-section" style="display: none;">
-            <h2>نتایج جستجوی زنده</h2>
-            <div id="live-info" class="info-box"></div>
-            <div id="live-configs-container"></div>
-        </div>
     </main>
+
+    <footer>
+        <p class="footer-text">سپاس هر‌آنکه خواه یا ناخواه دستی بر این راهک رهایی داشت</p>
+    </footer>
     
     <div id="qrModal" class="modal">
         <div class="modal-content">
@@ -152,20 +67,135 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const liveFetchButton = document.getElementById('liveFetchButton');
-            const copyAllButton = document.getElementById('copyAllButton');
             const infoContainer = document.getElementById('info');
             const configsContainer = document.getElementById('configs-container');
-            const liveResultsSection = document.getElementById('live-results-section');
-            const liveInfoContainer = document.getElementById('live-info');
-            const liveConfigsContainer = document.getElementById('live-configs-container');
             const qrModal = document.getElementById('qrModal');
             const modalTitle = document.getElementById('modal-title');
             const modalQrCanvas = document.getElementById('modal-qr-code');
             const closeBtn = document.querySelector('.close-btn');
 
-            let allConfigsText = '';
             let clipboard = null;
 
-            const sources = [
-                "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub7.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub8.txt","https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt","https://raw.githubusercontent.com/MrPooyaX/V2Ray/main/sub/mix","https://raw.githubusercontent.com/yebekhe/Configura/main/Sub/Normal/Sub.txt","https://raw.githubusercontent.com/soroushmirzaei/V2Ray-configs/main/All-Configs-base64","https://raw.githubusercontent.com/mrvcoder/V2rayCollector/main/sub/mix_base64","https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/all.txt","https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/vmess.txt","https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/vless.txt","https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/trojan.txt","https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt","https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/All-Configs-for-V2Ray.txt","https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/sub/subscription_base64.txt","https://raw.githubusercontent.com/Argh94/V2RayAutoConfig/main/sub/sub_merge.txt","https://raw.githubusercontent.com/NiREvil/vless/main/sub/vless.txt","https://raw.githubusercontent.com/NiREvil/vless/main/sub/vmess.txt","https://raw.githubusercontent.com/NiREvil/vless/main/sub/trojan.txt","https://raw.githubusercontent.com/NiREvil/vless/main/XRAY/vless.txt","https://raw.githubusercontent.com/NiREvil/vless/main/XRAY/vmess.txt","https://raw.githubusercontent.com/NiREvil/vless/main/XRAY/trojan.txt","https://raw.githubusercontent.com/NiREvil/vless/main/XRAY/ss.txt","https://raw.githubusercontent.com/4n0nym
+            const mirrors = [
+                './configs.txt', 
+                'https://gitlab.com/-/snippets/4877222/raw/main/configs.txt'
+            ];
+
+            const countryMap = { 'iran': 'ایران 🇮🇷', 'ir': 'ایران 🇮🇷', 'germany': 'آلمان 🇩🇪', 'de': 'آلمان 🇩🇪', 'turkey': 'ترکیه 🇹🇷', 'tr': 'ترکیه 🇹🇷', 'france': 'فرانسه 🇫🇷', 'fr': 'فرانسه 🇫🇷', 'netherlands': 'هلند 🇳🇱', 'nl': 'هلند 🇳🇱', 'usa': 'آمریکا 🇺🇸', 'us': 'آمریکا 🇺🇸', 'canada': 'کانادا 🇨🇦', 'ca': 'کانادا 🇨🇦', 'uk': 'انگلیس 🇬🇧', 'gb': 'انگلیس 🇬🇧', 'singapore': 'سنگاپور 🇸🇬', 'sg': 'سنگاپور 🇸🇬', };
+            const miscellaneousCountry = 'متفرقه 🌐';
+
+            closeBtn.onclick = () => qrModal.style.display = "none";
+            window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; }
+
+            function openQrModal(config) {
+                modalTitle.textContent = config.name;
+                const cleanedUrl = config.url.replace(/\s/g, '');
+                QRCode.toCanvas(modalQrCanvas, cleanedUrl, { width: 280, margin: 1 });
+                qrModal.style.display = "flex";
+            }
+            
+            async function shareConfig(config) {
+                const cleanedUrl = config.url.replace(/\s/g, '');
+                if (navigator.share) {
+                    try { await navigator.share({ title: 'V2Ray Config', text: cleanedUrl }); } catch (err) { console.error('Share failed:', err); }
+                } else { alert('قابلیت اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود.'); }
+            }
+            
+            function extractNameFromUrl(url) {
+                try {
+                    const parts = url.split('#');
+                    if (parts.length > 1) {
+                        return decodeURIComponent(parts[1]);
+                    }
+                    return url.substring(0, 20) + '...';
+                } catch { return (url.split('#')[1] || url.substring(0, 20) + '...'); }
+            }
+
+            function getCountry(configName) {
+                const lowerCaseName = configName.toLowerCase();
+                for (const keyword in countryMap) {
+                    if (lowerCaseName.includes(keyword)) return countryMap[keyword];
+                }
+                return miscellaneousCountry;
+            }
+
+            function renderConfigs(configArray) {
+                const configList = configArray.map(url => {
+                    const name = extractNameFromUrl(url);
+                    const country = getCountry(name);
+                    return { name, url, country };
+                });
+                configsContainer.innerHTML = '';
+                const grid = document.createElement('div');
+                grid.className = 'config-grid';
+                configList.forEach((cfg) => {
+                    const card = document.createElement('div');
+                    card.className = 'config-card';
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.className = 'config-details';
+                    detailsDiv.innerHTML = `<div class="config-name">${cfg.name}</div><div class="config-country">${cfg.country}</div>`;
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'actions';
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'action-btn copy-btn-class';
+                    copyBtn.textContent = 'کپی';
+                    copyBtn.setAttribute('data-clipboard-text', cfg.url.replace(/\s/g, ''));
+                    const qrBtn = document.createElement('button');
+                    qrBtn.className = 'action-btn';
+                    qrBtn.textContent = 'QR';
+                    qrBtn.onclick = () => openQrModal(cfg);
+                    const shareBtn = document.createElement('button');
+                    shareBtn.className = 'action-btn';
+                    shareBtn.textContent = 'Share';
+                    shareBtn.onclick = () => shareConfig(cfg);
+                    actionsDiv.appendChild(copyBtn);
+                    actionsDiv.appendChild(qrBtn);
+                    actionsDiv.appendChild(shareBtn);
+                    card.appendChild(detailsDiv);
+                    card.appendChild(actionsDiv);
+                    grid.appendChild(card);
+                });
+                configsContainer.appendChild(grid);
+                if (clipboard) clipboard.destroy();
+                clipboard = new ClipboardJS('.copy-btn-class');
+                clipboard.on('success', (e) => {
+                    e.trigger.textContent = "✅";
+                    setTimeout(() => { e.trigger.textContent = 'کپی'; }, 2000);
+                    e.clearSelection();
+                });
+            }
+
+            async function loadConfigsWithFailover() {
+                let success = false;
+                for (let i = 0; i < mirrors.length; i++) {
+                    const url = mirrors[i];
+                    infoContainer.textContent = `در حال تلاش برای اتصال به منبع شماره ${i + 1}...`;
+                    try {
+                        const response = await fetch(url, { cache: "no-store" });
+                        if (!response.ok) throw new Error(`Status ${response.status}`);
+                        const text = await response.text();
+                        const configs = text.trim().split('\n').filter(Boolean);
+                        if (configs.length === 0 || (configs.length === 1 && configs[0] === '')) {
+                           throw new Error("منبع خالی است");
+                        }
+                        
+                        renderConfigs(configs);
+                        infoContainer.textContent = `تعداد ${configs.length} کانفیگ برتر از منبع شماره ${i + 1} با موفقیت بارگذاری شد.`;
+                        success = true;
+                        break; 
+                    } catch (error) {
+                        console.error(`Failed to load from mirror ${i+1}:`, error);
+                    }
+                }
+
+                if (!success) {
+                    infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
+                    infoContainer.classList.add('error');
+                }
+            }
+
+            loadConfigsWithFailover();
+        });
+    </script>
+</body>
+</html>
