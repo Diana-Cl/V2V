@@ -2,6 +2,7 @@ name: Scheduled Scrape
 
 on:
   schedule:
+    # این دستور هر ۴ ساعت یک بار اجرا می‌شود
     - cron: '0 */4 * * *'
 
 jobs:
@@ -36,6 +37,5 @@ jobs:
         with:
           commit_message: "Update config files"
           file_pattern: "*.txt *.yaml"
-          # این دو خط برای حل مشکل نهایی اضافه شده‌اند
           branch: main
           push_options: --force
