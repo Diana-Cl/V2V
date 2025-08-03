@@ -37,6 +37,5 @@ jobs:
         with:
           commit_message: "Update config files"
           file_pattern: "*.txt *.yaml"
-          # این دو خط برای حل مشکل نهایی اضافه شده‌اند
           branch: main
           push_options: --force
