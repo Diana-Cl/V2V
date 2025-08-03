@@ -4,14 +4,10 @@ on:
   schedule:
     - cron: '0 */4 * * *'
 
-# مجوزها به سطح اصلی منتقل شدند تا برای تمام جاب‌ها اعمال شوند
-permissions:
-  contents: write
-  workflows: write
-
 jobs:
   build-and-commit:
     runs-on: ubuntu-latest
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,11 +31,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions@github.com"
-          git pull --rebase
-          git add .
-          git commit -m "Update config files" -a || echo "No changes to commit"
-          git push --force
+      - name: Commit and Push new configs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update config files"
+          file_pattern: "*.txt *.yaml"
