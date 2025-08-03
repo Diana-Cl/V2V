@@ -15,7 +15,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          # نسخه پایتون به 3.11 آپدیت شد
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
