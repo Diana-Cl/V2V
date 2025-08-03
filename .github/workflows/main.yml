@@ -5,10 +5,14 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# مجوزهای کامل برای جلوگیری از هر نوع خطای دسترسی
+permissions:
+  contents: write
+  workflows: write
+
 jobs:
   build-and-commit:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
