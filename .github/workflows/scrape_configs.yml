@@ -4,15 +4,14 @@ on:
   schedule:
     - cron: '0 */4 * * *'
 
+# مجوزها به سطح اصلی منتقل شدند تا برای تمام جاب‌ها اعمال شوند
+permissions:
+  contents: write
+  workflows: write
+
 jobs:
   build-and-commit:
     runs-on: ubuntu-latest
-
-    # این بخش برای دادن تمام مجوزهای لازم آپدیت شد
-    permissions:
-      contents: write
-      workflows: write
-      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,6 +39,7 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
+          git pull --rebase
           git add .
           git commit -m "Update config files" -a || echo "No changes to commit"
           git push --force
