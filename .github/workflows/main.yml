@@ -5,13 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-# مجوزهای صحیح و کامل برای اجرای تمام مراحل
-permissions:
-  contents: write
-
 jobs:
   build-and-commit:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,3 +37,6 @@ jobs:
         with:
           commit_message: "Update config files"
           file_pattern: "*.txt *.yaml"
+          # این دو خط برای حل مشکل نهایی اضافه شده‌اند
+          branch: main
+          push_options: --force
