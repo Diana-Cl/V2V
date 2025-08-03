@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>V2V</title>
+    <title>V2V - Ultimate Config Hub</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -26,7 +26,7 @@
             margin: 0;
             padding: 20px;
         }
-        main { max-width: 1200px; margin: 0 auto; }
+        main { max-width: 1400px; margin: 0 auto; } /* Max-width increased for columns */
         h1 { text-align: center; margin-bottom: 0.5em; font-size: 2.5em; }
         .slogan { text-align: center; color: #aaa; font-style: italic; margin-top: -1em; margin-bottom: 2em; font-weight: 600; }
         .action-button { color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 18px; cursor: pointer; transition: opacity 0.2s; display: block; width: 100%; margin-bottom: 15px; font-weight: bold; }
@@ -34,7 +34,42 @@
         #copyAllButton { background-color: var(--primary-color); }
         .action-button:hover { opacity: 0.9; }
         .action-button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
-        .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+
+        /* بخش جدید: استایل برای لینک‌ها */
+        .links-section {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: var(--card-color);
+            border-radius: 8px;
+        }
+        .link-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .link-group h3 { margin: 0; font-size: 1em; color: var(--secondary-color); }
+        .link-buttons { display: flex; gap: 10px; }
+        .link-btn { background-color: var(--btn-bg); color: var(--text-color); padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 0.9em; font-weight: bold; transition: background-color 0.2s; border: 1px solid #444; }
+        .link-btn:hover { background-color: var(--btn-hover-bg); }
+
+        /* بخش جدید: استایل برای ستون‌ها */
+        .columns-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .config-column h2 {
+            text-align: center;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+        .config-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         .config-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; position: relative; }
         .ping-result { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
         .ping-result.fast { color: var(--success-color); }
@@ -52,8 +87,6 @@
         .modal-content { background-color: var(--card-color); color: var(--text-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; position: relative; }
         .close-btn { position: absolute; top: 10px; left: 20px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
         #modal-qr-code { background: white; padding: 10px; border-radius: 4px; margin: 15px auto 0; }
-        footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; }
-        .footer-text { color: #888; font-size: 0.9em; font-style: italic; }
     </style>
 </head>
 <body>
@@ -62,10 +95,41 @@
              <span style="color: #28a745;">V</span><span style="color: #ffffff;">2</span><span style="color: #dc3545;">V</span>
         </h1>
         <p class="slogan">سپاس هر‌آنکه خواه یا ناخواه دستی بر این راهک رهایی داشت</p>
+
+        <div class="links-section">
+            <div class="link-group">
+                <h3>لینک‌های اشتراک (Subscription)</h3>
+                <div class="link-buttons">
+                    <a href="https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs.txt" class="link-btn" target="_blank">متن ساده</a>
+                    <a href="https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs_base64.txt" class="link-btn" target="_blank">Base64</a>
+                </div>
+            </div>
+            <div class="link-group">
+                <h3>کانفیگ برای برنامه‌های دیگر</h3>
+                <div class="link-buttons">
+                    <a href="https://raw.githubusercontent.com/SMBCRYP/V2V/main/v2v_clash.yaml" class="link-btn" target="_blank">Clash.Meta</a>
+                </div>
+            </div>
+        </div>
+
         <button id="speedTestButton" class="action-button" style="display: none;">🚀 تست سرعت و مرتب‌سازی</button>
         <button id="copyAllButton" class="action-button" style="display: none;">📋 کپی همه کانفیگ‌ها</button>
         <div id="info" class="info-box"></div>
-        <div id="configs-container"></div>
+        
+        <div id="configs-container" class="columns-container">
+            <div class="config-column">
+                <h2>VLESS</h2>
+                <div id="vless-grid" class="config-grid"></div>
+            </div>
+            <div class="config-column">
+                <h2>VMess</h2>
+                <div id="vmess-grid" class="config-grid"></div>
+            </div>
+            <div class="config-column">
+                <h2>Trojan</h2>
+                <div id="trojan-grid" class="config-grid"></div>
+            </div>
+        </div>
     </main>
     
     <div id="qrModal" class="modal">
@@ -87,7 +151,12 @@
             const speedTestButton = document.getElementById('speedTestButton');
             const copyAllButton = document.getElementById('copyAllButton');
             const infoContainer = document.getElementById('info');
-            const configsContainer = document.getElementById('configs-container');
+            
+            // تغییر اصلی: گرفتن ارجاع به کانتینرهای ستون‌ها
+            const vlessGrid = document.getElementById('vless-grid');
+            const vmessGrid = document.getElementById('vmess-grid');
+            const trojanGrid = document.getElementById('trojan-grid');
+
             const qrModal = document.getElementById('qrModal');
             const modalTitle = document.getElementById('modal-title');
             const modalQrCanvas = document.getElementById('modal-qr-code');
@@ -134,47 +203,65 @@
                 return miscellaneousCountry;
             }
 
+            // تغییر اصلی: تابع رندر برای دسته‌بندی و نمایش
             function renderConfigs(configArray) {
-                currentConfigs = configArray.map(url => ({
+                // تبدیل آرایه URLها به آرایه آبجکت‌ها
+                currentConfigs = configArray.map((url, index) => ({
+                    id: index, // یک ID منحصر به فرد برای هر کانفیگ
                     name: extractNameFromUrl(url),
                     url: url,
                     country: getCountry(extractNameFromUrl(url)),
                     latency: null
                 }));
 
-                const grid = document.createElement('div');
-                grid.className = 'config-grid';
+                // خالی کردن ستون‌های فعلی
+                vlessGrid.innerHTML = '';
+                vmessGrid.innerHTML = '';
+                trojanGrid.innerHTML = '';
                 
-                currentConfigs.forEach((cfg, index) => {
+                currentConfigs.forEach(cfg => {
                     const card = document.createElement('div');
                     card.className = 'config-card';
-                    card.dataset.index = index;
+                    card.dataset.id = cfg.id; // استفاده از ID برای پیدا کردن کارت
+                    
                     const detailsDiv = document.createElement('div');
                     detailsDiv.className = 'config-details';
                     detailsDiv.innerHTML = `<div class="config-name">${cfg.name}</div><div class="config-country">${cfg.country}</div>`;
+                    
                     const actionsDiv = document.createElement('div');
                     actionsDiv.className = 'actions';
+                    
                     const copyBtn = document.createElement('button');
                     copyBtn.className = 'action-btn copy-btn-class';
                     copyBtn.textContent = 'کپی';
                     copyBtn.setAttribute('data-clipboard-text', cfg.url.replace(/\s/g, ''));
+                    
                     const qrBtn = document.createElement('button');
                     qrBtn.className = 'action-btn';
                     qrBtn.textContent = 'QR';
                     qrBtn.onclick = () => openQrModal(cfg);
+                    
                     const shareBtn = document.createElement('button');
                     shareBtn.className = 'action-btn';
                     shareBtn.textContent = 'Share';
                     shareBtn.onclick = () => shareConfig(cfg);
+                    
                     actionsDiv.appendChild(copyBtn);
                     actionsDiv.appendChild(qrBtn);
                     actionsDiv.appendChild(shareBtn);
+                    
                     card.appendChild(detailsDiv);
                     card.appendChild(actionsDiv);
-                    grid.appendChild(card);
+                    
+                    // دسته‌بندی و اضافه کردن کارت به ستون مناسب
+                    if (cfg.url.startsWith('vless://')) {
+                        vlessGrid.appendChild(card);
+                    } else if (cfg.url.startsWith('vmess://')) {
+                        vmessGrid.appendChild(card);
+                    } else if (cfg.url.startsWith('trojan://')) {
+                        trojanGrid.appendChild(card);
+                    }
                 });
-                configsContainer.innerHTML = '';
-                configsContainer.appendChild(grid);
 
                 if (clipboard) clipboard.destroy();
                 clipboard = new ClipboardJS('.copy-btn-class');
@@ -186,6 +273,7 @@
             }
 
             async function pingConfig(configUrl) {
+                // این تابع بدون تغییر باقی می‌ماند
                 let host = '';
                 let hash = '';
                 try {
@@ -212,34 +300,39 @@
                 }
             }
 
+            // تغییر اصلی: منطق تست و مرتب‌سازی داده-محور شد
             async function startClientSideBatchTest() {
                 speedTestButton.disabled = true;
                 const batchSize = 50;
-                const grid = configsContainer.querySelector('.config-grid');
+                
                 for (let i = 0; i < currentConfigs.length; i += batchSize) {
                     const batch = currentConfigs.slice(i, i + batchSize);
                     infoContainer.textContent = `در حال تست دسته ${Math.floor(i/batchSize) + 1}... (${i + batch.length}/${currentConfigs.length})`;
+                    
                     const promises = batch.map(c => pingConfig(c.url));
                     const results = await Promise.all(promises);
                     const pingDataForSupabase = [];
-                    results.forEach(result => {
-                        const index = currentConfigs.findIndex(c => c.url === result.config);
-                        if (index === -1) return;
 
-                        const card = document.querySelector(`.config-card[data-index='${index}']`);
-                        if (card) {
+                    results.forEach(result => {
+                        const configIndex = currentConfigs.findIndex(c => c.url === result.config);
+                        if (configIndex === -1) return;
+
+                        const latency = result.latency;
+                        currentConfigs[configIndex].latency = latency; // آپدیت کردن داده
+                        if (result.hash) {
+                            pingDataForSupabase.push({ config_hash: result.hash, latency_ms: typeof latency === 'number' ? latency : null, is_success: result.is_success });
+                        }
+
+                        // آپدیت کردن UI برای نمایش پینگ لحظه‌ای
+                        const card = document.querySelector(`.config-card[data-id='${currentConfigs[configIndex].id}']`);
+                        if(card) {
                             let pingDiv = card.querySelector('.ping-result');
                             if (!pingDiv) {
                                 pingDiv = document.createElement('div');
                                 pingDiv.className = 'ping-result';
                                 card.insertBefore(pingDiv, card.firstChild);
                             }
-                            const latency = result.latency;
-                            currentConfigs[index].latency = latency;
-                            if (result.hash) {
-                                pingDataForSupabase.push({ config_hash: result.hash, latency_ms: typeof latency === 'number' ? latency : null, is_success: result.is_success });
-                            }
-                            if (latency === 'Timeout' || latency === 'Error') {
+                             if (latency === 'Timeout' || latency === 'Error') {
                                 pingDiv.textContent = latency;
                                 pingDiv.classList.add('timeout');
                             } else {
@@ -248,20 +341,47 @@
                             }
                         }
                     });
+
                     if (supabaseClient && pingDataForSupabase.length > 0) {
                         supabaseClient.from('ping_results').insert(pingDataForSupabase).then(({ error }) => {
                             if (error) console.error('Supabase error:', error);
                         });
                     }
                 }
-                const sortedCards = Array.from(grid.children).sort((a, b) => {
-                    const aLatency = currentConfigs[a.dataset.index].latency;
-                    const bLatency = currentConfigs[b.dataset.index].latency;
-                    const aVal = (typeof aLatency === 'number') ? aLatency : 9999;
-                    const bVal = (typeof bLatency === 'number') ? bLatency : 9999;
+
+                // مرتب‌سازی آرایه اصلی داده‌ها
+                currentConfigs.sort((a, b) => {
+                    const aVal = (typeof a.latency === 'number') ? a.latency : 9999;
+                    const bVal = (typeof b.latency === 'number') ? b.latency : 9999;
                     return aVal - bVal;
                 });
-                sortedCards.forEach(card => grid.appendChild(card));
+                
+                // رندر مجدد کل صفحه با داده‌های مرتب‌شده
+                renderConfigs(currentConfigs.map(c => c.url));
+                
+                // بازیابی نتایج پینگ در کارت‌های جدید
+                currentConfigs.forEach(cfg => {
+                    if (cfg.latency !== null) {
+                        const card = document.querySelector(`.config-card[data-id='${cfg.id}']`);
+                        if (card) {
+                             let pingDiv = card.querySelector('.ping-result');
+                            if (!pingDiv) {
+                                pingDiv = document.createElement('div');
+                                pingDiv.className = 'ping-result';
+                                card.insertBefore(pingDiv, card.firstChild);
+                            }
+                             if (cfg.latency === 'Timeout' || cfg.latency === 'Error') {
+                                pingDiv.textContent = cfg.latency;
+                                pingDiv.classList.add('timeout');
+                            } else {
+                                pingDiv.textContent = `${cfg.latency}ms`;
+                                if (cfg.latency < 400) pingDiv.classList.add('fast'); else pingDiv.classList.add('slow');
+                            }
+                        }
+                    }
+                });
+
+
                 infoContainer.textContent = 'تست کامل شد! نتایج بر اساس سرعت اینترنت شما مرتب شدند.';
                 speedTestButton.disabled = false;
             }
@@ -278,7 +398,7 @@
                         const configs = text.trim().split('\n').filter(Boolean);
                         if (configs.length === 0) throw new Error("منبع خالی است");
                         
-                        renderConfigs(configs);
+                        renderConfigs(configs); // تابع رندر جدید فراخوانی می‌شود
                         infoContainer.textContent = `تعداد ${configs.length} کانفیگ برتر بارگذاری شد.`;
                         copyAllButton.style.display = 'block';
                         speedTestButton.style.display = 'block';
