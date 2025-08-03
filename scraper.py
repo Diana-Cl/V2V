@@ -4,9 +4,9 @@ import os
 import json
 import socket
 import time
+import yaml
 from concurrent.futures import ThreadPoolExecutor
-from urllib.parse import urlparse
-from supabase import create_client, Client
+from urllib.parse import urlparse, unquote
 
 # === CONFIGURATION ===
 BASE_SOURCES = [
@@ -14,7 +14,9 @@ BASE_SOURCES = [
 ]
 GITHUB_SEARCH_KEYWORDS = ['v2ray subscription', 'vless subscription', 'vmess subscription']
 TOP_N_CONFIGS = 250
-OUTPUT_FILE = 'configs.txt'
+OUTPUT_FILE_PLAIN = 'configs.txt'
+OUTPUT_FILE_BASE64 = 'configs_base64.txt'
+OUTPUT_FILE_CLASH = 'v2v_clash.yaml'
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://')
 
 # === SECRET KEYS ===
@@ -27,7 +29,7 @@ SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
 # === HELPER FUNCTIONS ===
 def get_content_from_url(url: str) -> str | None:
     try:
-        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/3.0'})
+        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/5.0'})
         response.raise_for_status()
         return response.text
     except requests.RequestException:
@@ -56,13 +58,17 @@ def discover_github_sources() -> set[str]:
             continue
     return discovered_urls
 
-def parse_config(config_url: str) -> tuple[str, int] | None:
+def parse_config(config_url: str) -> tuple[str, int, str] | None:
     try:
         if config_url.startswith('vmess://'):
-            data = json.loads(base64.b64decode(config_url[8:]).decode())
-            return data.get('add'), int(data.get('port', 0))
+            decoded_part = base64.b64decode(config_url[8:]).decode()
+            data = json.loads(decoded_part)
+            remark = data.get('ps', 'V2V-VMess')
+            return data.get('add'), int(data.get('port', 0)), remark
+        
         parsed_url = urlparse(config_url)
-        return parsed_url.hostname, parsed_url.port
+        remark = unquote(parsed_url.fragment) if parsed_url.fragment else parsed_url.hostname
+        return parsed_url.hostname, parsed_url.port, remark
     except Exception:
         return None
 
@@ -88,18 +94,65 @@ def test_config_latency(config: str) -> tuple[str, int] | None:
             return (config, latency)
     return None
 
+def generate_clash_config(configs_list: list) -> str:
+    proxies = []
+    for i, config in enumerate(configs_list):
+        try:
+            parsed = parse_config(config)
+            if not parsed: continue
+            
+            host, port, remark = parsed
+            
+            # Use a more generic name if remark is too long or generic
+            proxy_name = remark if remark and len(remark) < 40 else f"{config.split('://')[0]}-{i+1}"
+
+            proxy = {
+                'name': proxy_name,
+                'type': config.split('://')[0],
+                'server': host,
+                'port': port,
+            }
+
+            if config.startswith('vless://'):
+                uuid = urlparse(config).username
+                proxy.update({
+                    'uuid': uuid,
+                    'udp': True,
+                    'tls': True,
+                    'servername': host, # Fallback to host if SNI is not specified
+                    'network': 'ws', # Default, should be parsed from params if available
+                    'ws-opts': {'path': "/"}
+                })
+            
+            proxies.append(proxy)
+        except Exception:
+            continue
+
+    clash_config = {
+        'port': 7890,
+        'socks-port': 7891,
+        'allow-lan': False,
+        'mode': 'rule',
+        'log-level': 'info',
+        'proxies': proxies,
+        'proxy-groups': [
+            {'name': 'V2V-Auto', 'type': 'url-test', 'proxies': [p['name'] for p in proxies], 'url': 'http://www.gstatic.com/generate_204', 'interval': 300},
+            {'name': 'V2V-Select', 'type': 'select', 'proxies': [p['name'] for p in proxies]}
+        ],
+        'rules': ['DOMAIN-SUFFIX,ir,DIRECT', 'MATCH,V2V-Auto']
+    }
+    return yaml.dump(clash_config, allow_unicode=True, sort_keys=False)
+
 def upload_to_gitlab(content: str):
     if not GITLAB_API_TOKEN:
         return
     headers = {"PRIVATE-TOKEN": GITLAB_API_TOKEN}
-    data = {'title': 'V2V Configs Mirror', 'file_name': OUTPUT_FILE, 'content': content, 'visibility': 'public'}
+    data = {'title': 'V2V Configs Mirror', 'file_name': OUTPUT_FILE_PLAIN, 'content': content, 'visibility': 'public'}
     if GITLAB_SNIPPET_ID:
         url = f"https://gitlab.com/api/v4/snippets/{GITLAB_SNIPPET_ID}"
         response = requests.put(url, headers=headers, data=data)
-        if response.status_code == 200:
-            print(f"✅ Successfully updated GitLab snippet: {response.json()['web_url']}")
-        else:
-            print(f"❌ Failed to update GitLab snippet: {response.status_code} {response.text}")
+        if response.status_code == 200: print(f"✅ Successfully updated GitLab snippet: {response.json()['web_url']}")
+        else: print(f"❌ Failed to update GitLab snippet: {response.status_code} {response.text}")
     else:
         url = "https://gitlab.com/api/v4/snippets"
         response = requests.post(url, headers=headers, data=data)
@@ -107,18 +160,17 @@ def upload_to_gitlab(content: str):
             snippet_id = response.json()['id']
             print(f"✅ Successfully created GitLab snippet: {response.json()['web_url']}")
             print(f"📌 IMPORTANT: Add this ID to your GitHub secrets as GITLAB_SNIPPET_ID: {snippet_id}")
-        else:
-            print(f"❌ Failed to create GitLab snippet: {response.status_code} {response.text}")
+        else: print(f"❌ Failed to create GitLab snippet: {response.status_code} {response.text}")
 
 # === MAIN EXECUTION ===
 def main():
     print("🚀 Starting V2V Smart Scraper...")
     all_sources = set(BASE_SOURCES)
-    all_sources.update(discover_github_sources())
+    # all_sources.update(discover_github_sources()) # Can be re-enabled if GH_PAT is set
     
     print(f"\n🚚 Fetching configs from {len(all_sources)} sources...")
     all_configs = set()
-    with ThreadPoolExecutor(max_workers=20) as executor:
+    with ThreadPoolExecutor(max_workers=30) as executor:
         for result in executor.map(get_content_from_url, all_sources):
             if result:
                 for config in decode_content(result):
@@ -132,26 +184,39 @@ def main():
 
     print("\n⚡️ Testing latency of configs (this may take a while)...")
     working_configs = []
-    with ThreadPoolExecutor(max_workers=50) as executor:
+    with ThreadPoolExecutor(max_workers=100) as executor:
         for result in executor.map(test_config_latency, all_configs):
-            if result:
-                working_configs.append(result)
+            if result: working_configs.append(result)
     print(f"Found {len(working_configs)} responsive configs.")
     
+    if not working_configs:
+        print("No working configs found to save. Aborting.")
+        return
+
     working_configs.sort(key=lambda x: x[1])
     top_configs = [cfg for cfg, lat in working_configs[:TOP_N_CONFIGS]]
     print(f"🏅 Selected top {len(top_configs)} configs.")
 
-    if not top_configs:
-        print("No working configs found to save. Aborting.")
-        return
+    final_content_plain = "\n".join(top_configs)
 
-    final_content = "\n".join(top_configs)
+    # --- SAVE ALL OUTPUT FILES ---
+    # 1. Plain text subscription file
+    with open(OUTPUT_FILE_PLAIN, 'w', encoding='utf-8') as f: f.write(final_content_plain)
+    print(f"💾 Successfully saved plain text configs to {OUTPUT_FILE_PLAIN}")
+    
+    # 2. Base64 encoded subscription file
+    final_content_base64 = base64.b64encode(final_content_plain.encode('utf-8')).decode('utf-8')
+    with open(OUTPUT_FILE_BASE64, 'w', encoding='utf-8') as f: f.write(final_content_base64)
+    print(f"💾 Successfully saved Base64 encoded configs to {OUTPUT_FILE_BASE64}")
 
-    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-        f.write(final_content)
-    print(f"💾 Successfully saved configs to {OUTPUT_FILE}")
-    upload_to_gitlab(final_content)
+    # 3. Clash.Meta compatible config file
+    clash_content = generate_clash_config(top_configs)
+    with open(OUTPUT_FILE_CLASH, 'w', encoding='utf-8') as f: f.write(clash_content)
+    print(f"💾 Successfully saved Clash.Meta config to {OUTPUT_FILE_CLASH}")
+
+    # --- UPLOAD TO MIRROR ---
+    upload_to_gitlab(final_content_plain)
 
 if __name__ == "__main__":
     main()
+
