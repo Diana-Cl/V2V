@@ -132,7 +132,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const SUPABASE_URL = 'https://clwigbjocpnfueaueovn.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsd2lnYmpvY3BuZnVlYXVlb3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNzI1NDgsImV4cCI6MjA2OTc0ODU0OH0.XS5owBOIgp4jnBwIsm-dg9NOG_LNaRClyY1fnJkvmpk';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInRzCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsd2lnYmpvY3BuZnVlYXVlb3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNzI1NDgsImV4cCI6MjA2OTc0ODU0OH0.XS5owBOIgp4jnBwIsm-dg9NOG_LNaRClyY1fnJkvmpk';
 
             const { createClient } = supabase;
             const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -146,7 +146,7 @@
             const modalQrCanvas = document.getElementById('modal-qr-code');
             const closeBtn = document.querySelector('.close-btn');
 
-            let clipboard = null;
+            let clipboardForSingleConfigs = null;
             let allConfigs = [];
             let fullConfigText = '';
             
@@ -196,6 +196,7 @@
             function createConfigCard(cfg) {
                 const card = document.createElement('div');
                 card.className = 'config-card';
+                card.dataset.id = cfg.id;
                 
                 if (cfg.latency !== null) {
                     const pingDiv = document.createElement('div');
@@ -282,9 +283,9 @@
                     }
                 });
                 
-                if (clipboard) clipboard.destroy();
-                clipboard = new ClipboardJS('.copy-btn-class');
-                 clipboard.on('success', (e) => {
+                if (clipboardForSingleConfigs) clipboardForSingleConfigs.destroy();
+                clipboardForSingleConfigs = new ClipboardJS('.copy-btn-class');
+                clipboardForSingleConfigs.on('success', (e) => {
                     showCopyFeedback(e.trigger, 'کپی');
                     e.clearSelection();
                 });
@@ -321,7 +322,7 @@
                 infoContainer.textContent = 'در حال آماده‌سازی برای تست...';
                 
                 const configsToTest = allConfigs;
-                const batchSize = 20;
+                const batchSize = 50;
                 for (let i = 0; i < configsToTest.length; i += batchSize) {
                     const batch = configsToTest.slice(i, i + batchSize);
                     infoContainer.textContent = `در حال تست دسته ${Math.floor(i/batchSize) + 1}... (${i + batch.length}/${configsToTest.length})`;
@@ -379,34 +380,33 @@
             }
             
             async function copyToClipboard(text, element) {
+                const originalText = element.textContent;
                 if (navigator.clipboard) {
                     try {
                         await navigator.clipboard.writeText(text);
-                        showCopyFeedback(element, element.textContent);
+                        showCopyFeedback(element, originalText);
                     } catch (err) {
                         console.error('Failed to copy:', err);
                         alert('کپی کردن با خطا مواجه شد.');
                     }
                 } else {
-                     // Fallback for older browsers
                     const textArea = document.createElement("textarea");
                     textArea.value = text;
                     document.body.appendChild(textArea);
-                    textArea.focus();
-                    textArea.select();
+                    textArea.focus(); textArea.select();
                     try {
                         document.execCommand('copy');
-                        showCopyFeedback(element, element.textContent);
-                    } catch (err) {
-                        alert('کپی کردن با خطا مواجه شد.');
-                    }
+                        showCopyFeedback(element, originalText);
+                    } catch (err) { alert('کپی کردن با خطا مواجه شد.'); }
                     document.body.removeChild(textArea);
                 }
             }
             
             // Event Listeners
             document.body.addEventListener('click', (e) => {
-                const target = e.target;
+                const target = e.target.closest('button'); // Find the clicked button
+                if (!target) return;
+
                 if (target.matches('.qr-sub-btn')) {
                     openQrModal(target.dataset.url, 'لینک اشتراک');
                 } else if (target.matches('.share-sub-btn')) {
