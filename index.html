@@ -34,13 +34,25 @@
         #copyAllButton { background-color: var(--primary-color); }
         .links-section {
             display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;
-            margin-bottom: 25px; padding: 20px; background-color: var(--card-color); border-radius: 8px;
+            margin-bottom: 10px; padding: 20px; background-color: var(--card-color); border-radius: 8px;
         }
         .link-group { display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .link-group h3 { margin: 0; font-size: 1.1em; color: var(--primary-color); }
         .link-buttons { display: flex; gap: 10px; }
         .link-btn { background-color: var(--btn-bg); color: var(--text-color); padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 0.9em; font-weight: bold; transition: background-color 0.2s; border: 1px solid #444; cursor: pointer; }
         .link-btn:hover { background-color: var(--btn-hover-bg); }
+
+        /* بخش جدید برای لیست خام لینک‌ها */
+        .raw-links-section {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .raw-links-section h3 { text-align: center; margin-top: 0; color: var(--primary-color); }
+        .raw-links-section ul { list-style: none; padding: 0; margin: 0; }
+        .raw-links-section li { margin-bottom: 8px; font-size: 0.9em; word-break: break-all; text-align: left; direction: ltr; background-color: var(--btn-bg); padding: 8px; border-radius: 4px; }
+        .raw-links-section li strong { color: var(--secondary-color); }
 
         .accordion-item { margin-bottom: 15px; }
         .accordion-header {
@@ -51,29 +63,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: background-color 0.2s;
         }
-        .accordion-header:hover { background-color: #2a2a2a; }
         .accordion-header h2 { margin: 0; color: var(--primary-color); }
         .copy-protocol-btn { font-size: 0.8em; padding: 5px 10px; flex-shrink: 0; margin-right: 15px; }
-        .accordion-content {
-            display: none;
-            padding: 20px 5px 5px 5px;
-            border-top: 1px solid #333;
-        }
+        .accordion-content { display: none; padding: 20px 5px 5px 5px; }
         .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         .config-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; position: relative; }
         .ping-result { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
-        .ping-result.fast { color: var(--success-color); }
-        .ping-result.slow { color: #ffeb3b; }
-        .ping-result.timeout { color: var(--error-color); }
         .config-details { padding: 15px; flex-grow: 1; }
         .config-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .config-country { font-size: 0.9em; color: #aaa; margin-top: 5px; }
         .actions { display: flex; justify-content: space-around; padding: 10px 15px; background-color: rgba(0,0,0,0.2); }
-        .action-btn { background-color: var(--btn-bg); color: var(--text-color); border: 1px solid #444; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; padding: 8px 15px; flex-grow: 1; margin: 0 5px; }
+        .action-btn { background-color: var(--btn-bg); border: 1px solid #444; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; padding: 8px 15px; flex-grow: 1; margin: 0 5px; color: var(--text-color); }
         .info-box { text-align: center; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 5px; background-color: var(--card-color); }
-        .info-box.error { color: var(--error-color); }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
         .modal-content { background-color: var(--card-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; position: relative; }
         .close-btn { position: absolute; top: 10px; left: 20px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
@@ -89,19 +90,19 @@
 
         <div class="links-section">
              <div class="link-group">
-                <h3>لینک اشتراک (آینه اول)</h3>
+                <h3>لینک اشتراک (آینه ایران - آروان)</h3>
+                <div class="link-buttons">
+                    <button class="link-btn copy-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">کپی لینک</button>
+                    <button class="link-btn qr-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">QR کد</button>
+                    <button class="link-btn share-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">اشتراک</button>
+                </div>
+            </div>
+             <div class="link-group">
+                <h3>لینک اشتراک (آینه گیتهاب)</h3>
                 <div class="link-buttons">
                     <button class="link-btn copy-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">کپی لینک</button>
                     <button class="link-btn qr-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">QR کد</button>
                     <button class="link-btn share-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">اشتراک</button>
-                </div>
-            </div>
-             <div class="link-group">
-                <h3>لینک اشتراک (آینه دوم)</h3>
-                <div class="link-buttons">
-                    <button class="link-btn copy-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">کپی لینک</button>
-                    <button class="link-btn qr-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">QR کد</button>
-                    <button class="link-btn share-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">اشتراک</button>
                 </div>
             </div>
             <div class="link-group">
@@ -110,6 +111,15 @@
                      <a href="./v2v_clash.yaml" class="link-btn" download>دانلود فایل</a>
                 </div>
             </div>
+        </div>
+
+        <div class="raw-links-section">
+            <h3>لیست تمام لینک‌های خام میرور</h3>
+            <ul>
+                <li><strong>آروان (ایران):</strong> https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt</li>
+                <li><strong>گیتهاب:</strong> https://smbcryp.github.io/V2V/configs.txt</li>
+                <li><strong>ورسل:</strong> https://v2-v.vercel.app/configs.txt</li>
+            </ul>
         </div>
 
         <button id="speedTestButton" class="action-button" style="display: none;">🚀 تست سرعت کانفیگ‌ها</button>
@@ -130,12 +140,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const SUPABASE_URL = 'https://clwigbjocpnfueaueovn.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsd2lnYmpvY3BuZnVlYXVlb3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNzI1NDgsImV4cCI6MjA2OTc0ODU0OH0.XS5owBOIgp4jnBwIsm-dg9NOG_LNaRClyY1fnJkvmpk';
-
-            const { createClient } = supabase;
-            const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
             const speedTestButton = document.getElementById('speedTestButton');
             const copyAllButton = document.getElementById('copyAllButton');
             const infoContainer = document.getElementById('info');
@@ -150,16 +154,12 @@
             let fullConfigText = '';
             
             const mirrors = [
-                'https://smbcryp.github.io/V2V/configs.txt',
-                'https://v2-v.vercel.app/configs.txt'
+                'https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt', // ArvanCloud (Primary)
+                'https://smbcryp.github.io/V2V/configs.txt',                   // GitHub Pages (Fallback 1)
+                'https://v2-v.vercel.app/configs.txt'                          // Vercel (Fallback 2)
             ];
 
-            const countryMap = { 'iran': 'ایران 🇮🇷', 'ir': 'ایران 🇮🇷', 'germany': 'آلمان 🇩🇪', 'de': 'آلمان 🇩🇪', 'turkey': 'ترکیه 🇹🇷', 'tr': 'ترکیه 🇹🇷', 'france': 'فرانسه 🇫🇷', 'fr': 'فرانسه 🇫🇷', 'netherlands': 'هلند 🇳🇱', 'nl': 'هلند 🇳🇱', 'usa': 'آمریکا 🇺🇸', 'us': 'آمریکا 🇺🇸', 'canada': 'کانادا 🇨🇦', 'ca': 'کانادا 🇨🇦', 'uk': 'انگلیس 🇬🇧', 'gb': 'انگلیس 🇬🇧', 'singapore': 'سنگاپور 🇸🇬', 'sg': 'سنگاپور 🇸🇬' };
-            const miscellaneousCountry = 'متفرقه 🌐';
-
-            closeBtn.onclick = () => qrModal.style.display = "none";
-            window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; }
-
+            // Helper functions... (same as before)
             function openQrModal(url, title = 'QR Code') {
                 modalTitle.textContent = title;
                 QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
@@ -175,18 +175,9 @@
                     const decodedUrl = decodeURIComponent(url);
                     const parts = decodedUrl.split('#');
                     if (parts.length > 1 && parts[1]) { return parts[1]; }
-                    const host = new URL(url).hostname;
-                    return host || url.substring(0, 20) + '...';
+                    return new URL(url).hostname || url.substring(0, 20) + '...';
                 } catch { return url.substring(0, 20) + '...'; }
             }
-            function getCountry(configName) {
-                const lowerCaseName = configName.toLowerCase();
-                for (const keyword in countryMap) {
-                    if (lowerCaseName.includes(keyword)) return countryMap[keyword];
-                }
-                return miscellaneousCountry;
-            }
-
             function showCopyFeedback(element, originalText) {
                 element.textContent = "✅ کپی شد";
                 setTimeout(() => { element.textContent = originalText; }, 2000);
@@ -195,7 +186,6 @@
             function createConfigCard(cfg) {
                 const card = document.createElement('div');
                 card.className = 'config-card';
-                card.dataset.id = cfg.id;
                 
                 if (cfg.latency !== null) {
                     const pingDiv = document.createElement('div');
@@ -213,7 +203,7 @@
                 
                 const detailsDiv = document.createElement('div');
                 detailsDiv.className = 'config-details';
-                detailsDiv.innerHTML = `<div class="config-name">${cfg.name}</div><div class="config-country">${cfg.country}</div>`;
+                detailsDiv.innerHTML = `<div class="config-name">${cfg.name}</div>`;
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'actions';
                 const copyBtn = document.createElement('button');
@@ -291,7 +281,7 @@
             }
 
             async function pingConfig(config) {
-                let host = '';
+                 let host = '';
                 try {
                     if (config.url.startsWith('vmess://')) {
                         const vmessData = JSON.parse(atob(config.url.substring(8)));
@@ -302,7 +292,7 @@
                 } catch { 
                     config.latency = 'Error'; return config;
                 }
-                const testUrl = `/api/proxy?url=https://${host}/__ping__`;
+                const testUrl = `/api/proxy?url=https://${host}/__ping__`; // Assuming you have a proxy API
                 const startTime = Date.now();
                 try {
                     const controller = new AbortController();
@@ -318,8 +308,6 @@
             
             async function startClientSideBatchTest() {
                 speedTestButton.disabled = true;
-                infoContainer.textContent = 'در حال آماده‌سازی برای تست...';
-                
                 const configsToTest = allConfigs;
                 const batchSize = 50;
                 for (let i = 0; i < configsToTest.length; i += batchSize) {
@@ -327,13 +315,11 @@
                     infoContainer.textContent = `در حال تست دسته ${Math.floor(i/batchSize) + 1}... (${i + batch.length}/${configsToTest.length})`;
                     await Promise.all(batch.map(pingConfig));
                 }
-
                 allConfigs.sort((a, b) => {
                     const aVal = (typeof a.latency === 'number') ? a.latency : 9999;
                     const bVal = (typeof b.latency === 'number') ? b.latency : 9999;
                     return aVal - bVal;
                 });
-                
                 renderAccordion(true);
                 infoContainer.textContent = 'تست کامل شد! نتایج بر اساس سرعت مرتب شدند.';
                 speedTestButton.disabled = false;
@@ -345,6 +331,7 @@
                 let sourceUrl = '';
                 for (const url of mirrors) {
                     try {
+                        infoContainer.textContent = `در حال تلاش برای اتصال به میرور: ${new URL(url).hostname}...`;
                         const response = await fetch(url, { cache: "no-store" });
                         if (!response.ok) throw new Error(`Mirror failed: ${url}`);
                         fullConfigText = await response.text();
@@ -355,23 +342,19 @@
                         console.warn(error.message);
                     }
                 }
-
                 if (!fullConfigText) {
                     infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
                     infoContainer.classList.add('error');
                     return;
                 }
-                
                 const configs = fullConfigText.trim().split('\n').filter(Boolean);
                 allConfigs = configs.map((url, index) => ({
                     id: index,
                     name: extractNameFromUrl(url),
                     url: url,
                     protocol: url.split('://')[0],
-                    country: getCountry(extractNameFromUrl(url)),
                     latency: null
                 }));
-
                 renderAccordion();
                 infoContainer.textContent = `تعداد ${allConfigs.length} کانفیگ برتر (از ${new URL(sourceUrl).hostname}) بارگذاری شد.`;
                 speedTestButton.style.display = 'block';
@@ -385,7 +368,6 @@
                         await navigator.clipboard.writeText(text);
                         showCopyFeedback(element, originalText);
                     } catch (err) {
-                        console.error('Failed to copy:', err);
                         alert('کپی کردن با خطا مواجه شد.');
                     }
                 } else {
@@ -393,15 +375,12 @@
                     textArea.value = text;
                     document.body.appendChild(textArea);
                     textArea.focus(); textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        showCopyFeedback(element, originalText);
-                    } catch (err) { alert('کپی کردن با خطا مواجه شد.'); }
+                    try { document.execCommand('copy'); showCopyFeedback(element, originalText); }
+                    catch (err) { alert('کپی کردن با خطا مواجه شد.'); }
                     document.body.removeChild(textArea);
                 }
             }
             
-            // Event Listeners using delegation for robustness
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('button, a');
                 if (!target) return;
