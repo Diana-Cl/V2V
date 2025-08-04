@@ -20,13 +20,11 @@ VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://')
 
 # === SECRET KEYS ===
 GITHUB_PAT = os.environ.get('GH_PAT')
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
 
 # === HELPER FUNCTIONS ===
 def get_content_from_url(url: str) -> str | None:
     try:
-        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/9.0'})
+        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/Final'})
         response.raise_for_status()
         return response.text
     except requests.RequestException: return None
@@ -111,7 +109,7 @@ def generate_clash_config(configs_list: list) -> str:
             if parsed['protocol'] == 'vless':
                 proxy.update({'uuid': parsed['uuid'], 'udp': True, 'tls': parsed['params'].get('security') == 'tls', 'servername': parsed['params'].get('sni', parsed['server']), 'network': parsed['params'].get('type', 'ws'), 'ws-opts': {'path': parsed['params'].get('path', '/')}})
             elif parsed['protocol'] == 'vmess':
-                 proxy.update({'uuid': parsed['uuid'], 'alterId': parsed['params'].get('aid', 0), 'cipher': parsed['params'].get('scy', 'auto'), 'udp': True, 'tls': parsed['params'].get('tls') == 'tls', 'servername': parsed['params'].get('sni', parsed['server']), 'network': parsed['params'].get('net', 'ws'), 'ws-opts': {'path': parsed['params'].get('path', '/')}})
+                 proxy.update({'uuid': parsed['uuid'], 'alterId': int(parsed['params'].get('aid', 0)), 'cipher': parsed['params'].get('scy', 'auto'), 'udp': True, 'tls': parsed['params'].get('tls') == 'tls', 'servername': parsed['params'].get('sni', parsed['server']), 'network': parsed['params'].get('net', 'ws'), 'ws-opts': {'path': parsed['params'].get('path', '/')}})
             elif parsed['protocol'] == 'trojan':
                 proxy['password'] = parsed['password']
                 proxy.update({'udp': True, 'sni': parsed['params'].get('sni', parsed['server'])})
@@ -169,4 +167,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
