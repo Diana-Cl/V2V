@@ -37,6 +37,28 @@ def decode_content(content: str) -> list[str]:
     try: return base64.b64decode(content).decode('utf-8').strip().splitlines()
     except Exception: return content.strip().splitlines()
 
+def discover_github_sources() -> set[str]:
+    if not GITHUB_PAT:
+        print("GitHub PAT not found, skipping dynamic discovery.")
+        return set()
+    
+    print("🔍 Discovering new sources from GitHub...")
+    headers = {'Authorization': f'token {GITHUB_PAT}'}
+    discovered_urls = set()
+    for keyword in GITHUB_SEARCH_KEYWORDS:
+        params = {'q': f'"{keyword}" in:readme,description', 'sort': 'updated', 'per_page': 10}
+        try:
+            response = requests.get("https://api.github.com/search/repositories", headers=headers, params=params, timeout=20)
+            response.raise_for_status()
+            for repo in response.json().get('items', []):
+                for filename in ['sub.txt', 'all.txt', 'vless.txt', 'vmess.txt', 'configs.txt']:
+                    discovered_urls.add(f"https://raw.githubusercontent.com/{repo['full_name']}/{repo['default_branch']}/{filename}")
+        except requests.RequestException as e:
+            print(f"Failed to search GitHub with keyword '{keyword}': {e}")
+            continue
+    print(f"Discovered {len(discovered_urls)} potential new source URLs.")
+    return discovered_urls
+
 def parse_config(config_url: str) -> dict | None:
     try:
         parsed_url = urlparse(config_url)
@@ -44,10 +66,16 @@ def parse_config(config_url: str) -> dict | None:
         protocol = parsed_url.scheme
         
         if protocol == 'vmess':
-            decoded_part = base64.b64decode(parsed_url.netloc).decode()
+            # VMess configs are Base64 encoded JSON
+            if len(parsed_url.netloc) % 4 != 0:
+                netloc_padded = parsed_url.netloc + '=' * (4 - len(parsed_url.netloc) % 4)
+            else:
+                netloc_padded = parsed_url.netloc
+            decoded_part = base64.b64decode(netloc_padded).decode()
             data = json.loads(decoded_part)
             return {'protocol': protocol, 'remark': data.get('ps', 'V2V-VMess'), 'server': data.get('add'), 'port': int(data.get('port', 0)), 'uuid': data.get('id'), 'params': data}
         
+        # For VLESS, Trojan, SS
         query_params = parse_qs(parsed_url.query)
         params = {k: v[0] for k, v in query_params.items()}
         
@@ -125,6 +153,10 @@ def upload_to_gitlab(content: str):
 def main():
     print("🚀 Starting V2V Smart Scraper...")
     all_sources = set(BASE_SOURCES)
+    # <<<<<<<<<<<<<<<<<<<< این خط اصلاح و فعال شد >>>>>>>>>>>>>>>>>>>>
+    all_sources.update(discover_github_sources())
+    
+    print(f"\n🚚 Fetching configs from {len(all_sources)} sources...")
     all_configs = set()
     with ThreadPoolExecutor(max_workers=30) as executor:
         for result in executor.map(get_content_from_url, all_sources):
@@ -154,7 +186,9 @@ def main():
     print(f"💾 Successfully saved Clash.Meta config to {OUTPUT_FILE_CLASH}")
 
     # Upload to GitLab Snippet for a stable mirror
-    upload_to_gitlab(final_content_plain)
+    # Note: This is currently disabled due to the user's GitLab account being blocked.
+    # To re-enable, simply uncomment the line below.
+    # upload_to_gitlab(final_content_plain)
 
 if __name__ == "__main__":
     main()
