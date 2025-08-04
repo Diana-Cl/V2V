@@ -28,7 +28,7 @@ SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
 # === HELPER FUNCTIONS ===
 def get_content_from_url(url: str) -> str | None:
     try:
-        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/6.0'})
+        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/7.0'})
         response.raise_for_status()
         return response.text
     except requests.RequestException: return None
@@ -87,7 +87,7 @@ def generate_clash_config(configs_list: list) -> str:
             elif parsed['protocol'] in ['trojan', 'ss']:
                 proxy['password'] = parsed['uuid'] or parsed['password']
                 if parsed['protocol'] == 'ss':
-                    proxy['cipher'] = 'auto' # Clash can often auto-detect cipher
+                    proxy['cipher'] = 'auto'
 
             proxies.append(proxy)
         except Exception: continue
@@ -101,6 +101,26 @@ def generate_clash_config(configs_list: list) -> str:
         'rules': ['DOMAIN-SUFFIX,ir,DIRECT', 'MATCH,V2V-Auto']
     }
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False)
+
+def upload_to_gitlab(content: str):
+    if not GITLAB_API_TOKEN: 
+        print("GitLab API token not provided, skipping snippet upload.")
+        return
+    headers = {"PRIVATE-TOKEN": GITLAB_API_TOKEN}
+    data = {'title': 'V2V Configs Mirror', 'file_name': OUTPUT_FILE_PLAIN, 'content': content, 'visibility': 'public'}
+    if GITLAB_SNIPPET_ID:
+        url = f"https://gitlab.com/api/v4/snippets/{GITLAB_SNIPPET_ID}"
+        response = requests.put(url, headers=headers, json=data)
+        if response.status_code == 200: print(f"✅ Successfully updated GitLab snippet: {response.json()['web_url']}")
+        else: print(f"❌ Failed to update GitLab snippet: {response.status_code} {response.text}")
+    else:
+        url = "https://gitlab.com/api/v4/snippets"
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 201:
+            snippet_id = response.json()['id']
+            print(f"✅ Successfully created GitLab snippet: {response.json()['web_url']}")
+            print(f"📌 IMPORTANT: Add this ID to your GitHub secrets as GITLAB_SNIPPET_ID: {snippet_id}")
+        else: print(f"❌ Failed to create GitLab snippet: {response.status_code} {response.text}")
 
 def main():
     print("🚀 Starting V2V Smart Scraper...")
@@ -123,12 +143,18 @@ def main():
     working_configs.sort(key=lambda x: x[1])
     top_configs = [cfg for cfg, lat in working_configs[:TOP_N_CONFIGS]]
     print(f"🏅 Selected top {len(top_configs)} configs.")
+    
     final_content_plain = "\n".join(top_configs)
+    
+    # Save local files for GitHub Pages
     with open(OUTPUT_FILE_PLAIN, 'w', encoding='utf-8') as f: f.write(final_content_plain)
     print(f"💾 Successfully saved plain text configs to {OUTPUT_FILE_PLAIN}")
     clash_content = generate_clash_config(top_configs)
     with open(OUTPUT_FILE_CLASH, 'w', encoding='utf-8') as f: f.write(clash_content)
     print(f"💾 Successfully saved Clash.Meta config to {OUTPUT_FILE_CLASH}")
+
+    # Upload to GitLab Snippet for a stable mirror
+    upload_to_gitlab(final_content_plain)
 
 if __name__ == "__main__":
     main()
