@@ -87,7 +87,7 @@
 
         <div class="links-section">
              <div class="link-group">
-                <h3>لینک اشتراک (آینه آروان - ایران)</h3>
+                <h3>لینک اشتراک (آینه آروان)</h3>
                 <div class="link-buttons">
                     <button class="link-btn copy-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">کپی لینک</button>
                     <button class="link-btn qr-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">QR کد</button>
@@ -110,12 +110,17 @@
                     <button class="link-btn share-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">اشتراک</button>
                 </div>
             </div>
+            <div class="link-group">
+                <h3>کانفیگ برای Clash.Meta</h3>
+                <div class="link-buttons">
+                     <a href="./v2v_clash.yaml" class="link-btn" download>دانلود فایل</a>
+                </div>
+            </div>
         </div>
         
         <div class="raw-links-section">
             <h3>لیست تمام آینه‌های وب‌سایت</h3>
             <ul>
-                <li><strong>آروان (ایران):</strong> <a href="ARVAN_WEBSITE_URL_PLACEHOLDER" target="_blank">هنوز راه‌اندازی نشده است</a></li>
                 <li><strong>گیتهاب:</strong> <a href="https://smbcryp.github.io/V2V/" target="_blank">https://smbcryp.github.io/V2V/</a></li>
                 <li><strong>ورسل:</strong> <a href="https://v2-v.vercel.app/" target="_blank">https://v2-v.vercel.app/</a></li>
             </ul>
@@ -139,7 +144,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // All constants and variables
             const speedTestButton = document.getElementById('speedTestButton');
             const copyAllButton = document.getElementById('copyAllButton');
             const infoContainer = document.getElementById('info');
@@ -159,7 +163,6 @@
                 'https://v2-v.vercel.app/configs.txt'
             ];
 
-            // All helper functions
             closeBtn.onclick = () => qrModal.style.display = "none";
             window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; }
             
@@ -167,7 +170,7 @@
                 element.textContent = "✅ کپی شد";
                 setTimeout(() => { element.textContent = originalText; }, 2000);
             }
-            
+
             function openQrModal(url, title = 'QR Code') {
                 modalTitle.textContent = title;
                 QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
@@ -189,7 +192,7 @@
                     return new URL(url).hostname;
                 } catch { return url.substring(0, 30) + '...'; }
             }
-
+            
             async function copyToClipboard(text, element) {
                 const originalText = element.textContent;
                 if (!navigator.clipboard) {
@@ -204,7 +207,7 @@
                     alert('کپی کردن با خطا مواجه شد.');
                 }
             }
-            
+
             function createConfigCard(cfg) {
                 const card = document.createElement('div');
                 card.className = 'config-card';
@@ -212,16 +215,16 @@
                 
                 if (cfg.latency !== null) {
                     const pingDiv = document.createElement('div');
-                    const latency = cfg.latency;
                     pingDiv.className = 'ping-result';
+                    const latency = cfg.latency;
                     if (latency === 'Timeout' || latency === 'Error') {
-                        pingDiv.textContent = latency;
                         pingDiv.classList.add('timeout');
+                    } else if (latency < 400) {
+                        pingDiv.classList.add('fast');
                     } else {
-                        pingDiv.textContent = `${latency}ms`;
-                        if (latency < 400) pingDiv.classList.add('fast');
-                        else pingDiv.classList.add('slow');
+                        pingDiv.classList.add('slow');
                     }
+                    pingDiv.textContent = (typeof latency === 'number') ? `${latency}ms` : latency;
                     card.appendChild(pingDiv);
                 }
                 
@@ -331,6 +334,8 @@
             
             async function startClientSideBatchTest() {
                 speedTestButton.disabled = true;
+                infoContainer.textContent = 'در حال آماده‌سازی برای تست...';
+                
                 const configsToTest = allConfigs;
                 const batchSize = 50;
                 for (let i = 0; i < configsToTest.length; i += batchSize) {
@@ -355,23 +360,14 @@
                 for (const url of mirrors) {
                     try {
                         infoContainer.textContent = `در حال تلاش برای اتصال به میرور: ${new URL(url).hostname}...`;
-                        const response = await fetch(url, { cache: "no-store", mode: 'cors' }); // Attempt direct fetch
-                        if (!response.ok) throw new Error(`Direct fetch failed: ${url}`);
+                        const response = await fetch(url, { cache: "no-store"});
+                        if (!response.ok) throw new Error(`Mirror failed: ${url}`);
                         fullConfigText = await response.text();
+                        if (fullConfigText.trim().length === 0) throw new Error("Source is empty");
                         sourceUrl = url;
                         break; 
                     } catch (error) {
-                        console.warn(error.message, "Trying Vercel proxy...");
-                        try {
-                            const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-                            const response = await fetch(proxyUrl, { cache: "no-store" });
-                            if (!response.ok) throw new Error(`Proxy fetch failed for: ${url}`);
-                            fullConfigText = await response.text();
-                            sourceUrl = url;
-                            break;
-                        } catch (proxyError) {
-                            console.error(proxyError.message);
-                        }
+                        console.warn(error.message);
                     }
                 }
                 if (!fullConfigText) {
