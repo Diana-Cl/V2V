@@ -28,7 +28,7 @@ SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
 # === HELPER FUNCTIONS ===
 def get_content_from_url(url: str) -> str | None:
     try:
-        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/7.0'})
+        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/8.0'})
         response.raise_for_status()
         return response.text
     except requests.RequestException: return None
@@ -66,19 +66,21 @@ def parse_config(config_url: str) -> dict | None:
         protocol = parsed_url.scheme
         
         if protocol == 'vmess':
-            # VMess configs are Base64 encoded JSON
-            if len(parsed_url.netloc) % 4 != 0:
-                netloc_padded = parsed_url.netloc + '=' * (4 - len(parsed_url.netloc) % 4)
-            else:
-                netloc_padded = parsed_url.netloc
-            decoded_part = base64.b64decode(netloc_padded).decode()
-            data = json.loads(decoded_part)
+            if len(parsed_url.netloc) % 4 != 0: netloc_padded = parsed_url.netloc + '=' * (4 - len(parsed_url.netloc) % 4)
+            else: netloc_padded = parsed_url.netloc
+            data = json.loads(base64.b64decode(netloc_padded).decode())
             return {'protocol': protocol, 'remark': data.get('ps', 'V2V-VMess'), 'server': data.get('add'), 'port': int(data.get('port', 0)), 'uuid': data.get('id'), 'params': data}
         
-        # For VLESS, Trojan, SS
+        if protocol == 'ss':
+            userinfo, _, _ = parsed_url.netloc.rpartition('@')
+            if len(userinfo) % 4 != 0: userinfo_padded = userinfo + '=' * (4 - len(userinfo) % 4)
+            else: userinfo_padded = userinfo
+            decoded_userinfo = base64.b64decode(userinfo_padded).decode()
+            cipher, password = decoded_userinfo.split(':')
+            return {'protocol': protocol, 'remark': remark, 'server': parsed_url.hostname, 'port': parsed_url.port, 'password': password, 'cipher': cipher}
+
         query_params = parse_qs(parsed_url.query)
         params = {k: v[0] for k, v in query_params.items()}
-        
         return {'protocol': protocol, 'remark': remark, 'server': parsed_url.hostname, 'port': parsed_url.port, 'uuid': parsed_url.username, 'password': parsed_url.password, 'params': params}
     except Exception: return None
 
@@ -109,15 +111,19 @@ def generate_clash_config(configs_list: list) -> str:
             
             proxy = {'name': parsed['remark'] or f"{parsed['protocol']}-{i+1}", 'type': parsed['protocol'], 'server': parsed['server'], 'port': parsed['port']}
             
-            if parsed['protocol'] in ['vless', 'vmess']:
-                proxy['uuid'] = parsed['uuid']
-                proxy.update({'udp': True, 'tls': parsed['params'].get('security') == 'tls', 'servername': parsed['params'].get('sni', parsed['server']), 'network': parsed['params'].get('type', 'ws'), 'ws-opts': {'path': parsed['params'].get('path', '/')}})
-            elif parsed['protocol'] in ['trojan', 'ss']:
-                proxy['password'] = parsed['uuid'] or parsed['password']
-                if parsed['protocol'] == 'ss':
-                    proxy['cipher'] = 'auto'
-
-            proxies.append(proxy)
+            if parsed['protocol'] == 'vless':
+                proxy.update({'uuid': parsed['uuid'], 'udp': True, 'tls': parsed['params'].get('security') == 'tls', 'servername': parsed['params'].get('sni', parsed['server']), 'network': parsed['params'].get('type', 'ws'), 'ws-opts': {'path': parsed['params'].get('path', '/')}})
+            elif parsed['protocol'] == 'vmess':
+                 proxy.update({'uuid': parsed['uuid'], 'alterId': parsed['params'].get('aid', 0), 'cipher': parsed['params'].get('scy', 'auto'), 'udp': True, 'tls': parsed['params'].get('tls') == 'tls', 'servername': parsed['params'].get('sni', parsed['server']), 'network': parsed['params'].get('net', 'ws'), 'ws-opts': {'path': parsed['params'].get('path', '/')}})
+            elif parsed['protocol'] == 'trojan':
+                proxy['password'] = parsed['password']
+                proxy.update({'udp': True, 'sni': parsed['params'].get('sni', parsed['server'])})
+            elif parsed['protocol'] == 'ss':
+                proxy['password'] = parsed['password']
+                proxy['cipher'] = parsed['cipher']
+            
+            if 'uuid' in proxy or 'password' in proxy: # Ensure proxy has credentials
+                proxies.append(proxy)
         except Exception: continue
 
     clash_config = {
@@ -130,30 +136,9 @@ def generate_clash_config(configs_list: list) -> str:
     }
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False)
 
-def upload_to_gitlab(content: str):
-    if not GITLAB_API_TOKEN: 
-        print("GitLab API token not provided, skipping snippet upload.")
-        return
-    headers = {"PRIVATE-TOKEN": GITLAB_API_TOKEN}
-    data = {'title': 'V2V Configs Mirror', 'file_name': OUTPUT_FILE_PLAIN, 'content': content, 'visibility': 'public'}
-    if GITLAB_SNIPPET_ID:
-        url = f"https://gitlab.com/api/v4/snippets/{GITLAB_SNIPPET_ID}"
-        response = requests.put(url, headers=headers, json=data)
-        if response.status_code == 200: print(f"✅ Successfully updated GitLab snippet: {response.json()['web_url']}")
-        else: print(f"❌ Failed to update GitLab snippet: {response.status_code} {response.text}")
-    else:
-        url = "https://gitlab.com/api/v4/snippets"
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 201:
-            snippet_id = response.json()['id']
-            print(f"✅ Successfully created GitLab snippet: {response.json()['web_url']}")
-            print(f"📌 IMPORTANT: Add this ID to your GitHub secrets as GITLAB_SNIPPET_ID: {snippet_id}")
-        else: print(f"❌ Failed to create GitLab snippet: {response.status_code} {response.text}")
-
 def main():
     print("🚀 Starting V2V Smart Scraper...")
     all_sources = set(BASE_SOURCES)
-    # <<<<<<<<<<<<<<<<<<<< این خط اصلاح و فعال شد >>>>>>>>>>>>>>>>>>>>
     all_sources.update(discover_github_sources())
     
     print(f"\n🚚 Fetching configs from {len(all_sources)} sources...")
@@ -178,17 +163,13 @@ def main():
     
     final_content_plain = "\n".join(top_configs)
     
-    # Save local files for GitHub Pages
     with open(OUTPUT_FILE_PLAIN, 'w', encoding='utf-8') as f: f.write(final_content_plain)
     print(f"💾 Successfully saved plain text configs to {OUTPUT_FILE_PLAIN}")
+    
     clash_content = generate_clash_config(top_configs)
     with open(OUTPUT_FILE_CLASH, 'w', encoding='utf-8') as f: f.write(clash_content)
     print(f"💾 Successfully saved Clash.Meta config to {OUTPUT_FILE_CLASH}")
 
-    # Upload to GitLab Snippet for a stable mirror
-    # Note: This is currently disabled due to the user's GitLab account being blocked.
-    # To re-enable, simply uncomment the line below.
-    # upload_to_gitlab(final_content_plain)
-
 if __name__ == "__main__":
     main()
+
