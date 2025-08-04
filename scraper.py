@@ -63,4 +63,114 @@ def parse_config(config_url: str) -> tuple[str, int, str] | None:
         if config_url.startswith('vmess://'):
             decoded_part = base64.b64decode(config_url[8:]).decode()
             data = json.loads(decoded_part)
-            remark = data.get
+            remark = data.get('ps', 'V2V-VMess')
+            return data.get('add'), int(data.get('port', 0)), remark
+        
+        parsed_url = urlparse(config_url)
+        remark = unquote(parsed_url.fragment) if parsed_url.fragment else parsed_url.hostname
+        return parsed_url.hostname, parsed_url.port, remark
+    except Exception:
+        return None
+
+def tcp_ping(host: str, port: int, timeout: int = 2) -> int | None:
+    if not host or not port:
+        return None
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        start_time = time.time()
+        s.connect((host, port))
+        end_time = time.time()
+        s.close()
+        return int((end_time - start_time) * 1000)
+    except Exception:
+        return None
+
+def test_config_latency(config: str) -> tuple[str, int] | None:
+    parsed = parse_config(config)
+    if parsed:
+        latency = tcp_ping(parsed[0], parsed[1])
+        if latency is not None:
+            return (config, latency)
+    return None
+
+def generate_clash_config(configs_list: list) -> str:
+    proxies = []
+    for i, config in enumerate(configs_list):
+        try:
+            parsed = parse_config(config)
+            if not parsed: continue
+            
+            host, port, remark = parsed
+            proxy_name = remark if remark and len(remark) < 40 else f"{config.split('://')[0]}-{i+1}"
+            proxy = {'name': proxy_name, 'type': config.split('://')[0], 'server': host, 'port': port}
+            if config.startswith('vless://'):
+                uuid = urlparse(config).username
+                proxy.update({'uuid': uuid, 'udp': True, 'tls': True, 'servername': host, 'network': 'ws', 'ws-opts': {'path': "/"}})
+            proxies.append(proxy)
+        except Exception:
+            continue
+    clash_config = {
+        'port': 7890, 'socks-port': 7891, 'allow-lan': False, 'mode': 'rule', 'log-level': 'info', 'proxies': proxies,
+        'proxy-groups': [
+            {'name': 'V2V-Auto', 'type': 'url-test', 'proxies': [p['name'] for p in proxies], 'url': 'http://www.gstatic.com/generate_204', 'interval': 300},
+            {'name': 'V2V-Select', 'type': 'select', 'proxies': [p['name'] for p in proxies]}
+        ],
+        'rules': ['DOMAIN-SUFFIX,ir,DIRECT', 'MATCH,V2V-Auto']
+    }
+    return yaml.dump(clash_config, allow_unicode=True, sort_keys=False)
+
+def upload_to_gitlab(content: str):
+    if not GITLAB_API_TOKEN: return
+    headers = {"PRIVATE-TOKEN": GITLAB_API_TOKEN}
+    data = {'title': 'V2V Configs Mirror', 'file_name': OUTPUT_FILE_PLAIN, 'content': content, 'visibility': 'public'}
+    if GITLAB_SNIPPET_ID:
+        url = f"https://gitlab.com/api/v4/snippets/{GITLAB_SNIPPET_ID}"
+        response = requests.put(url, headers=headers, data=data)
+        if response.status_code == 200: print(f"✅ Successfully updated GitLab snippet: {response.json()['web_url']}")
+        else: print(f"❌ Failed to update GitLab snippet: {response.status_code} {response.text}")
+    else:
+        url = "https://gitlab.com/api/v4/snippets"
+        response = requests.post(url, headers=headers, data=data)
+        if response.status_code == 201:
+            snippet_id = response.json()['id']
+            print(f"✅ Successfully created GitLab snippet: {response.json()['web_url']}")
+            print(f"📌 IMPORTANT: Add this ID to your GitHub secrets as GITLAB_SNIPPET_ID: {snippet_id}")
+        else: print(f"❌ Failed to create GitLab snippet: {response.status_code} {response.text}")
+
+def main():
+    print("🚀 Starting V2V Smart Scraper...")
+    all_sources = set(BASE_SOURCES)
+    all_configs = set()
+    with ThreadPoolExecutor(max_workers=30) as executor:
+        for result in executor.map(get_content_from_url, all_sources):
+            if result:
+                for config in decode_content(result):
+                    if config.strip().startswith(VALID_PREFIXES): all_configs.add(config.strip())
+    print(f"Found {len(all_configs)} unique configs.")
+    if not all_configs:
+        print("No configs found. Aborting."); return
+    print("\n⚡️ Testing latency of configs (this may take a while)...")
+    working_configs = []
+    with ThreadPoolExecutor(max_workers=100) as executor:
+        for result in executor.map(test_config_latency, all_configs):
+            if result: working_configs.append(result)
+    print(f"Found {len(working_configs)} responsive configs.")
+    if not working_configs:
+        print("No working configs found to save. Aborting."); return
+    working_configs.sort(key=lambda x: x[1])
+    top_configs = [cfg for cfg, lat in working_configs[:TOP_N_CONFIGS]]
+    print(f"🏅 Selected top {len(top_configs)} configs.")
+    final_content_plain = "\n".join(top_configs)
+    with open(OUTPUT_FILE_PLAIN, 'w', encoding='utf-8') as f: f.write(final_content_plain)
+    print(f"💾 Successfully saved plain text configs to {OUTPUT_FILE_PLAIN}")
+    final_content_base64 = base64.b64encode(final_content_plain.encode('utf-8')).decode('utf-8')
+    with open(OUTPUT_FILE_BASE64, 'w', encoding='utf-8') as f: f.write(final_content_base64)
+    print(f"💾 Successfully saved Base64 encoded configs to {OUTPUT_FILE_BASE64}")
+    clash_content = generate_clash_config(top_configs)
+    with open(OUTPUT_FILE_CLASH, 'w', encoding='utf-8') as f: f.write(clash_content)
+    print(f"💾 Successfully saved Clash.Meta config to {OUTPUT_FILE_CLASH}")
+    upload_to_gitlab(final_content_plain)
+
+if __name__ == "__main__":
+    main()
