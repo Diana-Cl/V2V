@@ -32,8 +32,6 @@
         .action-button { color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 18px; cursor: pointer; transition: opacity 0.2s; display: block; width: 100%; margin-bottom: 15px; font-weight: bold; }
         #speedTestButton { background-color: var(--secondary-color); }
         #copyAllButton { background-color: var(--primary-color); }
-        .action-button:hover { opacity: 0.9; }
-        .action-button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
         .links-section {
             display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;
             margin-bottom: 25px; padding: 20px; background-color: var(--card-color); border-radius: 8px;
@@ -61,6 +59,7 @@
         .accordion-content {
             display: none;
             padding: 20px 5px 5px 5px;
+            border-top: 1px solid #333;
         }
         .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         .config-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; position: relative; }
@@ -132,7 +131,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const SUPABASE_URL = 'https://clwigbjocpnfueaueovn.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInRzCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsd2lnYmpvY3BuZnVlYXVlb3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNzI1NDgsImV4cCI6MjA2OTc0ODU0OH0.XS5owBOIgp4jnBwIsm-dg9NOG_LNaRClyY1fnJkvmpk';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsd2lnYmpvY3BuZnVlYXVlb3ZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNzI1NDgsImV4cCI6MjA2OTc0ODU0OH0.XS5owBOIgp4jnBwIsm-dg9NOG_LNaRClyY1fnJkvmpk';
 
             const { createClient } = supabase;
             const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -273,7 +272,7 @@
                         configsContainer.appendChild(accordionItem);
 
                         header.addEventListener('click', (e) => {
-                            if (e.target.classList.contains('copy-protocol-btn')) return;
+                            if (e.target.closest('.copy-protocol-btn')) return;
                             const currentDisplay = content.style.display;
                             content.style.display = currentDisplay === 'block' ? 'none' : 'block';
                             if (content.style.display === 'block' && grid.children.length === 0) {
@@ -402,9 +401,9 @@
                 }
             }
             
-            // Event Listeners
+            // Event Listeners using delegation for robustness
             document.body.addEventListener('click', (e) => {
-                const target = e.target.closest('button'); // Find the clicked button
+                const target = e.target.closest('button, a');
                 if (!target) return;
 
                 if (target.matches('.qr-sub-btn')) {
