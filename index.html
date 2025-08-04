@@ -58,7 +58,8 @@
 
         .columns-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            /* اصلاح اصلی: کاهش حداقل عرض برای فشردگی بیشتر */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
@@ -68,7 +69,7 @@
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 10px;
         }
-        .config-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .config-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
         .config-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; position: relative; }
         .ping-result { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
         .ping-result.fast { color: var(--success-color); }
@@ -99,29 +100,26 @@
             <div class="link-group">
                 <h3>لینک اشتراک (متن ساده)</h3>
                 <div class="link-buttons">
-                    <button class="link-btn copy-sub-btn" data-clipboard-text="https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs.txt">کپی لینک</button>
-                    <button class="link-btn qr-sub-btn" data-url="https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs.txt">QR کد</button>
-                    <button class="link-btn share-sub-btn" data-url="https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs.txt">اشتراک</button>
+                    <button class="link-btn copy-sub-btn" data-clipboard-text="https://smbcryp.github.io/V2V/configs.txt">کپی لینک</button>
+                    <button class="link-btn qr-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">QR کد</button>
                 </div>
             </div>
             <div class="link-group">
                 <h3>لینک اشتراک (Base64)</h3>
                 <div class="link-buttons">
-                    <button class="link-btn copy-sub-btn" data-clipboard-text="https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs_base64.txt">کپی لینک</button>
-                    <button class="link-btn qr-sub-btn" data-url="https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs_base64.txt">QR کد</button>
-                    <button class="link-btn share-sub-btn" data-url="https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs_base64.txt">اشتراک</button>
+                    <button class="link-btn copy-sub-btn" data-clipboard-text="https://smbcryp.github.io/V2V/configs_base64.txt">کپی لینک</button>
+                    <button class="link-btn qr-sub-btn" data-url="https://smbcryp.github.io/V2V/configs_base64.txt">QR کد</button>
                 </div>
             </div>
             <div class="link-group">
                 <h3>کانفیگ برای Clash.Meta</h3>
                 <div class="link-buttons">
-                     <a href="https://raw.githubusercontent.com/SMBCRYP/V2V/main/v2v_clash.yaml" class="link-btn" download="v2v_clash.yaml">دانلود فایل</a>
+                     <a href="./v2v_clash.yaml" class="link-btn" download>دانلود فایل</a>
                 </div>
             </div>
         </div>
 
         <button id="speedTestButton" class="action-button" style="display: none;">🚀 تست سرعت و مرتب‌سازی</button>
-        <button id="copyAllButton" class="action-button" style="display: none;">📋 کپی همه کانفیگ‌ها</button>
         <div id="info" class="info-box"></div>
         
         <div id="configs-container" class="columns-container">
@@ -161,29 +159,24 @@
             const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             const speedTestButton = document.getElementById('speedTestButton');
-            const copyAllButton = document.getElementById('copyAllButton');
             const infoContainer = document.getElementById('info');
             
-            const vlessGrid = document.getElementById('vless-grid');
-            const vmessGrid = document.getElementById('vmess-grid');
-            const trojanGrid = document.getElementById('trojan-grid');
-            const ssGrid = document.getElementById('ss-grid');
+            const gridContainers = {
+                vless: document.getElementById('vless-grid'),
+                vmess: document.getElementById('vmess-grid'),
+                trojan: document.getElementById('trojan-grid'),
+                ss: document.getElementById('ss-grid'),
+            };
 
             const qrModal = document.getElementById('qrModal');
             const modalTitle = document.getElementById('modal-title');
             const modalQrCanvas = document.getElementById('modal-qr-code');
             const closeBtn = document.querySelector('.close-btn');
 
-            let allConfigsText = '';
             let clipboard = null;
             let currentConfigs = [];
             
-            // اصلاح اصلی: آدرس‌دهی به فایل در ریپازیتوری شما
-            const mirrors = [
-                'https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs.txt',
-                'https://gitlab.com/-/snippets/4877222/raw/main/configs.txt' // به عنوان پشتیبان
-            ];
-            
+            const configSourceUrl = './configs.txt';
             const countryMap = { 'iran': 'ایران 🇮🇷', 'ir': 'ایران 🇮🇷', 'germany': 'آلمان 🇩🇪', 'de': 'آلمان 🇩🇪', 'turkey': 'ترکیه 🇹🇷', 'tr': 'ترکیه 🇹🇷', 'france': 'فرانسه 🇫🇷', 'fr': 'فرانسه 🇫🇷', 'netherlands': 'هلند 🇳🇱', 'nl': 'هلند 🇳🇱', 'usa': 'آمریکا 🇺🇸', 'us': 'آمریکا 🇺🇸', 'canada': 'کانادا 🇨🇦', 'ca': 'کانادا 🇨🇦', 'uk': 'انگلیس 🇬🇧', 'gb': 'انگلیس 🇬🇧', 'singapore': 'سنگاپور 🇸🇬', 'sg': 'سنگاپور 🇸🇬' };
             const miscellaneousCountry = 'متفرقه 🌐';
 
@@ -192,24 +185,18 @@
 
             function openQrModal(url, title = 'QR Code') {
                 modalTitle.textContent = title;
-                const cleanedUrl = url.replace(/\s/g, '');
-                QRCode.toCanvas(modalQrCanvas, cleanedUrl, { width: 280, margin: 1 });
+                QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
                 qrModal.style.display = "flex";
-            }
-            
-            async function shareUrl(url, title = 'V2V Link') {
-                const cleanedUrl = url.replace(/\s/g, '');
-                if (navigator.share) {
-                    try { await navigator.share({ title: title, text: cleanedUrl }); } catch (err) { console.error('Share failed:', err); }
-                } else { alert('قابلیت اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود.'); }
             }
             
             function extractNameFromUrl(url) {
                 try {
-                    const parts = url.split('#');
-                    if (parts.length > 1 && parts[1]) { return decodeURIComponent(parts[1]); }
-                    return url.substring(0, 20) + '...';
-                } catch { return (url.split('#')[1] || url.substring(0, 20) + '...'); }
+                    const decodedUrl = decodeURIComponent(url);
+                    const parts = decodedUrl.split('#');
+                    if (parts.length > 1 && parts[1]) { return parts[1]; }
+                    const host = new URL(url).hostname;
+                    return host || url.substring(0, 20) + '...';
+                } catch { return url.substring(0, 20) + '...'; }
             }
 
             function getCountry(configName) {
@@ -220,63 +207,59 @@
                 return miscellaneousCountry;
             }
 
-            function renderConfigs(configArray) {
-                currentConfigs = configArray.map((url, index) => ({
-                    id: index,
-                    name: extractNameFromUrl(url),
-                    url: url,
-                    country: getCountry(extractNameFromUrl(url)),
-                    latency: null
-                }));
+            function createConfigCard(cfg) {
+                const card = document.createElement('div');
+                card.className = 'config-card';
+                card.dataset.id = cfg.id;
+                
+                if (cfg.latency !== null) {
+                    const pingDiv = document.createElement('div');
+                    pingDiv.className = 'ping-result';
+                    const latency = cfg.latency;
+                    if (latency === 'Timeout' || latency === 'Error') {
+                        pingDiv.textContent = latency;
+                        pingDiv.classList.add('timeout');
+                    } else {
+                        pingDiv.textContent = `${latency}ms`;
+                        if (latency < 400) pingDiv.classList.add('fast');
+                        else pingDiv.classList.add('slow');
+                    }
+                    card.appendChild(pingDiv);
+                }
+                
+                const detailsDiv = document.createElement('div');
+                detailsDiv.className = 'config-details';
+                detailsDiv.innerHTML = `<div class="config-name">${cfg.name}</div><div class="config-country">${cfg.country}</div>`;
+                
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'actions';
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'action-btn copy-btn-class';
+                copyBtn.textContent = 'کپی';
+                copyBtn.setAttribute('data-clipboard-text', cfg.url);
+                
+                const qrBtn = document.createElement('button');
+                qrBtn.className = 'action-btn';
+                qrBtn.textContent = 'QR';
+                qrBtn.onclick = () => openQrModal(cfg.url, cfg.name);
+                
+                actionsDiv.appendChild(copyBtn);
+                actionsDiv.appendChild(qrBtn);
+                card.appendChild(detailsDiv);
+                card.appendChild(actionsDiv);
+                return card;
+            }
 
-                vlessGrid.innerHTML = '';
-                vmessGrid.innerHTML = '';
-                trojanGrid.innerHTML = '';
-                ssGrid.innerHTML = '';
+            function renderAllConfigs() {
+                Object.values(gridContainers).forEach(grid => grid.innerHTML = '');
                 
                 currentConfigs.forEach(cfg => {
-                    const card = document.createElement('div');
-                    card.className = 'config-card';
-                    card.dataset.id = cfg.id;
-                    
-                    const detailsDiv = document.createElement('div');
-                    detailsDiv.className = 'config-details';
-                    detailsDiv.innerHTML = `<div class="config-name">${cfg.name}</div><div class="config-country">${cfg.country}</div>`;
-                    
-                    const actionsDiv = document.createElement('div');
-                    actionsDiv.className = 'actions';
-                    
-                    const copyBtn = document.createElement('button');
-                    copyBtn.className = 'action-btn copy-btn-class';
-                    copyBtn.textContent = 'کپی';
-                    copyBtn.setAttribute('data-clipboard-text', cfg.url.replace(/\s/g, ''));
-                    
-                    const qrBtn = document.createElement('button');
-                    qrBtn.className = 'action-btn';
-                    qrBtn.textContent = 'QR';
-                    qrBtn.onclick = () => openQrModal(cfg.url, cfg.name);
-                    
-                    const shareBtn = document.createElement('button');
-                    shareBtn.className = 'action-btn';
-                    shareBtn.textContent = 'Share';
-                    shareBtn.onclick = () => shareUrl(cfg.url, cfg.name);
-                    
-                    actionsDiv.appendChild(copyBtn);
-                    actionsDiv.appendChild(qrBtn);
-                    actionsDiv.appendChild(shareBtn);
-                    
-                    card.appendChild(detailsDiv);
-                    card.appendChild(actionsDiv);
-                    
-                    if (cfg.url.startsWith('vless://')) {
-                        vlessGrid.appendChild(card);
-                    } else if (cfg.url.startsWith('vmess://')) {
-                        vmessGrid.appendChild(card);
-                    } else if (cfg.url.startsWith('trojan://')) {
-                        trojanGrid.appendChild(card);
-                    } else if (cfg.url.startsWith('ss://')) {
-                        ssGrid.appendChild(card);
-                    }
+                    const card = createConfigCard(cfg);
+                    if (cfg.url.startsWith('vless://')) gridContainers.vless.appendChild(card);
+                    else if (cfg.url.startsWith('vmess://')) gridContainers.vmess.appendChild(card);
+                    else if (cfg.url.startsWith('trojan://')) gridContainers.trojan.appendChild(card);
+                    else if (cfg.url.startsWith('ss://')) gridContainers.ss.appendChild(card);
                 });
 
                 if (clipboard) clipboard.destroy();
@@ -289,78 +272,43 @@
                 });
             }
 
-            async function pingConfig(configUrl) {
+            async function pingConfig(config) {
                 let host = '';
-                let hash = '';
                 try {
-                    hash = btoa(configUrl).substring(0, 50);
-                    if (configUrl.startsWith('vmess://')) {
-                        const vmessData = JSON.parse(atob(configUrl.substring(8)));
+                    if (config.url.startsWith('vmess://')) {
+                        const vmessData = JSON.parse(atob(config.url.substring(8)));
                         host = vmessData.add;
                     } else {
-                        const url = new URL(configUrl);
-                        host = url.hostname;
+                        host = new URL(config.url).hostname;
                     }
-                } catch { return { config: configUrl, latency: 'Error', hash: null, is_success: false }; }
+                } catch { 
+                    config.latency = 'Error';
+                    return config;
+                }
                 const testUrl = `/api/proxy?url=https://${host}/__ping__`;
                 const startTime = Date.now();
                 try {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 3000);
+                    const timeoutId = setTimeout(() => controller.abort(), 4000);
                     await fetch(testUrl, { signal: controller.signal, mode: 'cors' });
                     clearTimeout(timeoutId);
-                    const latency = Date.now() - startTime;
-                    return { config: configUrl, latency, hash, is_success: true };
+                    config.latency = Date.now() - startTime;
                 } catch (error) {
-                    return { config: configUrl, latency: 'Timeout', hash, is_success: false };
+                    config.latency = 'Timeout';
                 }
+                return config;
             }
 
             async function startClientSideBatchTest() {
                 speedTestButton.disabled = true;
-                const batchSize = 50;
+                const batchSize = 20;
                 
                 for (let i = 0; i < currentConfigs.length; i += batchSize) {
                     const batch = currentConfigs.slice(i, i + batchSize);
                     infoContainer.textContent = `در حال تست دسته ${Math.floor(i/batchSize) + 1}... (${i + batch.length}/${currentConfigs.length})`;
                     
-                    const promises = batch.map(c => pingConfig(c.url));
-                    const results = await Promise.all(promises);
-                    const pingDataForSupabase = [];
-
-                    results.forEach(result => {
-                        const configIndex = currentConfigs.findIndex(c => c.url === result.config);
-                        if (configIndex === -1) return;
-
-                        const latency = result.latency;
-                        currentConfigs[configIndex].latency = latency;
-                        if (result.hash) {
-                            pingDataForSupabase.push({ config_hash: result.hash, latency_ms: typeof latency === 'number' ? latency : null, is_success: result.is_success });
-                        }
-
-                        const card = document.querySelector(`.config-card[data-id='${currentConfigs[configIndex].id}']`);
-                        if(card) {
-                            let pingDiv = card.querySelector('.ping-result');
-                            if (!pingDiv) {
-                                pingDiv = document.createElement('div');
-                                pingDiv.className = 'ping-result';
-                                card.insertBefore(pingDiv, card.firstChild);
-                            }
-                             if (latency === 'Timeout' || latency === 'Error') {
-                                pingDiv.textContent = latency;
-                                pingDiv.classList.add('timeout');
-                            } else {
-                                pingDiv.textContent = `${latency}ms`;
-                                if (latency < 400) pingDiv.classList.add('fast'); else pingDiv.classList.add('slow');
-                            }
-                        }
-                    });
-
-                    if (supabaseClient && pingDataForSupabase.length > 0) {
-                        supabaseClient.from('ping_results').insert(pingDataForSupabase).then(({ error }) => {
-                            if (error) console.error('Supabase error:', error);
-                        });
-                    }
+                    await Promise.all(batch.map(pingConfig));
+                    renderAllConfigs(); // Re-render after each batch to show results progressively
                 }
 
                 currentConfigs.sort((a, b) => {
@@ -369,61 +317,39 @@
                     return aVal - bVal;
                 });
                 
-                const sortedUrls = currentConfigs.map(c => c.url);
-                renderConfigs(sortedUrls);
-                
-                currentConfigs.forEach(cfg => {
-                    if (cfg.latency !== null) {
-                        const card = document.querySelector(`.config-card[data-id='${cfg.id}']`);
-                        if (card) {
-                             let pingDiv = card.querySelector('.ping-result');
-                            if (!pingDiv) {
-                                pingDiv = document.createElement('div');
-                                pingDiv.className = 'ping-result';
-                                card.insertBefore(pingDiv, card.firstChild);
-                            }
-                             if (cfg.latency === 'Timeout' || cfg.latency === 'Error') {
-                                pingDiv.textContent = cfg.latency;
-                                pingDiv.classList.add('timeout');
-                            } else {
-                                pingDiv.textContent = `${cfg.latency}ms`;
-                                if (cfg.latency < 400) pingDiv.classList.add('fast'); else pingDiv.classList.add('slow');
-                            }
-                        }
-                    }
-                });
-
-                infoContainer.textContent = 'تست کامل شد! نتایج بر اساس سرعت اینترنت شما مرتب شدند.';
+                renderAllConfigs(); // Final render with sorted configs
+                infoContainer.textContent = 'تست کامل شد! نتایج بر اساس سرعت مرتب شدند.';
                 speedTestButton.disabled = false;
             }
 
-            async function loadConfigsWithFailover() {
+            async function initializeApp() {
                 infoContainer.style.display = 'block';
-                for (let i = 0; i < mirrors.length; i++) {
-                    const url = mirrors[i];
-                    infoContainer.textContent = `در حال تلاش برای اتصال به منبع شماره ${i + 1}...`;
-                    try {
-                        const response = await fetch(url, { cache: "no-store" });
-                        if (!response.ok) throw new Error(`Status ${response.status}`);
-                        const text = await response.text();
-                        const configs = text.trim().split('\n').filter(Boolean);
-                        if (configs.length === 0) throw new Error("منبع خالی است");
-                        
-                        renderConfigs(configs);
-                        infoContainer.textContent = `تعداد ${configs.length} کانفیگ برتر بارگذاری شد.`;
-                        copyAllButton.style.display = 'block';
-                        speedTestButton.style.display = 'block';
-                        allConfigsText = text;
-                        return; // Exit after successful fetch
-                    } catch (error) {
-                        console.error(`Failed to load from mirror ${i+1} (${url}):`, error);
-                    }
+                infoContainer.textContent = 'در حال دریافت آخرین لیست کانفیگ‌ها...';
+                try {
+                    const response = await fetch(configSourceUrl, { cache: "no-store" });
+                    if (!response.ok) throw new Error(`Status ${response.status}`);
+                    const text = await response.text();
+                    const configs = text.trim().split('\n').filter(Boolean);
+                    if (configs.length === 0) throw new Error("منبع خالی است");
+                    
+                    currentConfigs = configs.map((url, index) => ({
+                        id: index,
+                        name: extractNameFromUrl(url),
+                        url: url,
+                        country: getCountry(extractNameFromUrl(url)),
+                        latency: null
+                    }));
+
+                    renderAllConfigs();
+                    infoContainer.textContent = `تعداد ${configs.length} کانفیگ برتر بارگذاری شد.`;
+                    speedTestButton.style.display = 'block';
+                } catch (error) {
+                    console.error(`Failed to load from primary source:`, error);
+                    infoContainer.textContent = '⚠️ منبع اصلی در دسترس نیست. لطفاً بعداً دوباره امتحان کنید.';
+                    infoContainer.classList.add('error');
                 }
-                infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
-                infoContainer.classList.add('error');
             }
             
-            // Event listeners for subscription links
             document.querySelectorAll('.qr-sub-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const url = e.currentTarget.dataset.url;
@@ -431,16 +357,8 @@
                 });
             });
 
-            document.querySelectorAll('.share-sub-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const url = e.currentTarget.dataset.url;
-                    shareUrl(url, 'لینک اشتراک V2V');
-                });
-            });
-
-            new ClipboardJS('#copyAllButton', { text: () => allConfigsText });
             speedTestButton.addEventListener('click', startClientSideBatchTest);
-            loadConfigsWithFailover();
+            initializeApp();
         });
     </script>
 </body>
