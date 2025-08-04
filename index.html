@@ -32,6 +32,8 @@
         .action-button { color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 18px; cursor: pointer; transition: opacity 0.2s; display: block; width: 100%; margin-bottom: 15px; font-weight: bold; }
         #speedTestButton { background-color: var(--secondary-color); }
         #copyAllButton { background-color: var(--primary-color); }
+        .action-button:hover { opacity: 0.9; }
+        .action-button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
         .links-section {
             display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;
             margin-bottom: 25px; padding: 20px; background-color: var(--card-color); border-radius: 8px;
@@ -144,7 +146,7 @@
             const modalQrCanvas = document.getElementById('modal-qr-code');
             const closeBtn = document.querySelector('.close-btn');
 
-            let clipboardForSingleConfigs = null;
+            let clipboard = null;
             let allConfigs = [];
             let fullConfigText = '';
             
@@ -159,10 +161,32 @@
             closeBtn.onclick = () => qrModal.style.display = "none";
             window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; }
 
-            function openQrModal(url, title = 'QR Code') { /* ... */ }
-            async function shareUrl(url, title = 'V2V Link') { /* ... */ }
-            function extractNameFromUrl(url) { /* ... */ }
-            function getCountry(configName) { /* ... */ }
+            function openQrModal(url, title = 'QR Code') {
+                modalTitle.textContent = title;
+                QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
+                qrModal.style.display = "flex";
+            }
+            async function shareUrl(url, title = 'V2V Link') {
+                if (navigator.share) {
+                    try { await navigator.share({ title: title, text: url }); } catch (err) { console.error('Share failed:', err); }
+                } else { alert('قابلیت اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود.'); }
+            }
+            function extractNameFromUrl(url) {
+                try {
+                    const decodedUrl = decodeURIComponent(url);
+                    const parts = decodedUrl.split('#');
+                    if (parts.length > 1 && parts[1]) { return parts[1]; }
+                    const host = new URL(url).hostname;
+                    return host || url.substring(0, 20) + '...';
+                } catch { return url.substring(0, 20) + '...'; }
+            }
+            function getCountry(configName) {
+                const lowerCaseName = configName.toLowerCase();
+                for (const keyword in countryMap) {
+                    if (lowerCaseName.includes(keyword)) return countryMap[keyword];
+                }
+                return miscellaneousCountry;
+            }
 
             function showCopyFeedback(element, originalText) {
                 element.textContent = "✅ کپی شد";
@@ -193,7 +217,7 @@
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'actions';
                 const copyBtn = document.createElement('button');
-                copyBtn.className = 'action-btn copy-btn-class'; // For Clipboard.js
+                copyBtn.className = 'action-btn copy-btn-class';
                 copyBtn.textContent = 'کپی';
                 copyBtn.setAttribute('data-clipboard-text', cfg.url);
                 const qrBtn = document.createElement('button');
@@ -258,26 +282,43 @@
                     }
                 });
                 
-                if (clipboardForSingleConfigs) clipboardForSingleConfigs.destroy();
-                clipboardForSingleConfigs = new ClipboardJS('.copy-btn-class');
-                clipboardForSingleConfigs.on('success', (e) => {
+                if (clipboard) clipboard.destroy();
+                clipboard = new ClipboardJS('.copy-btn-class');
+                 clipboard.on('success', (e) => {
                     showCopyFeedback(e.trigger, 'کپی');
                     e.clearSelection();
                 });
             }
 
-            async function pingConfig(config) { /* ... */ }
+            async function pingConfig(config) {
+                let host = '';
+                try {
+                    if (config.url.startsWith('vmess://')) {
+                        const vmessData = JSON.parse(atob(config.url.substring(8)));
+                        host = vmessData.add;
+                    } else {
+                        host = new URL(config.url).hostname;
+                    }
+                } catch { 
+                    config.latency = 'Error'; return config;
+                }
+                const testUrl = `/api/proxy?url=https://${host}/__ping__`;
+                const startTime = Date.now();
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 4000);
+                    await fetch(testUrl, { signal: controller.signal, mode: 'cors' });
+                    clearTimeout(timeoutId);
+                    config.latency = Date.now() - startTime;
+                } catch (error) {
+                    config.latency = 'Timeout';
+                }
+                return config;
+            }
+            
             async function startClientSideBatchTest() {
                 speedTestButton.disabled = true;
                 infoContainer.textContent = 'در حال آماده‌سازی برای تست...';
-                
-                document.querySelectorAll('.accordion-content').forEach(content => {
-                    const grid = content.querySelector('.config-grid');
-                    if (grid && grid.children.length === 0) {
-                        const protocol = grid.id.split('-')[0];
-                        allConfigs.filter(c => c.protocol === protocol).forEach(cfg => grid.appendChild(createConfigCard(cfg)));
-                    }
-                });
                 
                 const configsToTest = allConfigs;
                 const batchSize = 20;
@@ -285,26 +326,6 @@
                     const batch = configsToTest.slice(i, i + batchSize);
                     infoContainer.textContent = `در حال تست دسته ${Math.floor(i/batchSize) + 1}... (${i + batch.length}/${configsToTest.length})`;
                     await Promise.all(batch.map(pingConfig));
-                    
-                    batch.forEach(cfg => {
-                        const card = configsContainer.querySelector(`.config-card[data-id='${cfg.id}']`);
-                        if (card) {
-                            let pingDiv = card.querySelector('.ping-result');
-                            if (!pingDiv) {
-                                pingDiv = document.createElement('div');
-                                pingDiv.className = 'ping-result';
-                                card.insertBefore(pingDiv, card.firstChild);
-                            }
-                            const latency = cfg.latency;
-                            if (latency === 'Timeout' || latency === 'Error') {
-                                pingDiv.textContent = latency;
-                                pingDiv.classList.add('timeout');
-                            } else {
-                                pingDiv.textContent = `${latency}ms`;
-                                if (latency < 400) pingDiv.classList.add('fast'); else pingDiv.classList.add('slow');
-                            }
-                        }
-                    });
                 }
 
                 allConfigs.sort((a, b) => {
@@ -357,47 +378,56 @@
                 copyAllButton.style.display = 'block';
             }
             
-            // Manual clipboard handling for group copies
-            async function copyToClipboard(text, element, originalText) {
+            async function copyToClipboard(text, element) {
                 if (navigator.clipboard) {
                     try {
                         await navigator.clipboard.writeText(text);
-                        showCopyFeedback(element, originalText);
+                        showCopyFeedback(element, element.textContent);
                     } catch (err) {
-                        console.error('Failed to copy with navigator.clipboard:', err);
+                        console.error('Failed to copy:', err);
                         alert('کپی کردن با خطا مواجه شد.');
                     }
                 } else {
-                    alert('مرورگر شما از کپی امن پشتیبانی نمی‌کند.');
+                     // Fallback for older browsers
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        showCopyFeedback(element, element.textContent);
+                    } catch (err) {
+                        alert('کپی کردن با خطا مواجه شد.');
+                    }
+                    document.body.removeChild(textArea);
                 }
             }
-
-            document.querySelectorAll('.copy-sub-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const url = e.currentTarget.dataset.url;
-                    copyToClipboard(url, e.currentTarget, 'کپی لینک');
-                });
-            });
-
-            configsContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('copy-protocol-btn')) {
-                    const protocol = e.target.dataset.protocol;
+            
+            // Event Listeners
+            document.body.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.matches('.qr-sub-btn')) {
+                    openQrModal(target.dataset.url, 'لینک اشتراک');
+                } else if (target.matches('.share-sub-btn')) {
+                    shareUrl(target.dataset.url, 'لینک اشتراک V2V');
+                } else if (target.matches('.copy-sub-btn')) {
+                    copyToClipboard(target.dataset.url, target);
+                } else if (target.matches('.copy-protocol-btn')) {
+                    const protocol = target.dataset.protocol;
                     const configsToCopy = allConfigs.filter(c => c.protocol === protocol).map(c => c.url).join('\n');
                     if(configsToCopy) {
-                        copyToClipboard(configsToCopy, e.target, e.target.textContent);
+                        copyToClipboard(configsToCopy, target);
                     }
                 }
             });
 
             copyAllButton.addEventListener('click', (e) => {
                 if(fullConfigText) {
-                    copyToClipboard(fullConfigText, e.currentTarget, '📋 کپی همه کانفیگ‌ها');
+                    copyToClipboard(fullConfigText, e.currentTarget);
                 }
             });
 
-            document.querySelectorAll('.qr-sub-btn').forEach(button => button.addEventListener('click', e => openQrModal(e.currentTarget.dataset.url, 'لینک اشتراک')));
-            document.querySelectorAll('.share-sub-btn').forEach(button => button.addEventListener('click', e => shareUrl(e.currentTarget.dataset.url, 'لینک اشتراک V2V')));
-            
             speedTestButton.addEventListener('click', startClientSideBatchTest);
             initializeApp();
         });
