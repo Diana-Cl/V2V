@@ -4,14 +4,12 @@ on:
   schedule:
     - cron: '0 */4 * * *'
 
-# مجوزهای کامل برای جلوگیری از هر نوع خطای دسترسی
-permissions:
-  contents: write
-  workflows: write
-
 jobs:
   build-and-commit:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,7 +33,20 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           
-      - name: Commit and Push new configs
+      # بخش جدید: آپلود فایل‌ها در ابر آروان
+      - name: Upload to ArvanCloud Object Storage
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl public-read --follow-symlinks --delete
+        env:
+          AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.com'
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET: 'v2v-data'
+          SOURCE_DIR: '.'
+          DEST_DIR: '/'
+
+      - name: Commit and Push new configs to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Update config files"
