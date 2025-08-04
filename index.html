@@ -52,19 +52,14 @@
         .raw-links-section h3 { text-align: center; margin-top: 0; color: var(--primary-color); }
         .raw-links-section ul { list-style: none; padding: 0; margin: 0; }
         .raw-links-section li { margin-bottom: 8px; font-size: 0.9em; background-color: var(--btn-bg); padding: 8px; border-radius: 4px; }
-        .raw-links-section a { color: var(--text-color); text-decoration: none; }
+        .raw-links-section a { color: var(--text-color); text-decoration: none; word-break: break-all; }
         .raw-links-section a:hover { color: var(--primary-color); }
         .raw-links-section strong { color: var(--secondary-color); }
 
         .accordion-item { margin-bottom: 15px; }
         .accordion-header {
-            background-color: var(--card-color);
-            padding: 15px;
-            cursor: pointer;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background-color: var(--card-color); padding: 15px; cursor: pointer; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center;
         }
         .accordion-header h2 { margin: 0; color: var(--primary-color); }
         .copy-protocol-btn { font-size: 0.8em; padding: 5px 10px; flex-shrink: 0; margin-right: 15px; }
@@ -72,10 +67,9 @@
         .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         .config-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; position: relative; }
         .ping-result { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
-        /* اصلاح رنگ پینگ‌ها */
-        .ping-result.fast { color: var(--success-color) !important; }
-        .ping-result.slow { color: var(--warning-color) !important; }
-        .ping-result.timeout { color: var(--error-color) !important; }
+        .ping-result.fast { color: var(--success-color); }
+        .ping-result.slow { color: var(--warning-color); }
+        .ping-result.timeout { color: var(--error-color); }
         .config-details { padding: 15px; flex-grow: 1; }
         .config-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .actions { display: flex; justify-content: space-around; padding: 10px 15px; background-color: rgba(0,0,0,0.2); }
@@ -96,7 +90,7 @@
 
         <div class="links-section">
              <div class="link-group">
-                <h3>لینک اشتراک (آینه ایران - آروان)</h3>
+                <h3>لینک اشتراک (آینه آروان - ایران)</h3>
                 <div class="link-buttons">
                     <button class="link-btn copy-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">کپی لینک</button>
                     <button class="link-btn qr-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">QR کد</button>
@@ -111,7 +105,7 @@
                     <button class="link-btn share-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">اشتراک</button>
                 </div>
             </div>
-             <div class="link-group">
+            <div class="link-group">
                 <h3>لینک اشتراک (آینه ورسل)</h3>
                 <div class="link-buttons">
                     <button class="link-btn copy-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">کپی لینک</button>
@@ -124,7 +118,7 @@
         <div class="raw-links-section">
             <h3>لیست تمام آینه‌های وب‌سایت</h3>
             <ul>
-                <li><strong>آروان (ایران):</strong> <a href="ARVAN_WEBSITE_URL_PLACEHOLDER" target="_blank">لینک سایت در آروان</a></li>
+                <li><strong>آروان (ایران):</strong> <a href="ARVAN_WEBSITE_URL_PLACEHOLDER" target="_blank">هنوز راه‌اندازی نشده است</a></li>
                 <li><strong>گیتهاب:</strong> <a href="https://smbcryp.github.io/V2V/" target="_blank">https://smbcryp.github.io/V2V/</a></li>
                 <li><strong>ورسل:</strong> <a href="https://v2-v.vercel.app/" target="_blank">https://v2-v.vercel.app/</a></li>
             </ul>
@@ -166,10 +160,29 @@
                 'https://smbcryp.github.io/V2V/configs.txt',
                 'https://v2-v.vercel.app/configs.txt'
             ];
-            
+
             closeBtn.onclick = () => qrModal.style.display = "none";
             window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; }
             
+            // Helper Functions
+            function openQrModal(url, title = 'QR Code') {
+                modalTitle.textContent = title;
+                QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
+                qrModal.style.display = "flex";
+            }
+            async function shareUrl(url, title = 'V2V Link') {
+                if (navigator.share) {
+                    try { await navigator.share({ title: title, text: url }); } catch (err) { console.error('Share failed:', err); }
+                } else { alert('قابلیت اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود.'); }
+            }
+            function extractNameFromUrl(url) {
+                try {
+                    const decodedUrl = decodeURIComponent(url);
+                    const parts = decodedUrl.split('#');
+                    if (parts.length > 1 && parts[1]) { return parts[1]; }
+                    return new URL(url).hostname || url.substring(0, 20) + '...';
+                } catch { return url.substring(0, 20) + '...'; }
+            }
             function showCopyFeedback(element, originalText) {
                 element.textContent = "✅ کپی شد";
                 setTimeout(() => { element.textContent = originalText; }, 2000);
@@ -182,18 +195,14 @@
                 
                 if (cfg.latency !== null) {
                     const pingDiv = document.createElement('div');
-                    pingDiv.className = 'ping-result';
                     const latency = cfg.latency;
                     if (latency === 'Timeout' || latency === 'Error') {
                         pingDiv.textContent = latency;
                         pingDiv.className = 'ping-result timeout';
                     } else {
                         pingDiv.textContent = `${latency}ms`;
-                        if (latency < 400) {
-                           pingDiv.className = 'ping-result fast';
-                        } else {
-                           pingDiv.className = 'ping-result slow';
-                        }
+                        if (latency < 400) pingDiv.className = 'ping-result fast';
+                        else pingDiv.className = 'ping-result slow';
                     }
                     card.appendChild(pingDiv);
                 }
@@ -322,6 +331,14 @@
                 speedTestButton.disabled = false;
             }
 
+            async function fetchWithProxy(url) {
+                // Use Vercel's proxy for all cross-origin requests
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl, { cache: "no-store" });
+                if (!response.ok) throw new Error(`Proxy fetch failed for: ${url}`);
+                return response.text();
+            }
+
             async function initializeApp() {
                 infoContainer.style.display = 'block';
                 infoContainer.textContent = 'در حال دریافت آخرین لیست کانفیگ‌ها...';
@@ -329,9 +346,7 @@
                 for (const url of mirrors) {
                     try {
                         infoContainer.textContent = `در حال تلاش برای اتصال به میرور: ${new URL(url).hostname}...`;
-                        const response = await fetch(url, { cache: "no-store" });
-                        if (!response.ok) throw new Error(`Mirror failed: ${url}`);
-                        fullConfigText = await response.text();
+                        fullConfigText = await fetchWithProxy(url);
                         if (fullConfigText.trim().length === 0) throw new Error("Source is empty");
                         sourceUrl = url;
                         break; 
@@ -339,11 +354,13 @@
                         console.warn(error.message);
                     }
                 }
+
                 if (!fullConfigText) {
                     infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
                     infoContainer.classList.add('error');
                     return;
                 }
+                
                 const configs = fullConfigText.trim().split('\n').filter(Boolean);
                 allConfigs = configs.map((url, index) => ({
                     id: index,
@@ -352,6 +369,7 @@
                     protocol: url.split('://')[0],
                     latency: null
                 }));
+
                 renderAccordion();
                 infoContainer.textContent = `تعداد ${allConfigs.length} کانفیگ برتر (از ${new URL(sourceUrl).hostname}) بارگذاری شد.`;
                 speedTestButton.style.display = 'block';
