@@ -44,10 +44,7 @@
         .link-btn:hover { background-color: var(--btn-hover-bg); }
 
         .raw-links-section {
-            background-color: var(--card-color);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 25px;
+            background-color: var(--card-color); border-radius: 8px; padding: 15px; margin-bottom: 25px;
         }
         .raw-links-section h3 { text-align: center; margin-top: 0; color: var(--primary-color); }
         .raw-links-section ul { list-style: none; padding: 0; margin: 0; }
@@ -105,7 +102,7 @@
                     <button class="link-btn share-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">اشتراک</button>
                 </div>
             </div>
-            <div class="link-group">
+             <div class="link-group">
                 <h3>لینک اشتراک (آینه ورسل)</h3>
                 <div class="link-buttons">
                     <button class="link-btn copy-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">کپی لینک</button>
@@ -142,6 +139,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // All constants and variables
             const speedTestButton = document.getElementById('speedTestButton');
             const copyAllButton = document.getElementById('copyAllButton');
             const infoContainer = document.getElementById('info');
@@ -161,33 +159,52 @@
                 'https://v2-v.vercel.app/configs.txt'
             ];
 
+            // All helper functions
             closeBtn.onclick = () => qrModal.style.display = "none";
             window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; }
             
-            // Helper Functions
+            function showCopyFeedback(element, originalText) {
+                element.textContent = "✅ کپی شد";
+                setTimeout(() => { element.textContent = originalText; }, 2000);
+            }
+            
             function openQrModal(url, title = 'QR Code') {
                 modalTitle.textContent = title;
                 QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
                 qrModal.style.display = "flex";
             }
+
             async function shareUrl(url, title = 'V2V Link') {
                 if (navigator.share) {
-                    try { await navigator.share({ title: title, text: url }); } catch (err) { console.error('Share failed:', err); }
+                    try { await navigator.share({ title: title, text: url }); }
+                    catch (err) { console.error('Share failed:', err); }
                 } else { alert('قابلیت اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود.'); }
             }
+
             function extractNameFromUrl(url) {
                 try {
                     const decodedUrl = decodeURIComponent(url);
                     const parts = decodedUrl.split('#');
                     if (parts.length > 1 && parts[1]) { return parts[1]; }
-                    return new URL(url).hostname || url.substring(0, 20) + '...';
-                } catch { return url.substring(0, 20) + '...'; }
-            }
-            function showCopyFeedback(element, originalText) {
-                element.textContent = "✅ کپی شد";
-                setTimeout(() => { element.textContent = originalText; }, 2000);
+                    return new URL(url).hostname;
+                } catch { return url.substring(0, 30) + '...'; }
             }
 
+            async function copyToClipboard(text, element) {
+                const originalText = element.textContent;
+                if (!navigator.clipboard) {
+                    alert('مرورگر شما از کپی امن پشتیبانی نمی‌کند.');
+                    return;
+                }
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showCopyFeedback(element, originalText);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    alert('کپی کردن با خطا مواجه شد.');
+                }
+            }
+            
             function createConfigCard(cfg) {
                 const card = document.createElement('div');
                 card.className = 'config-card';
@@ -196,13 +213,14 @@
                 if (cfg.latency !== null) {
                     const pingDiv = document.createElement('div');
                     const latency = cfg.latency;
+                    pingDiv.className = 'ping-result';
                     if (latency === 'Timeout' || latency === 'Error') {
                         pingDiv.textContent = latency;
-                        pingDiv.className = 'ping-result timeout';
+                        pingDiv.classList.add('timeout');
                     } else {
                         pingDiv.textContent = `${latency}ms`;
-                        if (latency < 400) pingDiv.className = 'ping-result fast';
-                        else pingDiv.className = 'ping-result slow';
+                        if (latency < 400) pingDiv.classList.add('fast');
+                        else pingDiv.classList.add('slow');
                     }
                     card.appendChild(pingDiv);
                 }
@@ -255,7 +273,6 @@
                         content.className = 'accordion-content';
                         const grid = document.createElement('div');
                         grid.className = 'config-grid';
-                        grid.id = `${protocol}-grid`; 
                         
                         if (andOpen) {
                             protocolConfigs.forEach(cfg => grid.appendChild(createConfigCard(cfg)));
@@ -331,14 +348,6 @@
                 speedTestButton.disabled = false;
             }
 
-            async function fetchWithProxy(url) {
-                // Use Vercel's proxy for all cross-origin requests
-                const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl, { cache: "no-store" });
-                if (!response.ok) throw new Error(`Proxy fetch failed for: ${url}`);
-                return response.text();
-            }
-
             async function initializeApp() {
                 infoContainer.style.display = 'block';
                 infoContainer.textContent = 'در حال دریافت آخرین لیست کانفیگ‌ها...';
@@ -346,21 +355,30 @@
                 for (const url of mirrors) {
                     try {
                         infoContainer.textContent = `در حال تلاش برای اتصال به میرور: ${new URL(url).hostname}...`;
-                        fullConfigText = await fetchWithProxy(url);
-                        if (fullConfigText.trim().length === 0) throw new Error("Source is empty");
+                        const response = await fetch(url, { cache: "no-store", mode: 'cors' }); // Attempt direct fetch
+                        if (!response.ok) throw new Error(`Direct fetch failed: ${url}`);
+                        fullConfigText = await response.text();
                         sourceUrl = url;
                         break; 
                     } catch (error) {
-                        console.warn(error.message);
+                        console.warn(error.message, "Trying Vercel proxy...");
+                        try {
+                            const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+                            const response = await fetch(proxyUrl, { cache: "no-store" });
+                            if (!response.ok) throw new Error(`Proxy fetch failed for: ${url}`);
+                            fullConfigText = await response.text();
+                            sourceUrl = url;
+                            break;
+                        } catch (proxyError) {
+                            console.error(proxyError.message);
+                        }
                     }
                 }
-
                 if (!fullConfigText) {
                     infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
                     infoContainer.classList.add('error');
                     return;
                 }
-                
                 const configs = fullConfigText.trim().split('\n').filter(Boolean);
                 allConfigs = configs.map((url, index) => ({
                     id: index,
@@ -369,31 +387,10 @@
                     protocol: url.split('://')[0],
                     latency: null
                 }));
-
                 renderAccordion();
                 infoContainer.textContent = `تعداد ${allConfigs.length} کانفیگ برتر (از ${new URL(sourceUrl).hostname}) بارگذاری شد.`;
                 speedTestButton.style.display = 'block';
                 copyAllButton.style.display = 'block';
-            }
-            
-            async function copyToClipboard(text, element) {
-                const originalText = element.textContent;
-                if (navigator.clipboard) {
-                    try {
-                        await navigator.clipboard.writeText(text);
-                        showCopyFeedback(element, originalText);
-                    } catch (err) {
-                        alert('کپی کردن با خطا مواجه شد.');
-                    }
-                } else {
-                    const textArea = document.createElement("textarea");
-                    textArea.value = text;
-                    document.body.appendChild(textArea);
-                    textArea.focus(); textArea.select();
-                    try { document.execCommand('copy'); showCopyFeedback(element, originalText); }
-                    catch (err) { alert('کپی کردن با خطا مواجه شد.'); }
-                    document.body.removeChild(textArea);
-                }
             }
             
             document.body.addEventListener('click', (e) => {
