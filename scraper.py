@@ -24,7 +24,7 @@ GITHUB_PAT = os.environ.get('GH_PAT')
 # === HELPER FUNCTIONS ===
 def get_content_from_url(url: str) -> str | None:
     try:
-        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/Final'})
+        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/Final-Clean'})
         response.raise_for_status()
         return response.text
     except requests.RequestException: return None
