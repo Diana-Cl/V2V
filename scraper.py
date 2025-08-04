@@ -19,8 +19,6 @@ OUTPUT_FILE_CLASH = 'v2v_clash.yaml'
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://')
 
 # === SECRET KEYS ===
-GITLAB_SNIPPET_ID = os.environ.get('GITLAB_SNIPPET_ID')
-GITLAB_API_TOKEN = os.environ.get('GITLAB_API_TOKEN')
 GITHUB_PAT = os.environ.get('GH_PAT')
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
@@ -28,7 +26,7 @@ SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
 # === HELPER FUNCTIONS ===
 def get_content_from_url(url: str) -> str | None:
     try:
-        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/8.0'})
+        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/9.0'})
         response.raise_for_status()
         return response.text
     except requests.RequestException: return None
@@ -41,7 +39,6 @@ def discover_github_sources() -> set[str]:
     if not GITHUB_PAT:
         print("GitHub PAT not found, skipping dynamic discovery.")
         return set()
-    
     print("🔍 Discovering new sources from GitHub...")
     headers = {'Authorization': f'token {GITHUB_PAT}'}
     discovered_urls = set()
@@ -72,12 +69,12 @@ def parse_config(config_url: str) -> dict | None:
             return {'protocol': protocol, 'remark': data.get('ps', 'V2V-VMess'), 'server': data.get('add'), 'port': int(data.get('port', 0)), 'uuid': data.get('id'), 'params': data}
         
         if protocol == 'ss':
-            userinfo, _, _ = parsed_url.netloc.rpartition('@')
+            userinfo, _, server_part = parsed_url.netloc.rpartition('@')
             if len(userinfo) % 4 != 0: userinfo_padded = userinfo + '=' * (4 - len(userinfo) % 4)
             else: userinfo_padded = userinfo
             decoded_userinfo = base64.b64decode(userinfo_padded).decode()
-            cipher, password = decoded_userinfo.split(':')
-            return {'protocol': protocol, 'remark': remark, 'server': parsed_url.hostname, 'port': parsed_url.port, 'password': password, 'cipher': cipher}
+            cipher, password = decoded_userinfo.split(':', 1)
+            return {'protocol': protocol, 'remark': remark, 'server': server_part.split(':')[0], 'port': int(server_part.split(':')[1]), 'password': password, 'cipher': cipher}
 
         query_params = parse_qs(parsed_url.query)
         params = {k: v[0] for k, v in query_params.items()}
@@ -122,7 +119,7 @@ def generate_clash_config(configs_list: list) -> str:
                 proxy['password'] = parsed['password']
                 proxy['cipher'] = parsed['cipher']
             
-            if 'uuid' in proxy or 'password' in proxy: # Ensure proxy has credentials
+            if 'uuid' in proxy or 'password' in proxy:
                 proxies.append(proxy)
         except Exception: continue
 
