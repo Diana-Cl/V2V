@@ -16,6 +16,7 @@
             --secondary-color: #bb86fc;
             --error-color: #cf6679;
             --success-color: #66bb6a;
+            --warning-color: #ffeb3b;
             --btn-bg: #2a2a2a;
             --btn-hover-bg: #3a3a3a;
         }
@@ -42,7 +43,6 @@
         .link-btn { background-color: var(--btn-bg); color: var(--text-color); padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 0.9em; font-weight: bold; transition: background-color 0.2s; border: 1px solid #444; cursor: pointer; }
         .link-btn:hover { background-color: var(--btn-hover-bg); }
 
-        /* بخش جدید برای لیست خام لینک‌ها */
         .raw-links-section {
             background-color: var(--card-color);
             border-radius: 8px;
@@ -51,8 +51,10 @@
         }
         .raw-links-section h3 { text-align: center; margin-top: 0; color: var(--primary-color); }
         .raw-links-section ul { list-style: none; padding: 0; margin: 0; }
-        .raw-links-section li { margin-bottom: 8px; font-size: 0.9em; word-break: break-all; text-align: left; direction: ltr; background-color: var(--btn-bg); padding: 8px; border-radius: 4px; }
-        .raw-links-section li strong { color: var(--secondary-color); }
+        .raw-links-section li { margin-bottom: 8px; font-size: 0.9em; background-color: var(--btn-bg); padding: 8px; border-radius: 4px; }
+        .raw-links-section a { color: var(--text-color); text-decoration: none; }
+        .raw-links-section a:hover { color: var(--primary-color); }
+        .raw-links-section strong { color: var(--secondary-color); }
 
         .accordion-item { margin-bottom: 15px; }
         .accordion-header {
@@ -70,6 +72,10 @@
         .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         .config-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; position: relative; }
         .ping-result { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+        /* اصلاح رنگ پینگ‌ها */
+        .ping-result.fast { color: var(--success-color) !important; }
+        .ping-result.slow { color: var(--warning-color) !important; }
+        .ping-result.timeout { color: var(--error-color) !important; }
         .config-details { padding: 15px; flex-grow: 1; }
         .config-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .actions { display: flex; justify-content: space-around; padding: 10px 15px; background-color: rgba(0,0,0,0.2); }
@@ -105,20 +111,22 @@
                     <button class="link-btn share-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">اشتراک</button>
                 </div>
             </div>
-            <div class="link-group">
-                <h3>کانفیگ برای Clash.Meta</h3>
+             <div class="link-group">
+                <h3>لینک اشتراک (آینه ورسل)</h3>
                 <div class="link-buttons">
-                     <a href="./v2v_clash.yaml" class="link-btn" download>دانلود فایل</a>
+                    <button class="link-btn copy-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">کپی لینک</button>
+                    <button class="link-btn qr-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">QR کد</button>
+                    <button class="link-btn share-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">اشتراک</button>
                 </div>
             </div>
         </div>
-
+        
         <div class="raw-links-section">
-            <h3>لیست تمام لینک‌های خام میرور</h3>
+            <h3>لیست تمام آینه‌های وب‌سایت</h3>
             <ul>
-                <li><strong>آروان (ایران):</strong> https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt</li>
-                <li><strong>گیتهاب:</strong> https://smbcryp.github.io/V2V/configs.txt</li>
-                <li><strong>ورسل:</strong> https://v2-v.vercel.app/configs.txt</li>
+                <li><strong>آروان (ایران):</strong> <a href="ARVAN_WEBSITE_URL_PLACEHOLDER" target="_blank">لینک سایت در آروان</a></li>
+                <li><strong>گیتهاب:</strong> <a href="https://smbcryp.github.io/V2V/" target="_blank">https://smbcryp.github.io/V2V/</a></li>
+                <li><strong>ورسل:</strong> <a href="https://v2-v.vercel.app/" target="_blank">https://v2-v.vercel.app/</a></li>
             </ul>
         </div>
 
@@ -154,30 +162,14 @@
             let fullConfigText = '';
             
             const mirrors = [
-                'https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt', // ArvanCloud (Primary)
-                'https://smbcryp.github.io/V2V/configs.txt',                   // GitHub Pages (Fallback 1)
-                'https://v2-v.vercel.app/configs.txt'                          // Vercel (Fallback 2)
+                'https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt',
+                'https://smbcryp.github.io/V2V/configs.txt',
+                'https://v2-v.vercel.app/configs.txt'
             ];
-
-            // Helper functions... (same as before)
-            function openQrModal(url, title = 'QR Code') {
-                modalTitle.textContent = title;
-                QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
-                qrModal.style.display = "flex";
-            }
-            async function shareUrl(url, title = 'V2V Link') {
-                if (navigator.share) {
-                    try { await navigator.share({ title: title, text: url }); } catch (err) { console.error('Share failed:', err); }
-                } else { alert('قابلیت اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود.'); }
-            }
-            function extractNameFromUrl(url) {
-                try {
-                    const decodedUrl = decodeURIComponent(url);
-                    const parts = decodedUrl.split('#');
-                    if (parts.length > 1 && parts[1]) { return parts[1]; }
-                    return new URL(url).hostname || url.substring(0, 20) + '...';
-                } catch { return url.substring(0, 20) + '...'; }
-            }
+            
+            closeBtn.onclick = () => qrModal.style.display = "none";
+            window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; }
+            
             function showCopyFeedback(element, originalText) {
                 element.textContent = "✅ کپی شد";
                 setTimeout(() => { element.textContent = originalText; }, 2000);
@@ -186,6 +178,7 @@
             function createConfigCard(cfg) {
                 const card = document.createElement('div');
                 card.className = 'config-card';
+                card.dataset.id = cfg.id;
                 
                 if (cfg.latency !== null) {
                     const pingDiv = document.createElement('div');
@@ -193,10 +186,14 @@
                     const latency = cfg.latency;
                     if (latency === 'Timeout' || latency === 'Error') {
                         pingDiv.textContent = latency;
-                        pingDiv.classList.add('timeout');
+                        pingDiv.className = 'ping-result timeout';
                     } else {
                         pingDiv.textContent = `${latency}ms`;
-                        if (latency < 400) pingDiv.classList.add('fast'); else pingDiv.classList.add('slow');
+                        if (latency < 400) {
+                           pingDiv.className = 'ping-result fast';
+                        } else {
+                           pingDiv.className = 'ping-result slow';
+                        }
                     }
                     card.appendChild(pingDiv);
                 }
@@ -292,7 +289,7 @@
                 } catch { 
                     config.latency = 'Error'; return config;
                 }
-                const testUrl = `/api/proxy?url=https://${host}/__ping__`; // Assuming you have a proxy API
+                const testUrl = `/api/proxy?url=https://${host}/__ping__`;
                 const startTime = Date.now();
                 try {
                     const controller = new AbortController();
