@@ -76,21 +76,6 @@
         .modal-content { background-color: var(--card-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; position: relative; }
         .close-btn { position: absolute; top: 10px; left: 20px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
         #modal-qr-code { background: white; padding: 10px; border-radius: 4px; margin: 15px auto 0; }
-        
-        /* استایل جدید برای شمارنده بازدید */
-        .visitor-counter {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #333;
-            color: #888;
-            font-size: 0.9em;
-        }
-        .visitor-counter img {
-            border: none;
-            margin: 0 5px;
-            vertical-align: middle;
-        }
     </style>
 </head>
 <body>
@@ -102,7 +87,7 @@
 
         <div class="links-section">
              <div class="link-group">
-                <h3>لینک اشتراک (آینه آروان)</h3>
+                <h3>لینک اشتراک (آروان)</h3>
                 <div class="link-buttons">
                     <button class="link-btn copy-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">کپی لینک</button>
                     <button class="link-btn qr-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">QR کد</button>
@@ -110,7 +95,7 @@
                 </div>
             </div>
              <div class="link-group">
-                <h3>لینک اشتراک (آینه گیتهاب)</h3>
+                <h3>لینک اشتراک (گیتهاب)</h3>
                 <div class="link-buttons">
                     <button class="link-btn copy-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">کپی لینک</button>
                     <button class="link-btn qr-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">QR کد</button>
@@ -118,7 +103,7 @@
                 </div>
             </div>
              <div class="link-group">
-                <h3>لینک اشتراک (آینه ورسل)</h3>
+                <h3>لینک اشتراک (ورسل)</h3>
                 <div class="link-buttons">
                     <button class="link-btn copy-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">کپی لینک</button>
                     <button class="link-btn qr-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">QR کد</button>
@@ -134,7 +119,7 @@
         </div>
         
         <div class="raw-links-section">
-            <h3>لیست تمام آینه‌های وب‌سایت</h3>
+            <h3>لیست لینک‌های سایت</h3>
             <ul>
                 <li><strong>گیتهاب:</strong> <a href="https://smbcryp.github.io/V2V/" target="_blank">https://smbcryp.github.io/V2V/</a></li>
                 <li><strong>ورسل:</strong> <a href="https://v2-v.vercel.app/" target="_blank">https://v2-v.vercel.app/</a></li>
@@ -156,18 +141,10 @@
             <canvas id="modal-qr-code"></canvas>
         </div>
     </div>
-    
-    <footer class="visitor-counter">
-        <p>
-            تعداد بازدید امروز:
-            <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fsmbcryp.github.io%2FV2V&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=today&edge_flat=false" alt="Hits"/>
-            | تعداد کل بازدیدها:
-            <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fsmbcryp.github.io%2FV2V&count_bg=%231976D2&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=total&edge_flat=false" alt="Hits"/>
-        </p>
-    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // All constants and variables
             const speedTestButton = document.getElementById('speedTestButton');
             const copyAllButton = document.getElementById('copyAllButton');
             const infoContainer = document.getElementById('info');
@@ -176,7 +153,8 @@
             const modalTitle = document.getElementById('modal-title');
             const modalQrCanvas = document.getElementById('modal-qr-code');
             const closeBtn = document.querySelector('.close-btn');
-
+            
+            // State variables
             let clipboardForSingleConfigs = null;
             let allConfigs = [];
             let fullConfigText = '';
@@ -187,6 +165,7 @@
                 'https://v2-v.vercel.app/configs.txt'
             ];
             
+            // All helper functions...
             closeBtn.onclick = () => qrModal.style.display = "none";
             window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; }
             
@@ -194,7 +173,7 @@
                 element.textContent = "✅ کپی شد";
                 setTimeout(() => { element.textContent = originalText; }, 2000);
             }
-
+            
             function openQrModal(url, title = 'QR Code') {
                 modalTitle.textContent = title;
                 QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
