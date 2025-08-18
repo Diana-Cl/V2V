@@ -10,12 +10,7 @@ from urllib.parse import urlparse, unquote, parse_qs
 
 # === CONFIGURATION ===
 BASE_SOURCES = [
-    # منابع اصلی شما
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub7.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub8.txt","https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt","https://raw.githubusercontent.com/MrPooyaX/V2Ray/main/sub/mix","https://raw.githubusercontent.com/yebekhe/Configura/main/Sub/Normal/Sub.txt","https://raw.githubusercontent.com/soroushmirzaei/V2Ray-configs/main/All-Configs-base64","https://raw.githubusercontent.com/mrvcoder/V2rayCollector/main/sub/mix_base64","https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/all.txt","https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt","https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/All-Configs-for-V2Ray.txt","https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/sub/subscription_base64.txt","https://raw.githubusercontent.com/Argh94/V2RayAutoConfig/main/sub/sub_merge.txt","https://raw.githubusercontent.com/NiREvil/vless/main/sub/vless.txt","https://raw.githubusercontent.com/NiREvil/vless/main/XRAY/vless.txt","https://raw.githubusercontent.com/4n0nymou3/multi-proxy-config-fetcher/main/configs/proxy_configs.txt","https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final.txt",
-    
-    # <<<<<<<<<<<<<<<< منابع جدید اضافه شده >>>>>>>>>>>>>>>>
-    "https://raw.githubusercontent.com/10ium/free-sub-link/main/v2ray.txt",
-    "https://raw.githubusercontent.com/eQnz/configs-collector-v2ray/main/sub/splitted/mixed_1.txt"
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub7.txt","https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub8.txt","https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt","https://raw.githubusercontent.com/MrPooyaX/V2Ray/main/sub/mix","https://raw.githubusercontent.com/yebekhe/Configura/main/Sub/Normal/Sub.txt","https://raw.githubusercontent.com/soroushmirzaei/V2Ray-configs/main/All-Configs-base64","https://raw.githubusercontent.com/mrvcoder/V2rayCollector/main/sub/mix_base64","https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/all.txt","https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt","https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/All-Configs-for-V2Ray.txt","https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/sub/subscription_base64.txt","https://raw.githubusercontent.com/Argh94/V2RayAutoConfig/main/sub/sub_merge.txt","https://raw.githubusercontent.com/NiREvil/vless/main/sub/vless.txt","https://raw.githubusercontent.com/NiREvil/vless/main/XRAY/vless.txt","https://raw.githubusercontent.com/4n0nymou3/multi-proxy-config-fetcher/main/configs/proxy_configs.txt","https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final.txt"
 ]
 GITHUB_SEARCH_KEYWORDS = ['v2ray subscription', 'vless subscription', 'vmess subscription']
 TOP_N_CONFIGS = 500
@@ -29,7 +24,7 @@ GITHUB_PAT = os.environ.get('GH_PAT')
 # === HELPER FUNCTIONS ===
 def get_content_from_url(url: str) -> str | None:
     try:
-        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/Final-Clean'})
+        response = requests.get(url, timeout=10, headers={'User-Agent': 'V2V-Scraper/Final-v2'})
         response.raise_for_status()
         return response.text
     except requests.RequestException: return None
@@ -104,12 +99,25 @@ def test_config_latency(config: str) -> tuple[str, int] | None:
 
 def generate_clash_config(configs_list: list) -> str:
     proxies = []
-    for i, config_str in enumerate(configs_list):
+    used_names = set()
+
+    for config_str in configs_list:
         try:
             parsed = parse_config(config_str)
             if not parsed: continue
+
+            original_name = parsed['remark'] or f"{parsed['protocol']}-{len(proxies)+1}"
             
-            proxy = {'name': parsed['remark'] or f"{parsed['protocol']}-{i+1}", 'type': parsed['protocol'], 'server': parsed['server'], 'port': parsed['port']}
+            # <<<<<<<<<<<<<<<< این بخش برای حل مشکل نام تکراری اصلاح شد >>>>>>>>>>>>>>>>
+            unique_name = original_name
+            counter = 1
+            while unique_name in used_names:
+                unique_name = f"{original_name}_{counter}"
+                counter += 1
+            used_names.add(unique_name)
+            # <<<<<<<<<<<<<<<< پایان بخش اصلاح شده >>>>>>>>>>>>>>>>
+
+            proxy = {'name': unique_name, 'type': parsed['protocol'], 'server': parsed['server'], 'port': parsed['port']}
             
             if parsed['protocol'] == 'vless':
                 proxy.update({'uuid': parsed['uuid'], 'udp': True, 'tls': parsed['params'].get('security') == 'tls', 'servername': parsed['params'].get('sni', parsed['server']), 'network': parsed['params'].get('type', 'ws'), 'ws-opts': {'path': parsed['params'].get('path', '/')}})
