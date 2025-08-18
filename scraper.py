@@ -5,6 +5,7 @@ import json
 import socket
 import time
 import yaml
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse, unquote, parse_qs
 
@@ -55,29 +56,46 @@ def discover_github_sources() -> set[str]:
     return discovered_urls
 
 def parse_config(config_url: str) -> dict | None:
+    """
+    Parses a proxy URL (VLess, VMess, Trojan, SS) and extracts its components.
+    This function has been updated to correctly handle Trojan passwords and prioritize remarks.
+    """
     try:
         parsed_url = urlparse(config_url)
-        remark = unquote(parsed_url.fragment) if parsed_url.fragment else parsed_url.hostname
         protocol = parsed_url.scheme
-        
-        if protocol == 'vmess':
-            if len(parsed_url.netloc) % 4 != 0: netloc_padded = parsed_url.netloc + '=' * (4 - len(parsed_url.netloc) % 4)
-            else: netloc_padded = parsed_url.netloc
-            data = json.loads(base64.b64decode(netloc_padded).decode())
-            return {'protocol': protocol, 'remark': data.get('ps', 'V2V-VMess'), 'server': data.get('add'), 'port': int(data.get('port', 0)), 'uuid': data.get('id'), 'params': data}
-        
-        if protocol == 'ss':
-            userinfo, _, server_part = parsed_url.netloc.rpartition('@')
-            if len(userinfo) % 4 != 0: userinfo_padded = userinfo + '=' * (4 - len(userinfo) % 4)
-            else: userinfo_padded = userinfo
-            decoded_userinfo = base64.b64decode(userinfo_padded).decode()
-            cipher, password = decoded_userinfo.split(':', 1)
-            return {'protocol': protocol, 'remark': remark, 'server': server_part.split(':')[0], 'port': int(server_part.split(':')[1]), 'password': password, 'cipher': cipher}
+        remark = unquote(parsed_url.fragment) if parsed_url.fragment else parsed_url.hostname
 
+        if protocol == 'vmess':
+            try:
+                decoded_part = base64.b64decode(parsed_url.netloc).decode('utf-8')
+                data = json.loads(decoded_part)
+                # Prioritize URL fragment for remark, then 'ps' key, then server address
+                remark = unquote(parsed_url.fragment) if parsed_url.fragment else data.get('ps', data.get('add'))
+                return {'protocol': 'vmess', 'remark': remark, 'server': data.get('add'), 'port': int(data.get('port', 0)), 'uuid': data.get('id'), 'params': data}
+            except Exception:
+                return None
+
+        elif protocol == 'ss':
+            userinfo, _, server_part = parsed_url.netloc.rpartition('@')
+            server, port = server_part.split(':')
+            decoded_userinfo = base64.b64decode(userinfo).decode('utf-8')
+            cipher, password = decoded_userinfo.split(':', 1)
+            return {'protocol': 'ss', 'remark': remark, 'server': server, 'port': int(port), 'password': password, 'cipher': cipher, 'params': {}}
+
+        # Common parsing for VLess and Trojan
         query_params = parse_qs(parsed_url.query)
         params = {k: v[0] for k, v in query_params.items()}
-        return {'protocol': protocol, 'remark': remark, 'server': parsed_url.hostname, 'port': parsed_url.port, 'uuid': parsed_url.username, 'password': parsed_url.password, 'params': params}
-    except Exception: return None
+
+        if protocol == 'vless':
+            return {'protocol': 'vless', 'remark': remark, 'server': parsed_url.hostname, 'port': parsed_url.port, 'uuid': parsed_url.username, 'params': params}
+        
+        # FIX: Trojan password is in the 'username' part of the URL
+        elif protocol == 'trojan':
+            return {'protocol': 'trojan', 'remark': remark, 'server': parsed_url.hostname, 'port': parsed_url.port, 'password': parsed_url.username, 'params': params}
+            
+        return None
+    except Exception:
+        return None
 
 def tcp_ping(host: str, port: int, timeout: int = 2) -> int | None:
     if not host or not port: return None
@@ -98,6 +116,13 @@ def test_config_latency(config: str) -> tuple[str, int] | None:
     return None
 
 def generate_clash_config(configs_list: list) -> str:
+    """
+    Generates a Clash configuration file from a list of proxy URLs.
+    - Ensures unique proxy names.
+    - Correctly formats proxies according to user-provided standards.
+    - Fixes the Trojan password issue.
+    - Adds ws-opts headers for WS configs.
+    """
     proxies = []
     used_names = set()
 
@@ -106,43 +131,84 @@ def generate_clash_config(configs_list: list) -> str:
             parsed = parse_config(config_str)
             if not parsed: continue
 
-            original_name = parsed['remark'] or f"{parsed['protocol']}-{len(proxies)+1}"
+            # Clean up the remark for a better name
+            original_name = parsed.get('remark') or parsed.get('server')
             
-            # <<<<<<<<<<<<<<<< این بخش برای حل مشکل نام تکراری اصلاح شد >>>>>>>>>>>>>>>>
-            unique_name = original_name
-            counter = 1
-            while unique_name in used_names:
-                unique_name = f"{original_name}_{counter}"
-                counter += 1
+            # Function to generate a unique name if a duplicate is found
+            if original_name in used_names:
+                name_with_uuid = f"{original_name} {uuid.uuid4().hex[:4]}"
+                if name_with_uuid in used_names: # In case of extreme collision
+                    unique_name = f"{original_name} {uuid.uuid4().hex[:6]}"
+                else:
+                    unique_name = name_with_uuid
+            else:
+                unique_name = original_name
+
             used_names.add(unique_name)
-            # <<<<<<<<<<<<<<<< پایان بخش اصلاح شده >>>>>>>>>>>>>>>>
 
             proxy = {'name': unique_name, 'type': parsed['protocol'], 'server': parsed['server'], 'port': parsed['port']}
-            
+            params = parsed.get('params', {})
+
             if parsed['protocol'] == 'vless':
-                proxy.update({'uuid': parsed['uuid'], 'udp': True, 'tls': parsed['params'].get('security') == 'tls', 'servername': parsed['params'].get('sni', parsed['server']), 'network': parsed['params'].get('type', 'ws'), 'ws-opts': {'path': parsed['params'].get('path', '/')}})
+                proxy.update({
+                    'uuid': parsed['uuid'],
+                    'udp': True,
+                    'tls': params.get('security') == 'tls',
+                    'servername': params.get('sni', parsed['server']),
+                    'network': params.get('type', 'ws')
+                })
+                if proxy['network'] == 'ws':
+                    ws_host = params.get('host', proxy['servername'])
+                    proxy['ws-opts'] = {
+                        'path': params.get('path', '/'),
+                        'headers': {'Host': ws_host}
+                    }
+
             elif parsed['protocol'] == 'vmess':
-                 proxy.update({'uuid': parsed['uuid'], 'alterId': int(parsed['params'].get('aid', 0)), 'cipher': parsed['params'].get('scy', 'auto'), 'udp': True, 'tls': parsed['params'].get('tls') == 'tls', 'servername': parsed['params'].get('sni', parsed['server']), 'network': parsed['params'].get('net', 'ws'), 'ws-opts': {'path': parsed['params'].get('path', '/')}})
+                proxy.update({
+                    'uuid': parsed['uuid'],
+                    'alterId': int(params.get('aid', 0)),
+                    'cipher': params.get('scy', 'auto'),
+                    'udp': True,
+                    'tls': params.get('tls') == 'tls',
+                    'servername': params.get('sni', parsed['server']),
+                    'network': params.get('net', 'ws')
+                })
+                if proxy['network'] == 'ws':
+                    ws_host = params.get('host', proxy['servername'])
+                    proxy['ws-opts'] = {
+                        'path': params.get('path', '/'),
+                        'headers': {'Host': ws_host}
+                    }
+            
             elif parsed['protocol'] == 'trojan':
                 proxy['password'] = parsed['password']
-                proxy.update({'udp': True, 'sni': parsed['params'].get('sni', parsed['server'])})
+                proxy.update({
+                    'udp': True,
+                    'sni': params.get('sni', parsed['server'])
+                })
+
             elif parsed['protocol'] == 'ss':
                 proxy['password'] = parsed['password']
                 proxy['cipher'] = parsed['cipher']
+                proxy['udp'] = True
             
-            if 'uuid' in proxy or 'password' in proxy:
+            # Ensure the proxy has a valid credential before adding
+            if ('uuid' in proxy and proxy['uuid']) or ('password' in proxy and proxy['password']):
                 proxies.append(proxy)
-        except Exception: continue
+        except Exception:
+            continue
 
     clash_config = {
         'port': 7890, 'socks-port': 7891, 'allow-lan': False, 'mode': 'rule', 'log-level': 'info', 'proxies': proxies,
         'proxy-groups': [
             {'name': 'V2V-Auto', 'type': 'url-test', 'proxies': [p['name'] for p in proxies], 'url': 'http://www.gstatic.com/generate_204', 'interval': 300},
-            {'name': 'V2V-Select', 'type': 'select', 'proxies': [p['name'] for p in proxies]}
+            {'name': 'V2V-Select', 'type': 'select', 'proxies': ['V2V-Auto'] + [p['name'] for p in proxies]}
         ],
-        'rules': ['DOMAIN-SUFFIX,ir,DIRECT', 'MATCH,V2V-Auto']
+        'rules': ['DOMAIN-SUFFIX,ir,DIRECT', 'GEOIP,IR,DIRECT', 'MATCH,V2V-Select']
     }
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False)
+
 
 def main():
     print("🚀 Starting V2V Smart Scraper...")
@@ -176,7 +242,7 @@ def main():
     
     clash_content = generate_clash_config(top_configs)
     with open(OUTPUT_FILE_CLASH, 'w', encoding='utf-8') as f: f.write(clash_content)
-    print(f"💾 Successfully saved Clash.Meta config to {OUTPUT_FILE_CLASH}")
+    print(f"💾 Successfully saved Clash config to {OUTPUT_FILE_CLASH}")
 
 if __name__ == "__main__":
     main()
