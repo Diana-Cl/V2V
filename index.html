@@ -4,10 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>V2V</title>
-    <link rel="icon" type="image/png" href="/V2V/favicon.png">
-    <link rel="apple-touch-icon" href="/V2V/favicon.png">
-    <meta name="theme-color" content="#121212">
-    
+
+    <link rel="manifest" href="/V2V/manifest.json">
+    <link rel="icon" type="image/png" href="/V2V/icon-192.png">
+    <link rel="apple-touch-icon" href="/V2V/icon-192.png">
+    <meta name="theme-color" content="#000000">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
@@ -16,12 +17,11 @@
     <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
     <style>
         :root {
-            --bg-color: #121212;
+            --bg-color: #000000; /* Pure Black for seamless logo */
             --card-color: #1e1e1e;
             --text-color: #e0e0e0;
-            /* Colors Updated */
             --primary-color: #8B0000; /* Liver Red */
-            --secondary-color: #00A99D; /* Sharper Duck's Head Green */
+            --secondary-color: #28a745; /* Logo Green */
             --error-color: #cf6679;
             --success-color: #66bb6a;
             --warning-color: #ffeb3b;
@@ -81,7 +81,6 @@
         .links-container h2 { margin-top: 0; color: var(--secondary-color); }
         .link-group { margin-bottom: 25px; }
         .link-group:last-child { margin-bottom: 0; }
-        /* Link heading color updated */
         .link-group h3 { 
             margin-bottom: 10px; 
             color: var(--primary-color);
