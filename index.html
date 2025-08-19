@@ -1,3 +1,129 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>V2V | دسترسی آزاد</title>
+    <meta name="description" content="پروژه‌ای برای تجمیع و ارائه کانفیگ‌های V2Ray با تست سرعت و دسته‌بندی هوشمند.">
+    <meta property="og:title" content="V2V | دسترسی آزاد و پایدار" />
+    <meta property="og:description" content="سپاس هر‌آنکه خواه یا ناخواه دستی بر این راهک رهایی داشت" />
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #000000; --card-color: #1e1e1e; --text-color: #e0e0e0;
+            --primary-color: #8B0000; --secondary-color: #28a745; --error-color: #cf6679;
+            --success-color: #66bb6a; --warning-color: #ffeb3b; --btn-bg: #2a2a2a;
+            --btn-hover-bg: #3a3a3a; --tab-inactive: #424242;
+        }
+        body { font-family: 'Lora', serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
+        main { max-width: 1200px; margin: 0 auto; }
+        .site-logo { display: block; margin: 0 auto 15px auto; max-width: 160px; height: auto; }
+        .slogan { text-align: center; color: #aaa; font-style: italic; margin-bottom: 2em; font-weight: 600; }
+        .tab-nav { display: flex; justify-content: center; margin-bottom: 25px; gap: 10px; }
+        .tab-btn { background-color: var(--btn-bg); border: 2px solid var(--tab-inactive); color: var(--text-color); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold; transition: all 0.3s; font-family: 'Lora', serif; }
+        .tab-btn.active { background-color: var(--primary-color); border-color: var(--primary-color); color: #fff; }
+        .tab-btn:hover:not(.active) { background-color: var(--btn-hover-bg); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .links-container { background-color: var(--card-color); padding: 25px; border-radius: 8px; text-align: center; }
+        .links-container h2 { margin-top: 0; color: var(--secondary-color); }
+        .link-group { margin-bottom: 25px; }
+        .link-group:last-child { margin-bottom: 0; }
+        .link-group h3 { margin-bottom: 10px; color: var(--primary-color); }
+        .link-group small { color: #aaa; display: block; margin-top: -8px; margin-bottom: 15px; word-break: break-all; font-family: sans-serif; }
+        .link-buttons { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .link-btn { background-color: var(--btn-bg); color: var(--text-color); padding: 10px 18px; border-radius: 5px; text-decoration: none; font-weight: bold; transition: background-color 0.2s; border: 1px solid #444; cursor: pointer; }
+        .link-btn:hover { background-color: var(--btn-hover-bg); }
+        .download-btn { background-color: var(--success-color); color: #000; }
+        .action-button { color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 18px; cursor: pointer; transition: opacity 0.2s; display: block; width: 100%; margin-bottom: 15px; font-weight: bold; font-family: 'Lora', serif; }
+        #speedTestButton { background-color: var(--secondary-color); }
+        #copyAllButton { background-color: var(--primary-color); color: #fff; }
+        .accordion-item { margin-bottom: 15px; }
+        .accordion-header { background-color: var(--card-color); padding: 15px; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .accordion-header h2 { margin: 0; color: var(--secondary-color); }
+        .copy-protocol-btn { font-size: 0.8em; padding: 5px 10px; flex-shrink: 0; margin-right: 15px; }
+        .accordion-content { display: none; padding: 20px 5px 5px 5px; }
+        .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .config-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+        .ping-result { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+        .ping-result.fast { color: var(--success-color); }
+        .ping-result.slow { color: var(--warning-color); }
+        .ping-result.timeout { color: var(--error-color); }
+        .config-details { padding: 15px; flex-grow: 1; }
+        .config-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .actions { display: flex; justify-content: space-around; padding: 10px 15px; background-color: rgba(0,0,0,0.2); }
+        .action-btn { background-color: var(--btn-bg); border: 1px solid #444; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; padding: 8px 15px; flex-grow: 1; margin: 0 5px; color: var(--text-color); }
+        .info-box { text-align: center; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 5px; background-color: var(--card-color); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+        .modal-content { background-color: var(--card-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; position: relative; }
+        .close-btn { position: absolute; top: 10px; left: 20px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+        #modal-qr-code { background: white; padding: 10px; border-radius: 4px; margin: 15px auto 0; }
+        footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; }
+        .footer-links { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; gap: 25px; }
+        .footer-links a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <main>
+        <img src="logo.png" alt="V2V Logo" class="site-logo">
+        <p class="slogan">سپاس هر‌آنکه خواه یا ناخواه دستی بر این راهک رهایی داشت</p>
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="configs">کانفیگ‌ها (Configs)</button>
+            <button class="tab-btn" data-tab="subscriptions">لینک اشتراک‌ها (Subscription Links)</button>
+            <button class="tab-btn" data-tab="clash">کلش متا (Clash Meta)</button>
+        </div>
+        <div id="tab-configs" class="tab-content active">
+            <button id="speedTestButton" class="action-button" style="display: none;">🚀 تست سرعت کانفیگ‌ها</button>
+            <button id="copyAllButton" class="action-button" style="display: none;">📋 کپی همه کانفیگ‌های این صفحه</button>
+            <div id="info" class="info-box"></div>
+            <div id="configs-container"></div>
+        </div>
+        <div id="tab-subscriptions" class="tab-content">
+            <div class="links-container">
+                <h2>لینک اشتراک عمومی</h2>
+                <div class="link-group">
+                    <h3>لینک پرسرعت (ابر آروان)</h3>
+                    <small>https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt</small>
+                    <div class="link-buttons">
+                        <button class="link-btn copy-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">کپی لینک</button>
+                    </div>
+                </div>
+                <div class="link-group">
+                    <h3>لینک اصلی (GitHub)</h3>
+                    <small>https://smbcryp.github.io/V2V/configs.txt</small>
+                    <div class="link-buttons">
+                        <button class="link-btn copy-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">کپی لینک</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tab-clash" class="tab-content">
+             <div class="links-container">
+                <h2>کانفیگ مخصوص Clash.Meta</h2>
+                 <div class="link-group">
+                    <h3>فایل Clash.Meta</h3>
+                    <small>https://smbcryp.github.io/V2V/v2v_clash.yaml</small>
+                    <div class="link-buttons">
+                        <a href="v2v_clash.yaml" class="link-btn download-btn" download>دانلود فایل YAML</a>
+                        <button class="link-btn copy-sub-btn" data-url="https://smbcryp.github.io/V2V/v2v_clash.yaml">کپی لینک فایل</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <ul class="footer-links">
+                <li><a href="https://github.com/SMBCRYP/V2V/" target="_blank">آدرس گیت‌هاب</a></li>
+            </ul>
+        </footer>
+    </main>
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3 id="modal-title">QR Code</h3>
+            <canvas id="modal-qr-code"></canvas>
+        </div>
+    </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const speedTestButton = document.getElementById('speedTestButton');
@@ -12,14 +138,12 @@
             const tabContents = document.querySelectorAll('.tab-content');
             
             let clipboardForSingleConfigs = null;
-            let allConfigs = []; // Holds the structured config objects
-            let fullConfigTextForCopy = ''; // Holds the raw text for "Copy All"
+            let allConfigs = [];
+            let fullConfigTextForCopy = '';
 
-            // --- آدرس‌های جدید به فایل JSON اشاره می‌کنند ---
             const mirrors = [
                 'https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.json',
-                'https://smbcryp.github.io/V2V/configs.json',
-                'https://v2-v.vercel.app/configs.json'
+                'https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs.json',
             ];
 
             const showCopyFeedback = (element, originalText) => {
@@ -46,7 +170,7 @@
                     const parts = decodedUrl.split('#');
                     if (parts.length > 1 && parts[1]) return parts[1];
                     const hostname = new URL(url).hostname;
-                    return hostname.replace(/^www\./, ''); // Remove www.
+                    return hostname.replace(/^www\./, '');
                 } catch { return url.substring(0, 30) + '...'; }
             };
 
@@ -65,19 +189,18 @@
                 }
             };
 
-            // --- تابع ساخت کارت کانفیگ آپدیت شده تا پینگ اولیه را نمایش دهد ---
             const createConfigCard = (cfg) => {
                 const card = document.createElement('div');
                 card.className = 'config-card';
                 card.dataset.id = cfg.id;
 
-                // نمایش پینگ اولیه از سرور
                 const pingDiv = document.createElement('div');
                 pingDiv.className = 'ping-result';
-                const latency = cfg.initialPing; // <-- استفاده از پینگ اولیه
+                const latency = cfg.latency ?? cfg.initialPing;
+                
                 if (latency === -1 || latency === 'Timeout' || latency === 'Error') {
                     pingDiv.classList.add('timeout');
-                    pingDiv.textContent = 'N/A';
+                    pingDiv.textContent = latency === -1 ? 'N/A' : latency;
                 } else if (typeof latency === 'number') {
                     pingDiv.textContent = `${latency}ms`;
                     pingDiv.classList.add(latency < 400 ? 'fast' : 'slow');
@@ -111,7 +234,6 @@
                 return card;
             };
             
-            // --- تابع رندر آکاردیون بدون تغییر باقی می‌ماند ---
             const renderAccordion = (andOpen = false) => {
                 configsContainer.innerHTML = '';
                 const categorized = { vless: [], vmess: [], trojan: [], ss: [] };
@@ -159,16 +281,52 @@
                     e.clearSelection();
                 });
             };
-
-            // --- تابع تست سمت کاربر بدون تغییر باقی می‌ماند ---
+            
             const pingConfig = async (config) => {
-                // ... (این تابع بدون تغییر است)
-            };
-            const startClientSideBatchTest = async () => {
-                // ... (این تابع بدون تغییر است)
+                let host = '';
+                try {
+                    if (config.url.startsWith('vmess://')) {
+                        const vmessData = JSON.parse(atob(config.url.substring(8)));
+                        host = vmessData.add;
+                    } else {
+                        host = new URL(config.url).hostname;
+                    }
+                } catch { 
+                    config.latency = 'Error'; return config;
+                }
+                const testUrl = `https://ping.v2v.workers.dev/?host=${host}`;
+                const startTime = Date.now();
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 4000);
+                    await fetch(testUrl, { signal: controller.signal, mode: 'cors' });
+                    clearTimeout(timeoutId);
+                    config.latency = Date.now() - startTime;
+                } catch (error) {
+                    config.latency = 'Timeout';
+                }
+                return config;
             };
 
-            // --- تابع اصلی بارگذاری اپلیکیشن کاملاً بازنویسی شده است ---
+            const startClientSideBatchTest = async () => {
+                speedTestButton.disabled = true;
+                const configsToTest = allConfigs;
+                const batchSize = 50;
+                for (let i = 0; i < configsToTest.length; i += batchSize) {
+                    const batch = configsToTest.slice(i, i + batchSize);
+                    infoContainer.textContent = `در حال تست دسته ${Math.floor(i/batchSize) + 1}... (${i + batch.length}/${configsToTest.length})`;
+                    await Promise.all(batch.map(pingConfig));
+                }
+                allConfigs.sort((a, b) => {
+                    const aVal = (typeof a.latency === 'number') ? a.latency : 9999;
+                    const bVal = (typeof b.latency === 'number') ? b.latency : 9999;
+                    return aVal - bVal;
+                });
+                renderAccordion(true);
+                infoContainer.textContent = 'تست کامل شد! نتایج بر اساس سرعت مرتب شدند.';
+                speedTestButton.disabled = false;
+            };
+
             const initializeApp = async () => {
                 infoContainer.textContent = 'در حال دریافت آخرین لیست کانفیگ‌ها...';
                 let rawJsonData = null;
@@ -176,9 +334,9 @@
                 for (const url of mirrors) {
                     try {
                         infoContainer.textContent = `در حال اتصال به میرور: ${new URL(url).hostname}...`;
-                        const response = await fetch(url, { cache: "no-store" });
+                        const response = await fetch(url, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } });
                         if (!response.ok) throw new Error(`Mirror failed: ${url}`);
-                        rawJsonData = await response.json(); // <-- خواندن به صورت JSON
+                        rawJsonData = await response.json();
                         if (!rawJsonData || rawJsonData.length === 0) throw new Error("Source is empty");
                         break;
                     } catch (error) {
@@ -188,21 +346,18 @@
 
                 if (!rawJsonData) {
                     infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
-                    infoContainer.classList.add('error');
                     return;
                 }
 
-                // تبدیل ساختار JSON بک‌اند به ساختار مورد نیاز فرانت‌اند
                 allConfigs = rawJsonData.map((item, index) => ({
                     id: index,
                     url: item.config,
                     name: extractNameFromUrl(item.config),
                     protocol: item.config.split('://')[0],
-                    initialPing: item.ping, // <-- ذخیره پینگ اولیه
-                    latency: null // برای تست جدید کاربر
+                    initialPing: item.ping,
+                    latency: null
                 }));
                 
-                // آماده‌سازی متن برای دکمه "کپی همه"
                 fullConfigTextForCopy = allConfigs.map(c => c.url).join('\n');
 
                 renderAccordion();
@@ -211,43 +366,43 @@
                 copyAllButton.style.display = 'block';
             };
 
-            // --- Event Listeners بدون تغییر هستند ---
             closeBtn.onclick = () => qrModal.style.display = "none";
             window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; };
+            
             tabNav.addEventListener('click', (e) => {
                 if (e.target.classList.contains('tab-btn')) {
                     const targetTab = e.target.dataset.tab;
                     tabNav.querySelector('.active').classList.remove('active');
-e.target.classList.add('active');
+                    e.target.classList.add('active');
                     tabContents.forEach(content => {
                         content.classList.remove('active');
-                        if (content.id === `tab-${targetTab}`) {
-                            content.classList.add('active');
-                        }
+                        if (content.id === `tab-${targetTab}`) content.classList.add('active');
                     });
                 }
             });
+
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('button, a');
                 if (!target) return;
                 const url = target.dataset.url;
-                if (target.matches('.qr-sub-btn')) {
-                    openQrModal(url, 'لینک اشتراک');
-                } else if (target.matches('.share-sub-btn')) {
-                    shareUrl(url, 'لینک اشتراک V2V');
-                } else if (target.matches('.copy-sub-btn')) {
-                    copyToClipboard(url, target);
-                } else if (target.matches('.copy-protocol-btn')) {
+                if (target.matches('.qr-sub-btn')) openQrModal(url, 'لینک اشتراک');
+                else if (target.matches('.share-sub-btn')) shareUrl(url, 'لینک اشتراک V2V');
+                else if (target.matches('.copy-sub-btn')) copyToClipboard(url, target);
+                else if (target.matches('.copy-protocol-btn')) {
                     const protocol = target.dataset.protocol;
                     const configsToCopy = allConfigs.filter(c => c.protocol === protocol).map(c => c.url).join('\n');
                     if(configsToCopy) copyToClipboard(configsToCopy, target);
                 }
             });
+
             copyAllButton.addEventListener('click', (e) => {
                 if(fullConfigTextForCopy) copyToClipboard(fullConfigTextForCopy, e.currentTarget);
             });
+            
             speedTestButton.addEventListener('click', startClientSideBatchTest);
 
             initializeApp();
         });
     </script>
+</body>
+</html>
