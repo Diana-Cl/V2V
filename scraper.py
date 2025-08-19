@@ -7,6 +7,7 @@ import time
 import yaml
 import uuid
 import re
+import binascii  # <-- ماژول اضافه شده برای تشخیص خطای base64
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, unquote, parse_qs
@@ -44,13 +45,11 @@ INITIAL_BASE_SOURCES = [
 ]
 SOURCES_STATUS_FILE = 'sources_status.json'
 INACTIVE_DAYS_THRESHOLD = 30
-GITHUB_SEARCH_KEYWORDS = ['v2ray subscription', 'vless subscription', 'reality subscription'] # <-- کلیدواژه Reality اضافه شد
+GITHUB_SEARCH_KEYWORDS = ['v2ray subscription', 'vless subscription', 'reality subscription']
 TOP_N_CONFIGS = 500
 OUTPUT_FILE_PLAIN = 'configs.txt'
 OUTPUT_FILE_CLASH = 'v2v_clash.yaml'
-# --- START: NEW PROTOCOL SUPPORT ---
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hy2://', 'tuic://')
-# --- END: NEW PROTOCOL SUPPORT ---
 
 # === SECRET KEYS ===
 GITHUB_PAT = os.environ.get('GH_PAT')
@@ -58,6 +57,7 @@ HEADERS = {'User-Agent': 'V2V-Scraper/Final-v2'}
 if GITHUB_PAT: HEADERS['Authorization'] = f'token {GITHUB_PAT}'
 
 # === STATE MANAGEMENT FUNCTIONS ===
+# ... (این بخش بدون تغییر باقی می‌ماند)
 def load_sources_status() -> list:
     if not os.path.exists(SOURCES_STATUS_FILE):
         print(f"'{SOURCES_STATUS_FILE}' not found. Initializing with default sources.")
@@ -95,13 +95,25 @@ def check_source_activity(url: str) -> datetime | None:
         return datetime.now()
     except requests.RequestException: return None
 
-# === HELPER FUNCTIONS (IMPROVED) ===
-# --- START: BASE64 FIX ---
+
+# === HELPER FUNCTIONS (IMPROVED & FIXED) ===
 def safe_b64_decode(data: str) -> bytes:
     """Safely decodes base64 strings, handling padding errors."""
     padding = '=' * (-len(data) % 4)
     return base64.b64decode(data + padding)
-# --- END: BASE64 FIX ---
+
+# --- FIX 5: SANITIZE CLASH PROXY NAMES ---
+def sanitize_clash_name(name: str) -> str:
+    """Removes problematic characters for Clash clients from a string."""
+    # Remove non-ASCII characters
+    sanitized = name.encode('ascii', 'ignore').decode('ascii')
+    # Replace special characters with a hyphen
+    sanitized = re.sub(r'[\[\]|\'"{},]', '-', sanitized)
+    # Trim whitespace and limit length
+    sanitized = sanitized.strip()[:60]
+    # Ensure name is not empty
+    return sanitized if sanitized else "unnamed-proxy"
+# --- END FIX 5 ---
 
 def get_content_from_url(url: str) -> str | None:
     try:
@@ -112,19 +124,16 @@ def get_content_from_url(url: str) -> str | None:
 
 def decode_content(content: str) -> list[str]:
     try: 
-        # --- Use safe_b64_decode ---
         return safe_b64_decode(content).decode('utf-8').strip().splitlines()
     except Exception: 
         return content.strip().splitlines()
 
-# --- START: ERROR REPORTING ---
 def fetch_and_parse_url(url: str) -> tuple[str, set]:
     """Fetches configs from a URL. Returns status and result."""
     content = get_content_from_url(url)
     if not content: return "failed", {url}
     
     configs = set()
-    # Support for HTML pages with configs
     if url.endswith(('.html', '.htm')):
         pattern = r'(' + '|'.join([p.replace('://', ':\\/\\/') for p in VALID_PREFIXES]) + r'[^\s\'"<]+)'
         found_configs = re.findall(pattern, content)
@@ -136,9 +145,9 @@ def fetch_and_parse_url(url: str) -> tuple[str, set]:
 
     if not configs: return "failed", {url}
     return "success", configs
-# --- END: ERROR REPORTING ---
 
 def discover_github_sources() -> set[str]:
+    # ... (این بخش بدون تغییر باقی می‌ماند)
     if not GITHUB_PAT:
         print("GitHub PAT not found, skipping dynamic discovery.")
         return set()
@@ -158,30 +167,45 @@ def discover_github_sources() -> set[str]:
     print(f"Discovered {len(discovered_urls)} potential new source URLs.")
     return discovered_urls
 
-# --- START: FULL PROTOCOL SUPPORT ---
+
+# --- START: FULLY FIXED PARSER ---
 def parse_config(config_url: str) -> dict | None:
     try:
+        # --- FIX 1: VMESS PARSING ---
+        if config_url.startswith('vmess://'):
+            b64_data = config_url[8:]
+            try:
+                decoded_part = safe_b64_decode(b64_data).decode('utf-8')
+                data = json.loads(decoded_part)
+                remark = data.get('ps', data.get('add', ''))
+                # urlparse just for the fragment
+                remark_from_frag = unquote(urlparse(config_url).fragment)
+                return {'protocol': 'vmess', 'remark': remark_from_frag or remark, 'server': data.get('add'), 'port': int(data.get('port', 0)), 'uuid': data.get('id'), 'params': data}
+            except Exception: 
+                return None
+        # --- END FIX 1 ---
+
         parsed_url = urlparse(config_url)
         protocol = parsed_url.scheme
         remark = unquote(parsed_url.fragment) if parsed_url.fragment else f"{protocol}-{parsed_url.hostname}"
         
-        # --- Use safe_b64_decode ---
-        if protocol == 'vmess':
-            try:
-                decoded_part = safe_b64_decode(parsed_url.netloc).decode('utf-8')
-                data = json.loads(decoded_part)
-                remark = data.get('ps', data.get('add'))
-                return {'protocol': 'vmess', 'remark': remark, 'server': data.get('add'), 'port': int(data.get('port', 0)), 'uuid': data.get('id'), 'params': data}
-            except Exception: return None
-            
-        elif protocol == 'ss':
+        if protocol == 'ss':
+            # --- FIX 2: SHADOWSOCKS DUAL FORMAT PARSING ---
             try:
                 userinfo, _, server_part = parsed_url.netloc.rpartition('@')
                 server, port_str = server_part.split(':')
-                decoded_userinfo = safe_b64_decode(userinfo).decode('utf-8')
+                
+                # Try decoding as base64 first
+                try:
+                    decoded_userinfo = safe_b64_decode(userinfo).decode('utf-8')
+                except (binascii.Error, UnicodeDecodeError): # If fails, it's plaintext
+                    decoded_userinfo = unquote(userinfo)
+
                 cipher, password = decoded_userinfo.split(':', 1)
                 return {'protocol': 'ss', 'remark': remark, 'server': server, 'port': int(port_str), 'password': password, 'cipher': cipher, 'params': {}}
-            except Exception: return None
+            except Exception: 
+                return None
+            # --- END FIX 2 ---
 
         query_params = parse_qs(parsed_url.query)
         params = {k: v[0] for k, v in query_params.items()}
@@ -190,17 +214,18 @@ def parse_config(config_url: str) -> dict | None:
             return {'protocol': 'vless', 'remark': remark, 'server': parsed_url.hostname, 'port': parsed_url.port, 'uuid': parsed_url.username, 'params': params}
         elif protocol == 'trojan':
             return {'protocol': 'trojan', 'remark': remark, 'server': parsed_url.hostname, 'port': parsed_url.port, 'password': parsed_url.username, 'params': params}
-        elif protocol == 'hy2': # Hysteria2 Support
+        elif protocol == 'hy2':
             return {'protocol': 'hysteria2', 'remark': remark, 'server': parsed_url.hostname, 'port': parsed_url.port, 'password': parsed_url.username, 'params': params}
-        elif protocol == 'tuic': # TUIC v5 Support
+        elif protocol == 'tuic':
             return {'protocol': 'tuic', 'remark': remark, 'server': parsed_url.hostname, 'port': parsed_url.port, 'uuid': parsed_url.username, 'password': parsed_url.password, 'params': params}
 
         return None
     except Exception:
         return None
-# --- END: FULL PROTOCOL SUPPORT ---
+# --- END: FULLY FIXED PARSER ---
 
 def tcp_ping(host: str, port: int, timeout: int = 2) -> int | None:
+    # ... (این بخش بدون تغییر باقی می‌ماند)
     if not host or not port: return None
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -212,15 +237,14 @@ def tcp_ping(host: str, port: int, timeout: int = 2) -> int | None:
     except Exception: return None
 
 def test_config_latency(config: str) -> tuple[str, int, dict] | None:
-    """Tests latency and returns the original config string, latency, and the parsed config."""
     parsed = parse_config(config)
     if parsed:
         latency = tcp_ping(parsed.get('server'), parsed.get('port'))
         if latency is not None:
-            return (config, latency, parsed) # Return parsed config to avoid re-parsing
+            return (config, latency, parsed)
     return None
 
-# --- START: ADVANCED CLASH CONFIG GENERATION ---
+# --- START: FULLY FIXED CLASH CONFIG GENERATION ---
 def generate_clash_config(configs_list: list) -> str:
     proxies, used_names = [], set()
     for config_str in configs_list:
@@ -228,7 +252,8 @@ def generate_clash_config(configs_list: list) -> str:
             parsed = parse_config(config_str)
             if not parsed: continue
             
-            original_name = parsed.get('remark') or parsed.get('server')
+            # --- FIX 5 APPLIED ---
+            original_name = sanitize_clash_name(parsed.get('remark') or parsed.get('server'))
             unique_name = f"{original_name} {uuid.uuid4().hex[:4]}" if original_name in used_names else original_name
             used_names.add(unique_name)
             
@@ -236,15 +261,17 @@ def generate_clash_config(configs_list: list) -> str:
             params = parsed.get('params', {})
             
             if parsed['protocol'] == 'vless':
-                proxy.update({'uuid': parsed['uuid'], 'udp': True, 'tls': params.get('security') in ['tls', 'reality'], 'network': params.get('type', 'ws')})
-                # REALITY Support
+                # --- FIX 3: VLESS DEFAULTS & REALITY FLOW ---
+                proxy.update({'uuid': parsed['uuid'], 'udp': True, 'tls': params.get('security') in ['tls', 'reality'], 'network': params.get('type', 'tcp')}) # Default to TCP
+                
                 if params.get('security') == 'reality':
                     proxy['servername'] = params.get('sni', '')
+                    if 'flow' in params: proxy['flow'] = params['flow'] # Add flow
                     proxy['reality-opts'] = {'public-key': params.get('pbk', ''), 'short-id': params.get('sid', '')}
-                # TLS (non-reality)
+                
                 elif proxy['tls']:
                     proxy['servername'] = params.get('sni', parsed['server'])
-                # WS/gRPC opts
+                
                 if proxy['network'] == 'ws':
                     proxy['ws-opts'] = {'path': params.get('path', '/'), 'headers': {'Host': params.get('host', proxy.get('servername', parsed['server']))}}
                 elif proxy['network'] == 'grpc':
@@ -262,15 +289,25 @@ def generate_clash_config(configs_list: list) -> str:
             elif parsed['protocol'] == 'ss':
                 proxy.update({'password': parsed['password'], 'cipher': parsed['cipher'], 'udp': True})
             
+            # --- FIX 4: ENHANCED HY2 & TUIC ---
             elif parsed['protocol'] == 'hysteria2':
                 proxy['type'] = 'hysteria2'
-                proxy.update({'password': parsed['password'], 'sni': params.get('sni', parsed['server']), 'obfs': params.get('obfs'), 'obfs-password': params.get('obfs-password')})
+                proxy.update({'password': parsed['password'], 'sni': params.get('sni', parsed['server'])})
+                # Add optional params
+                if params.get('obfs'): proxy['obfs'] = params['obfs']
+                if params.get('obfs-password'): proxy['obfs-password'] = params['obfs-password']
 
             elif parsed['protocol'] == 'tuic':
                 proxy['type'] = 'tuic'
-                proxy.update({'uuid': parsed['uuid'], 'password': parsed['password'], 'sni': params.get('sni', parsed['server']), 'alpn': [p for p in params.get('alpn', '').split(',') if p]})
+                proxy.update({
+                    'uuid': parsed['uuid'], 
+                    'password': parsed['password'], 
+                    'sni': params.get('sni', parsed['server']), 
+                    'alpn': [p for p in params.get('alpn', '').split(',') if p],
+                    'congestion-control': params.get('congestion_control', 'bbr'),
+                    'udp-relay-mode': params.get('udp_relay_mode', 'native')
+                })
             
-            # ShadowTLS Support (as a plugin)
             if 'shadowtls' in params:
                 proxy['plugin'] = 'shadow-tls'
                 proxy['plugin-opts'] = {'host': params.get('sni', parsed['server']), 'password': params.get('shadowtls'), 'version': '3'}
@@ -284,10 +321,8 @@ def generate_clash_config(configs_list: list) -> str:
                          {'name': 'V2V-Select', 'type': 'select', 'proxies': ['V2V-Auto'] + [p['name'] for p in proxies]}],
         'rules': ['DOMAIN-SUFFIX,ir,DIRECT', 'GEOIP,IR,DIRECT', 'MATCH,V2V-Select']}
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False)
-# --- END: ADVANCED CLASH CONFIG GENERATION ---
+# --- END: FULLY FIXED CLASH CONFIG GENERATION ---
 
-
-# --- START: OPERATOR-BASED SORTING ---
 def get_operator_priority(config_name: str) -> int:
     """Assigns a priority score based on operator keywords found in the config name."""
     name_lower = config_name.lower()
@@ -295,10 +330,10 @@ def get_operator_priority(config_name: str) -> int:
     if any(k in name_lower for k in ['irancell', 'ایرانسل']): return 2
     if any(k in name_lower for k in ['rightel', 'رایتل']): return 3
     return 99 # Default for others
-# --- END: OPERATOR-BASED SORTING ---
 
 def main():
-    print("🚀 Starting V2V Smart Scraper (v2 Final)...")
+    # ... (این بخش بدون تغییر باقی می‌ماند)
+    print("🚀 Starting V2V Smart Scraper (v3 Final - Patched)...")
     
     base_sources_data = load_sources_status()
     print(f"\n🩺 Checking health of {len(base_sources_data)} base sources...")
@@ -372,16 +407,14 @@ def main():
     print(f"Found {len(working_configs)} responsive configs.")
     if not working_configs:
         print("No working configs found to save. Aborting.")
-        # --- Print Error Report Even on Failure ---
         if failed_sources:
             print(f"\n--- ⚠️ Error Report: {len(failed_sources)} sources failed ---")
             for source in sorted(list(failed_sources)): print(f"- {source}")
         return
 
-    # --- Apply new sorting logic ---
     working_configs.sort(key=lambda x: (get_operator_priority(x[2]['remark']), x[1]))
     top_configs_data = working_configs[:TOP_N_CONFIGS]
-    top_configs_str = [cfg for cfg, lat, parsed in top_configs_data] # Extract only strings for output
+    top_configs_str = [cfg for cfg, lat, parsed in top_configs_data] 
     
     print(f"🏅 Selected top {len(top_configs_str)} configs, sorted by operator and latency.")
     
@@ -391,7 +424,6 @@ def main():
     with open(OUTPUT_FILE_CLASH, 'w', encoding='utf-8') as f: f.write(generate_clash_config(top_configs_str))
     print(f"💾 Successfully saved Clash config to {OUTPUT_FILE_CLASH}")
 
-    # --- Final Error Report ---
     if failed_sources:
         print(f"\n--- ⚠️ Error Report: {len(failed_sources)} sources failed ---")
         for source in sorted(list(failed_sources)):
