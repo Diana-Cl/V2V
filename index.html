@@ -40,7 +40,7 @@
         .site-logo {
             display: block;
             margin: 0 auto 15px auto;
-            max-width: 180px;
+            max-width: 160px; /* Logo size reduced */
             height: auto;
         }
         .slogan { text-align: center; color: #aaa; font-style: italic; margin-bottom: 2em; font-weight: 600; }
@@ -99,7 +99,10 @@
         #copyAllButton { background-color: var(--primary-color); color: #fff; }
         .accordion-item { margin-bottom: 15px; }
         .accordion-header { background-color: var(--card-color); padding: 15px; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .accordion-header h2 { margin: 0; color: var(--primary-color); }
+        .accordion-header h2 { 
+            margin: 0; 
+            color: var(--secondary-color); /* Protocol color changed to green */
+        }
         .copy-protocol-btn { font-size: 0.8em; padding: 5px 10px; flex-shrink: 0; margin-right: 15px; }
         .accordion-content { display: none; padding: 20px 5px 5px 5px; }
         .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
@@ -123,8 +126,14 @@
             padding-top: 20px;
             border-top: 1px solid #333;
         }
-        .footer-links { list-style: none; padding: 0; margin: 0; }
-        .footer-links li { margin-bottom: 10px; }
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex; /* Links side-by-side */
+            justify-content: center;
+            gap: 25px; /* Space between links */
+        }
         .footer-links a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
         .footer-links a:hover { text-decoration: underline; }
     </style>
