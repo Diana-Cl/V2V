@@ -114,6 +114,7 @@
         <footer>
             <ul class="footer-links">
                 <li><a href="https://github.com/SMBCRYP/V2V/" target="_blank">آدرس گیت‌هاب</a></li>
+                <li><a href="https://v2-v.vercel.app/" target="_blank">آدرس ورسل</a></li>
             </ul>
         </footer>
     </main>
@@ -124,285 +125,286 @@
             <canvas id="modal-qr-code"></canvas>
         </div>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const speedTestButton = document.getElementById('speedTestButton');
-            const copyAllButton = document.getElementById('copyAllButton');
-            const infoContainer = document.getElementById('info');
-            const configsContainer = document.getElementById('configs-container');
-            const qrModal = document.getElementById('qrModal');
-            const modalTitle = document.getElementById('modal-title');
-            const modalQrCanvas = document.getElementById('modal-qr-code');
-            const closeBtn = document.querySelector('.close-btn');
-            const tabNav = document.querySelector('.tab-nav');
-            const tabContents = document.querySelectorAll('.tab-content');
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const speedTestButton = document.getElementById('speedTestButton');
+        const copyAllButton = document.getElementById('copyAllButton');
+        const infoContainer = document.getElementById('info');
+        const configsContainer = document.getElementById('configs-container');
+        const qrModal = document.getElementById('qrModal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalQrCanvas = document.getElementById('modal-qr-code');
+        const closeBtn = document.querySelector('.close-btn');
+        const tabNav = document.querySelector('.tab-nav');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        let clipboardForSingleConfigs = null;
+        let allConfigs = [];
+        let fullConfigTextForCopy = '';
+
+        const mirrors = [
+            'https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.json',
+            'https://smbcryp.github.io/V2V/configs.json' // آدرس پایدارتر گیت‌هاب
+        ];
+
+        const showCopyFeedback = (element, originalText) => {
+            element.textContent = "✅ کپی شد";
+            setTimeout(() => { element.textContent = originalText; }, 2000);
+        };
+
+        const openQrModal = (url, title = 'QR Code') => {
+            modalTitle.textContent = title;
+            QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
+            qrModal.style.display = "flex";
+        };
+
+        const shareUrl = async (url, title = 'V2V Link') => {
+            if (navigator.share) {
+                try { await navigator.share({ title: title, text: url }); }
+                catch (err) { console.error('Share failed:', err); }
+            } else { alert('قابلیت اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود.'); }
+        };
+
+        const extractNameFromUrl = (url) => {
+            try {
+                const decodedUrl = decodeURIComponent(url);
+                const parts = decodedUrl.split('#');
+                if (parts.length > 1 && parts[1]) return parts[1];
+                const hostname = new URL(url).hostname;
+                return hostname.replace(/^www\./, '');
+            } catch { return url.substring(0, 30) + '...'; }
+        };
+
+        const copyToClipboard = async (text, element) => {
+            const originalText = element.textContent;
+            if (!navigator.clipboard) {
+                alert('مرورگر شما از کپی امن پشتیبانی نمی‌کند.');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(text);
+                showCopyFeedback(element, originalText);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                alert('کپی کردن با خطا مواجه شد.');
+            }
+        };
+
+        const createConfigCard = (cfg) => {
+            const card = document.createElement('div');
+            card.className = 'config-card';
+            card.dataset.id = cfg.id;
+
+            const pingDiv = document.createElement('div');
+            pingDiv.className = 'ping-result';
+            const latency = cfg.latency ?? cfg.initialPing;
             
-            let clipboardForSingleConfigs = null;
-            let allConfigs = [];
-            let fullConfigTextForCopy = '';
-
-            const mirrors = [
-                'https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.json',
-                'https://raw.githubusercontent.com/SMBCRYP/V2V/main/configs.json',
-            ];
-
-            const showCopyFeedback = (element, originalText) => {
-                element.textContent = "✅ کپی شد";
-                setTimeout(() => { element.textContent = originalText; }, 2000);
-            };
-
-            const openQrModal = (url, title = 'QR Code') => {
-                modalTitle.textContent = title;
-                QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
-                qrModal.style.display = "flex";
-            };
-
-            const shareUrl = async (url, title = 'V2V Link') => {
-                if (navigator.share) {
-                    try { await navigator.share({ title: title, text: url }); }
-                    catch (err) { console.error('Share failed:', err); }
-                } else { alert('قابلیت اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود.'); }
-            };
-
-            const extractNameFromUrl = (url) => {
-                try {
-                    const decodedUrl = decodeURIComponent(url);
-                    const parts = decodedUrl.split('#');
-                    if (parts.length > 1 && parts[1]) return parts[1];
-                    const hostname = new URL(url).hostname;
-                    return hostname.replace(/^www\./, '');
-                } catch { return url.substring(0, 30) + '...'; }
-            };
-
-            const copyToClipboard = async (text, element) => {
-                const originalText = element.textContent;
-                if (!navigator.clipboard) {
-                    alert('مرورگر شما از کپی امن پشتیبانی نمی‌کند.');
-                    return;
-                }
-                try {
-                    await navigator.clipboard.writeText(text);
-                    showCopyFeedback(element, originalText);
-                } catch (err) {
-                    console.error('Failed to copy text: ', err);
-                    alert('کپی کردن با خطا مواجه شد.');
-                }
-            };
-
-            const createConfigCard = (cfg) => {
-                const card = document.createElement('div');
-                card.className = 'config-card';
-                card.dataset.id = cfg.id;
-
-                const pingDiv = document.createElement('div');
-                pingDiv.className = 'ping-result';
-                const latency = cfg.latency ?? cfg.initialPing;
-                
-                if (latency === -1 || latency === 'Timeout' || latency === 'Error') {
-                    pingDiv.classList.add('timeout');
-                    pingDiv.textContent = latency === -1 ? 'N/A' : latency;
-                } else if (typeof latency === 'number') {
-                    pingDiv.textContent = `${latency}ms`;
-                    pingDiv.classList.add(latency < 400 ? 'fast' : 'slow');
-                }
-                card.appendChild(pingDiv);
-                
-                const detailsDiv = document.createElement('div');
-                detailsDiv.className = 'config-details';
-                detailsDiv.innerHTML = `<div class="config-name" title="${cfg.name}">${cfg.name}</div>`;
-
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'actions';
-                
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'action-btn copy-btn-class';
-                copyBtn.textContent = 'کپی';
-                copyBtn.setAttribute('data-clipboard-text', cfg.url);
-
-                const qrBtn = document.createElement('button');
-                qrBtn.className = 'action-btn';
-                qrBtn.textContent = 'QR';
-                qrBtn.onclick = () => openQrModal(cfg.url, cfg.name);
-                
-                const shareBtn = document.createElement('button');
-                shareBtn.className = 'action-btn';
-                shareBtn.textContent = 'Share';
-                shareBtn.onclick = () => shareUrl(cfg.url, cfg.name);
-
-                actionsDiv.append(copyBtn, qrBtn, shareBtn);
-                card.append(detailsDiv, actionsDiv);
-                return card;
-            };
+            if (latency === -1 || latency === 'Timeout' || latency === 'Error') {
+                pingDiv.classList.add('timeout');
+                pingDiv.textContent = latency === -1 ? 'N/A' : latency;
+            } else if (typeof latency === 'number') {
+                pingDiv.textContent = `${latency}ms`;
+                pingDiv.classList.add(latency < 400 ? 'fast' : 'slow');
+            }
+            card.appendChild(pingDiv);
             
-            const renderAccordion = (andOpen = false) => {
-                configsContainer.innerHTML = '';
-                const categorized = { vless: [], vmess: [], trojan: [], ss: [] };
-                allConfigs.forEach(cfg => { if (categorized[cfg.protocol]) categorized[cfg.protocol].push(cfg); });
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'config-details';
+            detailsDiv.innerHTML = `<div class="config-name" title="${cfg.name}">${cfg.name}</div>`;
 
-                Object.keys(categorized).forEach(protocol => {
-                    const protocolConfigs = categorized[protocol];
-                    if (protocolConfigs.length > 0) {
-                        const accordionItem = document.createElement('div');
-                        accordionItem.className = 'accordion-item';
-                        
-                        const header = document.createElement('div');
-                        header.className = 'accordion-header';
-                        header.innerHTML = `<h2>${protocol.toUpperCase()} (${protocolConfigs.length})</h2>`;
-                        
-                        const copyBtn = document.createElement('button');
-                        copyBtn.className = 'link-btn copy-protocol-btn';
-                        copyBtn.textContent = `کپی همه ${protocol.toUpperCase()}`;
-                        copyBtn.dataset.protocol = protocol;
-                        header.appendChild(copyBtn);
-                        
-                        const content = document.createElement('div');
-                        content.className = 'accordion-content';
-                        const grid = document.createElement('div');
-                        grid.className = 'config-grid';
-                        
-                        content.style.display = andOpen ? 'block' : 'none';
-                        
-                        protocolConfigs.forEach(cfg => grid.appendChild(createConfigCard(cfg)));
-                        content.appendChild(grid);
-                        accordionItem.append(header, content);
-                        configsContainer.appendChild(accordionItem);
-
-                        header.addEventListener('click', (e) => {
-                            if (e.target.closest('.copy-protocol-btn')) return;
-                            content.style.display = content.style.display === 'block' ? 'none' : 'block';
-                        });
-                    }
-                });
-                
-                if (clipboardForSingleConfigs) clipboardForSingleConfigs.destroy();
-                clipboardForSingleConfigs = new ClipboardJS('.copy-btn-class');
-                clipboardForSingleConfigs.on('success', (e) => {
-                    showCopyFeedback(e.trigger, 'کپی');
-                    e.clearSelection();
-                });
-            };
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'actions';
             
-            const pingConfig = async (config) => {
-                let host = '';
-                try {
-                    if (config.url.startsWith('vmess://')) {
-                        const vmessData = JSON.parse(atob(config.url.substring(8)));
-                        host = vmessData.add;
-                    } else {
-                        host = new URL(config.url).hostname;
-                    }
-                } catch { 
-                    config.latency = 'Error'; return config;
-                }
-                const testUrl = `https://ping.v2v.workers.dev/?host=${host}`;
-                const startTime = Date.now();
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 4000);
-                    await fetch(testUrl, { signal: controller.signal, mode: 'cors' });
-                    clearTimeout(timeoutId);
-                    config.latency = Date.now() - startTime;
-                } catch (error) {
-                    config.latency = 'Timeout';
-                }
-                return config;
-            };
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'action-btn copy-btn-class';
+            copyBtn.textContent = 'کپی';
+            copyBtn.setAttribute('data-clipboard-text', cfg.url);
 
-            const startClientSideBatchTest = async () => {
-                speedTestButton.disabled = true;
-                const configsToTest = allConfigs;
-                const batchSize = 50;
-                for (let i = 0; i < configsToTest.length; i += batchSize) {
-                    const batch = configsToTest.slice(i, i + batchSize);
-                    infoContainer.textContent = `در حال تست دسته ${Math.floor(i/batchSize) + 1}... (${i + batch.length}/${configsToTest.length})`;
-                    await Promise.all(batch.map(pingConfig));
-                }
-                allConfigs.sort((a, b) => {
-                    const aVal = (typeof a.latency === 'number') ? a.latency : 9999;
-                    const bVal = (typeof b.latency === 'number') ? b.latency : 9999;
-                    return aVal - bVal;
-                });
-                renderAccordion(true);
-                infoContainer.textContent = 'تست کامل شد! نتایج بر اساس سرعت مرتب شدند.';
-                speedTestButton.disabled = false;
-            };
-
-            const initializeApp = async () => {
-                infoContainer.textContent = 'در حال دریافت آخرین لیست کانفیگ‌ها...';
-                let rawJsonData = null;
-
-                for (const url of mirrors) {
-                    try {
-                        infoContainer.textContent = `در حال اتصال به میرور: ${new URL(url).hostname}...`;
-                        const response = await fetch(url, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } });
-                        if (!response.ok) throw new Error(`Mirror failed: ${url}`);
-                        rawJsonData = await response.json();
-                        if (!rawJsonData || rawJsonData.length === 0) throw new Error("Source is empty");
-                        break;
-                    } catch (error) {
-                        console.warn(error.message);
-                    }
-                }
-
-                if (!rawJsonData) {
-                    infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
-                    return;
-                }
-
-                allConfigs = rawJsonData.map((item, index) => ({
-                    id: index,
-                    url: item.config,
-                    name: extractNameFromUrl(item.config),
-                    protocol: item.config.split('://')[0],
-                    initialPing: item.ping,
-                    latency: null
-                }));
-                
-                fullConfigTextForCopy = allConfigs.map(c => c.url).join('\n');
-
-                renderAccordion();
-                infoContainer.textContent = `تعداد ${allConfigs.length} کانفیگ برتر بارگذاری شد.`;
-                speedTestButton.style.display = 'block';
-                copyAllButton.style.display = 'block';
-            };
-
-            closeBtn.onclick = () => qrModal.style.display = "none";
-            window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; };
+            const qrBtn = document.createElement('button');
+            qrBtn.className = 'action-btn';
+            qrBtn.textContent = 'QR';
+            qrBtn.onclick = () => openQrModal(cfg.url, cfg.name);
             
-            tabNav.addEventListener('click', (e) => {
-                if (e.target.classList.contains('tab-btn')) {
-                    const targetTab = e.target.dataset.tab;
-                    tabNav.querySelector('.active').classList.remove('active');
-                    e.target.classList.add('active');
-                    tabContents.forEach(content => {
-                        content.classList.remove('active');
-                        if (content.id === `tab-${targetTab}`) content.classList.add('active');
+            const shareBtn = document.createElement('button');
+            shareBtn.className = 'action-btn';
+            shareBtn.textContent = 'Share';
+            shareBtn.onclick = () => shareUrl(cfg.url, cfg.name);
+
+            actionsDiv.append(copyBtn, qrBtn, shareBtn);
+            card.append(detailsDiv, actionsDiv);
+            return card;
+        };
+        
+        const renderAccordion = (andOpen = false) => {
+            configsContainer.innerHTML = '';
+            const categorized = { vless: [], vmess: [], trojan: [], ss: [] };
+            allConfigs.forEach(cfg => { if (categorized[cfg.protocol]) categorized[cfg.protocol].push(cfg); });
+
+            Object.keys(categorized).forEach(protocol => {
+                const protocolConfigs = categorized[protocol];
+                if (protocolConfigs.length > 0) {
+                    const accordionItem = document.createElement('div');
+                    accordionItem.className = 'accordion-item';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'accordion-header';
+                    header.innerHTML = `<h2>${protocol.toUpperCase()} (${protocolConfigs.length})</h2>`;
+                    
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'link-btn copy-protocol-btn';
+                    copyBtn.textContent = `کپی همه ${protocol.toUpperCase()}`;
+                    copyBtn.dataset.protocol = protocol;
+                    header.appendChild(copyBtn);
+                    
+                    const content = document.createElement('div');
+                    content.className = 'accordion-content';
+                    const grid = document.createElement('div');
+                    grid.className = 'config-grid';
+                    
+                    content.style.display = andOpen ? 'block' : 'none';
+                    
+                    protocolConfigs.forEach(cfg => grid.appendChild(createConfigCard(cfg)));
+                    content.appendChild(grid);
+                    accordionItem.append(header, content);
+                    configsContainer.appendChild(accordionItem);
+
+                    header.addEventListener('click', (e) => {
+                        if (e.target.closest('.copy-protocol-btn')) return;
+                        content.style.display = content.style.display === 'block' ? 'none' : 'block';
                     });
                 }
             });
-
-            document.body.addEventListener('click', (e) => {
-                const target = e.target.closest('button, a');
-                if (!target) return;
-                const url = target.dataset.url;
-                if (target.matches('.qr-sub-btn')) openQrModal(url, 'لینک اشتراک');
-                else if (target.matches('.share-sub-btn')) shareUrl(url, 'لینک اشتراک V2V');
-                else if (target.matches('.copy-sub-btn')) copyToClipboard(url, target);
-                else if (target.matches('.copy-protocol-btn')) {
-                    const protocol = target.dataset.protocol;
-                    const configsToCopy = allConfigs.filter(c => c.protocol === protocol).map(c => c.url).join('\n');
-                    if(configsToCopy) copyToClipboard(configsToCopy, target);
-                }
-            });
-
-            copyAllButton.addEventListener('click', (e) => {
-                if(fullConfigTextForCopy) copyToClipboard(fullConfigTextForCopy, e.currentTarget);
-            });
             
-            speedTestButton.addEventListener('click', startClientSideBatchTest);
+            if (clipboardForSingleConfigs) clipboardForSingleConfigs.destroy();
+            clipboardForSingleConfigs = new ClipboardJS('.copy-btn-class');
+            clipboardForSingleConfigs.on('success', (e) => {
+                showCopyFeedback(e.trigger, 'کپی');
+                e.clearSelection();
+            });
+        };
+        
+        const pingConfig = async (config) => {
+            let host = '';
+            try {
+                if (config.url.startsWith('vmess://')) {
+                    const vmessData = JSON.parse(atob(config.url.substring(8)));
+                    host = vmessData.add;
+                } else {
+                    host = new URL(config.url).hostname;
+                }
+            } catch { 
+                config.latency = 'Error'; return config;
+            }
+            const testUrl = `https://ping.v2v.workers.dev/?host=${host}`;
+            const startTime = Date.now();
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                await fetch(testUrl, { signal: controller.signal, mode: 'cors' });
+                clearTimeout(timeoutId);
+                config.latency = Date.now() - startTime;
+            } catch (error) {
+                config.latency = 'Timeout';
+            }
+            return config;
+        };
 
-            initializeApp();
+        const startClientSideBatchTest = async () => {
+            speedTestButton.disabled = true;
+            const configsToTest = allConfigs;
+            const batchSize = 50;
+            for (let i = 0; i < configsToTest.length; i += batchSize) {
+                const batch = configsToTest.slice(i, i + batchSize);
+                infoContainer.textContent = `در حال تست دسته ${Math.floor(i/batchSize) + 1}... (${i + batch.length}/${configsToTest.length})`;
+                await Promise.all(batch.map(pingConfig));
+            }
+            allConfigs.sort((a, b) => {
+                const aVal = (typeof a.latency === 'number') ? a.latency : 9999;
+                const bVal = (typeof b.latency === 'number') ? b.latency : 9999;
+                return aVal - bVal;
+            });
+            renderAccordion(true);
+            infoContainer.textContent = 'تست کامل شد! نتایج بر اساس سرعت مرتب شدند.';
+            speedTestButton.disabled = false;
+        };
+
+        const initializeApp = async () => {
+            infoContainer.textContent = 'در حال دریافت آخرین لیست کانفیگ‌ها...';
+            let rawJsonData = null;
+
+            for (const url of mirrors) {
+                try {
+                    infoContainer.textContent = `در حال اتصال به میرور: ${new URL(url).hostname}...`;
+                    // افزودن هدر برای جلوگیری از کش شدن فایل
+                    const response = await fetch(url, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } });
+                    if (!response.ok) throw new Error(`Mirror failed: ${url}`);
+                    rawJsonData = await response.json();
+                    if (!rawJsonData || rawJsonData.length === 0) throw new Error("Source is empty");
+                    break;
+                } catch (error) {
+                    console.warn(error.message);
+                }
+            }
+
+            if (!rawJsonData) {
+                infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
+                return;
+            }
+
+            allConfigs = rawJsonData.map((item, index) => ({
+                id: index,
+                url: item.config,
+                name: extractNameFromUrl(item.config),
+                protocol: item.config.split('://')[0],
+                initialPing: item.ping,
+                latency: null
+            }));
+            
+            fullConfigTextForCopy = allConfigs.map(c => c.url).join('\n');
+
+            renderAccordion();
+            infoContainer.textContent = `تعداد ${allConfigs.length} کانفیگ برتر بارگذاری شد.`;
+            speedTestButton.style.display = 'block';
+            copyAllButton.style.display = 'block';
+        };
+
+        closeBtn.onclick = () => qrModal.style.display = "none";
+        window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; };
+        
+        tabNav.addEventListener('click', (e) => {
+            if (e.target.classList.contains('tab-btn')) {
+                const targetTab = e.target.dataset.tab;
+                tabNav.querySelector('.active').classList.remove('active');
+                e.target.classList.add('active');
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `tab-${targetTab}`) content.classList.add('active');
+                });
+            }
         });
-    </script>
+
+        document.body.addEventListener('click', (e) => {
+            const target = e.target.closest('button, a');
+            if (!target) return;
+            const url = target.dataset.url;
+            if (target.matches('.qr-sub-btn')) openQrModal(url, 'لینک اشتراک');
+            else if (target.matches('.share-sub-btn')) shareUrl(url, 'لینک اشتراک V2V');
+            else if (target.matches('.copy-sub-btn')) copyToClipboard(url, target);
+            else if (target.matches('.copy-protocol-btn')) {
+                const protocol = target.dataset.protocol;
+                const configsToCopy = allConfigs.filter(c => c.protocol === protocol).map(c => c.url).join('\n');
+                if(configsToCopy) copyToClipboard(configsToCopy, target);
+            }
+        });
+
+        copyAllButton.addEventListener('click', (e) => {
+            if(fullConfigTextForCopy) copyToClipboard(fullConfigTextForCopy, e.currentTarget);
+        });
+        
+        speedTestButton.addEventListener('click', startClientSideBatchTest);
+
+        initializeApp();
+    });
+</script>
 </body>
 </html>
