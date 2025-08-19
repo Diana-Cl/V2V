@@ -48,12 +48,12 @@ GITHUB_SEARCH_KEYWORDS = ['vless reality subscription', 'hysteria2 subscription'
 TOP_N_CONFIGS = 500
 OUTPUT_FILE_PLAIN = 'configs.txt'
 OUTPUT_FILE_CLASH = 'v2v_clash.yaml'
-OUTPUT_FILE_JSON = 'configs.json'  # <-- فایل خروجی جدید برای اپلیکیشن شما
+OUTPUT_FILE_JSON = 'configs.json'
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://')
 
 # === SECRET KEYS ===
 GITHUB_PAT = os.environ.get('GH_PAT')
-HEADERS = {'User-Agent': 'V2V-Scraper/Hybrid-v1'}
+HEADERS = {'User-Agent': 'V2V-Scraper/Hybrid-v1.1'} # Version updated slightly
 if GITHUB_PAT: HEADERS['Authorization'] = f'token {GITHUB_PAT}'
 
 # === STATE MANAGEMENT FUNCTIONS ===
@@ -175,8 +175,12 @@ def parse_config(config_url: str) -> dict | None:
     except Exception:
         return None
 
-# === NEW QUALITY SCORING FUNCTION ===
+# === QUALITY SCORING FUNCTION (UNRESTRICTED VERSION) ===
 def score_config(parsed_config: dict) -> int:
+    """
+    Gives a quality score to a config based on its parameters.
+    Prioritizes secure configs but does not discard less secure ones.
+    """
     if not parsed_config: return 0
     score = 0
     protocol = parsed_config.get('protocol')
@@ -189,17 +193,24 @@ def score_config(parsed_config: dict) -> int:
         if security == 'reality': score += 10
         elif net_type == 'grpc' and security == 'tls': score += 7
         elif security == 'tls': score += 5
-        else: return 0
-    elif protocol == 'trojan': score += 3
+        else: score += 1  # CHANGE: Give a minimal score instead of discarding
+    
+    elif protocol == 'trojan':
+        score += 3
+
     elif protocol == 'vmess':
         if params.get('tls') == 'tls' or params.get('security') == 'tls': score += 4
-        else: return 0
+        else: score += 1  # CHANGE: Give a minimal score instead of discarding
+    
     elif protocol == 'ss':
         if parsed_config.get('cipher') in ['2022-blake3-aes-128-gcm', '2022-blake3-aes-256-gcm', 'aes-256-gcm', 'chacha20-poly1305']: score += 3
-        else: return 0
+        else: score += 1  # CHANGE: Give a minimal score to older ciphers
     
-    if port == 443: score += 5
-    elif port in [8443, 2053, 2083, 2087, 2096]: score += 2
+    # Add bonus points for standard ports
+    if port == 443:
+        score += 5
+    elif port in [8443, 2053, 2083, 2087, 2096]:
+        score += 2
     
     return score
 
