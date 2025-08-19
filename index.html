@@ -3,8 +3,15 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>V2V</title>
+    <title>V2V | دسترسی آزاد</title>
 
+    <meta name="description" content="پروژه‌ای برای تجمیع و ارائه کانفیگ‌های V2Ray با تست سرعت و دسته‌بندی هوشمند.">
+    <meta property="og:title" content="V2V | دسترسی آزاد و پایدار" />
+    <meta property="og:description" content="سپاس هر‌آنکه خواه یا ناخواه دستی بر این راهک رهایی داشت" />
+    <meta property="og:image" content="https://smbcryp.github.io/V2V/social-preview.png" />
+    <meta property="og:url" content="https://smbcryp.github.io/V2V/" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="manifest" href="/V2V/manifest.json">
     <link rel="icon" type="image/png" href="/V2V/icon-192.png">
     <link rel="apple-touch-icon" href="/V2V/icon-192.png">
@@ -17,11 +24,11 @@
     <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
     <style>
         :root {
-            --bg-color: #000000; /* Pure Black for seamless logo */
+            --bg-color: #000000;
             --card-color: #1e1e1e;
             --text-color: #e0e0e0;
-            --primary-color: #8B0000; /* Liver Red */
-            --secondary-color: #28a745; /* Logo Green */
+            --primary-color: #8B0000;
+            --secondary-color: #28a745;
             --error-color: #cf6679;
             --success-color: #66bb6a;
             --warning-color: #ffeb3b;
@@ -40,7 +47,7 @@
         .site-logo {
             display: block;
             margin: 0 auto 15px auto;
-            max-width: 160px; /* Logo size reduced */
+            max-width: 160px;
             height: auto;
         }
         .slogan { text-align: center; color: #aaa; font-style: italic; margin-bottom: 2em; font-weight: 600; }
@@ -101,7 +108,7 @@
         .accordion-header { background-color: var(--card-color); padding: 15px; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
         .accordion-header h2 { 
             margin: 0; 
-            color: var(--secondary-color); /* Protocol color changed to green */
+            color: var(--secondary-color);
         }
         .copy-protocol-btn { font-size: 0.8em; padding: 5px 10px; flex-shrink: 0; margin-right: 15px; }
         .accordion-content { display: none; padding: 20px 5px 5px 5px; }
@@ -130,9 +137,9 @@
             list-style: none;
             padding: 0;
             margin: 0;
-            display: flex; /* Links side-by-side */
+            display: flex;
             justify-content: center;
-            gap: 25px; /* Space between links */
+            gap: 25px;
         }
         .footer-links a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
         .footer-links a:hover { text-decoration: underline; }
