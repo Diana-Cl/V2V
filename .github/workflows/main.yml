@@ -1,9 +1,11 @@
-name: Manual or Push Trigger Build
+name: Auto-update V2V Configs
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
+  schedule:
+    - cron: '0 */3 * * *' # Runs every 3 hours
 
 jobs:
   build-and-commit:
