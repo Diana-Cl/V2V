@@ -20,7 +20,7 @@
         main { max-width: 1200px; margin: 0 auto; }
         .site-logo { display: block; margin: 0 auto 15px auto; max-width: 160px; height: auto; }
         .slogan { text-align: center; color: #aaa; font-style: italic; margin-bottom: 2em; font-weight: 600; }
-        .tab-nav { display: flex; justify-content: center; margin-bottom: 25px; gap: 10px; }
+        .tab-nav { display: flex; justify-content: center; margin-bottom: 25px; gap: 10px; flex-wrap: wrap;}
         .tab-btn { background-color: var(--btn-bg); border: 2px solid var(--tab-inactive); color: var(--text-color); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold; transition: all 0.3s; font-family: 'Lora', serif; }
         .tab-btn.active { background-color: var(--primary-color); border-color: var(--primary-color); color: #fff; }
         .tab-btn:hover:not(.active) { background-color: var(--btn-hover-bg); }
@@ -41,7 +41,7 @@
         #copyAllButton { background-color: var(--primary-color); color: #fff; }
         .accordion-item { margin-bottom: 15px; }
         .accordion-header { background-color: var(--card-color); padding: 15px; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .accordion-header h2 { margin: 0; color: var(--secondary-color); }
+        .accordion-header h2 { margin: 0; color: var(--secondary-color); font-size: 1.2em; }
         .copy-protocol-btn { font-size: 0.8em; padding: 5px 10px; flex-shrink: 0; margin-right: 15px; }
         .accordion-content { display: none; padding: 20px 5px 5px 5px; }
         .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
@@ -297,32 +297,62 @@
             });
         };
         
-        const pingConfig = (config) => {
-            return new Promise(resolve => {
+        const pingConfig = async (config) => {
+            let host = '';
+            try {
+                if (config.url.startsWith('vmess://')) {
+                    const vmessData = JSON.parse(atob(config.url.substring(8)));
+                    host = vmessData.add;
+                } else {
+                    host = new URL(config.url).hostname;
+                }
+            } catch { 
+                config.latency = 'Error'; 
+                return config;
+            }
+
+            // --- Primary Test: Vercel Proxy (More Accurate) ---
+            try {
+                const testUrl = `/api/?host=${host}`;
                 const startTime = Date.now();
-                const ws = new WebSocket('wss://echo.websocket.events');
-                let timeoutId = null;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-                ws.onopen = () => {
-                    clearTimeout(timeoutId);
-                    config.latency = Date.now() - startTime;
-                    ws.close();
-                    resolve(config);
-                };
+                await fetch(testUrl, { signal: controller.signal, mode: 'cors' });
+                clearTimeout(timeoutId);
+                config.latency = Date.now() - startTime;
+                return config;
 
-                ws.onerror = () => {
-                    clearTimeout(timeoutId);
-                    config.latency = 'Timeout';
-                    ws.close();
-                    resolve(config);
-                };
+            } catch (error) {
+                console.warn(`Vercel proxy ping failed for ${host}, falling back to WebSocket ping.`);
 
-                timeoutId = setTimeout(() => {
-                    config.latency = 'Timeout';
-                    ws.close();
-                    resolve(config);
-                }, 4000);
-            });
+                // --- Fallback Test: WebSocket (More Stable) ---
+                return new Promise(resolve => {
+                    const startTime = Date.now();
+                    const ws = new WebSocket('wss://echo.websocket.events');
+                    let timeoutId = null;
+
+                    ws.onopen = () => {
+                        clearTimeout(timeoutId);
+                        config.latency = Date.now() - startTime;
+                        ws.close();
+                        resolve(config);
+                    };
+
+                    ws.onerror = () => {
+                        clearTimeout(timeoutId);
+                        config.latency = 'Timeout';
+                        ws.close();
+                        resolve(config);
+                    };
+
+                    timeoutId = setTimeout(() => {
+                        config.latency = 'Timeout';
+                        ws.close();
+                        resolve(config);
+                    }, 4000);
+                });
+            }
         };
 
         const startClientSideBatchTest = async () => {
