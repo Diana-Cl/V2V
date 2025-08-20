@@ -53,7 +53,7 @@ VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://')
 
 # === SECRET KEYS ===
 GITHUB_PAT = os.environ.get('GH_PAT')
-HEADERS = {'User-Agent': 'V2V-Scraper/Hybrid-v1.1'} # Version updated slightly
+HEADERS = {'User-Agent': 'V2V-Scraper/Hybrid-v2.0'}
 if GITHUB_PAT: HEADERS['Authorization'] = f'token {GITHUB_PAT}'
 
 # === STATE MANAGEMENT FUNCTIONS ===
@@ -175,44 +175,22 @@ def parse_config(config_url: str) -> dict | None:
     except Exception:
         return None
 
-# === QUALITY SCORING FUNCTION (UNRESTRICTED VERSION) ===
 def score_config(parsed_config: dict) -> int:
-    """
-    Gives a quality score to a config based on its parameters.
-    Prioritizes secure configs but does not discard less secure ones.
-    """
     if not parsed_config: return 0
-    score = 0
+    
     protocol = parsed_config.get('protocol')
     params = parsed_config.get('params', {})
-    port = parsed_config.get('port')
 
-    if protocol == 'vless':
-        security = params.get('security')
-        net_type = params.get('type')
-        if security == 'reality': score += 10
-        elif net_type == 'grpc' and security == 'tls': score += 7
-        elif security == 'tls': score += 5
-        else: score += 1  # CHANGE: Give a minimal score instead of discarding
+    if params.get('security') in ['tls', 'reality']:
+        return 1
     
-    elif protocol == 'trojan':
-        score += 3
+    if protocol == 'ss' and parsed_config.get('cipher') in ['2022-blake3-aes-128-gcm', '2022-blake3-aes-256-gcm', 'aes-256-gcm', 'chacha20-poly1305']:
+        return 1
+        
+    if protocol == 'trojan':
+        return 1
 
-    elif protocol == 'vmess':
-        if params.get('tls') == 'tls' or params.get('security') == 'tls': score += 4
-        else: score += 1  # CHANGE: Give a minimal score instead of discarding
-    
-    elif protocol == 'ss':
-        if parsed_config.get('cipher') in ['2022-blake3-aes-128-gcm', '2022-blake3-aes-256-gcm', 'aes-256-gcm', 'chacha20-poly1305']: score += 3
-        else: score += 1  # CHANGE: Give a minimal score to older ciphers
-    
-    # Add bonus points for standard ports
-    if port == 443:
-        score += 5
-    elif port in [8443, 2053, 2083, 2087, 2096]:
-        score += 2
-    
-    return score
+    return 0
 
 # === TESTING & OUTPUT FUNCTIONS ===
 def tcp_ping(host: str, port: int, timeout: int = 2) -> int | None:
@@ -265,7 +243,7 @@ def generate_clash_config(configs_list: list) -> str:
 
 # === MAIN EXECUTION FUNCTION ===
 def main():
-    print("🚀 Starting V2V Smart Scraper with Hybrid Logic...")
+    print("🚀 Starting V2V Smart Scraper with Fair Competition Logic...")
     
     base_sources_data = load_sources_status()
     print(f"\n🩺 Checking health of {len(base_sources_data)} base sources...")
@@ -314,45 +292,38 @@ def main():
     print(f"Found {len(all_configs)} unique configs.")
     if not all_configs: print("No configs found. Aborting."); return
 
-    # --- Step 1: Score and select configs based on quality ---
-    print("\n✨ Scoring configs based on quality...")
-    scored_configs = []
+    print("\n✨ Filtering configs based on security standards...")
+    healthy_configs = []
     for config_str in all_configs:
         parsed = parse_config(config_str)
         if parsed:
             score = score_config(parsed)
-            if score > 0: scored_configs.append((config_str, score))
-
-    scored_configs.sort(key=lambda x: x[1], reverse=True)
-    top_configs_by_quality = [cfg for cfg, score in scored_configs[:TOP_N_CONFIGS]]
+            if score > 0:
+                healthy_configs.append(config_str)
     
-    print(f"🏅 Selected top {len(top_configs_by_quality)} configs based on quality score.")
-    if not top_configs_by_quality: print("No high-quality configs found. Aborting."); return
+    print(f"🏅 Found {len(healthy_configs)} configs that meet security standards.")
+    if not healthy_configs: print("No healthy configs found to test. Aborting."); return
 
-    # --- Step 2: Run lightweight ping test on top configs ---
-    print("\n⚡️ Running lightweight ping test on top configs...")
+    print(f"\n⚡️ Running lightweight ping test on all {len(healthy_configs)} healthy configs...")
     final_configs_with_ping = []
     with ThreadPoolExecutor(max_workers=100) as executor:
-        future_to_config = {executor.submit(test_config_latency, cfg): cfg for cfg in top_configs_by_quality}
+        future_to_config = {executor.submit(test_config_latency, cfg): cfg for cfg in healthy_configs}
         for future in as_completed(future_to_config):
             result = future.result()
-            config_str = future_to_config[future]
             if result:
-                _, latency = result
+                config_str, latency = result
                 final_configs_with_ping.append({'config': config_str, 'ping': latency})
-            else:
-                final_configs_with_ping.append({'config': config_str, 'ping': -1})
 
-    final_configs_with_ping.sort(key=lambda x: (x['ping'] == -1, x['ping']))
+    final_configs_with_ping.sort(key=lambda x: x['ping'])
+    top_final_configs = final_configs_with_ping[:TOP_N_CONFIGS]
     
-    print(f"\n✅ Test complete. Found {len(final_configs_with_ping)} final configs.")
+    print(f"\n✅ Test complete. Selected top {len(top_final_configs)} fastest configs.")
 
-    # --- Step 3: Generate output files ---
     with open(OUTPUT_FILE_JSON, 'w', encoding='utf-8') as f:
-        json.dump(final_configs_with_ping, f, ensure_ascii=False)
+        json.dump(top_final_configs, f, ensure_ascii=False)
     print(f"💾 Main JSON output saved to {OUTPUT_FILE_JSON}")
 
-    subscription_links = [item['config'] for item in final_configs_with_ping]
+    subscription_links = [item['config'] for item in top_final_configs]
     with open(OUTPUT_FILE_PLAIN, 'w', encoding='utf-8') as f:
         f.write("\n".join(subscription_links))
     print(f"💾 Subscription file saved to {OUTPUT_FILE_PLAIN}")
