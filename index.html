@@ -144,7 +144,7 @@
 
         const mirrors = [
             'https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.json',
-            'https://smbcryp.github.io/V2V/configs.json' // آدرس پایدارتر گیت‌هاب
+            'https://smbcryp.github.io/V2V/configs.json'
         ];
 
         const showCopyFeedback = (element, originalText) => {
@@ -283,30 +283,32 @@
             });
         };
         
-        const pingConfig = async (config) => {
-            let host = '';
-            try {
-                if (config.url.startsWith('vmess://')) {
-                    const vmessData = JSON.parse(atob(config.url.substring(8)));
-                    host = vmessData.add;
-                } else {
-                    host = new URL(config.url).hostname;
-                }
-            } catch { 
-                config.latency = 'Error'; return config;
-            }
-            const testUrl = `https://ping.v2v.workers.dev/?host=${host}`;
-            const startTime = Date.now();
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000);
-                await fetch(testUrl, { signal: controller.signal, mode: 'cors' });
-                clearTimeout(timeoutId);
-                config.latency = Date.now() - startTime;
-            } catch (error) {
-                config.latency = 'Timeout';
-            }
-            return config;
+        const pingConfig = (config) => {
+            return new Promise(resolve => {
+                const startTime = Date.now();
+                const ws = new WebSocket('wss://echo.websocket.events');
+                let timeoutId = null;
+
+                ws.onopen = () => {
+                    clearTimeout(timeoutId);
+                    config.latency = Date.now() - startTime;
+                    ws.close();
+                    resolve(config);
+                };
+
+                ws.onerror = () => {
+                    clearTimeout(timeoutId);
+                    config.latency = 'Timeout';
+                    ws.close();
+                    resolve(config);
+                };
+
+                timeoutId = setTimeout(() => {
+                    config.latency = 'Timeout';
+                    ws.close();
+                    resolve(config);
+                }, 4000);
+            });
         };
 
         const startClientSideBatchTest = async () => {
@@ -335,7 +337,6 @@
             for (const url of mirrors) {
                 try {
                     infoContainer.textContent = `در حال اتصال به میرور: ${new URL(url).hostname}...`;
-                    // افزودن هدر برای جلوگیری از کش شدن فایل
                     const response = await fetch(url, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } });
                     if (!response.ok) throw new Error(`Mirror failed: ${url}`);
                     rawJsonData = await response.json();
