@@ -30,8 +30,6 @@ jobs:
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-          GITLAB_API_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
-          GITLAB_SNIPPET_ID: ${{ secrets.GITLAB_SNIPPET_ID }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
@@ -41,11 +39,11 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         run: |
           pip install awscli
-          # آپلود فایل‌های داده
+          # Upload data files
           aws s3 cp configs.txt s3://v2v-data/configs.txt --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
           aws s3 cp v2v_clash.yaml s3://v2v-data/v2v_clash.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
           aws s3 cp configs.json s3://v2v-data/configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          # --- خطوط جدید برای آپلود فایل‌های سایت ---
+          # Upload site files
           aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
           aws s3 cp logo.png s3://v2v-data/logo.png --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
 
@@ -56,3 +54,4 @@ jobs:
           file_pattern: "*.txt *.yaml *.json"
           branch: main
           push_options: --force
+
