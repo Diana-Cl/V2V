@@ -26,6 +26,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # --- مرحله جدید برای نصب ابزار تست ---
+      - name: Install Xray-core for validation testing
+        run: sudo bash -c "$(curl -L https://github.com/XTLS/Xray-core/raw/main/install-release.sh)" @ install
+
       - name: Run scraper script
         run: python scraper.py
         env:
@@ -37,25 +41,22 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         run: |
           pip install awscli
-          # --- Upload new dual-core data files ---
-          # Xray Core Files
+          # Upload all new dual-core data files
           aws s3 cp configs_xray.txt s3://v2v-data/configs_xray.txt --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
           aws s3 cp v2v_clash_xray.yaml s3://v2v-data/v2v_clash_xray.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
           aws s3 cp configs_xray.json s3://v2v-data/configs_xray.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          # Sing-box Core Files
           aws s3 cp configs_singbox.txt s3://v2v-data/configs_singbox.txt --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
           aws s3 cp v2v_clash_singbox.yaml s3://v2v-data/v2v_clash_singbox.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
           aws s3 cp configs_singbox.json s3://v2v-data/configs_singbox.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          # Unified JSON for Website
           aws s3 cp configs.json s3://v2v-data/configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          # --- Upload site files (unchanged) ---
+          # Upload site files
           aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
           aws s3 cp logo.png s3://v2v-data/logo.png --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
 
       - name: Commit and Push new configs to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update dual-core config files"
+          commit_message: "Update dual-core config files with validation"
           file_pattern: "*.txt *.yaml *.json"
           branch: main
           push_options: --force
