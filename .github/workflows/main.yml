@@ -26,12 +26,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # --- مرحله نصب ابزار تست (اصلاح شده) ---
-      - name: Install Xray-core for validation testing
+      # --- مرحله نصب ابزار تست (روش جدید و مستقیم) ---
+      - name: Install Xray-core for validation testing (Direct Method)
         run: |
-          curl -L -o install-release.sh https://github.com/XTLS/Xray-core/raw/main/install-release.sh
-          sudo chmod +x install-release.sh
-          sudo ./install-release.sh
+          # Download the latest release zip file for linux-64
+          curl -L -o xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
+          # Install unzip if not present and extract the binary
+          sudo apt-get update && sudo apt-get install -y unzip
+          unzip xray.zip xray
+          # Move the xray binary to a directory in the system's PATH
+          sudo mv xray /usr/local/bin/
+          # Verify the installation by checking the version
+          echo "Xray installed successfully:"
+          xray --version
 
       - name: Run scraper script
         run: python scraper.py
@@ -45,16 +52,17 @@ jobs:
         run: |
           pip install awscli
           # Upload all new dual-core data files
-          aws s3 cp configs_xray.txt s3://v2v-data/configs_xray.txt --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          aws s3 cp v2v_clash_xray.yaml s3://v2v-data/v2v_clash_xray.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          aws s3 cp configs_xray.json s3://v2v-data/configs_xray.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          aws s3 cp configs_singbox.txt s3://v2v-data/configs_singbox.txt --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          aws s3 cp v2v_clash_singbox.yaml s3://v2v-data/v2v_clash_singbox.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          aws s3 cp configs_singbox.json s3://v2v-data/configs_singbox.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          aws s3 cp configs.json s3://v2v-data/configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
+          aws s3 cp configs_xray.txt s3://v2v-data/configs_xray.txt --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File configs_xray.txt not found, skipping."
+          aws s3 cp v2v_clash_xray.yaml s3://v2v-data/v2v_clash_xray.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File v2v_clash_xray.yaml not found, skipping."
+          aws s3 cp configs_xray.json s3://v2v-data/configs_xray.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File configs_xray.json not found, skipping."
+          aws s3 cp configs_singbox.txt s3://v2v-data/configs_singbox.txt --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File configs_singbox.txt not found, skipping."
+          aws s3 cp v2v_clash_singbox.yaml s3://v2v-data/v2v_clash_singbox.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File v2v_clash_singbox.yaml not found, skipping."
+          aws s3 cp configs_singbox.json s3://v2v-data/configs_singbox.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File configs_singbox.json not found, skipping."
+          aws s3 cp configs.json s3://v2v-data/configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File configs.json not found, skipping."
           # Upload site files
-          aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          aws s3 cp logo.png s3://v2v-data/logo.png --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
+          aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File index.html not found, skipping."
+          aws s3 cp logo.png s3://v2v-data/logo.png --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File logo.png not found, skipping."
+
 
       - name: Commit and Push new configs to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
