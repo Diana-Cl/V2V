@@ -20,41 +20,44 @@
         main { max-width: 1200px; margin: 0 auto; }
         .site-logo { display: block; margin: 0 auto 15px auto; max-width: 160px; height: auto; }
         .slogan { text-align: center; color: #aaa; font-style: italic; margin-bottom: 2em; font-weight: 600; }
-        .tab-nav { display: flex; justify-content: center; margin-bottom: 25px; gap: 10px; flex-wrap: wrap;}
-        .tab-btn { background-color: var(--btn-bg); border: 2px solid var(--tab-inactive); color: var(--text-color); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold; transition: all 0.3s; font-family: 'Lora', serif; }
-        .tab-btn.active { background-color: var(--primary-color); border-color: var(--primary-color); color: #fff; }
-        .tab-btn:hover:not(.active) { background-color: var(--btn-hover-bg); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .links-container { background-color: var(--card-color); padding: 25px; border-radius: 8px; text-align: center; }
-        .links-container h2 { margin-top: 0; color: var(--secondary-color); }
-        .link-group { margin-bottom: 25px; }
+        
+        .action-button { color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 18px; cursor: pointer; transition: opacity 0.2s; display: block; width: 100%; margin-bottom: 15px; font-weight: bold; font-family: 'Lora', serif; }
+        #speedTestButton { background-color: var(--secondary-color); }
+        
+        .info-box { text-align: center; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 5px; background-color: var(--card-color); }
+        
+        /* Core Accordion Styles */
+        .core-accordion-item { margin-bottom: 20px; border: 1px solid #333; border-radius: 8px; overflow: hidden; }
+        .core-accordion-header { background-color: var(--primary-color); padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .core-accordion-header h2 { margin: 0; color: #fff; font-size: 1.5em; }
+        .core-accordion-content { display: none; padding: 20px; }
+        
+        /* Links Section Styles */
+        .links-container { background-color: #111; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+        .links-container h3 { margin-top: 0; color: var(--secondary-color); border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 20px; }
+        .link-group { margin-bottom: 20px; }
         .link-group:last-child { margin-bottom: 0; }
-        .link-group h3 { margin-bottom: 10px; color: var(--primary-color); }
-        .link-group small { color: #aaa; display: block; margin-top: -8px; margin-bottom: 15px; word-break: break-all; font-family: sans-serif; }
+        .link-group h4 { margin-bottom: 10px; color: var(--text-color); }
         .link-buttons { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .link-btn { background-color: var(--btn-bg); color: var(--text-color); padding: 10px 18px; border-radius: 5px; text-decoration: none; font-weight: bold; transition: background-color 0.2s; border: 1px solid #444; cursor: pointer; }
         .link-btn:hover { background-color: var(--btn-hover-bg); }
-        .download-btn { background-color: var(--success-color); color: #000; }
-        .action-button { color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 18px; cursor: pointer; transition: opacity 0.2s; display: block; width: 100%; margin-bottom: 15px; font-weight: bold; font-family: 'Lora', serif; }
-        #speedTestButton { background-color: var(--secondary-color); }
-        #copyAllButton { background-color: var(--primary-color); color: #fff; }
-        .accordion-item { margin-bottom: 15px; }
-        .accordion-header { background-color: var(--card-color); padding: 15px; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .accordion-header h2 { margin: 0; color: var(--secondary-color); font-size: 1.2em; }
+        
+        /* Protocol Accordion Styles */
+        .protocol-accordion-item { margin-bottom: 15px; }
+        .protocol-accordion-header { background-color: var(--card-color); padding: 15px; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .protocol-accordion-header h3 { margin: 0; color: var(--secondary-color); font-size: 1.2em; }
         .copy-protocol-btn { font-size: 0.8em; padding: 5px 10px; flex-shrink: 0; margin-right: 15px; }
-        .accordion-content { display: none; padding: 20px 5px 5px 5px; }
+        .protocol-accordion-content { display: none; padding: 20px 5px 5px 5px; }
+
         .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         .config-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; position: relative; }
         .ping-result { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
-        .ping-result.fast { color: var(--success-color); }
-        .ping-result.slow { color: var(--warning-color); }
-        .ping-result.timeout { color: var(--error-color); }
+        .ping-result.fast { color: var(--success-color); } .ping-result.slow { color: var(--warning-color); } .ping-result.timeout { color: var(--error-color); }
         .config-details { padding: 15px; flex-grow: 1; }
         .config-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .actions { display: flex; justify-content: space-around; padding: 10px 15px; background-color: rgba(0,0,0,0.2); }
         .action-btn { background-color: var(--btn-bg); border: 1px solid #444; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; padding: 8px 15px; flex-grow: 1; margin: 0 5px; color: var(--text-color); }
-        .info-box { text-align: center; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 5px; background-color: var(--card-color); }
+
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
         .modal-content { background-color: var(--card-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; position: relative; }
         .close-btn { position: absolute; top: 10px; left: 20px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
@@ -68,63 +71,13 @@
     <main>
         <img src="logo.png" alt="V2V Logo" class="site-logo">
         <p class="slogan">سپاس هر‌آنکه خواه یا ناخواه دستی بر این راهک رهایی داشت</p>
-        <div class="tab-nav">
-            <button class="tab-btn active" data-tab="configs">کانفیگ‌ها (Configs)</button>
-            <button class="tab-btn" data-tab="subscriptions">لینک اشتراک‌ها (Subscription Links)</button>
-            <button class="tab-btn" data-tab="clash">کلش متا (Clash Meta)</button>
-        </div>
-        <div id="tab-configs" class="tab-content active">
-            <button id="speedTestButton" class="action-button" style="display: none;">🚀 تست سرعت کانفیگ‌ها</button>
-            <button id="copyAllButton" class="action-button" style="display: none;">📋 کپی همه کانفیگ‌های این صفحه</button>
-            <div id="info" class="info-box"></div>
-            <div id="configs-container"></div>
-        </div>
-        <div id="tab-subscriptions" class="tab-content">
-            <div class="links-container">
-                <h2>لینک اشتراک عمومی</h2>
-                <p>این لینک‌ها را کپی کرده و در کلاینت خود (مانند V2RayNG) وارد کنید تا همه کانفیگ‌ها یکجا اضافه شوند.</p>
-                
-                <div class="link-group">
-                    <h3>لینک پرسرعت (ابر آروان)</h3>
-                    <small>https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt</small>
-                    <div class="link-buttons">
-                        <button class="link-btn copy-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">کپی لینک</button>
-                        <button class="link-btn qr-sub-btn" data-url="https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.txt">QR کد</button>
-                    </div>
-                </div>
+        
+        <div id="info" class="info-box"></div>
+        <button id="speedTestButton" class="action-button" style="display: none;">🚀 تست سرعت همه کانفیگ‌ها</button>
 
-                <div class="link-group">
-                    <h3>لینک اصلی (GitHub)</h3>
-                    <small>https://smbcryp.github.io/V2V/configs.txt</small>
-                    <div class="link-buttons">
-                        <button class="link-btn copy-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">کپی لینک</button>
-                        <button class="link-btn qr-sub-btn" data-url="https://smbcryp.github.io/V2V/configs.txt">QR کد</button>
-                    </div>
-                </div>
+        <div id="main-container">
+            </div>
 
-                <div class="link-group">
-                    <h3>لینک کمکی (Vercel)</h3>
-                     <small>https://v2-v.vercel.app/configs.txt</small>
-                    <div class="link-buttons">
-                        <button class="link-btn copy-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">کپی لینک</button>
-                        <button class="link-btn qr-sub-btn" data-url="https://v2-v.vercel.app/configs.txt">QR کد</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div id="tab-clash" class="tab-content">
-             <div class="links-container">
-                <h2>کانفیگ مخصوص Clash.Meta</h2>
-                 <div class="link-group">
-                    <h3>فایل Clash.Meta</h3>
-                    <small>https://smbcryp.github.io/V2V/v2v_clash.yaml</small>
-                    <div class="link-buttons">
-                        <a href="v2v_clash.yaml" class="link-btn download-btn" download>دانلود فایل YAML</a>
-                        <button class="link-btn copy-sub-btn" data-url="https://smbcryp.github.io/V2V/v2v_clash.yaml">کپی لینک فایل</button>
-                    </div>
-                </div>
-            </div>
-        </div>
         <footer>
             <ul class="footer-links">
                 <li><a href="https://smbcryp.github.io/V2V/" target="_blank">آدرس گیت‌هاب</a></li>
@@ -133,324 +86,231 @@
             </ul>
         </footer>
     </main>
+    
     <div id="qrModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h3 id="modal-title">QR Code</h3>
-            <canvas id="modal-qr-code"></canvas>
-        </div>
+        <div class="modal-content"><span class="close-btn">&times;</span><h3 id="modal-title">QR Code</h3><canvas id="modal-qr-code"></canvas></div>
     </div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const speedTestButton = document.getElementById('speedTestButton');
-        const copyAllButton = document.getElementById('copyAllButton');
-        const infoContainer = document.getElementById('info');
-        const configsContainer = document.getElementById('configs-container');
-        const qrModal = document.getElementById('qrModal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalQrCanvas = document.getElementById('modal-qr-code');
-        const closeBtn = document.querySelector('.close-btn');
-        const tabNav = document.querySelector('.tab-nav');
-        const tabContents = document.querySelectorAll('.tab-content');
+document.addEventListener('DOMContentLoaded', () => {
+    const mainContainer = document.getElementById('main-container');
+    const infoContainer = document.getElementById('info');
+    const speedTestButton = document.getElementById('speedTestButton');
+    const qrModal = document.getElementById('qrModal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalQrCanvas = document.getElementById('modal-qr-code');
+    const closeBtn = document.querySelector('.close-btn');
+
+    let allConfigs = [], xrayConfigs = [], singboxConfigs = [];
+    let clipboard = new ClipboardJS('.copy-btn-class');
+
+    const MIRRORS = [
+        'https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.json',
+        'https://smbcryp.github.io/V2V/configs.json'
+    ];
+
+    const showCopyFeedback = (element, originalText) => {
+        element.textContent = "✅ کپی شد";
+        setTimeout(() => { element.textContent = originalText; }, 2000);
+    };
+
+    const openQrModal = (url, title = 'QR Code') => {
+        modalTitle.textContent = title;
+        QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
+        qrModal.style.display = "flex";
+    };
+    
+    const copyToClipboard = async (text, element) => {
+        const originalText = element.textContent;
+        try {
+            await navigator.clipboard.writeText(text);
+            showCopyFeedback(element, originalText);
+        } catch (err) { alert('کپی کردن با خطا مواجه شد.'); }
+    };
+
+    const extractNameFromUrl = (url) => {
+        try {
+            const decodedUrl = decodeURIComponent(url);
+            const parts = decodedUrl.split('#');
+            if (parts.length > 1 && parts[1]) return parts[1];
+            return new URL(url).hostname;
+        } catch { return url.substring(0, 30) + '...'; }
+    };
+
+    const createConfigCard = (cfg) => {
+        const card = document.createElement('div');
+        card.className = 'config-card';
+        const latency = cfg.latency ?? cfg.ping;
+        const pingText = (typeof latency === 'number' && latency < 999) ? `${latency}ms` : 'N/A';
+        const pingClass = (typeof latency === 'number' && latency < 400) ? 'fast' : ((typeof latency === 'number' && latency < 999) ? 'slow' : 'timeout');
         
-        let clipboardForSingleConfigs = null;
-        let allConfigs = [];
-        let fullConfigTextForCopy = '';
+        card.innerHTML = `
+            <div class="ping-result ${pingClass}">${pingText}</div>
+            <div class="config-details">
+                <div class="config-name" title="${cfg.name}">${cfg.name}</div>
+            </div>
+            <div class="actions">
+                <button class="action-btn copy-btn-class" data-clipboard-text="${cfg.config}">کپی</button>
+                <button class="action-btn qr-btn">QR</button>
+            </div>`;
+        card.querySelector('.qr-btn').onclick = () => openQrModal(cfg.config, cfg.name);
+        return card;
+    };
 
-        const mirrors = [
-            'https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.json',
-            'https://smbcryp.github.io/V2V/configs.json'
-        ];
-
-        const showCopyFeedback = (element, originalText) => {
-            element.textContent = "✅ کپی شد";
-            setTimeout(() => { element.textContent = originalText; }, 2000);
-        };
-
-        const openQrModal = (url, title = 'QR Code') => {
-            modalTitle.textContent = title;
-            QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
-            qrModal.style.display = "flex";
-        };
-
-        const shareUrl = async (url, title = 'V2V Link') => {
-            if (navigator.share) {
-                try { await navigator.share({ title: title, text: url }); }
-                catch (err) { console.error('Share failed:', err); }
-            } else { alert('قابلیت اشتراک‌گذاری در این مرورگر پشتیبانی نمی‌شود.'); }
-        };
-
-        const extractNameFromUrl = (url) => {
-            try {
-                const decodedUrl = decodeURIComponent(url);
-                const parts = decodedUrl.split('#');
-                if (parts.length > 1 && parts[1]) return parts[1];
-                const hostname = new URL(url).hostname;
-                return hostname.replace(/^www\./, '');
-            } catch { return url.substring(0, 30) + '...'; }
-        };
-
-        const copyToClipboard = async (text, element) => {
-            const originalText = element.textContent;
-            if (!navigator.clipboard) {
-                alert('مرورگر شما از کپی امن پشتیبانی نمی‌کند.');
-                return;
-            }
-            try {
-                await navigator.clipboard.writeText(text);
-                showCopyFeedback(element, originalText);
-            } catch (err) {
-                console.error('Failed to copy text: ', err);
-                alert('کپی کردن با خطا مواجه شد.');
-            }
-        };
-
-        const createConfigCard = (cfg) => {
-            const card = document.createElement('div');
-            card.className = 'config-card';
-            card.dataset.id = cfg.id;
-
-            const pingDiv = document.createElement('div');
-            pingDiv.className = 'ping-result';
-            const latency = cfg.latency ?? cfg.initialPing;
-            
-            if (latency === -1 || latency === 'Timeout' || latency === 'Error') {
-                pingDiv.classList.add('timeout');
-                pingDiv.textContent = latency === -1 ? 'N/A' : latency;
-            } else if (typeof latency === 'number') {
-                pingDiv.textContent = `${latency}ms`;
-                pingDiv.classList.add(latency < 400 ? 'fast' : 'slow');
-            }
-            card.appendChild(pingDiv);
-            
-            const detailsDiv = document.createElement('div');
-            detailsDiv.className = 'config-details';
-            detailsDiv.innerHTML = `<div class="config-name" title="${cfg.name}">${cfg.name}</div>`;
-
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'actions';
-            
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'action-btn copy-btn-class';
-            copyBtn.textContent = 'کپی';
-            copyBtn.setAttribute('data-clipboard-text', cfg.url);
-
-            const qrBtn = document.createElement('button');
-            qrBtn.className = 'action-btn';
-            qrBtn.textContent = 'QR';
-            qrBtn.onclick = () => openQrModal(cfg.url, cfg.name);
-            
-            const shareBtn = document.createElement('button');
-            shareBtn.className = 'action-btn';
-            shareBtn.textContent = 'Share';
-            shareBtn.onclick = () => shareUrl(cfg.url, cfg.name);
-
-            actionsDiv.append(copyBtn, qrBtn, shareBtn);
-            card.append(detailsDiv, actionsDiv);
-            return card;
-        };
-        
-        const renderAccordion = (andOpen = false) => {
-            configsContainer.innerHTML = '';
-            const categorized = { vless: [], vmess: [], trojan: [], ss: [] };
-            allConfigs.forEach(cfg => { if (categorized[cfg.protocol]) categorized[cfg.protocol].push(cfg); });
-
-            Object.keys(categorized).forEach(protocol => {
-                const protocolConfigs = categorized[protocol];
-                if (protocolConfigs.length > 0) {
-                    const accordionItem = document.createElement('div');
-                    accordionItem.className = 'accordion-item';
-                    
-                    const header = document.createElement('div');
-                    header.className = 'accordion-header';
-                    header.innerHTML = `<h2>${protocol.toUpperCase()} (${protocolConfigs.length})</h2>`;
-                    
-                    const copyBtn = document.createElement('button');
-                    copyBtn.className = 'link-btn copy-protocol-btn';
-                    copyBtn.textContent = `کپی همه ${protocol.toUpperCase()}`;
-                    copyBtn.dataset.protocol = protocol;
-                    header.appendChild(copyBtn);
-                    
-                    const content = document.createElement('div');
-                    content.className = 'accordion-content';
-                    const grid = document.createElement('div');
-                    grid.className = 'config-grid';
-                    
-                    content.style.display = andOpen ? 'block' : 'none';
-                    
-                    protocolConfigs.forEach(cfg => grid.appendChild(createConfigCard(cfg)));
-                    content.appendChild(grid);
-                    accordionItem.append(header, content);
-                    configsContainer.appendChild(accordionItem);
-
-                    header.addEventListener('click', (e) => {
-                        if (e.target.closest('.copy-protocol-btn')) return;
-                        content.style.display = content.style.display === 'block' ? 'none' : 'block';
-                    });
-                }
-            });
-            
-            if (clipboardForSingleConfigs) clipboardForSingleConfigs.destroy();
-            clipboardForSingleConfigs = new ClipboardJS('.copy-btn-class');
-            clipboardForSingleConfigs.on('success', (e) => {
-                showCopyFeedback(e.trigger, 'کپی');
-                e.clearSelection();
-            });
-        };
-        
-        const pingConfig = async (config) => {
-            let host = '';
-            try {
-                if (config.url.startsWith('vmess://')) {
-                    const vmessData = JSON.parse(atob(config.url.substring(8)));
-                    host = vmessData.add;
+    const renderProtocolAccordions = (configs, container) => {
+        container.innerHTML = '';
+        const categorized = { vless: [], vmess: [], trojan: [], ss: [], hysteria2: [], tuic: [] };
+        configs.forEach(cfg => {
+            const protocol = cfg.protocol;
+            if (categorized[protocol]) {
+                // Special handling for Reality within VLESS
+                if (protocol === 'vless' && cfg.core === 'singbox') {
+                    if (!categorized.reality) categorized.reality = [];
+                    categorized.reality.push(cfg);
                 } else {
-                    host = new URL(config.url).hostname;
+                    categorized[protocol].push(cfg);
                 }
-            } catch { 
-                config.latency = 'Error'; 
-                return config;
             }
+        });
+        // Re-order for display
+        const displayOrder = ['vless', 'reality', 'vmess', 'trojan', 'ss', 'hysteria2', 'tuic'];
+        
+        for (const protocol of displayOrder) {
+            const protocolConfigs = categorized[protocol];
+            if (protocolConfigs && protocolConfigs.length > 0) {
+                const item = document.createElement('div');
+                item.className = 'protocol-accordion-item';
+                item.innerHTML = `
+                    <div class="protocol-accordion-header">
+                        <h3>${protocol.toUpperCase()} (${protocolConfigs.length})</h3>
+                        <button class="link-btn copy-protocol-btn">کپی همه ${protocol.toUpperCase()}</button>
+                    </div>
+                    <div class="protocol-accordion-content">
+                        <div class="config-grid"></div>
+                    </div>`;
+                
+                const content = item.querySelector('.protocol-accordion-content');
+                const grid = item.querySelector('.config-grid');
+                protocolConfigs.forEach(cfg => grid.appendChild(createConfigCard(cfg)));
 
-            // --- Primary Test: Vercel Proxy (More Accurate) ---
+                item.querySelector('.protocol-accordion-header').onclick = (e) => {
+                    if (e.target.classList.contains('copy-protocol-btn')) return;
+                    content.style.display = content.style.display === 'block' ? 'none' : 'block';
+                };
+                item.querySelector('.copy-protocol-btn').onclick = (e) => {
+                    const configsToCopy = protocolConfigs.map(c => c.config).join('\n');
+                    copyToClipboard(configsToCopy, e.target);
+                };
+                container.appendChild(item);
+            }
+        }
+    };
+
+    const createCoreAccordion = (coreName, title, configs, container) => {
+        const item = document.createElement('div');
+        item.className = 'core-accordion-item';
+        
+        item.innerHTML = `
+            <div class="core-accordion-header">
+                <h2>${title}</h2>
+            </div>
+            <div class="core-accordion-content">
+                <div class="links-container">
+                    <h3>لینک‌های اشتراک و فایل‌ها (${coreName.toUpperCase()})</h3>
+                    <div class="link-group">
+                        <h4>لینک اشتراک (Subscription)</h4>
+                        <div class="link-buttons">
+                            <button class="link-btn" data-url-key="plain">کپی لینک</button>
+                            <button class="link-btn" data-url-key="plain-qr">QR کد</button>
+                        </div>
+                    </div>
+                    <div class="link-group">
+                        <h4>فایل کلش (Clash Meta)</h4>
+                        <div class="link-buttons">
+                             <button class="link-btn" data-url-key="clash">کپی لینک</button>
+                             <a href="#" class="link-btn" data-url-key="clash-download" download>دانلود</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="protocol-container"></div>
+            </div>`;
+
+        const content = item.querySelector('.core-accordion-content');
+        item.querySelector('.core-accordion-header').onclick = () => {
+            content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        };
+
+        // Setup links
+        const baseUrls = {
+            plain: `https://smbcryp.github.io/V2V/configs_${coreName}.txt`,
+            clash: `https://smbcryp.github.io/V2V/v2v_clash_${coreName}.yaml`
+        };
+        const copyBtns = item.querySelectorAll('button[data-url-key]');
+        copyBtns.forEach(btn => {
+            const key = btn.dataset.urlKey;
+            if (key.endsWith('-qr')) {
+                btn.onclick = () => openQrModal(baseUrls[key.replace('-qr', '')], 'لینک اشتراک');
+            } else {
+                btn.onclick = (e) => copyToClipboard(baseUrls[key], e.target);
+            }
+        });
+        item.querySelector('a[data-url-key="clash-download"]').href = baseUrls.clash;
+
+
+        const protocolContainer = item.querySelector('.protocol-container');
+        renderProtocolAccordions(configs, protocolContainer);
+
+        container.appendChild(item);
+    };
+
+    const initializeApp = async () => {
+        infoContainer.textContent = 'در حال دریافت آخرین لیست کانفیگ‌ها...';
+        let rawJsonData = null;
+
+        for (const url of MIRRORS) {
             try {
-                const testUrl = `/api/?host=${host}`;
-                const startTime = Date.now();
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                const response = await fetch(`${url}?v=${Date.now()}`, { cache: "no-store" });
+                if (!response.ok) throw new Error(`Mirror failed: ${url}`);
+                rawJsonData = await response.json();
+                break;
+            } catch (error) { console.warn(error.message); }
+        }
 
-                await fetch(testUrl, { signal: controller.signal, mode: 'cors' });
-                clearTimeout(timeoutId);
-                config.latency = Date.now() - startTime;
-                return config;
+        if (!rawJsonData) {
+            infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
+            return;
+        }
 
-            } catch (error) {
-                console.warn(`Vercel proxy ping failed for ${host}, falling back to WebSocket ping.`);
+        allConfigs = rawJsonData.map((item, index) => ({
+            ...item,
+            id: index,
+            name: extractNameFromUrl(item.config),
+            protocol: item.config.split('://')[0].toLowerCase(),
+            latency: null
+        }));
 
-                // --- Fallback Test: WebSocket (More Stable) ---
-                return new Promise(resolve => {
-                    const startTime = Date.now();
-                    const ws = new WebSocket('wss://echo.websocket.events');
-                    let timeoutId = null;
+        xrayConfigs = allConfigs.filter(c => c.core === 'xray');
+        singboxConfigs = allConfigs.filter(c => c.core === 'singbox');
 
-                    ws.onopen = () => {
-                        clearTimeout(timeoutId);
-                        config.latency = Date.now() - startTime;
-                        ws.close();
-                        resolve(config);
-                    };
+        mainContainer.innerHTML = '';
+        if (xrayConfigs.length > 0) {
+            createCoreAccordion('xray', 'کانفیگ‌های Xray-Core (Xray-Core Configs)', xrayConfigs, mainContainer);
+        }
+        if (singboxConfigs.length > 0) {
+            createCoreAccordion('singbox', 'کانفیگ‌های Sing-box (Sing-box Configs)', singboxConfigs, mainContainer);
+        }
 
-                    ws.onerror = () => {
-                        clearTimeout(timeoutId);
-                        config.latency = 'Timeout';
-                        ws.close();
-                        resolve(config);
-                    };
+        infoContainer.textContent = `مجموع ${allConfigs.length} کانفیگ (Xray: ${xrayConfigs.length}, Sing-box: ${singboxConfigs.length}) بارگذاری شد.`;
+        speedTestButton.style.display = 'block';
+    };
 
-                    timeoutId = setTimeout(() => {
-                        config.latency = 'Timeout';
-                        ws.close();
-                        resolve(config);
-                    }, 4000);
-                });
-            }
-        };
+    closeBtn.onclick = () => qrModal.style.display = "none";
+    window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; };
+    
+    clipboard.on('success', (e) => { showCopyFeedback(e.trigger, 'کپی'); e.clearSelection(); });
 
-        const startClientSideBatchTest = async () => {
-            speedTestButton.disabled = true;
-            const configsToTest = allConfigs;
-            const batchSize = 50;
-            for (let i = 0; i < configsToTest.length; i += batchSize) {
-                const batch = configsToTest.slice(i, i + batchSize);
-                infoContainer.textContent = `در حال تست دسته ${Math.floor(i/batchSize) + 1}... (${i + batch.length}/${configsToTest.length})`;
-                await Promise.all(batch.map(pingConfig));
-            }
-            allConfigs.sort((a, b) => {
-                const aVal = (typeof a.latency === 'number') ? a.latency : 9999;
-                const bVal = (typeof b.latency === 'number') ? b.latency : 9999;
-                return aVal - bVal;
-            });
-            renderAccordion(true);
-            infoContainer.textContent = 'تست کامل شد! نتایج بر اساس سرعت مرتب شدند.';
-            speedTestButton.disabled = false;
-        };
-
-        const initializeApp = async () => {
-            infoContainer.textContent = 'در حال دریافت آخرین لیست کانفیگ‌ها...';
-            let rawJsonData = null;
-
-            for (const url of mirrors) {
-                try {
-                    infoContainer.textContent = `در حال اتصال به میرور: ${new URL(url).hostname}...`;
-                    const response = await fetch(url, { cache: "no-store", headers: { 'Cache-Control': 'no-cache' } });
-                    if (!response.ok) throw new Error(`Mirror failed: ${url}`);
-                    rawJsonData = await response.json();
-                    if (!rawJsonData || rawJsonData.length === 0) throw new Error("Source is empty");
-                    break;
-                } catch (error) {
-                    console.warn(error.message);
-                }
-            }
-
-            if (!rawJsonData) {
-                infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
-                return;
-            }
-
-            allConfigs = rawJsonData.map((item, index) => ({
-                id: index,
-                url: item.config,
-                name: extractNameFromUrl(item.config),
-                protocol: item.config.split('://')[0],
-                initialPing: item.ping,
-                latency: null
-            }));
-            
-            fullConfigTextForCopy = allConfigs.map(c => c.url).join('\n');
-
-            renderAccordion();
-            infoContainer.textContent = `تعداد ${allConfigs.length} کانفیگ برتر بارگذاری شد.`;
-            speedTestButton.style.display = 'block';
-            copyAllButton.style.display = 'block';
-        };
-
-        closeBtn.onclick = () => qrModal.style.display = "none";
-        window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; };
-        
-        tabNav.addEventListener('click', (e) => {
-            if (e.target.classList.contains('tab-btn')) {
-                const targetTab = e.target.dataset.tab;
-                tabNav.querySelector('.active').classList.remove('active');
-                e.target.classList.add('active');
-                tabContents.forEach(content => {
-                    content.classList.remove('active');
-                    if (content.id === `tab-${targetTab}`) content.classList.add('active');
-                });
-            }
-        });
-
-        document.body.addEventListener('click', (e) => {
-            const target = e.target.closest('button, a');
-            if (!target) return;
-            const url = target.dataset.url;
-            if (target.matches('.qr-sub-btn')) openQrModal(url, 'لینک اشتراک');
-            else if (target.matches('.share-sub-btn')) shareUrl(url, 'لینک اشتراک V2V');
-            else if (target.matches('.copy-sub-btn')) copyToClipboard(url, target);
-            else if (target.matches('.copy-protocol-btn')) {
-                const protocol = target.dataset.protocol;
-                const configsToCopy = allConfigs.filter(c => c.protocol === protocol).map(c => c.url).join('\n');
-                if(configsToCopy) copyToClipboard(configsToCopy, target);
-            }
-        });
-
-        copyAllButton.addEventListener('click', (e) => {
-            if(fullConfigTextForCopy) copyToClipboard(fullConfigTextForCopy, e.currentTarget);
-        });
-        
-        speedTestButton.addEventListener('click', startClientSideBatchTest);
-
-        initializeApp();
-    });
+    initializeApp();
+});
 </script>
 </body>
 </html>
