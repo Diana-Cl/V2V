@@ -20,7 +20,6 @@
         .slogan { text-align: center; color: #aaa; font-style: italic; margin-bottom: 2em; font-weight: 600; }
         .info-box { text-align: center; font-weight: bold; margin-bottom: 15px; padding: 15px; border-radius: 8px; background-color: var(--card-color); font-size: 1.1em; }
         
-        /* Core Selection Buttons */
         .core-selector { display: flex; flex-direction: column; gap: 15px; margin: 20px 0; }
         .core-select-btn {
             background-color: var(--primary-color); color: #fff; border: 2px solid var(--primary-color);
@@ -29,11 +28,19 @@
         }
         .core-select-btn:hover { background-color: #6d0000; }
 
-        /* Core Content Area */
+        /* --- NEW: Green color for the Xray button --- */
+        #btn-xray {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: #000;
+        }
+        #btn-xray:hover {
+            background-color: #1f7a33; /* Darker green */
+        }
+
         .core-content { display: none; padding: 20px; border: 1px solid #333; border-radius: 8px; margin-top: 10px; }
         .speed-test-btn { background-color: var(--secondary-color); color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 1.1em; cursor: pointer; display: block; width: 100%; margin-bottom: 25px; font-weight: bold; }
         
-        /* Links Container */
         .links-container { background-color: var(--card-color); padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 25px; }
         .links-container h3 { margin-top: 0; color: var(--secondary-color); border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 20px; }
         .link-group { margin-bottom: 20px; } .link-group:last-child { margin-bottom: 0; }
@@ -41,7 +48,6 @@
         .link-buttons { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .link-btn { background-color: var(--btn-bg); color: var(--text-color); padding: 10px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; transition: background-color 0.2s; border: 1px solid #444; cursor: pointer; }
         
-        /* Protocol Accordion */
         .protocol-accordion-item { margin-bottom: 15px; }
         .protocol-accordion-header { background-color: var(--card-color); padding: 15px; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
         .protocol-accordion-header h3 { margin: 0; color: var(--secondary-color); font-size: 1.2em; }
@@ -140,32 +146,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { return url.substring(0, 30) + '...'; }
     };
     
-    // --- Ping Logic ---
-    const pingConfig = async (config) => {
-        // Ping logic is complex and browser-limited. This is a placeholder.
-        // A real implementation might use a WebSocket proxy or a WASM-based client.
-        // For now, we use the pre-calculated ping from the scraper.
-        return new Promise(resolve => {
-            // This function would contain the WebSocket or fetch logic for a live test.
-            // We resolve immediately with the scraper's ping.
-            resolve(config);
-        });
-    };
-
     const startClientSideBatchTest = async (configsToTest, coreName, btnElement) => {
         btnElement.disabled = true;
         btnElement.textContent = `... در حال تست ${configsToTest.length} کانفیگ`;
 
-        for (const config of configsToTest) {
-            // In a real implementation, you'd update latency here:
-            // const result = await pingConfig(config);
-            // config.latency = result.latency;
-        }
+        // This is a placeholder for actual client-side pinging.
+        // For now, we just re-sort based on the ping values provided by the scraper.
         
-        // Since we are not re-pinging, we just re-render to sort by existing ping
         configsToTest.sort((a, b) => {
-            const aPing = a.ping === 'N/A' ? 9999 : a.ping;
-            const bPing = b.ping === 'N/A' ? 9999 : b.ping;
+            const aPing = typeof a.ping === 'number' ? a.ping : 9999;
+            const bPing = typeof b.ping === 'number' ? b.ping : 9999;
             return aPing - bPing;
         });
 
@@ -175,16 +165,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btnElement.textContent = `🚀 تست سرعت کانفیگ‌های ${coreName.toUpperCase()}`;
         btnElement.disabled = false;
-        alert(`تست ${coreName.toUpperCase()} کامل شد. کانفیگ‌ها بر اساس سرعت مرتب شدند.`);
+        alert(`تست کامل شد. کانفیگ‌ها بر اساس سرعت مرتب شدند.`);
     };
 
     // --- Render Functions ---
     const createConfigCard = (cfg) => {
         const card = document.createElement('div');
         card.className = 'config-card';
-        const latency = cfg.ping; // Using scraper's ping
-        const pingText = (typeof latency === 'number' && latency < 999) ? `${latency}ms` : 'N/A';
-        const pingClass = (typeof latency === 'number' && latency < 400) ? 'fast' : ((typeof latency === 'number' && latency < 999) ? 'slow' : 'timeout');
+        const latency = cfg.ping;
+        const pingText = (typeof latency === 'number' && latency < 9999) ? `${latency}ms` : 'N/A';
+        const pingClass = (typeof latency === 'number' && latency < 400) ? 'fast' : ((typeof latency === 'number' && latency < 9999) ? 'slow' : 'timeout');
         
         card.innerHTML = `
             <div class="ping-result ${pingClass}">${pingText}</div>
@@ -261,7 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="protocol-container"></div>`;
 
-        // Add event listeners
         container.querySelector(`#test-${coreName}`).onclick = (e) => startClientSideBatchTest(configs, coreName, e.target);
         
         const subUrls = {
@@ -278,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderProtocolAccordions(configs, container.querySelector('.protocol-container'));
     };
 
-    // --- Main App Initialization ---
     const initializeApp = async () => {
         let rawJsonData = null;
         for (const url of MIRRORS) {
@@ -313,7 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Event Listeners for Core Buttons
     xrayBtn.onclick = () => { xrayContent.style.display = xrayContent.style.display === 'block' ? 'none' : 'block'; };
     singboxBtn.onclick = () => { singboxContent.style.display = singboxContent.style.display === 'block' ? 'none' : 'block'; };
     closeBtn.onclick = () => qrModal.style.display = "none";
