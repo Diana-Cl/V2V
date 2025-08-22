@@ -26,9 +26,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # --- مرحله جدید برای نصب ابزار تست ---
+      # --- مرحله نصب ابزار تست (اصلاح شده) ---
       - name: Install Xray-core for validation testing
-        run: sudo bash -c "$(curl -L https://github.com/XTLS/Xray-core/raw/main/install-release.sh)" @ install
+        run: |
+          curl -L -o install-release.sh https://github.com/XTLS/Xray-core/raw/main/install-release.sh
+          sudo chmod +x install-release.sh
+          sudo ./install-release.sh
 
       - name: Run scraper script
         run: python scraper.py
