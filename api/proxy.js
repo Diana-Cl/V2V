@@ -1,68 +1,37 @@
-import net from 'node:net';
+import net from 'net';
 
-const PING_TIMEOUT = 2500; // 2.5 seconds timeout
+export default function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Only POST requests are allowed' });
+    }
 
-// This is the core testing function, now corrected and promise-based.
-function testConnection({ host, port }) {
-    return new Promise((resolve, reject) => {
-        const socket = new net.Socket();
-        const startTime = process.hrtime.bigint();
+    const { host, port } = req.body;
 
-        // Set a timeout for the entire operation
-        const timeoutId = setTimeout(() => {
-            socket.destroy();
-            reject(new Error('Timeout'));
-        }, PING_TIMEOUT);
+    if (!host || !port) {
+        return res.status(400).json({ message: 'Host and port are required' });
+    }
 
-        socket.on('error', (err) => {
-            clearTimeout(timeoutId);
-            socket.destroy();
-            reject(err);
-        });
+    const startTime = new Date();
+    const socket = new net.Socket();
 
-        socket.connect({ host, port }, () => {
-            clearTimeout(timeoutId);
-            const endTime = process.hrtime.bigint();
-            const latency = Math.round(Number(endTime - startTime) / 1_000_000);
-            socket.end();
-            resolve({ ping: latency });
-        });
+    socket.setTimeout(4000);
+
+    socket.on('connect', () => {
+        const endTime = new Date();
+        const ping = endTime - startTime;
+        socket.destroy();
+        res.status(200).json({ host, port, ping });
     });
-}
 
-// This is the main Vercel handler
-export default async function handler(request, response) {
-    // Set CORS headers for all responses
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    socket.on('error', (err) => {
+        socket.destroy();
+        res.status(200).json({ host, port, ping: 9999, error: err.message });
+    });
 
-    if (request.method === 'OPTIONS') {
-        return response.status(204).send('');
-    }
+    socket.on('timeout', () => {
+        socket.destroy();
+        res.status(200).json({ host, port, ping: 9999, error: 'Timeout' });
+    });
 
-    let target;
-    // Check for debug mode first
-    if (request.query.debug === 'true') {
-        target = { host: '1.1.1.1', port: 443 };
-    } else if (request.method === 'POST') {
-        try {
-            const body = request.body;
-            if (!body.host || !body.port) {
-                return response.status(400).json({ error: 'Missing "host" or "port".' });
-            }
-            target = body;
-        } catch (e) {
-            return response.status(400).json({ error: 'Invalid JSON body.' });
-        }
-    } else {
-        return response.status(405).json({ error: 'Method Not Allowed' });
-    }
-
-    try {
-        const result = await testConnection(target);
-        return response.status(200).json(result);
-    } catch (error) {
-        return response.status(500).json({ error: error.message, ping: 9999 });
-    }
+    socket.connect(port, host);
 }
