@@ -41,6 +41,7 @@ jobs:
         timeout-minutes: 100
           
       - name: Upload final JSON to ArvanCloud Object Storage
+        continue-on-error: true # این خط اضافه شده تا در صورت خطا، فرآیند متوقف نشود
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_ACCESS_KEY_SECRET }}
