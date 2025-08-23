@@ -1,8 +1,8 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://rapid-scene-1da6.mbrgh87.workers.dev/:path*"
+  "functions": {
+    "api/proxy.js": {
+      "memory": 3008,
+      "maxDuration": 30
     }
-  ]
+  }
 }
