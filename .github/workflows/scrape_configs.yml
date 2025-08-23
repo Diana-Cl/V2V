@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests awscli
+          pip install requests awscli PyYAML
 
       - name: Git pull before commit
         run: |
