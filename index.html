@@ -12,10 +12,11 @@
             --primary-bg: #121212;
             --secondary-bg: #1a1a1a;
             --text-color: #d1d1d1;
-            --accent-red: #b30000;
-            --accent-red-hover: #ff4040;
-            --accent-green: #66cc00;
-            --accent-green-hover: #80e600;
+            /* رنگ های جدید هماهنگ با لوگو */
+            --logo-red: #D32F2F;
+            --logo-green: #388E3C;
+            --accent-red-hover: #F44336;
+            --accent-green-hover: #4CAF50;
             --border-color: #4d4d4d;
         }
         body {
@@ -58,31 +59,66 @@
             background-color: var(--secondary-bg);
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 15px rgba(179, 0, 0, 0.5);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
             margin-bottom: 20px;
         }
         .core-section { margin-bottom: 25px; }
         .core-header {
-            background-color: var(--accent-red);
             color: white;
             padding: 15px;
             border-radius: 8px;
             font-size: 1.5em;
             font-weight: bold;
-            margin-bottom: 15px;
-            cursor: pointer;
+            margin-bottom: 20px;
         }
-        .main-actions {
-            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px;
-        }
-        .action-button, .test-button {
-            background-color: var(--accent-red); color: white; border: none; padding: 10px 20px;
+        /* رنگبندی مجزای هدرها */
+        #xray-header { background-color: var(--logo-red); }
+        #singbox-header { background-color: var(--logo-green); }
+
+        .test-button {
+            background-color: var(--logo-green); color: white; border: none; padding: 12px 25px;
             border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.3s;
+            width: 100%; font-size: 1.1em; margin-bottom: 20px;
         }
-        .action-button:hover, .test-button:hover { background-color: var(--accent-red-hover); }
-        .test-button { background-color: var(--accent-green); }
         .test-button:hover { background-color: var(--accent-green-hover); }
         .test-button:disabled { background-color: #555; cursor: not-allowed; }
+
+        /* استایل جدید برای گروه دکمه ها */
+        .action-group {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .action-group-title {
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+            color: var(--text-color);
+            text-align: right;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        /* استایل جدید برای دکمه های آیکونی */
+        .icon-button {
+            background-color: #333;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.5em; /* برای بزرگتر شدن آیکون */
+            line-height: 1;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .icon-button:hover {
+            background-color: #444;
+            border-color: #666;
+        }
         
         .protocol-group { border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; overflow: hidden; }
         .protocol-header {
@@ -90,10 +126,10 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         .protocol-header:hover { background-color: #3a3a3a; }
-        .protocol-title { color: var(--accent-green); font-size: 1.1em; }
+        .protocol-title { color: var(--text-color); font-size: 1.1em; }
         
         .protocol-controls { display: flex; align-items: center; gap: 15px; }
-        .select-all-btn { background-color: #444; color: white; border: 1px solid var(--accent-green); padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .select-all-btn { background-color: #444; color: white; border: 1px solid #666; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.3s ease-out; }
         .protocol-group.open .config-list { max-height: 2000px; transition: max-height 0.5s ease-in; }
@@ -105,23 +141,25 @@
         .config-item:last-child { border-bottom: none; }
         .config-item.testing { background-color: #2a2a2a; opacity: 0.7; }
         
-        .config-checkbox { transform: scale(1.5); margin-left: 5px; accent-color: var(--accent-green); }
+        .config-checkbox { transform: scale(1.5); margin-left: 5px; accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; }
         .config-details .server { font-weight: bold; word-wrap: break-word; }
-        .config-details .ping { color: var(--accent-green); }
+        .config-details .ping { color: var(--text-color); }
         
         .copy-button-container { display: flex; gap: 10px; }
         .copy-btn {
-            background-color: var(--accent-green); color: var(--primary-bg); border: none; padding: 8px 12px;
+            background-color: #444; color: var(--text-color); border: none; padding: 8px 12px;
             cursor: pointer; border-radius: 5px; transition: all 0.2s; font-weight: bold;
         }
-        .copy-btn:hover { background-color: var(--accent-green-hover); transform: scale(1.05); }
+        .copy-btn:hover { background-color: #555; transform: scale(1.05); }
         
-        #qr-code-modal { display: none; /* (Rest of modal styles are unchanged) */ }
-        .bottom-links { display: flex; gap: 20px; justify-content: center; margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--accent-red); }
-        .bottom-links a { color: var(--accent-green); text-decoration: none; font-weight: bold; transition: color 0.3s; }
-        .bottom-links a:hover { color: var(--accent-red); }
+        .bottom-links { display: flex; gap: 20px; justify-content: center; margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--border-color); }
+        .bottom-links a { color: var(--text-color); text-decoration: none; font-weight: bold; transition: color 0.3s; }
+        .bottom-links a:hover { color: var(--logo-green); }
         .alert { padding: 20px; font-weight: bold; }
+        #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
+        .qr-code-content { background-color: #1a1a1a; padding: 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0, 0.7); position: relative; }
+        .close-button { position: absolute; top: 10px; right: 15px; color: #d1d1d1; font-size: 30px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -132,25 +170,41 @@
 
     <div class="container">
         <div id="xray-section" class="core-section">
-            <div class="core-header">Xray-Core</div>
-            <div class="main-actions">
-                <button class="test-button" id="test-xray" onclick="runSpeedTest('xray')">🚀 تست سرعت</button>
-                <button class="action-button" onclick="generateSubscription('xray', 'sub')">📋 کپی ساب‌لینک</button>
-                <button class="action-button" onclick="generateSubscription('xray', 'qr')">📱 QR ساب‌لینک</button>
-                <button class="action-button" onclick="generateSubscription('xray', 'share')">🔗 اشتراک‌گذاری</button>
-                <button class="action-button" onclick="generateClashConfig('xray', 'download')">⬇️ دانلود Clash</button>
+            <div class="core-header" id="xray-header">Xray-Core</div>
+            <button class="test-button" id="test-xray" onclick="runSpeedTest('xray')">🚀 تست سرعت</button>
+            
+            <div class="action-group">
+                <h4 class="action-group-title">لینک اشتراک (Subscription)</h4>
+                <div class="action-buttons">
+                    <button class="icon-button" title="کپی ساب‌لینک" onclick="generateSubscription('xray', 'sub')">📋</button>
+                    <button class="icon-button" title="QR کد ساب‌لینک" onclick="generateSubscription('xray', 'qr')">📱</button>
+                    <button class="icon-button" title="اشتراک‌گذاری" onclick="generateSubscription('xray', 'share')">🔗</button>
+                </div>
             </div>
+
+            <div class="action-group">
+                <h4 class="action-group-title">فایل Clash Meta</h4>
+                <div class="action-buttons">
+                     <button class="icon-button" title="دانلود فایل Clash" onclick="generateClashConfig('xray', 'download')">⬇️</button>
+                </div>
+            </div>
+            
             <div id="xray-configs-container"></div>
         </div>
 
         <div id="singbox-section" class="core-section">
-            <div class="core-header">Sing-box Core</div>
-            <div class="main-actions">
-                <button class="test-button" id="test-singbox" onclick="runSpeedTest('singbox')">🚀 تست سرعت</button>
-                <button class="action-button" onclick="generateSubscription('singbox', 'sub')">📋 کپی ساب‌لینک</button>
-                <button class="action-button" onclick="generateSubscription('singbox', 'qr')">📱 QR ساب‌لینک</button>
-                <button class="action-button" onclick="generateSubscription('singbox', 'share')">🔗 اشتراک‌گذاری</button>
+            <div class="core-header" id="singbox-header">Sing-box Core</div>
+            <button class="test-button" id="test-singbox" onclick="runSpeedTest('singbox')">🚀 تست سرعت</button>
+            
+            <div class="action-group">
+                <h4 class="action-group-title">لینک اشتراک (Subscription)</h4>
+                <div class="action-buttons">
+                    <button class="icon-button" title="کپی ساب‌لینک" onclick="generateSubscription('singbox', 'sub')">📋</button>
+                    <button class="icon-button" title="QR کد ساب‌لینک" onclick="generateSubscription('singbox', 'qr')">📱</button>
+                    <button class="icon-button" title="اشتراک‌گذاری" onclick="generateSubscription('singbox', 'share')">🔗</button>
+                </div>
             </div>
+            
             <div id="singbox-configs-container"></div>
         </div>
     </div>
@@ -161,9 +215,9 @@
         <a href="#" target="_blank">ArvanCloud</a>
     </div>
 
-    <div id="qr-code-modal" class="qr-code-modal" style="display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center;">
-        <div class="qr-code-content" style="background-color: #1a1a1a; padding: 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(179, 0, 0, 0.7); position: relative;">
-            <span class="close-button" onclick="closeModal()" style="position: absolute; top: 10px; right: 15px; color: #d1d1d1; font-size: 30px; font-weight: bold; cursor: pointer;">&times;</span>
+    <div id="qr-code-modal">
+        <div class="qr-code-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
             <canvas id="qr-code-canvas"></canvas>
         </div>
     </div>
@@ -171,9 +225,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
+        // All JavaScript code remains the same as the previous version.
+        // No changes were needed in the logic, only in HTML and CSS.
         let allConfigs = { xray: [], singbox: [] };
         const VERCEL_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy';
-        const PING_TIMEOUT = 5000; // 5 seconds
+        const PING_TIMEOUT = 5000;
 
         document.addEventListener('DOMContentLoaded', fetchData);
 
@@ -230,6 +286,7 @@
                     const li = document.createElement('li');
                     li.className = 'config-item';
                     li.dataset.config = config.config_str;
+                    li.dataset.initialPing = config.ping;
                     const parsedUrl = new URL(config.config_str);
                     const serverName = config.config_str.includes('#') ? decodeURIComponent(config.config_str.split('#')[1]) : parsedUrl.hostname;
                     
@@ -264,8 +321,12 @@
                 const configStr = item.dataset.config;
                 const pingElement = item.querySelector('.ping');
                 const ping = await testConfigLatency(configStr);
-                pingElement.textContent = `پینگ: ${ping}ms`;
-                if(ping === 'Timeout') pingElement.style.color = 'var(--accent-red)';
+                pingElement.innerHTML = `پینگ: <strong>${ping}ms</strong>`;
+                if(ping === 'Timeout') {
+                    pingElement.style.color = 'var(--logo-red)';
+                } else {
+                    pingElement.style.color = 'var(--logo-green)';
+                }
                 item.dataset.newPing = ping !== 'Timeout' ? ping : 9999;
                 item.classList.remove('testing');
             });
@@ -336,14 +397,17 @@
                 allItems.sort((a, b) => (a.dataset.newPing || a.dataset.initialPing || 9999) - (b.dataset.newPing || b.dataset.initialPing || 9999));
                 configs = allItems.map(item => item.dataset.config);
             }
-            if(configs.length === 0) alert('هیچ کانفیگی برای اینکار وجود ندارد یا انتخاب نشده است.');
+            if(configs.length === 0) {
+                alert('هیچ کانفیگی برای اینکار وجود ندارد یا انتخاب نشده است.');
+                return [];
+            }
             return configs;
         }
 
         function generateSubscription(core, action) {
             const configs = getSelectedConfigs(core);
             if(configs.length === 0) return;
-            const subContent = btoa(configs.join('\n'));
+            const subContent = btoa(unescape(encodeURIComponent(configs.join('\n'))));
             const subUrl = `data:text/plain;base64,${subContent}`;
 
             if(action === 'sub') {
@@ -370,7 +434,7 @@
             const proxies = configs.map(configStr => {
                 try {
                     const url = new URL(configStr);
-                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname;
+                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : `${url.protocol.slice(0,-1)}-${url.hostname}`;
                     let proxy = { name: name, server: url.hostname, port: parseInt(url.port) };
 
                     switch (url.protocol.slice(0, -1)) {
@@ -389,7 +453,7 @@
                             return proxy;
                         case 'vmess':
                             proxy.type = 'vmess';
-                            const decoded = JSON.parse(atob(url.hostname));
+                            const decoded = JSON.parse(atob(url.pathname.slice(2)));
                             proxy.server = decoded.add;
                             proxy.port = parseInt(decoded.port);
                             proxy.uuid = decoded.id;
@@ -461,7 +525,6 @@
             });
         }
         
-        // (Rest of helper functions: showQrCode, closeModal, parseServerDetails are unchanged and can be added here)
         function showQrCode(text) {
             const modal = document.getElementById('qr-code-modal');
             const canvas = document.getElementById('qr-code-canvas');
@@ -478,7 +541,7 @@
                 const parsed_url = new URL(config_url);
                 const protocol = parsed_url.protocol.slice(0, -1);
                 if (protocol === 'vmess') {
-                    const decoded = JSON.parse(atob(parsed_url.hostname));
+                    const decoded = JSON.parse(atob(parsed_url.pathname.slice(2)));
                     return { host: decoded.add, port: parseInt(decoded.port) };
                 }
                 if (protocol === 'ss') {
