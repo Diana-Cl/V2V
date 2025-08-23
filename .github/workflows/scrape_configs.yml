@@ -9,13 +9,12 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    timeout-minutes: 120  # افزایش timeout به 2 ساعت
+    timeout-minutes: 120
       
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # این خط برای رفع خطای non-fast-forward لازم است
           fetch-depth: 0
 
       - name: Set up Python
@@ -38,12 +37,12 @@ jobs:
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-        timeout-minutes: 100  # timeout مخصوص scraper
+        timeout-minutes: 100
           
       - name: Upload final JSON to ArvanCloud Object Storage
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_ACCESS_KEY_SECRET }}
         run: |
           aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
 
@@ -53,5 +52,4 @@ jobs:
           commit_message: "📊 Update all_live_configs.json (Scheduled Enhanced)"
           file_pattern: "all_live_configs.json"
           branch: main
-          # استفاده از force برای جلوگیری از خطای همیشگی
           commit_options: '--no-verify --force'
