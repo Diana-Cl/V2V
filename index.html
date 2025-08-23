@@ -1,228 +1,330 @@
 <!DOCTYPE html>
 <html lang="fa">
 <head>
-  <meta charset="UTF-8">
-  <title>V2V Config Viewer</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #eee;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background: #222;
-      padding: 15px;
-      text-align: center;
-      font-size: 22px;
-      color: #ff4444;
-    }
-    .tabs {
-      display: flex;
-      justify-content: center;
-      background: #1a1a1a;
-      border-bottom: 2px solid #333;
-    }
-    .tab {
-      padding: 12px 20px;
-      cursor: pointer;
-      color: #ccc;
-      font-weight: bold;
-      border-radius: 8px 8px 0 0;
-      margin: 0 5px;
-    }
-    .tab.red { background: #ff4444; color: white; }
-    .tab.green { background: #44cc44; color: white; }
-    .content { padding: 20px; }
-    .config-box {
-      background: #222;
-      padding: 12px;
-      margin: 10px auto;
-      border-radius: 8px;
-      text-align: left;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      position: relative;
-    }
-    .ping { font-size: 13px; color: #aaa; margin-top: 5px; }
-    .btn-group { margin-top: 10px; }
-    button {
-      background: #ff4444;
-      border: none;
-      color: white;
-      padding: 6px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 12px;
-      margin-right: 5px;
-    }
-    button.green { background: #44cc44; }
-    button:hover { opacity: 0.85; }
-    .qr-canvas { margin-top: 10px; }
-    .section-title {
-      font-size: 18px;
-      margin-top: 25px;
-      margin-bottom: 10px;
-      border-bottom: 1px solid #444;
-      padding-bottom: 5px;
-      color: #ff4444;
-    }
-  </style>
-</head>
-<body>
-  <header>📡 V2V - Live Configs</header>
-
-  <div class="tabs">
-    <div class="tab red" onclick="showTab('xray')">Xray</div>
-    <div class="tab green" onclick="showTab('singbox')">Singbox</div>
-  </div>
-
-  <div class="content">
-    <div id="xray" class="tab-content"></div>
-    <div id="singbox" class="tab-content" style="display:none;"></div>
-
-    <div id="subs"></div>
-    <div id="clash"></div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script>
-    async function loadConfigs() {
-      try {
-        const response = await fetch("all_live_configs.json");
-        const data = await response.json();
-
-        // کانفیگ‌ها
-        for (const core in data.configs) {
-          const container = document.getElementById(core);
-          container.innerHTML = "";
-
-          if (data.configs[core].length === 0) {
-            container.innerHTML = "<p>❌ هیچ کانفیگی یافت نشد</p>";
-            continue;
-          }
-
-          data.configs[core].forEach(cfg => {
-            const box = document.createElement("div");
-            box.className = "config-box";
-            
-            const configText = document.createElement("div");
-            configText.textContent = cfg.config_str;
-
-            const ping = document.createElement("div");
-            ping.className = "ping";
-            ping.textContent = `Ping: ${cfg.ping}ms`;
-
-            const btnGroup = document.createElement("div");
-            btnGroup.className = "btn-group";
-
-            const copyBtn = document.createElement("button");
-            copyBtn.textContent = "📋 کپی";
-            copyBtn.onclick = () => {
-              navigator.clipboard.writeText(cfg.config_str);
-              copyBtn.textContent = "✅ کپی شد";
-              setTimeout(() => copyBtn.textContent = "📋 کپی", 2000);
-            };
-
-            const qrBtn = document.createElement("button");
-            qrBtn.className = (core === "singbox") ? "green" : "";
-            qrBtn.textContent = "📷 QR";
-            qrBtn.onclick = () => {
-              const qrCanvas = document.createElement("canvas");
-              qrCanvas.className = "qr-canvas";
-              QRCode.toCanvas(qrCanvas, cfg.config_str, { width: 150 }, err => {
-                if (!err) box.appendChild(qrCanvas);
-              });
-            };
-
-            btnGroup.appendChild(copyBtn);
-            btnGroup.appendChild(qrBtn);
-
-            box.appendChild(configText);
-            box.appendChild(ping);
-            box.appendChild(btnGroup);
-            container.appendChild(box);
-          });
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V2V Project</title>
+    <link rel="manifest" href="/V2V/manifest.json">
+    <style>
+        body {
+            background-color: #0b0c10;
+            color: #c5c6c7;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
         }
 
-        // لینک ساب‌ها
-        const subsDiv = document.getElementById("subs");
-        subsDiv.innerHTML = '<div class="section-title">🔗 Subscription Links</div>';
-        data.subs.forEach(sub => {
-          const box = document.createElement("div");
-          box.className = "config-box";
-          box.textContent = sub;
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #66fcf1;
+            margin-bottom: 20px;
+        }
+        .header img {
+            width: 60px;
+            height: 60px;
+        }
+        .header h1 {
+            color: #66fcf1;
+            margin-left: 10px;
+            font-size: 2.5em;
+        }
+        
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            background-color: #1f2833;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(102, 252, 241, 0.5);
+            margin-bottom: 20px;
+        }
 
-          const btnGroup = document.createElement("div");
-          btnGroup.className = "btn-group";
+        .tab-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
 
-          const copyBtn = document.createElement("button");
-          copyBtn.textContent = "📋 کپی";
-          copyBtn.onclick = () => {
-            navigator.clipboard.writeText(sub);
-            copyBtn.textContent = "✅ کپی شد";
-            setTimeout(() => copyBtn.textContent = "📋 کپی", 2000);
-          };
+        .tab-button {
+            background-color: #1f2833;
+            color: #66fcf1;
+            border: 2px solid #66fcf1;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+            font-size: 1em;
+            font-weight: bold;
+        }
 
-          const qrBtn = document.createElement("button");
-          qrBtn.textContent = "📷 QR";
-          qrBtn.onclick = () => {
-            const qrCanvas = document.createElement("canvas");
-            qrCanvas.className = "qr-canvas";
-            QRCode.toCanvas(qrCanvas, sub, { width: 150 }, err => {
-              if (!err) box.appendChild(qrCanvas);
-            });
-          };
+        .tab-button:hover, .tab-button.active {
+            background-color: #66fcf1;
+            color: #0b0c10;
+        }
 
-          btnGroup.appendChild(copyBtn);
-          btnGroup.appendChild(qrBtn);
-          box.appendChild(btnGroup);
-          subsDiv.appendChild(box);
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .config-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .config-item {
+            background-color: #0b0c10;
+            border: 1px solid #45a29e;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .config-details {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        .config-details span {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .config-details .ping {
+            color: #45a29e;
+        }
+        .config-details .protocol {
+            color: #c5c6c7;
+            font-weight: bold;
+        }
+        .config-details .server {
+            color: #66fcf1;
+            font-size: 1em;
+            font-weight: bold;
+            word-wrap: break-word;
+        }
+
+        .config-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .action-button {
+            background-color: #45a29e;
+            color: #0b0c10;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .action-button:hover {
+            background-color: #66fcf1;
+            transform: scale(1.05);
+        }
+
+        .copy-message {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #45a29e;
+            color: #0b0c10;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+        .copy-message.show {
+            opacity: 1;
+        }
+
+        .qr-code-modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+        }
+        .qr-code-content {
+            background-color: #1f2833;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.7);
+            position: relative;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #c5c6c7;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="https://raw.githubusercontent.com/SMBCRYP/V2V/main/logo.png" alt="V2V Logo">
+        <h1>پروژه V2V</h1>
+    </div>
+
+    <div class="container">
+        <div class="tab-container">
+            <button class="tab-button active" onclick="showTab('xray')">Xray</button>
+            <button class="tab-button" onclick="showTab('singbox')">Sing-box</button>
+        </div>
+
+        <div id="xray" class="tab-content active">
+            <ul class="config-list" id="xray-configs"></ul>
+        </div>
+
+        <div id="singbox" class="tab-content">
+            <ul class="config-list" id="singbox-configs"></ul>
+        </div>
+    </div>
+
+    <div id="qr-code-modal" class="qr-code-modal">
+        <div class="qr-code-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <canvas id="qr-code-canvas"></canvas>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('all_live_configs.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderConfigs(data.xray, 'xray-configs');
+                    renderConfigs(data.singbox, 'singbox-configs');
+                })
+                .catch(error => {
+                    console.error('Error loading JSON:', error);
+                    alert('JSON خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.');
+                });
         });
 
-        // فایل کلش
-        const clashDiv = document.getElementById("clash");
-        clashDiv.innerHTML = '<div class="section-title">🛠 Clash Config</div>';
-        
-        const clashBox = document.createElement("div");
-        clashBox.className = "config-box";
-        clashBox.textContent = data.clash.url;
+        function renderConfigs(configs, elementId) {
+            const list = document.getElementById(elementId);
+            if (!list) return;
 
-        const btnGroup = document.createElement("div");
-        btnGroup.className = "btn-group";
+            if (configs.length === 0) {
+                list.innerHTML = `<li class="config-item">❌ هیچ کانفیگ فعالی یافت نشد. لطفاً بعداً دوباره امتحان کنید.</li>`;
+                return;
+            }
 
-        const copyBtn = document.createElement("button");
-        copyBtn.textContent = "📋 کپی URL";
-        copyBtn.onclick = () => {
-          navigator.clipboard.writeText(data.clash.url);
-          copyBtn.textContent = "✅ کپی شد";
-          setTimeout(() => copyBtn.textContent = "📋 کپی URL", 2000);
-        };
+            configs.forEach(config => {
+                const li = document.createElement('li');
+                li.className = 'config-item';
+                
+                const parsedUrl = new URL(config.config_str);
+                const protocol = parsedUrl.protocol.replace(':', '');
+                const serverName = parsedUrl.hostname;
+                const ping = config.ping;
 
-        const dlBtn = document.createElement("button");
-        dlBtn.textContent = "⬇️ دانلود";
-        dlBtn.onclick = () => {
-          window.open(data.clash.url, "_blank");
-        };
+                li.innerHTML = `
+                    <div class="config-details">
+                        <span class="protocol">پروتکل: ${protocol.toUpperCase()}</span>
+                        <span class="server">سرور: ${serverName}</span>
+                        <span class="ping">پینگ: ${ping}ms</span>
+                    </div>
+                    <div class="config-actions">
+                        <button class="action-button" onclick="copyToClipboard('${config.config_str}', this)">کپی</button>
+                        <button class="action-button" onclick="showQrCode('${config.config_str}')">QR Code</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
 
-        btnGroup.appendChild(copyBtn);
-        btnGroup.appendChild(dlBtn);
-        clashBox.appendChild(btnGroup);
-        clashDiv.appendChild(clashBox);
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
 
-      } catch (err) {
-        document.getElementById("xray").innerHTML = "❌ خطا در بارگذاری فایل JSON";
-        console.error(err);
-      }
-    }
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                const message = document.createElement('div');
+                message.className = 'copy-message';
+                message.textContent = 'کپی شد!';
+                button.parentNode.appendChild(message);
+                
+                setTimeout(() => {
+                    message.classList.add('show');
+                }, 10);
+                
+                setTimeout(() => {
+                    message.classList.remove('show');
+                    setTimeout(() => message.remove(), 300);
+                }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
 
-    function showTab(tabName) {
-      document.querySelectorAll(".tab-content").forEach(el => el.style.display = "none");
-      document.getElementById(tabName).style.display = "block";
-    }
+        function showQrCode(text) {
+            const modal = document.getElementById('qr-code-modal');
+            const canvas = document.getElementById('qr-code-canvas');
+            
+            new QRious({
+                element: canvas,
+                value: text,
+                size: 200,
+                padding: 10
+            });
+            
+            modal.style.display = 'flex';
+        }
 
-    loadConfigs();
-  </script>
+        function closeModal() {
+            const modal = document.getElementById('qr-code-modal');
+            modal.style.display = 'none';
+        }
+    </script>
 </body>
 </html>
