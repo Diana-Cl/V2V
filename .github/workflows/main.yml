@@ -27,12 +27,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests awscli
 
-      - name: Git pull before commit
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
-
       - name: Run scraper script
         run: python scraper.py
         env:
@@ -52,3 +46,5 @@ jobs:
           commit_message: "📊 Update all_live_configs.json (Scheduled)"
           file_pattern: "all_live_configs.json"
           branch: main
+          # این خط مهم\u200cترین تغییر است
+          commit_options: '--no-verify --force'
