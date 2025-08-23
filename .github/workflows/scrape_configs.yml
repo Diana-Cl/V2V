@@ -2,7 +2,8 @@ name: Scheduled Scrape
 
 on:
   schedule:
-    - cron: '0 */4 * * *' # هر ۴ ساعت یک بار اجرا می‌شود
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
 
 jobs:
   build-and-commit:
@@ -49,7 +50,7 @@ jobs:
       - name: Commit and Push the final JSON to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "📊 Update all_live_configs.json (Scheduled Enhanced)"
+          commit_message: "📊 Update all_live_configs.json (Scheduled)"
           file_pattern: "all_live_configs.json"
           branch: main
           commit_options: '--no-verify --force'
