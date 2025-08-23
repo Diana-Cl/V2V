@@ -31,16 +31,9 @@
             margin-bottom: 20px;
         }
         .header img {
-            width: 80px;
-            height: 80px;
+            width: 120px; /* لوگو بزرگ‌تر شد */
+            height: 120px; /* لوگو بزرگ‌تر شد */
             margin-bottom: 10px;
-        }
-        .header h1 {
-            color: #66cc00;
-            font-size: 2.5em;
-            margin: 0;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #b30000;
         }
         .container {
             width: 95%;
@@ -242,7 +235,6 @@
 <body>
     <div class="header">
         <img src="https://raw.githubusercontent.com/SMBCRYP/V2V/main/logo.png" alt="V2V Logo">
-        <h1>پروژه V2V</h1>
     </div>
 
     <div class="container">
@@ -251,17 +243,39 @@
             <button class="core-tab-button" onclick="showCore('singbox')">Sing-box</button>
         </div>
 
-        <div id="core-actions" class="action-bar">
-            <button class="test-button" onclick="runSpeedTest()">تست سرعت همه</button>
-            <button class="action-button" onclick="copyAll()">کپی همه</button>
-            <button class="action-button" onclick="downloadAll()">دانلود همه</button>
-        </div>
-
         <div id="xray-content" class="core-content" style="display: block;">
+            <div class="action-bar">
+                <button class="test-button" onclick="runSpeedTest('xray')">تست سرعت</button>
+                <div class="download-action-group">
+                    <a href="#" id="xray-sub-link">
+                        <button class="copy-btn">کپی ساب</button>
+                        <button class="copy-btn">QR</button>
+                    </a>
+                    <a href="#" id="xray-clash-link" download="clash_xray.yaml">
+                        <button class="copy-btn">کپی Clash</button>
+                        <button class="copy-btn">QR</button>
+                        <button class="copy-btn">دانلود</button>
+                    </a>
+                </div>
+            </div>
             <div id="xray-configs"></div>
         </div>
 
         <div id="singbox-content" class="core-content" style="display: none;">
+            <div class="action-bar">
+                <button class="test-button" onclick="runSpeedTest('singbox')">تست سرعت</button>
+                <div class="download-action-group">
+                    <a href="#" id="singbox-sub-link">
+                        <button class="copy-btn">کپی ساب</button>
+                        <button class="copy-btn">QR</button>
+                    </a>
+                    <a href="#" id="singbox-clash-link" download="clash_singbox.yaml">
+                        <button class="copy-btn">کپی Clash</button>
+                        <button class="copy-btn">QR</button>
+                        <button class="copy-btn">دانلود</button>
+                    </a>
+                </div>
+            </div>
             <div id="singbox-configs"></div>
         </div>
     </div>
@@ -282,8 +296,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script>
         let allConfigs = { xray: [], singbox: [] };
-        const configsContainer = document.getElementById('xray-configs');
-        const singboxContainer = document.getElementById('singbox-configs');
+        const xrayConfigsContainer = document.getElementById('xray-configs');
+        const singboxConfigsContainer = document.getElementById('singbox-configs');
         let currentCore = 'xray';
         const API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy';
 
@@ -296,17 +310,19 @@
                 .then(data => {
                     allConfigs = data;
                     renderConfigs();
+                    updateSubscriptionLinks();
+                    updateClashLinks();
                 })
                 .catch(error => {
                     console.error('Error loading JSON:', error);
-                    configsContainer.innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
-                    singboxContainer.innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
+                    xrayConfigsContainer.innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
+                    singboxConfigsContainer.innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
                 });
         });
 
         function renderConfigs() {
             const configs = allConfigs[currentCore];
-            const container = currentCore === 'xray' ? configsContainer : singboxContainer;
+            const container = currentCore === 'xray' ? xrayConfigsContainer : singboxConfigsContainer;
             container.innerHTML = '';
 
             if (!configs || configs.length === 0) {
@@ -372,7 +388,7 @@
             renderConfigs();
         }
 
-        function runSpeedTest() {
+        function runSpeedTest(core) {
             alert('قابلیت تست سرعت در حال توسعه است و به زودی اضافه خواهد شد.');
         }
 
@@ -434,6 +450,89 @@
         function closeModal() {
             const modal = document.getElementById('qr-code-modal');
             modal.style.display = 'none';
+        }
+
+        function updateSubscriptionLinks() {
+            const xrayConfigs = allConfigs.xray.map(c => c.config_str).join('\n');
+            const singboxConfigs = allConfigs.singbox.map(c => c.config_str).join('\n');
+
+            const base64Xray = btoa(unescape(encodeURIComponent(xrayConfigs)));
+            const base64Singbox = btoa(unescape(encodeURIComponent(singboxConfigs)));
+
+            const xraySubUrl = `data:text/plain;charset=utf-8;base64,${base64Xray}`;
+            const singboxSubUrl = `data:text/plain;charset=utf-8;base64,${base64Singbox}`;
+
+            document.getElementById('xray-sub-copy').onclick = () => copyToClipboard(xraySubUrl, document.getElementById('xray-sub-copy'));
+            document.getElementById('xray-sub-qr').onclick = () => showQrCode(xraySubUrl);
+            document.getElementById('singbox-sub-copy').onclick = () => copyToClipboard(singboxSubUrl, document.getElementById('singbox-sub-copy'));
+            document.getElementById('singbox-sub-qr').onclick = () => showQrCode(singboxSubUrl);
+        }
+
+        function updateClashLinks() {
+            const generateClashConfig = (configs, core) => {
+                const proxies = configs.map(config => {
+                    const parsedUrl = new URL(config.config_str);
+                    const protocol = parsedUrl.protocol.slice(0, -1);
+                    const serverName = parsedUrl.hostname;
+                    const port = parsedUrl.port;
+                    const name = `${config.ping}ms-${serverName}`;
+                    
+                    let proxy = {
+                        name: name,
+                        type: protocol,
+                        server: serverName,
+                        port: parseInt(port),
+                    };
+
+                    if (protocol === 'vless') {
+                        const params = new URLSearchParams(parsedUrl.search);
+                        proxy.uuid = parsedUrl.username;
+                        proxy['network'] = params.get('network') || 'ws';
+                        proxy['tls'] = params.get('security') === 'tls';
+                        proxy['ws-opts'] = {
+                            path: params.get('path') || '/',
+                            headers: { Host: params.get('host') || serverName }
+                        };
+                        proxy['skip-cert-verify'] = true;
+                        proxy['servername'] = params.get('sni') || serverName;
+                    }
+                    // Add other protocols like VMess, Trojan, etc. here
+                    return proxy;
+                });
+                
+                const proxyNames = proxies.map(p => p.name);
+                const clashConfig = {
+                    'proxies': proxies,
+                    'proxy-groups': [
+                        { 'name': `V2V-${core}`, 'type': 'select', 'proxies': proxyNames }
+                    ],
+                    'rules': [
+                        `MATCH,V2V-${core}`
+                    ]
+                };
+                return `yaml`
+            };
+
+            const xrayClashUrl = `data:text/plain;charset=utf-8;base64,${btoa(generateClashConfig(allConfigs.xray, 'xray'))}`;
+            const singboxClashUrl = `data:text/plain;charset=utf-8;base64,${btoa(generateClashConfig(allConfigs.singbox, 'singbox'))}`;
+
+            document.getElementById('xray-clash-copy').onclick = () => copyToClipboard(xrayClashUrl, document.getElementById('xray-clash-copy'));
+            document.getElementById('xray-clash-qr').onclick = () => showQrCode(xrayClashUrl);
+            document.getElementById('xray-clash-download').onclick = () => {
+                const link = document.createElement('a');
+                link.href = xrayClashUrl;
+                link.download = 'clash_xray.yaml';
+                link.click();
+            };
+
+            document.getElementById('singbox-clash-copy').onclick = () => copyToClipboard(singboxClashUrl, document.getElementById('singbox-clash-copy'));
+            document.getElementById('singbox-clash-qr').onclick = () => showQrCode(singboxClashUrl);
+            document.getElementById('singbox-clash-download').onclick = () => {
+                const link = document.createElement('a');
+                link.href = singboxClashUrl;
+                link.download = 'clash_singbox.yaml';
+                link.click();
+            };
         }
     </script>
 </body>
