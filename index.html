@@ -15,12 +15,12 @@
             --logo-green: #388E3C;
             --border-color: #4d4d4d;
             --button-bg: #333;
+            --button-hover-bg: #444;
         }
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100%;
         }
         body {
             background-color: var(--primary-bg);
@@ -30,6 +30,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
         }
         .main-wrapper {
             width: 100%;
@@ -67,10 +69,13 @@
             background-color: var(--logo-green); color: white; border: none; padding: 10px 20px;
             border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1em; margin-bottom: 20px;
         }
+        .test-button:disabled { background-color: #555; cursor: not-allowed; }
+
         .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
         .action-group-title { margin: 0 0 15px 0; font-size: 1.1em; text-align: right; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
         .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         .action-button { background-color: var(--button-bg); border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em; flex-grow: 1; color: var(--text-color); }
+        .action-button:hover { background-color: var(--button-hover-bg); }
         
         .protocol-group { border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; overflow: hidden; }
         .protocol-header { background-color: #2a2a2a; padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
@@ -78,15 +83,16 @@
         .protocol-group.open .config-list { max-height: 2000px; }
         .config-item { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; }
         .config-item:last-child { border-bottom: none; }
-        .config-checkbox { transform: scale(1.5); accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; }
-        .config-details .server { font-weight: bold; word-break: break-all; }
+        .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.9em; }
         .config-details .ping { font-size: 0.9em; }
         .copy-button-container { display: flex; gap: 10px; }
         .copy-btn { background-color: #444; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; color: var(--text-color); }
+        
         .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; }
-        .bottom-links a { color: var(--text-color); text-decoration: none; }
+        .bottom-links a { color: var(--text-color); text-decoration: none; font-size: 0.9em; }
         .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
+        
         #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
         .qr-code-content { background-color: var(--secondary-bg); padding: 20px; border-radius: 10px; position: relative; }
         .close-button { position: absolute; top: 10px; right: 15px; font-size: 30px; cursor: pointer; }
@@ -115,7 +121,7 @@
                 <div class="action-group">
                     <h4 class="action-group-title">فایل / Clash Meta</h4>
                     <div class="action-buttons">
-                         <button class="action-button" onclick="copyToClipboard(DATA_SOURCES[1].replace('all_live_configs.json', 'best_clash.yaml'), 'URL اشتراک کلش کپی شد!')">کپی URL اشتراک</button>
+                         <button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button>
                          <button class="action-button" onclick="generateClashConfig('xray', 'download')">دانلود فایل شخصی</button>
                     </div>
                 </div>
@@ -141,7 +147,7 @@
         <div class="bottom-links">
             <a href="https://smbcryp.github.io/V2V/" target="_blank">GitHub</a>
             <a href="https://v2-v.vercel.app/" target="_blank">Vercel</a>
-            <a href="https://s3.ir-thr-at1.arvanstorage.com/v2v-data/index.html" target="_blank">ArvanCloud</a>
+            <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank">ArvanCloud</a>
         </div>
     </div>
 
@@ -155,13 +161,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
-        // All JavaScript code from the last approved version, including the smart fallback logic.
         let allConfigs = { xray: [], singbox: [] };
         const VERCEL_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy';
         const PING_TIMEOUT = 5000;
 
         const DATA_SOURCES = [
-            'https://s3.ir-thr-at1.arvanstorage.com/v2v-data/all_live_configs.json',
+            'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json',
             'https://smbcryp.github.io/V2V/all_live_configs.json',
             'https://v2-v.vercel.app/all_live_configs.json'
         ];
@@ -169,9 +174,12 @@
         async function fetchDataWithFallback() {
             for (const url of DATA_SOURCES) {
                 try {
+                    console.log(`Trying: ${url}`);
                     const response = await fetch(url, { cache: "no-store" });
                     if (!response.ok) throw new Error(`Status: ${response.status}`);
-                    return await response.json();
+                    const data = await response.json();
+                    console.log(`Success: ${url}`);
+                    return data;
                 } catch (error) {
                     console.error(`Failed: ${url}`, error);
                 }
@@ -191,15 +199,13 @@
                 document.getElementById('singbox-configs-container').innerHTML = errorMsg;
             }
         });
-        
-        // The rest of the JS functions (renderCore, runSpeedTest, generateClashConfig, etc.) remain the same
-        // as the last provided version. They are correct and don't need changes.
+
         function renderCore(core) {
             const container = document.getElementById(`${core}-configs-container`);
             container.innerHTML = '';
-            const configs = allConfigs[core];
+            const configs = allConfigs[core] || [];
 
-            if (!configs || configs.length === 0) {
+            if (configs.length === 0) {
                 container.innerHTML = `<div class="alert">❌ هیچ کانفیگ فعالی یافت نشد.</div>`;
                 return;
             }
@@ -209,44 +215,63 @@
                     const protocol = new URL(config.config_str).protocol.slice(0, -1);
                     if (!acc[protocol]) acc[protocol] = [];
                     acc[protocol].push(config);
-                } catch (e) { console.warn("Invalid config string:", config.config_str); }
+                } catch (e) {}
                 return acc;
             }, {});
 
-            for (const protocol in groupedByProtocol) {
+            container.innerHTML = Object.keys(groupedByProtocol).map(protocol => {
                 const protocolGroupId = `${protocol}-${core}`;
-                const protocolGroup = document.createElement('div');
-                protocolGroup.className = 'protocol-group';
-                protocolGroup.innerHTML = `
-                    <div class="protocol-header" onclick="toggleGroup('${protocolGroupId}')">
-                        <span class="protocol-title">${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span>
-                    </div>
-                    <ul class="config-list" id="${protocolGroupId}"></ul>`;
-                
-                const list = protocolGroup.querySelector('.config-list');
-                groupedByProtocol[protocol].forEach((config) => {
-                    const li = document.createElement('li');
-                    li.className = 'config-item';
-                    li.dataset.config = config.config_str;
+                const configItems = groupedByProtocol[protocol].map(config => {
                     const serverName = config.config_str.includes('#') ? decodeURIComponent(config.config_str.split('#')[1]) : new URL(config.config_str).hostname;
-                    
-                    li.innerHTML = `
-                        <div class="config-details">
-                            <span class="server">${serverName}</span>
-                            <span class="ping">پینگ اولیه: ${config.ping}ms</span>
+                    return `
+                        <li class="config-item" data-config="${config.config_str}" data-initial-ping="${config.ping}">
+                            <div class="config-details">
+                                <span class="server">${serverName}</span>
+                                <span class="ping">پینگ اولیه: ${config.ping}ms</span>
+                            </div>
+                            <div class="copy-button-container">
+                                <button class="copy-btn" onclick="copyToClipboard('${config.config_str}')">کپی</button>
+                                <button class="copy-btn" onclick="showQrCode('${config.config_str}')">QR</button>
+                            </div>
+                        </li>`;
+                }).join('');
+
+                return `
+                    <div class="protocol-group">
+                        <div class="protocol-header" onclick="toggleGroup('${protocolGroupId}')">
+                            <span>${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span>
+                            <span>&#9660;</span>
                         </div>
-                        <div class="copy-button-container">
-                            <button class="copy-btn" onclick="copyToClipboard('${config.config_str}')">کپی</button>
-                            <button class="copy-btn" onclick="showQrCode('${config.config_str}')">QR</button>
-                        </div>`;
-                    list.appendChild(li);
-                });
-                container.appendChild(protocolGroup);
-            }
+                        <ul class="config-list" id="${protocolGroupId}">${configItems}</ul>
+                    </div>`;
+            }).join('');
         }
         
-        function toggleGroup(groupId) { document.getElementById(groupId).parentNode.classList.toggle('open'); }
+        function toggleGroup(groupId) {
+            const group = document.getElementById(groupId).parentNode;
+            group.classList.toggle('open');
+            const arrow = group.querySelector('.protocol-header span:last-child');
+            arrow.innerHTML = group.classList.contains('open') ? '&#9650;' : '&#9660;';
+        }
         
+        async function runSpeedTest(core) { /* ... same as before, no changes needed ... */ }
+        function testConfigLatency(configStr) { /* ... same as before ... */ }
+        function sortConfigsByPing(core) { /* ... same as before ... */ }
+        function generateSubscription(core, action) { /* ... same as before ... */ }
+        function generateClashConfig(core, action) { /* ... same as before, with WireGuard support ... */ }
+        function copyToClipboard(text, messageText = 'کپی شد!') { /* ... same as before ... */ }
+        function showQrCode(text) { /* ... same as before ... */ }
+        function closeModal() { /* ... same as before ... */ }
+        function parseServerDetails(config_url) { /* ... same as before ... */ }
+
+        // --- NEW ---
+        function copyClashSubscriptionUrl() {
+            // We assume the ArvanCloud URL is the most stable and use it.
+            const clashUrl = DATA_SOURCES[0].replace('all_live_configs.json', 'best_clash.yaml');
+            copyToClipboard(clashUrl, 'URL اشتراک کلش کپی شد!');
+        }
+        
+        // --- Implementing the functions again to be self-contained ---
         async function runSpeedTest(core) {
             const testButton = document.getElementById(`test-${core}`);
             testButton.disabled = true;
@@ -268,19 +293,136 @@
             testButton.disabled = false;
             testButton.textContent = '🚀 تست مجدد';
         }
+
+        function testConfigLatency(configStr) {
+            return new Promise(async (resolve) => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => { controller.abort(); resolve('Timeout'); }, PING_TIMEOUT);
+                try {
+                    const details = parseServerDetails(configStr);
+                    if (!details) { clearTimeout(timeoutId); return resolve('Error'); }
+                    const startTime = performance.now();
+                    const response = await fetch(VERCEL_API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(details), signal: controller.signal });
+                    if (!response.ok) throw new Error('API Error');
+                    const data = await response.json();
+                    if (data.ping !== 9999) {
+                        const endTime = performance.now();
+                        clearTimeout(timeoutId);
+                        resolve(Math.round(endTime - startTime));
+                    } else {
+                        clearTimeout(timeoutId);
+                        resolve('Timeout');
+                    }
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    resolve('Error');
+                }
+            });
+        }
         
-        function testConfigLatency(configStr) { /* ... same as before ... */ return new Promise(async (resolve) => { const controller = new AbortController(); const timeoutId = setTimeout(() => { controller.abort(); resolve('Timeout'); }, PING_TIMEOUT); try { const details = parseServerDetails(configStr); if (!details) { clearTimeout(timeoutId); return resolve('Error'); } const startTime = performance.now(); const response = await fetch(VERCEL_API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(details), signal: controller.signal }); if (!response.ok) throw new Error('API Error'); const data = await response.json(); if (data.ping !== 9999) { const endTime = performance.now(); clearTimeout(timeoutId); resolve(Math.round(endTime - startTime)); } else { clearTimeout(timeoutId); resolve('Timeout'); } } catch (error) { clearTimeout(timeoutId); resolve('Error'); } }); }
+        function sortConfigsByPing(core) {
+            const container = document.getElementById(`${core}-configs-container`);
+            const protocolGroups = Array.from(container.querySelectorAll('.protocol-group'));
+            protocolGroups.forEach(group => {
+                const list = group.querySelector('.config-list');
+                const items = Array.from(list.querySelectorAll('.config-item'));
+                items.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
+                items.forEach(item => list.appendChild(item));
+            });
+        }
         
-        function sortConfigsByPing(core) { const container = document.getElementById(`${core}-configs-container`); const protocolGroups = Array.from(container.querySelectorAll('.protocol-group')); protocolGroups.forEach(group => { const list = group.querySelector('.config-list'); const items = Array.from(list.querySelectorAll('.config-item')); items.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999)); items.forEach(item => list.appendChild(item)); }); }
+        function generateSubscription(core, action) {
+            const configs = allConfigs[core].map(c => c.config_str);
+            if (configs.length === 0) { alert('کانفیگی برای ساخت لینک وجود ندارد.'); return; }
+            const subContent = btoa(unescape(encodeURIComponent(configs.join('\n'))));
+            const subUrl = `data:text/plain;base64,${subContent}`;
+            if (action === 'sub') {
+                copyToClipboard(subUrl, 'لینک اشتراک کپی شد.');
+            } else if (action === 'qr') {
+                showQrCode(subUrl);
+            }
+        }
         
-        function generateSubscription(core, action) { const configs = allConfigs[core].map(c => c.config_str); if (configs.length === 0) return; const subContent = btoa(unescape(encodeURIComponent(configs.join('\n')))); const subUrl = `data:text/plain;base64,${subContent}`; if (action === 'sub') { copyToClipboard(subUrl, 'لینک اشتراک کپی شد.'); } else if (action === 'qr') { showQrCode(subUrl); } }
+        function generateClashConfig(core, action) {
+            const configs = allConfigs[core].map(c => c.config_str);
+            if (configs.length === 0) { alert('کانفیگی برای ساخت فایل وجود ندارد.'); return; }
+            const proxies = configs.map(configStr => {
+                try {
+                    const url = new URL(configStr);
+                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname;
+                    let proxy = { name, server: url.hostname, port: parseInt(url.port) };
+                    switch (url.protocol.slice(0, -1)) {
+                        case 'vless': case 'trojan':
+                            proxy.type = url.protocol.slice(0, -1);
+                            proxy.uuid = url.username;
+                            if (proxy.type === 'trojan') proxy.password = url.username;
+                            const params = new URLSearchParams(url.search);
+                            proxy.network = params.get('type') || 'ws';
+                            proxy.tls = params.get('security') === 'tls';
+                            proxy.servername = params.get('sni') || url.hostname;
+                            proxy['skip-cert-verify'] = true;
+                            if (proxy.network === 'ws') proxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || url.hostname } };
+                            return proxy;
+                        case 'vmess':
+                            const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
+                            return { name, type: 'vmess', server: decoded.add, port: parseInt(decoded.port), uuid: decoded.id, alterId: decoded.aid, cipher: decoded.scy || 'auto', tls: decoded.tls === 'tls', network: decoded.net || 'tcp' };
+                        case 'ss':
+                            const ssInfo = atob(url.username).split(':');
+                            return { name, type: 'ss', server: url.hostname, port: parseInt(url.port), cipher: ssInfo[0], password: ssInfo[1] };
+                        case 'wg':
+                            proxy.type = 'wireguard';
+                            proxy['private-key'] = url.username;
+                            const wgParams = new URLSearchParams(url.search);
+                            proxy['peer-public-key'] = wgParams.get('public_key');
+                            proxy.ip = wgParams.get('ip') || '172.16.0.2/32';
+                            return proxy;
+                        default: return null;
+                    }
+                } catch { return null; }
+            }).filter(p => p);
+            
+            const clashConfig = { proxies, 'proxy-groups': [{ name: 'V2V-Proxies', type: 'select', proxies: ['DIRECT', ...proxies.map(p => p.name)] }], 'rules': ['MATCH,V2V-Proxies'] };
+            const yamlConfig = jsyaml.dump(clashConfig);
+            if (action === 'download') {
+                const blob = new Blob([yamlConfig], { type: 'text/yaml' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'v2v_clash_personal.yaml';
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }
+        }
         
-        function generateClashConfig(core, action) { const configs = allConfigs[core].map(c => c.config_str); if(configs.length === 0) return; const proxies = configs.map(configStr => { try { const url = new URL(configStr); const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname; let proxy = { name, server: url.hostname, port: parseInt(url.port) }; switch (url.protocol.slice(0, -1)) { case 'vless': case 'trojan': proxy.type = url.protocol.slice(0,-1); proxy.uuid = url.username; if(proxy.type === 'trojan') proxy.password = url.username; const params = new URLSearchParams(url.search); proxy.network = params.get('type') || 'ws'; proxy.tls = params.get('security') === 'tls'; proxy.servername = params.get('sni') || url.hostname; if (proxy.network === 'ws') { proxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || url.hostname } }; } return proxy; case 'vmess': const decoded = JSON.parse(atob(configStr.replace('vmess://', ''))); return { name, type: 'vmess', server: decoded.add, port: parseInt(decoded.port), uuid: decoded.id, alterId: decoded.aid, cipher: decoded.scy || 'auto', tls: decoded.tls === 'tls', network: decoded.net || 'tcp' }; case 'ss': const ssInfo = atob(url.username).split(':'); return { name, type: 'ss', server: url.hostname, port: parseInt(url.port), cipher: ssInfo[0], password: ssInfo[1] }; default: return null; } } catch { return null; }}).filter(p => p); const clashConfig = { 'proxies': proxies, 'proxy-groups': [ { name: 'V2V-Proxies', type: 'select', proxies: ['DIRECT', ...proxies.map(p=>p.name)] } ], 'rules': [ 'MATCH,V2V-Proxies' ] }; const yamlConfig = jsyaml.dump(clashConfig); if (action === 'download') { const blob = new Blob([yamlConfig], { type: 'text/yaml' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `v2v_clash_personal.yaml`; link.click(); URL.revokeObjectURL(link.href); }}
-        
-        function copyToClipboard(text, messageText = 'کپی شد!') { navigator.clipboard.writeText(text).then(() => alert(messageText)).catch(err => alert('خطا در کپی کردن.')); }
-        function showQrCode(text) { const modal = document.getElementById('qr-code-modal'); new QRious({ element: modal.querySelector('canvas'), value: text, size: 250 }); modal.style.display = 'flex'; }
-        function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
-        function parseServerDetails(config_url) { try { const url = new URL(config_url); const proto = url.protocol.slice(0, -1); if (proto === 'vmess') { const dec = JSON.parse(atob(config_url.replace('vmess://', ''))); return { host: dec.add, port: parseInt(dec.port) }; } if (proto === 'ss') { let part = config_url.substring(config_url.lastIndexOf('@') + 1).split('#')[0]; const [host, port] = part.split(':'); return { host, port: parseInt(port) }; } return { host: url.hostname, port: parseInt(url.port || 443) }; } catch { return null; }}
+        function copyToClipboard(text, messageText = 'کپی شد!') {
+            navigator.clipboard.writeText(text).then(() => alert(messageText)).catch(err => alert('خطا در کپی کردن.'));
+        }
+
+        function showQrCode(text) {
+            const modal = document.getElementById('qr-code-modal');
+            modal.style.display = 'flex';
+            new QRious({ element: modal.querySelector('canvas'), value: text, size: 250, padding: 10 });
+        }
+
+        function closeModal() {
+            document.getElementById('qr-code-modal').style.display = 'none';
+        }
+
+        function parseServerDetails(config_url) {
+            try {
+                const url = new URL(config_url);
+                const proto = url.protocol.slice(0, -1);
+                if (proto === 'vmess') {
+                    const dec = JSON.parse(atob(config_url.replace('vmess://', '')));
+                    return { host: dec.add, port: parseInt(dec.port) };
+                }
+                if (proto === 'ss') {
+                    let part = config_url.substring(config_url.lastIndexOf('@') + 1).split('#')[0];
+                    const [host, port] = part.split(':');
+                    return { host, port: parseInt(port) };
+                }
+                return { host: url.hostname, port: parseInt(url.port || 443) };
+            } catch { return null; }
+        }
     </script>
 </body>
 </html>
