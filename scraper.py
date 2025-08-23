@@ -22,31 +22,25 @@ BASE_SOURCES = [
 
 # تنظیمات کلی
 OUTPUT_JSON_FILE = 'all_live_configs.json'
-VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://', 'wg://') # اضافه شدن ss و wg
+VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://', 'wg://')
 GITHUB_PAT = os.environ.get('GH_PAT')
 HEADERS = {'User-Agent': 'V2V-Scraper/Complete-v3.0'}
 if GITHUB_PAT:
     HEADERS['Authorization'] = f'token {GITHUB_PAT}'
 
 # تنظیمات تست سرعت
-TARGET_CONFIGS_PER_CORE = 500  # 500 برای هر core
-MAX_PING_THRESHOLD = 1000      # حداکثر 1000ms
+TARGET_CONFIGS_PER_CORE = 500
+MAX_PING_THRESHOLD = 1000
 API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy'
-BATCH_SIZE = 15                # تعداد تست همزمان
-MAX_WORKERS = 25               # تعداد thread
-REQUEST_TIMEOUT = 8            # timeout برای هر درخواست API
-GITHUB_SEARCH_LIMIT = 30       # حداکثر repo برای جستجو
+BATCH_SIZE = 15
+MAX_WORKERS = 25
+REQUEST_TIMEOUT = 8
+GITHUB_SEARCH_LIMIT = 30
 
 # کلمات کلیدی برای جستجوی GitHub
 GITHUB_SEARCH_QUERIES = [
-    'v2ray subscription',
-    'vmess config',
-    'vless subscription',
-    'trojan config',
-    'xray config',
-    'clash subscription',
-    'v2ray configs',
-    'proxy subscription'
+    'v2ray subscription', 'vmess config', 'vless subscription', 'trojan config',
+    'xray config', 'clash subscription', 'v2ray configs', 'proxy subscription'
 ]
 
 # === GITHUB SEARCH FUNCTIONS ===
@@ -287,7 +281,7 @@ def main():
     print("📈 خلاصه نتایج:")
     print(f"   🔸 Xray: {len(final_configs['xray'])} کانفیگ")
     print(f"   🔸 Singbox: {len(final_configs['singbox'])} کانفیگ")
-    print(f"   🔸 مجموع: {total_configs} کانفیگ")
+    f"   🔸 مجموع: {total_configs} کانفیگ")
     print(f"💾 فایل خروجی: {OUTPUT_JSON_FILE}")
     print(f"🌐 منابع استفاده شده: {len(all_sources)} منبع")
     if total_configs > 0: print("✅ فایل آماده برای استفاده در سایت!")
