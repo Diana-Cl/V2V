@@ -3,30 +3,24 @@ import base64
 import os
 import json
 import re
-import time
-import yaml
-import random
-import socket
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from urllib.parse import urlparse, unquote
+from concurrent.futures import ThreadPoolExecutor
 
-# === CONFIGURATION ===
 BASE_SOURCES = [
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub7.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub8.txt", "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt",
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/SSTime", "https://raw.githubusercontent.com/arshiacomplus/v2rayExtractor/refs/heads/main/mix/sub.html"
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub7.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub8.txt",
+    "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt",
+    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/SSTime",
+    "https://raw.githubusercontent.com/arshiacomplus/v2rayExtractor/refs/heads/main/mix/sub.html"
 ]
 OUTPUT_JSON_FILE = 'all_live_configs.json'
-OUTPUT_CLASH_FILE = 'best_clash.yaml'
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'wg://')
-GITHUB_PAT = os.environ.get('GH_PAT')
-HEADERS = {'User-Agent': 'V2V-Scraper/Final-Direct'}
-TARGET_CONFIGS_PER_CORE = 500
-MAX_PING_THRESHOLD = 2000
-TCP_TIMEOUT = 4
-MAX_RAW_CONFIGS_TO_TEST = 2500
-TOP_CLASH_CONFIGS_COUNT = 100
+HEADERS = {'User-Agent': 'V2V-Collector/1.0'}
 
 def get_content_from_url(url: str) -> str | None:
     try:
@@ -45,108 +39,28 @@ def fetch_and_parse_url(url: str) -> set[str]:
         pass
     return set(re.findall(r'(vless|vmess|trojan|ss|wg)://[^\s\'"<]+', content))
 
-def parse_server_details(config_url: str) -> dict | None:
-    try:
-        parsed_url = urlparse(config_url)
-        if parsed_url.scheme == 'vmess':
-            decoded = json.loads(base64.b64decode(config_url.replace("vmess://", "")).decode('utf-8'))
-            return {'host': decoded.get('add'), 'port': int(decoded.get('port', 0))}
-        if parsed_url.hostname:
-            return {'host': parsed_url.hostname, 'port': parsed_url.port or 443}
-        return None
-    except Exception:
-        return None
-
-def test_config_direct_tcp(config_url: str) -> dict:
-    server_details = parse_server_details(config_url)
-    if not server_details:
-        return {'config_str': config_url, 'ping': 9999}
-    
-    host = server_details['host']
-    port = server_details['port']
-    
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(TCP_TIMEOUT)
-            start_time = time.time()
-            s.connect((host, port))
-            end_time = time.time()
-            ping = round((end_time - start_time) * 1000)
-            return {'config_str': config_url, 'ping': ping}
-    except (socket.timeout, socket.error):
-        return {'config_str': config_url, 'ping': 9999}
-
-def validate_and_categorize_config(config_url: str) -> dict | None:
-    try:
-        parsed_url = urlparse(config_url)
-        protocol = parsed_url.scheme
-        core = 'xray' if protocol in ['vless', 'vmess', 'trojan', 'ss'] else 'singbox'
-        if protocol == 'vless' and 'reality' in parsed_url.query:
-            core = 'singbox'
-        return {'core': core, 'config_str': config_url}
-    except Exception:
-        return None
-
-def generate_clash_config_from_urls(configs: list) -> str:
-    proxies = []
-    for config_str in configs:
-        try:
-            url = urlparse(config_str)
-            if 'reality' in url.query.lower():
-                continue
-            name = unquote(url.fragment) if url.fragment else url.hostname
-            proxy = {'name': name, 'server': url.hostname, 'port': int(url.port)}
-            if url.scheme == 'vmess':
-                decoded = json.loads(base64.b64decode(config_str.replace("vmess://", "")).decode('utf-8'))
-                proxy.update({'type': 'vmess', 'uuid': decoded['id'], 'alterId': decoded['aid'], 'cipher': 'auto', 'server': decoded['add'], 'port': int(decoded['port']), 'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net', 'tcp')})
-            elif url.scheme in ['vless', 'trojan']:
-                proxy.update({'type': url.scheme, 'uuid' if url.scheme == 'vless' else 'password': url.username, 'tls': 'security=tls' in url.query})
-            elif url.scheme == 'ss':
-                cred = base64.b64decode(unquote(url.username)).decode().split(':')
-                proxy.update({'type': 'ss', 'cipher': cred[0], 'password': cred[1]})
-            else: continue
-            proxies.append(proxy)
-        except Exception: continue
-    clash_config = {'proxies': proxies, 'proxy-groups': [{'name': 'V2V-Auto', 'type': 'select', 'proxies': [p['name'] for p in proxies]}], 'rules': ['MATCH,V2V-Auto']}
-    return yaml.dump(clash_config, allow_unicode=True, sort_keys=False, indent=2)
-
 def main():
-    print("V2V Scraper Final Version (Direct TCP Test)")
-    with ThreadPoolExecutor(max_workers=30) as executor:
+    print("V2V Collector: Fetching and de-duplicating configs...")
+    with ThreadPoolExecutor(max_workers=20) as executor:
         config_sets = executor.map(fetch_and_parse_url, BASE_SOURCES)
+    
     all_configs_raw = set.union(*config_sets)
-    print(f"Found {len(all_configs_raw)} raw configs.")
-
-    categorized_configs = {'xray': [], 'singbox': []}
-    for cfg in all_configs_raw:
-        cat = validate_and_categorize_config(cfg)
-        if cat: categorized_configs[cat['core']].append(cat['config_str'])
+    print(f"Found {len(all_configs_raw)} unique raw configs.")
 
     final_configs = {'xray': [], 'singbox': []}
-    for core_name, configs in categorized_configs.items():
-        if not configs: continue
-        
-        configs_to_test = random.sample(configs, min(len(configs), MAX_RAW_CONFIGS_TO_TEST))
-        print(f"Testing {len(configs_to_test)} {core_name} configs...")
-        
-        with ThreadPoolExecutor(max_workers=100) as executor:
-            tested_configs = list(executor.map(test_config_direct_tcp, configs_to_test))
-
-        live_configs = [c for c in tested_configs if c.get('ping', 9999) < MAX_PING_THRESHOLD]
-        live_configs.sort(key=lambda x: x.get('ping', 9999))
-        final_configs[core_name] = live_configs[:TARGET_CONFIGS_PER_CORE]
-        print(f"Found {len(final_configs[core_name])} live {core_name} configs.")
-
-    if final_configs['xray']:
-        print(f"Generating Clash file from top {TOP_CLASH_CONFIGS_COUNT} configs...")
-        top_xray_configs = [cfg['config_str'] for cfg in final_configs['xray'][:TOP_CLASH_CONFIGS_COUNT]]
-        clash_content = generate_clash_config_from_urls(top_xray_configs)
-        with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f:
-            f.write(clash_content)
-
+    for cfg in all_configs_raw:
+        # A simple categorization logic
+        protocol = cfg.split('://')[0]
+        if 'reality' in cfg or protocol == 'wg':
+             final_configs['singbox'].append({'config_str': cfg, 'ping': 'N/A'})
+        else:
+             final_configs['xray'].append({'config_str': cfg, 'ping': 'N/A'})
+    
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(final_configs, f, ensure_ascii=False, indent=2)
+    
     print("Process completed successfully.")
+    print(f"Saved {len(final_configs['xray'])} xray configs and {len(final_configs['singbox'])} singbox configs.")
 
 if __name__ == "__main__":
     main()
