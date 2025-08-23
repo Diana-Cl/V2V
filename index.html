@@ -1,505 +1,228 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>V2V | دسترسی آزاد</title>
-    <meta name="description" content="پروژه‌ای برای تجمیع و ارائه کانفیگ‌های V2Ray با تست سرعت و دسته‌بندی هوشمند.">
-    <meta property="og:title" content="V2V | دسترسی آزاد و پایدار" />
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
-    <style>
-        /* وارد کردن فونت Vazirmatn */
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap');
-        
-        :root {
-            --bg-color: #000000; --card-color: #1e1e1e; --text-color: #e0e0e0;
-            --primary-color: #8B0000; --secondary-color: #28a745; --error-color: #cf6679;
-            --success-color: #66bb6a; --warning-color: #ffeb3b; --btn-bg: #2a2a2a;
-        }
-        body { 
-            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            margin: 0; 
-            padding: 20px; 
-            line-height: 1.6;
-        }
-        main { max-width: 1200px; margin: 0 auto; }
-        .site-logo { display: block; margin: 0 auto 15px auto; max-width: 160px; height: auto; }
-        .slogan { text-align: center; color: #aaa; font-style: italic; margin-bottom: 2em; font-weight: 600; }
-        .info-box { text-align: center; font-weight: bold; margin-bottom: 15px; padding: 15px; border-radius: 8px; background-color: var(--card-color); font-size: 1.1em; }
-        
-        .core-selector { display: flex; flex-direction: column; gap: 15px; margin: 20px 0; }
-        .core-select-btn {
-            background-color: var(--primary-color); color: #fff; border: 2px solid var(--primary-color);
-            padding: 15px; font-size: 1.1em; font-weight: bold; border-radius: 8px; cursor: pointer;
-            font-family: 'Vazirmatn', sans-serif; white-space: nowrap; transition: all 0.2s;
-        }
-        .core-select-btn:hover { background-color: #6d0000; }
-
-        /* رنگ‌های مخصوص هر دکمه */
-        #btn-xray { 
-            background-color: var(--secondary-color); 
-            border-color: var(--secondary-color); 
-            color: #000; 
-        }
-        #btn-xray:hover { background-color: #1f7a33; }
-
-        #btn-singbox {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color); 
-            color: #fff;
-        }
-        #btn-singbox:hover { background-color: #6d0000; }
-
-        .core-content { display: none; padding: 20px; border: 1px solid #333; border-radius: 8px; margin-top: 10px; }
-        .speed-test-btn { background-color: var(--secondary-color); color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 1.1em; cursor: pointer; display: block; width: 100%; margin-bottom: 25px; font-weight: bold; }
-        .speed-test-btn:disabled { background-color: #555; cursor: not-allowed; }
-        
-        .links-container { background-color: var(--card-color); padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 25px; }
-        .links-container h3 { margin-top: 0; color: var(--secondary-color); border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 20px; }
-        .link-group { margin-bottom: 20px; } .link-group:last-child { margin-bottom: 0; }
-        .link-group h4 { margin: 0 0 10px 0; color: var(--text-color); }
-        .link-buttons { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .link-btn { background-color: var(--btn-bg); color: var(--text-color); padding: 10px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; transition: background-color 0.2s; border: 1px solid #444; cursor: pointer; }
-        
-        .protocol-accordion-item { margin-bottom: 15px; }
-        .protocol-accordion-header { background-color: var(--card-color); padding: 15px; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .protocol-accordion-header h3 { margin: 0; color: var(--secondary-color); font-size: 1.2em; }
-        .copy-protocol-btn { font-size: 0.8em; padding: 5px 10px; flex-shrink: 0; margin-left: 15px; }
-        .protocol-accordion-content { display: none; padding: 20px 5px 5px 5px; }
-        .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-        .config-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; position: relative; }
-        .ping-result { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
-        .ping-result.fast { color: var(--success-color); } .ping-result.slow { color: var(--warning-color); } .ping-result.timeout { color: var(--error-color); }
-        .config-details { padding: 15px; flex-grow: 1; }
-        .config-name { font-weight: bold; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .actions { display: flex; justify-content: space-around; padding: 10px 15px; background-color: rgba(0,0,0,0.2); }
-        .action-btn { background-color: var(--btn-bg); border: 1px solid #444; border-radius: 5px; cursor: pointer; font-weight: bold; padding: 8px 15px; flex-grow: 1; margin: 0 5px; color: var(--text-color); }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
-        .modal-content { background-color: var(--card-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 320px; text-align: center; position: relative; }
-        .close-btn { position: absolute; top: 10px; left: 20px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
-        #modal-qr-code { background: white; padding: 10px; border-radius: 4px; margin: 15px auto 0; }
-        footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; }
-        .footer-links { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; gap: 25px; }
-        .footer-links a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
-        .footer-links a:hover { color: var(--warning-color); }
-    </style>
+  <meta charset="UTF-8">
+  <title>V2V Config Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #222;
+      padding: 15px;
+      text-align: center;
+      font-size: 22px;
+      color: #ff4444;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      background: #1a1a1a;
+      border-bottom: 2px solid #333;
+    }
+    .tab {
+      padding: 12px 20px;
+      cursor: pointer;
+      color: #ccc;
+      font-weight: bold;
+      border-radius: 8px 8px 0 0;
+      margin: 0 5px;
+    }
+    .tab.red { background: #ff4444; color: white; }
+    .tab.green { background: #44cc44; color: white; }
+    .content { padding: 20px; }
+    .config-box {
+      background: #222;
+      padding: 12px;
+      margin: 10px auto;
+      border-radius: 8px;
+      text-align: left;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      position: relative;
+    }
+    .ping { font-size: 13px; color: #aaa; margin-top: 5px; }
+    .btn-group { margin-top: 10px; }
+    button {
+      background: #ff4444;
+      border: none;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-right: 5px;
+    }
+    button.green { background: #44cc44; }
+    button:hover { opacity: 0.85; }
+    .qr-canvas { margin-top: 10px; }
+    .section-title {
+      font-size: 18px;
+      margin-top: 25px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 5px;
+      color: #ff4444;
+    }
+  </style>
 </head>
 <body>
-    <main>
-        <img src="https://smbcryp.github.io/V2V/logo.png" alt="V2V Logo" class="site-logo">
-        <p class="slogan">سپاس هر‌آنکه خواه یا ناخواه دستی بر این راهک رهایی داشت</p>
-        
-        <div id="info" class="info-box">درحال بارگذاری...</div>
+  <header>📡 V2V - Live Configs</header>
 
-        <div class="core-selector">
-            <button id="btn-xray" class="core-select-btn" style="display: none;">کانفیگ‌های Xray-Core</button>
-            <div id="content-xray" class="core-content"></div>
+  <div class="tabs">
+    <div class="tab red" onclick="showTab('xray')">Xray</div>
+    <div class="tab green" onclick="showTab('singbox')">Singbox</div>
+  </div>
 
-            <button id="btn-singbox" class="core-select-btn" style="display: none;">کانفیگ‌های Sing-box</button>
-            <div id="content-singbox" class="core-content"></div>
-        </div>
+  <div class="content">
+    <div id="xray" class="tab-content"></div>
+    <div id="singbox" class="tab-content" style="display:none;"></div>
 
-        <footer>
-             <ul class="footer-links">
-                <li><a href="https://smbcryp.github.io/V2V/" target="_blank">گیت‌هاب</a></li>
-                <li><a href="https://v2-v.vercel.app/" target="_blank">ورسل</a></li>
-                <li><a href="http://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank">آروان</a></li>
-            </ul>
-        </footer>
-    </main>
-    
-    <div id="qrModal" class="modal">
-        <div class="modal-content"><span class="close-btn">&times;</span><h3 id="modal-title">QR Code</h3><canvas id="modal-qr-code"></canvas></div>
-    </div>
+    <div id="subs"></div>
+    <div id="clash"></div>
+  </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements
-    const infoContainer = document.getElementById('info');
-    const xrayBtn = document.getElementById('btn-xray');
-    const singboxBtn = document.getElementById('btn-singbox');
-    const xrayContent = document.getElementById('content-xray');
-    const singboxContent = document.getElementById('content-singbox');
-    const qrModal = document.getElementById('qrModal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalQrCanvas = document.getElementById('modal-qr-code');
-    const closeBtn = document.querySelector('.close-btn');
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    async function loadConfigs() {
+      try {
+        const response = await fetch("all_live_configs.json");
+        const data = await response.json();
 
-    // State
-    let allConfigs = { xray: [], singbox: [] };
-    let testCompleted = { xray: false, singbox: false };
+        // کانفیگ‌ها
+        for (const core in data.configs) {
+          const container = document.getElementById(core);
+          container.innerHTML = "";
 
-    // --- Configuration ---
-    const API_ENDPOINT = '/api/proxy';
-    const BATCH_SIZE = 15;
-    const CONFIG_SOURCES = [
-        `https://cdn.jsdelivr.net/gh/SMBCRYP/V2V@main/all_live_configs.json?v=${Date.now()}`,
-        `https://raw.githubusercontent.com/SMBCRYP/V2V/main/all_live_configs.json?v=${Date.now()}`,
-        `http://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json?v=${Date.now()}`
-    ];
-    const TOP_N_CONFIGS = 500;
+          if (data.configs[core].length === 0) {
+            container.innerHTML = "<p>❌ هیچ کانفیگی یافت نشد</p>";
+            continue;
+          }
 
-    // --- Dynamic Generation Functions ---
-    const generateSubscriptionContent = (configs) => {
-        const validConfigs = configs.filter(c => c.ping && c.ping < 9999);
-        const topConfigs = validConfigs.slice(0, TOP_N_CONFIGS);
-        const content = topConfigs.map(c => c.config_str).join('\n');
-        return btoa(unescape(encodeURIComponent(content)));
-    };
+          data.configs[core].forEach(cfg => {
+            const box = document.createElement("div");
+            box.className = "config-box";
+            
+            const configText = document.createElement("div");
+            configText.textContent = cfg.config_str;
 
-    const generateClashYaml = (configs) => {
-        const validConfigs = configs.filter(c => c.ping && c.ping < 9999);
-        const fastestConfigs = validConfigs.slice(0, TOP_N_CONFIGS);
-        
-        if (fastestConfigs.length === 0) return null;
+            const ping = document.createElement("div");
+            ping.className = "ping";
+            ping.textContent = `Ping: ${cfg.ping}ms`;
 
-        const proxies = [];
-        const proxyNames = new Set();
+            const btnGroup = document.createElement("div");
+            btnGroup.className = "btn-group";
 
-        fastestConfigs.forEach((cfg, index) => {
-            try {
-                let name = (decodeURIComponent(new URL(cfg.config_str).hash.substring(1)) || `V2V-${index}`).trim();
-                let originalName = name;
-                let counter = 1;
-                while (proxyNames.has(name)) {
-                    name = `${originalName} (${counter++})`;
-                }
-                proxyNames.add(name);
-                
-                const parsed = new URL(cfg.config_str);
-                const params = new URLSearchParams(parsed.search);
-                let proxy_obj = {
-                    name: name, 
-                    type: parsed.protocol.replace(':', ''),
-                    server: parsed.hostname, 
-                    port: parseInt(parsed.port), 
-                    udp: true
-                };
+            const copyBtn = document.createElement("button");
+            copyBtn.textContent = "📋 کپی";
+            copyBtn.onclick = () => {
+              navigator.clipboard.writeText(cfg.config_str);
+              copyBtn.textContent = "✅ کپی شد";
+              setTimeout(() => copyBtn.textContent = "📋 کپی", 2000);
+            };
 
-                if (proxy_obj.type === 'vless') {
-                    proxy_obj.uuid = parsed.username;
-                    proxy_obj.network = params.get('type') || 'ws';
-                    proxy_obj.tls = params.get('security') === 'tls' || params.get('security') === 'reality';
-                    proxy_obj.servername = params.get('sni') || parsed.hostname;
-                    if (proxy_obj.network === 'ws') {
-                        proxy_obj['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || proxy_obj.servername } };
-                    }
-                    if (params.get('security') === 'reality') {
-                        proxy_obj['client-fingerprint'] = params.get('fp') || 'chrome';
-                        proxy_obj['reality-opts'] = { 'public-key': params.get('pbk'), 'short-id': params.get('sid') || '' };
-                    }
-                } else if (proxy_obj.type === 'vmess') {
-                    try {
-                        const b64 = parsed.hostname + '='.repeat((-parsed.hostname.length) % 4);
-                        const decoded = JSON.parse(atob(b64));
-                        proxy_obj.uuid = decoded.id;
-                        proxy_obj.alterId = decoded.aid || 0;
-                        proxy_obj.cipher = decoded.scy || 'auto';
-                        proxy_obj.tls = decoded.tls === 'tls';
-                        proxy_obj.servername = decoded.sni || decoded.host || proxy_obj.server;
-                        proxy_obj.network = decoded.net || 'ws';
-                        if (proxy_obj.network === 'ws') {
-                            proxy_obj['ws-opts'] = { path: decoded.path || '/', headers: { Host: decoded.host || proxy_obj.server }};
-                        }
-                    } catch (e) {
-                        console.error("VMESS parse error:", e);
-                        return;
-                    }
-                } else if (proxy_obj.type === 'trojan') {
-                    proxy_obj.password = parsed.username;
-                    proxy_obj.sni = params.get('sni') || parsed.hostname;
-                }
-                proxies.push(proxy_obj);
-            } catch (e) { 
-                console.error("Failed to parse config for Clash:", cfg.config_str, e); 
-            }
+            const qrBtn = document.createElement("button");
+            qrBtn.className = (core === "singbox") ? "green" : "";
+            qrBtn.textContent = "📷 QR";
+            qrBtn.onclick = () => {
+              const qrCanvas = document.createElement("canvas");
+              qrCanvas.className = "qr-canvas";
+              QRCode.toCanvas(qrCanvas, cfg.config_str, { width: 150 }, err => {
+                if (!err) box.appendChild(qrCanvas);
+              });
+            };
+
+            btnGroup.appendChild(copyBtn);
+            btnGroup.appendChild(qrBtn);
+
+            box.appendChild(configText);
+            box.appendChild(ping);
+            box.appendChild(btnGroup);
+            container.appendChild(box);
+          });
+        }
+
+        // لینک ساب‌ها
+        const subsDiv = document.getElementById("subs");
+        subsDiv.innerHTML = '<div class="section-title">🔗 Subscription Links</div>';
+        data.subs.forEach(sub => {
+          const box = document.createElement("div");
+          box.className = "config-box";
+          box.textContent = sub;
+
+          const btnGroup = document.createElement("div");
+          btnGroup.className = "btn-group";
+
+          const copyBtn = document.createElement("button");
+          copyBtn.textContent = "📋 کپی";
+          copyBtn.onclick = () => {
+            navigator.clipboard.writeText(sub);
+            copyBtn.textContent = "✅ کپی شد";
+            setTimeout(() => copyBtn.textContent = "📋 کپی", 2000);
+          };
+
+          const qrBtn = document.createElement("button");
+          qrBtn.textContent = "📷 QR";
+          qrBtn.onclick = () => {
+            const qrCanvas = document.createElement("canvas");
+            qrCanvas.className = "qr-canvas";
+            QRCode.toCanvas(qrCanvas, sub, { width: 150 }, err => {
+              if (!err) box.appendChild(qrCanvas);
+            });
+          };
+
+          btnGroup.appendChild(copyBtn);
+          btnGroup.appendChild(qrBtn);
+          box.appendChild(btnGroup);
+          subsDiv.appendChild(box);
         });
 
-        const clashConfig = {
-            'port': 7890, 'socks-port': 7891, 'allow-lan': true, 'mode': 'rule',
-            'log-level': 'info', 'external-controller': '0.0.0.0:9090', 'proxies': proxies,
-            'proxy-groups': [
-                { 'name': `V2V-Auto 🚀`, 'type': 'url-test', 'proxies': Array.from(proxyNames), 'url': 'http://www.gstatic.com/generate_204', 'interval': 300 },
-                { 'name': 'V2V-Select 選択', 'type': 'select', 'proxies': [`V2V-Auto 🚀`, ...Array.from(proxyNames)] }
-            ],
-            'rules': [ 'DOMAIN-SUFFIX,ir,DIRECT', 'GEOIP,IR,DIRECT', 'MATCH,V2V-Select 選択' ]
+        // فایل کلش
+        const clashDiv = document.getElementById("clash");
+        clashDiv.innerHTML = '<div class="section-title">🛠 Clash Config</div>';
+        
+        const clashBox = document.createElement("div");
+        clashBox.className = "config-box";
+        clashBox.textContent = data.clash.url;
+
+        const btnGroup = document.createElement("div");
+        btnGroup.className = "btn-group";
+
+        const copyBtn = document.createElement("button");
+        copyBtn.textContent = "📋 کپی URL";
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(data.clash.url);
+          copyBtn.textContent = "✅ کپی شد";
+          setTimeout(() => copyBtn.textContent = "📋 کپی URL", 2000);
         };
-        
-        return jsyaml.dump(clashConfig);
-    };
 
-    // --- Helper Functions ---
-    const showCopyFeedback = (element, originalText) => {
-        element.textContent = "✅ کپی شد";
-        setTimeout(() => { element.textContent = originalText; }, 2000);
-    };
-
-    const openQrModal = (url, title) => {
-        modalTitle.textContent = title;
-        QRCode.toCanvas(modalQrCanvas, url, { width: 280, margin: 1 });
-        qrModal.style.display = "flex";
-    };
-    
-    const copyToClipboard = async (text, element) => {
-        try {
-            await navigator.clipboard.writeText(text);
-            showCopyFeedback(element, element.textContent);
-        } catch (err) { 
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            showCopyFeedback(element, element.textContent);
-        }
-    };
-    
-    const robustParseServerDetails = (configUrl) => {
-        try {
-            if (configUrl.startsWith('ss://')) {
-                const atIndex = configUrl.lastIndexOf('@');
-                if (atIndex === -1) return null;
-                const hostPart = configUrl.substring(atIndex + 1, configUrl.includes('#') ? configUrl.lastIndexOf('#') : undefined);
-                const colonIndex = hostPart.lastIndexOf(':');
-                if (colonIndex === -1) return null;
-                const host = hostPart.substring(0, colonIndex);
-                const port = parseInt(hostPart.substring(colonIndex + 1));
-                return { host, port };
-            }
-            const url = new URL(configUrl);
-            if (url.protocol === 'vmess:') {
-                const b64 = url.hostname + '='.repeat((-url.hostname.length) % 4);
-                const decoded = JSON.parse(atob(b64));
-                return { host: decoded.add, port: parseInt(decoded.port) };
-            }
-            return { host: url.hostname, port: parseInt(url.port) };
-        } catch (e) {
-            return null;
-        }
-    };
-
-    const extractNameFromUrl = (url) => {
-        try {
-            return decodeURIComponent(new URL(url).hash.substring(1)) || new URL(url).hostname;
-        } catch { 
-            return url.substring(0, 30) + '...'; 
-        }
-    };
-    
-    const startClientSideBatchTest = async (coreName, btnElement) => {
-        const configsToTest = allConfigs[coreName];
-        if (!configsToTest || configsToTest.length === 0) return;
-
-        btnElement.disabled = true;
-        testCompleted[coreName] = false;
-        let testedCount = 0;
-
-        // تست API endpoint
-        try {
-            const testResponse = await fetch(API_ENDPOINT + '?debug=true');
-            if (!testResponse.ok) {
-                throw new Error(`API Test failed: ${testResponse.status}`);
-            }
-        } catch (error) {
-            alert('خطا در اتصال به سرور تست. لطفاً بعداً امتحان کنید.');
-            btnElement.disabled = false;
-            return;
-        }
-
-        for (let i = 0; i < configsToTest.length; i += BATCH_SIZE) {
-            const batch = configsToTest.slice(i, i + BATCH_SIZE);
-            
-            const promises = batch.map(async (config) => {
-                const details = robustParseServerDetails(config.config_str);
-                if (!details) {
-                    return { configId: config.id, ping: 9999, error: 'Parse Error' };
-                }
-                
-                try {
-                    const response = await fetch(API_ENDPOINT, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ host: details.host, port: details.port })
-                    });
-                    
-                    if (!response.ok) {
-                        return { configId: config.id, ping: 9999, error: `HTTP ${response.status}` };
-                    }
-                    
-                    const data = await response.json();
-                    return { configId: config.id, ping: data.ping || 9999, error: data.error };
-                } catch (error) {
-                    return { configId: config.id, ping: 9999, error: 'Network Error' };
-                }
-            });
-
-            const results = await Promise.allSettled(promises);
-            
-            results.forEach((result, index) => {
-                if (result.status === 'fulfilled') {
-                    const { configId, ping, error } = result.value;
-                    const configIndex = configsToTest.findIndex(c => c.id === configId);
-                    if (configIndex > -1) {
-                        configsToTest[configIndex].ping = ping;
-                        configsToTest[configIndex].error = error;
-                    }
-                    
-                    const card = document.querySelector(`.config-card[data-config-id="${configId}"]`);
-                    if (card) {
-                        const pingEl = card.querySelector('.ping-result');
-                        const pingText = error ? (error === 'Timeout' ? 'Timeout' : 'Error') : `${ping}ms`;
-                        pingEl.textContent = pingText;
-                        pingEl.className = 'ping-result';
-                        if (error || ping >= 9999) pingEl.classList.add('timeout');
-                        else if (ping < 400) pingEl.classList.add('fast');
-                        else pingEl.classList.add('slow');
-                    }
-                }
-            });
-
-            testedCount += batch.length;
-            const progress = Math.round((testedCount / configsToTest.length) * 100);
-            btnElement.textContent = `... در حال تست ${progress}%`;
-            
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        // مرتب‌سازی بر اساس ping
-        configsToTest.sort((a, b) => (a.ping || 9999) - (b.ping || 9999));
-        
-        // رندر مجدد
-        const containerId = coreName === 'xray' ? '#content-xray' : '#content-singbox';
-        renderProtocolAccordions(configsToTest, document.querySelector(`${containerId} .protocol-container`));
-
-        btnElement.textContent = `🚀 تست سرعت مجدد`;
-        btnElement.disabled = false;
-        testCompleted[coreName] = true;
-        
-        const validCount = configsToTest.filter(c => c.ping && c.ping < 9999).length;
-        infoContainer.textContent = `تست کامل شد. ${validCount} کانفیگ سالم یافت شد و مرتب شدند.`;
-    };
-
-    // --- Render Functions ---
-    const createConfigCard = (cfg) => {
-        const card = document.createElement('div');
-        card.className = 'config-card';
-        card.dataset.configId = cfg.id;
-
-        // نمایش ping اولیه اگر موجود باشد
-        let pingDisplay = '...';
-        let pingClass = 'ping-result';
-        
-        if (cfg.ping !== null && cfg.ping !== undefined) {
-            if (cfg.ping >= 9999) {
-                pingDisplay = 'Error';
-                pingClass += ' timeout';
-            } else {
-                pingDisplay = `${cfg.ping}ms`;
-                if (cfg.ping < 300) pingClass += ' fast';
-                else if (cfg.ping < 700) pingClass += ' slow';
-                else pingClass += ' timeout';
-            }
-        }
-
-        card.innerHTML = `
-            <div class="${pingClass}">${pingDisplay}</div>
-            <div class="config-details"><div class="config-name" title="${cfg.name}">${cfg.name}</div></div>
-            <div class="actions">
-                <button class="action-btn copy-btn">کپی</button>
-                <button class="action-btn qr-btn">QR</button>
-            </div>`;
-        
-        card.querySelector('.copy-btn').onclick = (e) => copyToClipboard(cfg.config_str, e.target);
-        card.querySelector('.qr-btn').onclick = () => openQrModal(cfg.config_str, cfg.name);
-        return card;
-    };
-
-    const renderProtocolAccordions = (configs, container) => {
-        container.innerHTML = '';
-        const getProtocol = (cfg) => {
-             const proto = cfg.config_str.split('://')[0].toLowerCase();
-             if (proto === 'vless' && cfg.config_str.includes('reality')) return 'reality';
-             return proto;
-        }
-
-        const categorized = {};
-        configs.forEach(cfg => {
-            const protocol = getProtocol(cfg);
-            if (!categorized[protocol]) categorized[protocol] = [];
-            categorized[protocol].push(cfg);
-        });
-        
-        for (const protocol in categorized) {
-            const protocolConfigs = categorized[protocol];
-            if (protocolConfigs.length > 0) {
-                const item = document.createElement('div');
-                item.className = 'protocol-accordion-item';
-                item.innerHTML = `
-                    <div class="protocol-accordion-header">
-                        <h3>${protocol.toUpperCase()} (${protocolConfigs.length})</h3>
-                        <button class="link-btn copy-protocol-btn">کپی همه</button>
-                    </div>
-                    <div class="protocol-accordion-content"><div class="config-grid"></div></div>`;
-                
-                const content = item.querySelector('.protocol-accordion-content');
-                const grid = item.querySelector('.config-grid');
-                protocolConfigs.forEach(cfg => grid.appendChild(createConfigCard(cfg)));
-
-                item.querySelector('.protocol-accordion-header').onclick = (e) => {
-                    if (e.target.classList.contains('copy-protocol-btn')) return;
-                    content.style.display = content.style.display === 'block' ? 'none' : 'block';
-                };
-                item.querySelector('.copy-protocol-btn').onclick = (e) => {
-                    const text = protocolConfigs.map(c => c.config_str).join('\n');
-                    copyToClipboard(text, e.target);
-                };
-                container.appendChild(item);
-            }
-        }
-    };
-    
-    const renderCoreContent = (coreName, configs, container) => {
-        const coreTitle = coreName.charAt(0).toUpperCase() + coreName.slice(1);
-        container.innerHTML = `
-            <button class="speed-test-btn" id="test-${coreName}">🚀 تست سرعت مجدد ${coreTitle}</button>
-            <div class="links-container">
-                <h3>لینک‌های اشتراک و فایل‌ها</h3>
-                <div class="link-group">
-                    <h4>لینک اشتراک (Subscription)</h4>
-                    <div class="link-buttons">
-                        <button class="link-btn copy-sub-btn">کپی لینک Base64</button>
-                        <button class="link-btn qr-sub-btn">QR کد لینک</button>
-                    </div>
-                </div>
-                <div class="link-group">
-                    <h4>فایل کلش (Clash Meta)</h4>
-                    <div class="link-buttons">
-                         <button class="link-btn download-clash-btn">دانلود فایل YAML</button>
-                    </div>
-                </div>
-            </div>
-            <div class="protocol-container"></div>`;
-
-        container.querySelector(`#test-${coreName}`).onclick = (e) => startClientSideBatchTest(coreName, e.target);
-        
-        container.querySelector('.copy-sub-btn').onclick = (e) => {
-            const subContent = generateSubscriptionContent(allConfigs[coreName]);
-            if (!subContent) { alert('هیچ کانفیگ سالمی برای تولید لینک وجود ندارد.'); return; }
-            copyToClipboard(subContent, e.target);
+        const dlBtn = document.createElement("button");
+        dlBtn.textContent = "⬇️ دانلود";
+        dlBtn.onclick = () => {
+          window.open(data.clash.url, "_blank");
         };
-        
-        container.querySelector('.qr-sub-btn').onclick = (e) => {
-            const subContent = generateSubscriptionContent(allConfigs[coreName]);
-            if (!subContent) { alert('هیچ کانفیگ سالمی برای تولید لینک وجود ندارد.'); return; }
-            openQrModal(subContent, `لینک اشتراک ${coreTitle}`);
-        };
-        
-        container.querySelector('.download-clash-btn').onclick = () => {
-            const yamlContent = generateClashYaml(allConfigs[coreName]);
-            if (!yamlContent) { alert('هیچ کانفیگ سالمی برای تولید فایل وجود ندارد.'); return;
+
+        btnGroup.appendChild(copyBtn);
+        btnGroup.appendChild(dlBtn);
+        clashBox.appendChild(btnGroup);
+        clashDiv.appendChild(clashBox);
+
+      } catch (err) {
+        document.getElementById("xray").innerHTML = "❌ خطا در بارگذاری فایل JSON";
+        console.error(err);
+      }
+    }
+
+    function showTab(tabName) {
+      document.querySelectorAll(".tab-content").forEach(el => el.style.display = "none");
+      document.getElementById(tabName).style.display = "block";
+    }
+
+    loadConfigs();
+  </script>
+</body>
+</html>
