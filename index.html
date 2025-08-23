@@ -9,12 +9,22 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <style>
+        /* وارد کردن فونت Vazirmatn */
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap');
+        
         :root {
             --bg-color: #000000; --card-color: #1e1e1e; --text-color: #e0e0e0;
             --primary-color: #8B0000; --secondary-color: #28a745; --error-color: #cf6679;
             --success-color: #66bb6a; --warning-color: #ffeb3b; --btn-bg: #2a2a2a;
         }
-        body { font-family: 'Vazirmatn', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
+        body { 
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            margin: 0; 
+            padding: 20px; 
+            line-height: 1.6;
+        }
         main { max-width: 1200px; margin: 0 auto; }
         .site-logo { display: block; margin: 0 auto 15px auto; max-width: 160px; height: auto; }
         .slogan { text-align: center; color: #aaa; font-style: italic; margin-bottom: 2em; font-weight: 600; }
@@ -28,8 +38,20 @@
         }
         .core-select-btn:hover { background-color: #6d0000; }
 
-        #btn-xray { background-color: var(--secondary-color); border-color: var(--secondary-color); color: #000; }
+        /* رنگ‌های مخصوص هر دکمه */
+        #btn-xray { 
+            background-color: var(--secondary-color); 
+            border-color: var(--secondary-color); 
+            color: #000; 
+        }
         #btn-xray:hover { background-color: #1f7a33; }
+
+        #btn-singbox {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color); 
+            color: #fff;
+        }
+        #btn-singbox:hover { background-color: #6d0000; }
 
         .core-content { display: none; padding: 20px; border: 1px solid #333; border-radius: 8px; margin-top: 10px; }
         .speed-test-btn { background-color: var(--secondary-color); color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 1.1em; cursor: pointer; display: block; width: 100%; margin-bottom: 25px; font-weight: bold; }
@@ -63,6 +85,7 @@
         footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; }
         .footer-links { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; gap: 25px; }
         .footer-links a { color: var(--secondary-color); text-decoration: none; font-weight: bold; }
+        .footer-links a:hover { color: var(--warning-color); }
     </style>
 </head>
 <body>
@@ -82,7 +105,7 @@
 
         <footer>
              <ul class="footer-links">
-                <li><a href="https://github.com/SMBCRYP/V2V/" target="_blank">گیت‌هاب</a></li>
+                <li><a href="https://smbcryp.github.io/V2V/" target="_blank">گیت‌هاب</a></li>
                 <li><a href="https://v2-v.vercel.app/" target="_blank">ورسل</a></li>
                 <li><a href="http://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank">آروان</a></li>
             </ul>
@@ -112,21 +135,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Configuration ---
     const API_ENDPOINT = '/api/proxy';
-    const BATCH_SIZE = 20;
+    const BATCH_SIZE = 15;
     const CONFIG_SOURCES = [
         `https://cdn.jsdelivr.net/gh/SMBCRYP/V2V@main/all_live_configs.json?v=${Date.now()}`,
-        `https://raw.githubusercontent.com/SMBCRYP/V2V/main/all_live_configs.json?v=${Date.now()}`
+        `https://raw.githubusercontent.com/SMBCRYP/V2V/main/all_live_configs.json?v=${Date.now()}`,
+        `http://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json?v=${Date.now()}`
     ];
     const TOP_N_CONFIGS = 500;
 
     // --- Dynamic Generation Functions ---
     const generateSubscriptionContent = (configs) => {
-        const topConfigs = configs.filter(c => c.ping < 9999).slice(0, TOP_N_CONFIGS);
-        return topConfigs.map(c => c.config_str).join('\n');
+        const validConfigs = configs.filter(c => c.ping && c.ping < 9999);
+        const topConfigs = validConfigs.slice(0, TOP_N_CONFIGS);
+        const content = topConfigs.map(c => c.config_str).join('\n');
+        return btoa(unescape(encodeURIComponent(content)));
     };
 
     const generateClashYaml = (configs) => {
-        const fastestConfigs = configs.filter(c => c.ping < 9999).slice(0, TOP_N_CONFIGS);
+        const validConfigs = configs.filter(c => c.ping && c.ping < 9999);
+        const fastestConfigs = validConfigs.slice(0, TOP_N_CONFIGS);
+        
         if (fastestConfigs.length === 0) return null;
 
         const proxies = [];
@@ -134,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fastestConfigs.forEach((cfg, index) => {
             try {
-                let name = (decodeURIComponent(new URL(cfg.config_str).hash.substring(1)) || `V2V-${cfg.core}-${index}`).trim();
+                let name = (decodeURIComponent(new URL(cfg.config_str).hash.substring(1)) || `V2V-${index}`).trim();
                 let originalName = name;
                 let counter = 1;
                 while (proxyNames.has(name)) {
@@ -145,8 +173,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parsed = new URL(cfg.config_str);
                 const params = new URLSearchParams(parsed.search);
                 let proxy_obj = {
-                    name: name, type: parsed.protocol.replace(':', ''),
-                    server: parsed.hostname, port: parseInt(parsed.port), udp: true
+                    name: name, 
+                    type: parsed.protocol.replace(':', ''),
+                    server: parsed.hostname, 
+                    port: parseInt(parsed.port), 
+                    udp: true
                 };
 
                 if (proxy_obj.type === 'vless') {
@@ -162,23 +193,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         proxy_obj['reality-opts'] = { 'public-key': params.get('pbk'), 'short-id': params.get('sid') || '' };
                     }
                 } else if (proxy_obj.type === 'vmess') {
-                    const b64 = parsed.hostname + '='.repeat((-parsed.hostname.length) % 4);
-                    const decoded = JSON.parse(atob(b64));
-                    proxy_obj.uuid = decoded.id;
-                    proxy_obj.alterId = decoded.aid || 0;
-                    proxy_obj.cipher = decoded.scy || 'auto';
-                    proxy_obj.tls = decoded.tls === 'tls';
-                    proxy_obj.servername = decoded.sni || decoded.host || proxy_obj.server;
-                    proxy_obj.network = decoded.net || 'ws';
-                    if (proxy_obj.network === 'ws') {
-                        proxy_obj['ws-opts'] = { path: decoded.path || '/', headers: { Host: decoded.host || proxy_obj.server }};
+                    try {
+                        const b64 = parsed.hostname + '='.repeat((-parsed.hostname.length) % 4);
+                        const decoded = JSON.parse(atob(b64));
+                        proxy_obj.uuid = decoded.id;
+                        proxy_obj.alterId = decoded.aid || 0;
+                        proxy_obj.cipher = decoded.scy || 'auto';
+                        proxy_obj.tls = decoded.tls === 'tls';
+                        proxy_obj.servername = decoded.sni || decoded.host || proxy_obj.server;
+                        proxy_obj.network = decoded.net || 'ws';
+                        if (proxy_obj.network === 'ws') {
+                            proxy_obj['ws-opts'] = { path: decoded.path || '/', headers: { Host: decoded.host || proxy_obj.server }};
+                        }
+                    } catch (e) {
+                        console.error("VMESS parse error:", e);
+                        return;
                     }
                 } else if (proxy_obj.type === 'trojan') {
                     proxy_obj.password = parsed.username;
                     proxy_obj.sni = params.get('sni') || parsed.hostname;
                 }
                 proxies.push(proxy_obj);
-            } catch (e) { console.error("Failed to parse config for Clash:", cfg.config_str, e); }
+            } catch (e) { 
+                console.error("Failed to parse config for Clash:", cfg.config_str, e); 
+            }
         });
 
         const clashConfig = {
@@ -190,6 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ],
             'rules': [ 'DOMAIN-SUFFIX,ir,DIRECT', 'GEOIP,IR,DIRECT', 'MATCH,V2V-Select 選択' ]
         };
+        
         return jsyaml.dump(clashConfig);
     };
 
@@ -209,12 +248,20 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await navigator.clipboard.writeText(text);
             showCopyFeedback(element, element.textContent);
-        } catch (err) { alert('کپی کردن با خطا مواجه شد.'); }
+        } catch (err) { 
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showCopyFeedback(element, element.textContent);
+        }
     };
     
     const robustParseServerDetails = (configUrl) => {
         try {
-            // Handle SS protocol separately as it doesn't follow standard URL format
             if (configUrl.startsWith('ss://')) {
                 const atIndex = configUrl.lastIndexOf('@');
                 if (atIndex === -1) return null;
@@ -225,7 +272,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const port = parseInt(hostPart.substring(colonIndex + 1));
                 return { host, port };
             }
-            // Standard URL parsing for others
             const url = new URL(configUrl);
             if (url.protocol === 'vmess:') {
                 const b64 = url.hostname + '='.repeat((-url.hostname.length) % 4);
@@ -234,16 +280,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return { host: url.hostname, port: parseInt(url.port) };
         } catch (e) {
-            console.error(`Parsing failed for: ${configUrl}`, e);
             return null;
         }
     };
 
-
     const extractNameFromUrl = (url) => {
         try {
             return decodeURIComponent(new URL(url).hash.substring(1)) || new URL(url).hostname;
-        } catch { return url.substring(0, 30) + '...'; }
+        } catch { 
+            return url.substring(0, 30) + '...'; 
+        }
     };
     
     const startClientSideBatchTest = async (coreName, btnElement) => {
@@ -254,56 +300,89 @@ document.addEventListener('DOMContentLoaded', () => {
         testCompleted[coreName] = false;
         let testedCount = 0;
 
+        // تست API endpoint
+        try {
+            const testResponse = await fetch(API_ENDPOINT + '?debug=true');
+            if (!testResponse.ok) {
+                throw new Error(`API Test failed: ${testResponse.status}`);
+            }
+        } catch (error) {
+            alert('خطا در اتصال به سرور تست. لطفاً بعداً امتحان کنید.');
+            btnElement.disabled = false;
+            return;
+        }
+
         for (let i = 0; i < configsToTest.length; i += BATCH_SIZE) {
             const batch = configsToTest.slice(i, i + BATCH_SIZE);
-            const promises = batch.map(config => {
+            
+            const promises = batch.map(async (config) => {
                 const details = robustParseServerDetails(config.config_str);
                 if (!details) {
-                    return Promise.resolve({ configId: config.id, ping: 9999, error: 'Parse Error' });
+                    return { configId: config.id, ping: 9999, error: 'Parse Error' };
                 }
                 
-                return fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ host: details.host, port: details.port })
-                })
-                .then(res => res.ok ? res.json() : res.json().then(err => Promise.reject(err)))
-                .then(data => ({ configId: config.id, ping: data.ping, error: data.error }))
-                .catch(() => ({ configId: config.id, ping: 9999, error: 'Network Error' }));
+                try {
+                    const response = await fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ host: details.host, port: details.port })
+                    });
+                    
+                    if (!response.ok) {
+                        return { configId: config.id, ping: 9999, error: `HTTP ${response.status}` };
+                    }
+                    
+                    const data = await response.json();
+                    return { configId: config.id, ping: data.ping || 9999, error: data.error };
+                } catch (error) {
+                    return { configId: config.id, ping: 9999, error: 'Network Error' };
+                }
             });
 
-            const results = await Promise.all(promises);
+            const results = await Promise.allSettled(promises);
             
-            results.forEach(result => {
-                const { configId, ping, error } = result;
-                const configIndex = configsToTest.findIndex(c => c.id === configId);
-                if (configIndex > -1) configsToTest[configIndex].ping = ping;
-                
-                const card = document.querySelector(`.config-card[data-config-id="${configId}"]`);
-                if (card) {
-                    const pingEl = card.querySelector('.ping-result');
-                    const pingText = error ? (error === 'Timeout' ? 'Timeout' : 'Error') : `${ping}ms`;
-                    pingEl.textContent = pingText;
-                    pingEl.className = 'ping-result';
-                    if (error || ping >= 9999) pingEl.classList.add('timeout');
-                    else if (ping < 400) pingEl.classList.add('fast');
-                    else pingEl.classList.add('slow');
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled') {
+                    const { configId, ping, error } = result.value;
+                    const configIndex = configsToTest.findIndex(c => c.id === configId);
+                    if (configIndex > -1) {
+                        configsToTest[configIndex].ping = ping;
+                        configsToTest[configIndex].error = error;
+                    }
+                    
+                    const card = document.querySelector(`.config-card[data-config-id="${configId}"]`);
+                    if (card) {
+                        const pingEl = card.querySelector('.ping-result');
+                        const pingText = error ? (error === 'Timeout' ? 'Timeout' : 'Error') : `${ping}ms`;
+                        pingEl.textContent = pingText;
+                        pingEl.className = 'ping-result';
+                        if (error || ping >= 9999) pingEl.classList.add('timeout');
+                        else if (ping < 400) pingEl.classList.add('fast');
+                        else pingEl.classList.add('slow');
+                    }
                 }
             });
 
             testedCount += batch.length;
             const progress = Math.round((testedCount / configsToTest.length) * 100);
             btnElement.textContent = `... در حال تست ${progress}%`;
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
         
+        // مرتب‌سازی بر اساس ping
         configsToTest.sort((a, b) => (a.ping || 9999) - (b.ping || 9999));
+        
+        // رندر مجدد
         const containerId = coreName === 'xray' ? '#content-xray' : '#content-singbox';
         renderProtocolAccordions(configsToTest, document.querySelector(`${containerId} .protocol-container`));
 
         btnElement.textContent = `🚀 تست سرعت مجدد`;
         btnElement.disabled = false;
         testCompleted[coreName] = true;
-        infoContainer.textContent = `تست کامل شد. کانفیگ‌ها بر اساس سرعت واقعی شما مرتب شدند.`;
+        
+        const validCount = configsToTest.filter(c => c.ping && c.ping < 9999).length;
+        infoContainer.textContent = `تست کامل شد. ${validCount} کانفیگ سالم یافت شد و مرتب شدند.`;
     };
 
     // --- Render Functions ---
@@ -312,8 +391,24 @@ document.addEventListener('DOMContentLoaded', () => {
         card.className = 'config-card';
         card.dataset.configId = cfg.id;
 
+        // نمایش ping اولیه اگر موجود باشد
+        let pingDisplay = '...';
+        let pingClass = 'ping-result';
+        
+        if (cfg.ping !== null && cfg.ping !== undefined) {
+            if (cfg.ping >= 9999) {
+                pingDisplay = 'Error';
+                pingClass += ' timeout';
+            } else {
+                pingDisplay = `${cfg.ping}ms`;
+                if (cfg.ping < 300) pingClass += ' fast';
+                else if (cfg.ping < 700) pingClass += ' slow';
+                else pingClass += ' timeout';
+            }
+        }
+
         card.innerHTML = `
-            <div class="ping-result">...</div>
+            <div class="${pingClass}">${pingDisplay}</div>
             <div class="config-details"><div class="config-name" title="${cfg.name}">${cfg.name}</div></div>
             <div class="actions">
                 <button class="action-btn copy-btn">کپی</button>
@@ -372,9 +467,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderCoreContent = (coreName, configs, container) => {
         const coreTitle = coreName.charAt(0).toUpperCase() + coreName.slice(1);
         container.innerHTML = `
-            <button class="speed-test-btn" id="test-${coreName}">🚀 تست سرعت کانفیگ‌های ${coreTitle}</button>
+            <button class="speed-test-btn" id="test-${coreName}">🚀 تست سرعت مجدد ${coreTitle}</button>
             <div class="links-container">
-                <h3>لینک‌های اشتراک و فایل‌ها (بعد از تست)</h3>
+                <h3>لینک‌های اشتراک و فایل‌ها</h3>
                 <div class="link-group">
                     <h4>لینک اشتراک (Subscription)</h4>
                     <div class="link-buttons">
@@ -394,84 +489,17 @@ document.addEventListener('DOMContentLoaded', () => {
         container.querySelector(`#test-${coreName}`).onclick = (e) => startClientSideBatchTest(coreName, e.target);
         
         container.querySelector('.copy-sub-btn').onclick = (e) => {
-            if (!testCompleted[coreName]) { alert('لطفاً ابتدا تست سرعت را انجام دهید.'); return; }
             const subContent = generateSubscriptionContent(allConfigs[coreName]);
             if (!subContent) { alert('هیچ کانفیگ سالمی برای تولید لینک وجود ندارد.'); return; }
             copyToClipboard(subContent, e.target);
         };
         
         container.querySelector('.qr-sub-btn').onclick = (e) => {
-            if (!testCompleted[coreName]) { alert('لطفاً ابتدا تست سرعت را انجام دهید.'); return; }
             const subContent = generateSubscriptionContent(allConfigs[coreName]);
             if (!subContent) { alert('هیچ کانفیگ سالمی برای تولید لینک وجود ندارد.'); return; }
-            // QR codes for subscriptions are tricky. This creates a link to a service that can serve the content.
-            // A better approach would be to host the subscription file. For now, this is a placeholder.
-            alert('ساخت QR کد برای لینک اشتراک نیازمند میزبانی فایل است. این قابلیت در آینده اضافه خواهد شد.');
+            openQrModal(subContent, `لینک اشتراک ${coreTitle}`);
         };
         
         container.querySelector('.download-clash-btn').onclick = () => {
-            if (!testCompleted[coreName]) { alert('لطفاً ابتدا تست سرعت را انجام دهید.'); return; }
             const yamlContent = generateClashYaml(allConfigs[coreName]);
-            if (!yamlContent) { alert('هیچ کانفیگ سالمی برای تولید فایل وجود ندارد.'); return; }
-            const blob = new Blob([yamlContent], { type: 'text/yaml;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `v2v_${coreName}_clash.yaml`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        };
-
-        renderProtocolAccordions(configs, container.querySelector('.protocol-container'));
-    };
-
-    const initializeApp = async () => {
-        let rawJsonData;
-        try {
-            const response = await fetch(CONFIG_SOURCES[0], { cache: "no-store" });
-            if (!response.ok) throw new Error('Primary source failed');
-            rawJsonData = await response.json();
-        } catch (error) {
-            try {
-                const response = await fetch(CONFIG_SOURCES[1], { cache: "no-store" });
-                if (!response.ok) throw new Error('Backup source failed');
-                rawJsonData = await response.json();
-            } catch (backupError) {
-                infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
-                return;
-            }
-        }
-
-        if (!rawJsonData || (!rawJsonData.xray && !rawJsonData.singbox)) {
-            infoContainer.textContent = '⚠️ فایل کانفیگ‌ها خالی است یا ساختار درستی ندارد.'; return;
-        }
-        
-        let idCounter = 0;
-        allConfigs.xray = (rawJsonData.xray || []).map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'xray', ping: null}));
-        allConfigs.singbox = (rawJsonData.singbox || []).map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'singbox', ping: null}));
-        
-        const totalCount = allConfigs.xray.length + allConfigs.singbox.length;
-        infoContainer.textContent = `مجموع ${totalCount} کانفیگ (Xray: ${allConfigs.xray.length}, Sing-box: ${allConfigs.singbox.length}) بارگذاری شد.`;
-
-        if (allConfigs.xray.length > 0) {
-            xrayBtn.style.display = 'block';
-            renderCoreContent('xray', allConfigs.xray, xrayContent);
-        }
-        if (allConfigs.singbox.length > 0) {
-            singboxBtn.style.display = 'block';
-            renderCoreContent('singbox', allConfigs.singbox, singboxContent);
-        }
-    };
-
-    xrayBtn.onclick = () => { xrayContent.style.display = xrayContent.style.display === 'block' ? 'none' : 'block'; };
-    singboxBtn.onclick = () => { singboxContent.style.display = singboxContent.style.display === 'block' ? 'none' : 'block'; };
-    closeBtn.onclick = () => qrModal.style.display = "none";
-    window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; };
-    
-    initializeApp();
-});
-</script>
-</body>
-</html>
+            if (!yamlContent) { alert('هیچ کانفیگ سالمی برای تولید فایل وجود ندارد.'); return;
