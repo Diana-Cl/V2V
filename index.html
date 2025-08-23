@@ -7,7 +7,6 @@
     <meta name="description" content="پروژه‌ای برای تجمیع و ارائه کانفیگ‌های V2Ray با تست سرعت و دسته‌بندی هوشمند.">
     <meta property="og:title" content="V2V | دسترسی آزاد و پایدار" />
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
     <style>
         :root {
             --bg-color: #000000; --card-color: #1e1e1e; --text-color: #e0e0e0;
@@ -28,18 +27,12 @@
         }
         .core-select-btn:hover { background-color: #6d0000; }
 
-        /* --- NEW: Green color for the Xray button --- */
-        #btn-xray {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
-            color: #000;
-        }
-        #btn-xray:hover {
-            background-color: #1f7a33; /* Darker green */
-        }
+        #btn-xray { background-color: var(--secondary-color); border-color: var(--secondary-color); color: #000; }
+        #btn-xray:hover { background-color: #1f7a33; }
 
         .core-content { display: none; padding: 20px; border: 1px solid #333; border-radius: 8px; margin-top: 10px; }
         .speed-test-btn { background-color: var(--secondary-color); color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 1.1em; cursor: pointer; display: block; width: 100%; margin-bottom: 25px; font-weight: bold; }
+        .speed-test-btn:disabled { background-color: #555; cursor: not-allowed; }
         
         .links-container { background-color: var(--card-color); padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 25px; }
         .links-container h3 { margin-top: 0; color: var(--secondary-color); border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 20px; }
@@ -73,24 +66,24 @@
 </head>
 <body>
     <main>
-        <img src="logo.png" alt="V2V Logo" class="site-logo">
+        <img src="https://smbcryp.github.io/V2V/logo.png" alt="V2V Logo" class="site-logo">
         <p class="slogan">سپاس هر‌آنکه خواه یا ناخواه دستی بر این راهک رهایی داشت</p>
         
         <div id="info" class="info-box">درحال بارگذاری...</div>
 
         <div class="core-selector">
-            <button id="btn-xray" class="core-select-btn" style="display: none;">کانفیگ‌های Xray-Core (Xray Core Configs)</button>
+            <button id="btn-xray" class="core-select-btn" style="display: none;">کانفیگ‌های Xray-Core</button>
             <div id="content-xray" class="core-content"></div>
 
-            <button id="btn-singbox" class="core-select-btn" style="display: none;">کانفیگ‌های Sing-box (Sing-box Configs)</button>
+            <button id="btn-singbox" class="core-select-btn" style="display: none;">کانفیگ‌های Sing-box</button>
             <div id="content-singbox" class="core-content"></div>
         </div>
 
         <footer>
              <ul class="footer-links">
-                <li><a href="https://smbcryp.github.io/V2V/" target="_blank">آدرس گیت‌هاب</a></li>
-                <li><a href="https://v2-v.vercel.app/" target="_blank">آدرس ورسل</a></li>
-                <li><a href="http://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank">آدرس آروان</a></li>
+                <li><a href="https://github.com/SMBCRYP/V2V/" target="_blank">گیت‌هاب</a></li>
+                <li><a href="https://v2-v.vercel.app/" target="_blank">ورسل</a></li>
+                <li><a href="http://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank">آروان</a></li>
             </ul>
         </footer>
     </main>
@@ -113,12 +106,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = document.querySelector('.close-btn');
 
     // State
-    let allConfigs = [], xrayConfigs = [], singboxConfigs = [];
-    let clipboard = new ClipboardJS('.copy-btn-class');
+    let allConfigs = { xray: [], singbox: [] };
 
-    const MIRRORS = [
-        `https://v2v-data.s3.ir-thr-at1.arvanstorage.ir/configs.json?v=${Date.now()}`,
-        `https://smbcryp.github.io/V2V/configs.json?v=${Date.now()}`
+    // --- NEW: Configuration for the test engine ---
+    const API_ENDPOINT = '/api/proxy'; // Relative path to our Vercel function
+    const BATCH_SIZE = 10; // Number of configs to test in parallel
+
+    const CONFIG_SOURCES = [
+        `https://cdn.jsdelivr.net/gh/SMBCRYP/V2V@main/all_live_configs.json?v=${Date.now()}`,
+        `https://raw.githubusercontent.com/SMBCRYP/V2V/main/all_live_configs.json?v=${Date.now()}`
     ];
 
     // Helper Functions
@@ -140,63 +136,116 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) { alert('کپی کردن با خطا مواجه شد.'); }
     };
 
+    const parseServerDetails = (configUrl) => {
+        try {
+            const url = new URL(configUrl);
+            if (url.protocol === 'vmess:') {
+                const decoded = JSON.parse(atob(url.hostname));
+                return { host: decoded.add, port: decoded.port };
+            }
+            return { host: url.hostname, port: url.port };
+        } catch { return null; }
+    };
+
     const extractNameFromUrl = (url) => {
         try {
             return decodeURIComponent(new URL(url).hash.substring(1)) || new URL(url).hostname;
         } catch { return url.substring(0, 30) + '...'; }
     };
     
-    const startClientSideBatchTest = async (configsToTest, coreName, btnElement) => {
+    // --- NEW: Real-time Test Engine ---
+    const startClientSideBatchTest = async (coreName, btnElement) => {
+        const configsToTest = allConfigs[coreName];
+        if (!configsToTest || configsToTest.length === 0) return;
+
         btnElement.disabled = true;
-        btnElement.textContent = `... در حال تست ${configsToTest.length} کانفیگ`;
+        let testedCount = 0;
 
-        // This is a placeholder for actual client-side pinging.
-        // For now, we just re-sort based on the ping values provided by the scraper.
+        for (let i = 0; i < configsToTest.length; i += BATCH_SIZE) {
+            const batch = configsToTest.slice(i, i + BATCH_SIZE);
+            const promises = batch.map(config => {
+                const details = parseServerDetails(config.config_str);
+                if (!details) {
+                    return Promise.resolve({ configId: config.id, ping: 9999, error: 'Invalid URL' });
+                }
+                return fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ host: details.host, port: details.port })
+                })
+                .then(res => res.ok ? res.json() : Promise.reject(new Error(`API Error: ${res.statusText}`)))
+                .then(data => ({ configId: config.id, ping: data.ping }))
+                .catch(err => ({ configId: config.id, ping: 9999, error: err.message }));
+            });
+
+            const results = await Promise.allSettled(promises);
+            
+            results.forEach(result => {
+                if (result.status === 'fulfilled' && result.value) {
+                    const { configId, ping, error } = result.value;
+                    const configIndex = configsToTest.findIndex(c => c.id === configId);
+                    if (configIndex > -1) configsToTest[configIndex].ping = ping;
+                    
+                    const card = document.querySelector(`.config-card[data-config-id="${configId}"]`);
+                    if (card) {
+                        const pingEl = card.querySelector('.ping-result');
+                        const pingText = error ? 'Error' : (ping >= 9999 ? 'Timeout' : `${ping}ms`);
+                        pingEl.textContent = pingText;
+                        pingEl.className = 'ping-result'; // Reset classes
+                        if (error || ping >= 9999) pingEl.classList.add('timeout');
+                        else if (ping < 400) pingEl.classList.add('fast');
+                        else pingEl.classList.add('slow');
+                    }
+                }
+                testedCount++;
+            });
+            
+            const progress = Math.round((testedCount / configsToTest.length) * 100);
+            btnElement.textContent = `... در حال تست ${progress}%`;
+        }
         
-        configsToTest.sort((a, b) => {
-            const aPing = typeof a.ping === 'number' ? a.ping : 9999;
-            const bPing = typeof b.ping === 'number' ? b.ping : 9999;
-            return aPing - bPing;
-        });
-
+        // Final sort and re-render
+        configsToTest.sort((a, b) => (a.ping || 9999) - (b.ping || 9999));
         const containerId = coreName === 'xray' ? '#content-xray' : '#content-singbox';
-        const protocolContainer = document.querySelector(`${containerId} .protocol-container`);
-        renderProtocolAccordions(configsToTest, protocolContainer);
+        renderProtocolAccordions(configsToTest, document.querySelector(`${containerId} .protocol-container`));
 
-        btnElement.textContent = `🚀 تست سرعت کانفیگ‌های ${coreName.toUpperCase()}`;
+        btnElement.textContent = `🚀 تست سرعت مجدد`;
         btnElement.disabled = false;
-        alert(`تست کامل شد. کانفیگ‌ها بر اساس سرعت مرتب شدند.`);
+        infoContainer.textContent = `تست کامل شد. کانفیگ‌ها بر اساس سرعت واقعی شما مرتب شدند.`;
     };
 
     // --- Render Functions ---
     const createConfigCard = (cfg) => {
         const card = document.createElement('div');
         card.className = 'config-card';
-        const latency = cfg.ping;
-        const pingText = (typeof latency === 'number' && latency < 9999) ? `${latency}ms` : 'N/A';
-        const pingClass = (typeof latency === 'number' && latency < 400) ? 'fast' : ((typeof latency === 'number' && latency < 9999) ? 'slow' : 'timeout');
-        
+        card.dataset.configId = cfg.id; // Unique ID for real-time updates
+
         card.innerHTML = `
-            <div class="ping-result ${pingClass}">${pingText}</div>
+            <div class="ping-result">...</div>
             <div class="config-details"><div class="config-name" title="${cfg.name}">${cfg.name}</div></div>
             <div class="actions">
-                <button class="action-btn copy-btn-class" data-clipboard-text="${cfg.config}">کپی</button>
+                <button class="action-btn copy-btn">کپی</button>
                 <button class="action-btn qr-btn">QR</button>
             </div>`;
-        card.querySelector('.qr-btn').onclick = () => openQrModal(cfg.config, cfg.name);
+        
+        card.querySelector('.copy-btn').onclick = (e) => copyToClipboard(cfg.config_str, e.target);
+        card.querySelector('.qr-btn').onclick = () => openQrModal(cfg.config_str, cfg.name);
         return card;
     };
 
     const renderProtocolAccordions = (configs, container) => {
         container.innerHTML = '';
-        const categorized = { vless: [], reality: [], vmess: [], trojan: [], ss: [], hysteria2: [], tuic: [] };
+        const getProtocol = (cfg) => {
+             const proto = cfg.config_str.split('://')[0].toLowerCase();
+             if (proto === 'vless' && cfg.core === 'singbox') return 'reality';
+             return proto;
+        }
+
+        const categorized = {};
         configs.forEach(cfg => {
-            const protocol = cfg.protocol;
-            if (protocol === 'vless' && cfg.core === 'singbox') {
-                categorized.reality.push(cfg);
-            } else if (categorized[protocol]) {
-                categorized[protocol].push(cfg);
-            }
+            const protocol = getProtocol(cfg);
+            if (!categorized[protocol]) categorized[protocol] = [];
+            categorized[protocol].push(cfg);
         });
         
         for (const protocol in categorized) {
@@ -220,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     content.style.display = content.style.display === 'block' ? 'none' : 'block';
                 };
                 item.querySelector('.copy-protocol-btn').onclick = (e) => {
-                    const text = protocolConfigs.map(c => c.config).join('\n');
+                    const text = protocolConfigs.map(c => c.config_str).join('\n');
                     copyToClipboard(text, e.target);
                 };
                 container.appendChild(item);
@@ -237,67 +286,68 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="link-group">
                     <h4>لینک اشتراک (Subscription)</h4>
                     <div class="link-buttons">
-                        <button class="link-btn copy-sub-btn" data-type="plain">کپی لینک</button>
-                        <button class="link-btn qr-sub-btn" data-type="plain">QR کد</button>
-                    </div>
-                </div>
-                <div class="link-group">
-                    <h4>فایل کلش (Clash Meta)</h4>
-                    <div class="link-buttons">
-                         <button class="link-btn copy-sub-btn" data-type="clash">کپی لینک</button>
-                         <a href="https://smbcryp.github.io/V2V/v2v_clash_${coreName}.yaml" class="link-btn" download>دانلود</a>
+                        <button class="link-btn copy-sub-btn">کپی لینک</button>
+                        <button class="link-btn qr-sub-btn">QR کد</button>
                     </div>
                 </div>
             </div>
             <div class="protocol-container"></div>`;
 
-        container.querySelector(`#test-${coreName}`).onclick = (e) => startClientSideBatchTest(configs, coreName, e.target);
+        container.querySelector(`#test-${coreName}`).onclick = (e) => startClientSideBatchTest(coreName, e.target);
         
-        const subUrls = {
-            plain: `https://smbcryp.github.io/V2V/configs_${coreName}.txt`,
-            clash: `https://smbcryp.github.io/V2V/v2v_clash_${coreName}.yaml`
+        container.querySelector('.copy-sub-btn').onclick = (e) => {
+            const subText = allConfigs[coreName].map(c => c.config_str).join('\n');
+            const encodedSub = btoa(subText);
+            // This is a placeholder for a real subscription link. You'd typically host this.
+            // For now, we copy the base64 content.
+            copyToClipboard(encodedSub, e.target);
+            alert('لینک اشتراک (محتوای Base64) کپی شد. می‌توانید آن را در یک فایل ذخیره و استفاده کنید.');
         };
-        container.querySelectorAll('.copy-sub-btn').forEach(btn => {
-            btn.onclick = (e) => copyToClipboard(subUrls[e.target.dataset.type], e.target);
-        });
-        container.querySelectorAll('.qr-sub-btn').forEach(btn => {
-            btn.onclick = () => openQrModal(subUrls[e.target.dataset.type], `لینک اشتراک ${coreTitle}`);
-        });
+        container.querySelector('.qr-sub-btn').onclick = (e) => {
+             const subText = allConfigs[coreName].map(c => c.config_str).join('\n');
+             const encodedSub = btoa(subText);
+             openQrModal(encodedSub, `اشتراک ${coreTitle}`);
+        };
 
         renderProtocolAccordions(configs, container.querySelector('.protocol-container'));
     };
 
     const initializeApp = async () => {
         let rawJsonData = null;
-        for (const url of MIRRORS) {
+        for (const url of CONFIG_SOURCES) {
             try {
                 const response = await fetch(url, { cache: "no-store" });
                 if (response.ok) { rawJsonData = await response.json(); break; }
-            } catch (error) { console.warn(error.message); }
+            } catch (error) { console.warn(`Failed to load from ${url}: ${error.message}`); }
         }
 
-        if (!rawJsonData) {
-            infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
+        if (!rawJsonData || (!rawJsonData.xray && !rawJsonData.singbox)) {
+            infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند یا فایل کانفیگ خالی است. لطفاً بعداً دوباره امتحان کنید.';
+            infoContainer.style.color = 'var(--error-color)';
             return;
         }
-
-        allConfigs = rawJsonData.map((item, index) => ({
-            ...item, id: index, name: extractNameFromUrl(item.config),
-            protocol: item.config.split('://')[0].toLowerCase()
+        
+        let idCounter = 0;
+        const processConfigs = (arr) => arr.map(cfgStr => ({
+            id: idCounter++,
+            config_str: cfgStr,
+            name: extractNameFromUrl(cfgStr),
+            core: cfgStr.includes('reality') ? 'singbox' : 'xray' // Simplified logic for demo
         }));
 
-        xrayConfigs = allConfigs.filter(c => c.core === 'xray');
-        singboxConfigs = allConfigs.filter(c => c.core === 'singbox');
+        allConfigs.xray = rawJsonData.xray.map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'xray'}));
+        allConfigs.singbox = rawJsonData.singbox.map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'singbox'}));
 
-        infoContainer.textContent = `مجموع ${allConfigs.length} کانفیگ (Xray: ${xrayConfigs.length}, Sing-box: ${singboxConfigs.length}) بارگذاری شد.`;
+        const totalCount = allConfigs.xray.length + allConfigs.singbox.length;
+        infoContainer.textContent = `مجموع ${totalCount} کانفیگ (Xray: ${allConfigs.xray.length}, Sing-box: ${allConfigs.singbox.length}) بارگذاری شد.`;
 
-        if (xrayConfigs.length > 0) {
+        if (allConfigs.xray.length > 0) {
             xrayBtn.style.display = 'block';
-            renderCoreContent('xray', xrayConfigs, xrayContent);
+            renderCoreContent('xray', allConfigs.xray, xrayContent);
         }
-        if (singboxConfigs.length > 0) {
+        if (allConfigs.singbox.length > 0) {
             singboxBtn.style.display = 'block';
-            renderCoreContent('singbox', singboxConfigs, singboxContent);
+            renderCoreContent('singbox', allConfigs.singbox, singboxContent);
         }
     };
 
@@ -305,8 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
     singboxBtn.onclick = () => { singboxContent.style.display = singboxContent.style.display === 'block' ? 'none' : 'block'; };
     closeBtn.onclick = () => qrModal.style.display = "none";
     window.onclick = (event) => { if (event.target == qrModal) qrModal.style.display = "none"; };
-    clipboard.on('success', (e) => { showCopyFeedback(e.trigger, e.trigger.textContent); e.clearSelection(); });
-
+    
     initializeApp();
 });
 </script>
