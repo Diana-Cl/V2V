@@ -9,7 +9,7 @@ import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, unquote, parse_qs
 
-# Configuration (no changes)
+# === CONFIGURATION ===
 BASE_SOURCES = [
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt",
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt",
@@ -20,9 +20,10 @@ OUTPUT_JSON_FILE = 'all_live_configs.json'
 OUTPUT_CLASH_FILE = 'best_clash.yaml'
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'wg://')
 GITHUB_PAT = os.environ.get('GH_PAT')
-HEADERS = {'User-Agent': 'V2V-Scraper/Final-v2'}
+HEADERS = {'User-Agent': 'V2V-Scraper/Final-Resilient'}
 TARGET_CONFIGS_PER_CORE = 500
-MAX_PING_THRESHOLD = 1200
+MAX_PING_THRESHOLD = 1500  # Increased for more tolerance
+REQUEST_TIMEOUT = 8        # Increased for more tolerance
 API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy'
 MAX_RAW_CONFIGS_TO_TEST = 2000
 TOP_CLASH_CONFIGS_COUNT = 100
@@ -60,7 +61,8 @@ def test_config_via_vercel_api(config_url: str) -> dict:
     server_details = parse_server_details(config_url)
     if not server_details: return {'ping': 9999}
     try:
-        response = requests.post(API_ENDPOINT, json=server_details, headers={'Content-Type': 'application/json'}, timeout=5)
+        # Using the increased REQUEST_TIMEOUT here
+        response = requests.post(API_ENDPOINT, json=server_details, headers={'Content-Type': 'application/json'}, timeout=REQUEST_TIMEOUT)
         return {'config_str': config_url, 'ping': response.json().get('ping', 9999)}
     except Exception:
         return {'config_str': config_url, 'ping': 9999}
@@ -81,35 +83,25 @@ def generate_clash_config_from_urls(configs: list) -> str:
     for config_str in configs:
         try:
             url = urlparse(config_str)
-            # CRITICAL FIX: Exclude REALITY configs from Clash file
-            if 'reality' in url.query.lower():
-                continue
-            
+            if 'reality' in url.query.lower(): continue
             name = unquote(url.fragment) if url.fragment else url.hostname
             proxy = {'name': name, 'server': url.hostname, 'port': int(url.port)}
-
             if url.scheme == 'vmess':
                 decoded = json.loads(base64.b64decode(config_str.replace("vmess://", "")).decode('utf-8'))
-                proxy.update({'type': 'vmess', 'uuid': decoded['id'], 'alterId': decoded['aid'], 'cipher': decoded.get('scy', 'auto'),'server': decoded['add'], 'port': int(decoded['port']), 'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net', 'tcp')})
+                proxy.update({'type': 'vmess', 'uuid': decoded['id'], 'alterId': decoded['aid'], 'cipher': 'auto', 'server': decoded['add'], 'port': int(decoded['port']), 'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net', 'tcp')})
             elif url.scheme in ['vless', 'trojan']:
-                proxy.update({'type': url.scheme, 'uuid' if url.scheme == 'vless' else 'password': url.username})
-                params = parse_qs(url.query)
-                proxy['tls'] = params.get('security', ['none'])[0] == 'tls'
-                proxy['network'] = params.get('type', ['tcp'])[0]
-                if proxy['network'] == 'ws':
-                    proxy['ws-opts'] = {'path': params.get('path', ['/'])[0], 'headers': {'Host': params.get('host', [url.hostname])[0]}}
+                proxy.update({'type': url.scheme, 'uuid' if url.scheme == 'vless' else 'password': url.username, 'tls': 'security=tls' in url.query})
             elif url.scheme == 'ss':
                 cred = base64.b64decode(unquote(url.username)).decode().split(':')
                 proxy.update({'type': 'ss', 'cipher': cred[0], 'password': cred[1]})
             else: continue
             proxies.append(proxy)
         except Exception: continue
-    
     clash_config = {'proxies': proxies, 'proxy-groups': [{'name': 'V2V-Auto', 'type': 'select', 'proxies': [p['name'] for p in proxies]}], 'rules': ['MATCH,V2V-Auto']}
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False, indent=2)
 
 def main():
-    print("V2V Scraper Final Version (Meticulous)")
+    print("V2V Scraper Final Version (Resilient)")
     with ThreadPoolExecutor(max_workers=20) as executor:
         config_sets = executor.map(fetch_and_parse_url, BASE_SOURCES)
     all_configs_raw = set.union(*config_sets)
@@ -144,7 +136,7 @@ def main():
 
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(final_configs, f, ensure_ascii=False, indent=2)
-    print("Process completed.")
+    print("Process completed successfully.")
 
 if __name__ == "__main__":
     main()
