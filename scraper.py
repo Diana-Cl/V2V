@@ -2,6 +2,7 @@ import requests
 import base64
 import os
 import json
+import re
 import socket
 import time
 import yaml
@@ -157,10 +158,12 @@ def parse_server_details(config_url: str) -> dict | None:
             except ValueError: return None
         if protocol == 'vmess':
             try:
-                parsed = urlparse(config_url)
-                b64_data = parsed.hostname
+                # VMess configs are base64 encoded JSON in the 'hostname' part of the URL
+                b64_data = config_url.replace("vmess://", "").strip()
+                # Correct padding for base64
                 missing_padding = len(b64_data) % 4
-                if missing_padding: b64_data += '=' * (4 - missing_padding)
+                if missing_padding:
+                    b64_data += '=' * (4 - missing_padding)
                 decoded = json.loads(base64.b64decode(b64_data).decode('utf-8'))
                 host = decoded.get('add')
                 port = int(decoded.get('port', 0))
@@ -220,10 +223,10 @@ def main():
     print("🚀 V2V Enhanced Scraper - منابع ثابت + GitHub Search + تست ورسل")
     print(f"🎯 هدف: {TARGET_CONFIGS_PER_CORE} کانفیگ برای هر core")
     print(f"⚡ حداکثر ping: {MAX_PING_THRESHOLD}ms")
-    all_sources = BASE_SUBSCRIPTION_SOURCES.copy()
+    all_sources = BASE_SOURCES.copy()
     dynamic_sources = discover_dynamic_sources()
     all_sources.extend(dynamic_sources)
-    print(f"📡 مجموع منابع: {len(BASE_SUBSCRIPTION_SOURCES)} ثابت + {len(dynamic_sources)} پویا = {len(all_sources)}")
+    print(f"📡 مجموع منابع: {len(BASE_SOURCES)} ثابت + {len(dynamic_sources)} پویا = {len(all_sources)}")
     print("🚚 دانلود و استخراج کانفیگ‌ها...")
     all_configs_raw = set()
     with ThreadPoolExecutor(max_workers=20) as executor:
@@ -281,7 +284,7 @@ def main():
     print("📈 خلاصه نتایج:")
     print(f"   🔸 Xray: {len(final_configs['xray'])} کانفیگ")
     print(f"   🔸 Singbox: {len(final_configs['singbox'])} کانفیگ")
-    f"   🔸 مجموع: {total_configs} کانفیگ")
+    print(f"   🔸 مجموع: {total_configs} کانفیگ")
     print(f"💾 فایل خروجی: {OUTPUT_JSON_FILE}")
     print(f"🌐 منابع استفاده شده: {len(all_sources)} منبع")
     if total_configs > 0: print("✅ فایل آماده برای استفاده در سایت!")
