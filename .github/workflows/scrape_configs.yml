@@ -10,13 +10,11 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 20
       
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,30 +26,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests awscli PyYAML
 
-      - name: Git pull before commit
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
-
-      - name: Run enhanced scraper script
+      - name: Run scraper script
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-        timeout-minutes: 100
+        timeout-minutes: 15
           
-      - name: Upload final JSON to ArvanCloud Object Storage
-        continue-on-error: true # این خط اضافه شده تا در صورت خطا، فرآیند متوقف نشود
+      - name: Upload files to ArvanCloud Object Storage
+        continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_ACCESS_KEY_SECRET }}
         run: |
           aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
+          aws s3 cp best_clash.yaml s3://v2v-data/best_clash.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
 
-      - name: Commit and Push the final JSON to GitHub
+      - name: Commit and Push the final files to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "📊 Update all_live_configs.json (Scheduled)"
-          file_pattern: "all_live_configs.json"
+          commit_message: "📊 Update configs and auto-clash file"
+          file_pattern: "all_live_configs.json best_clash.yaml"
           branch: main
-          commit_options: '--no-verify --force'
