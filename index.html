@@ -245,45 +245,40 @@
     </div>
 
     <div class="container">
-        <div class="core-tab-buttons">
-            <button class="core-tab-button active" onclick="showCore('xray')">Xray</button>
-            <button class="core-tab-button" onclick="showCore('singbox')">Sing-box</button>
+        <div id="xray-group" class="protocol-group">
+            <div class="protocol-header" onclick="toggleGroup('xray-group')">
+                <span class="protocol-title">کانفیگ‌های Xray-Core</span>
+                <span>&#9660;</span>
+            </div>
+            <ul class="config-list">
+                <div class="action-bar">
+                    <button class="test-button" onclick="runSpeedTest('xray')">تست سرعت</button>
+                    <button class="action-button" onclick="copyAll('xray')">کپی همه</button>
+                    <button class="action-button" onclick="copySubscription('xray')">کپی ساب‌لینک</button>
+                    <button class="action-button" onclick="showQrCode(getSubscriptionUrl('xray'))">QR ساب‌لینک</button>
+                    <button class="action-button" onclick="copyClash('xray')">کپی Clash Meta</button>
+                    <button class="action-button" onclick="downloadClash('xray')">دانلود Clash Meta</button>
+                </div>
+                <div id="xray-configs"></div>
+            </ul>
         </div>
 
-        <div id="xray-content" class="core-content" style="display: block;">
-            <div class="action-bar">
-                <button class="test-button" onclick="runSpeedTest('xray')">تست سرعت</button>
-                <div class="download-action-group">
-                    <a href="#" id="xray-sub-link">
-                        <button class="copy-btn">کپی ساب</button>
-                        <button class="copy-btn">QR</button>
-                    </a>
-                    <a href="#" id="xray-clash-link" download="clash_xray.yaml">
-                        <button class="copy-btn">کپی Clash</button>
-                        <button class="copy-btn">QR</button>
-                        <button class="copy-btn">دانلود</button>
-                    </a>
-                </div>
+        <div id="singbox-group" class="protocol-group">
+            <div class="protocol-header" onclick="toggleGroup('singbox-group')">
+                <span class="protocol-title">کانفیگ‌های Sing-box</span>
+                <span>&#9660;</span>
             </div>
-            <div id="xray-configs"></div>
-        </div>
-
-        <div id="singbox-content" class="core-content" style="display: none;">
-            <div class="action-bar">
-                <button class="test-button" onclick="runSpeedTest('singbox')">تست سرعت</button>
-                <div class="download-action-group">
-                    <a href="#" id="singbox-sub-link">
-                        <button class="copy-btn">کپی ساب</button>
-                        <button class="copy-btn">QR</button>
-                    </a>
-                    <a href="#" id="singbox-clash-link" download="clash_singbox.yaml">
-                        <button class="copy-btn">کپی Clash</button>
-                        <button class="copy-btn">QR</button>
-                        <button class="copy-btn">دانلود</button>
-                    </a>
+            <ul class="config-list">
+                <div class="action-bar">
+                    <button class="test-button" onclick="runSpeedTest('singbox')">تست سرعت</button>
+                    <button class="action-button" onclick="copyAll('singbox')">کپی همه</button>
+                    <button class="action-button" onclick="copySubscription('singbox')">کپی ساب‌لینک</button>
+                    <button class="action-button" onclick="showQrCode(getSubscriptionUrl('singbox'))">QR ساب‌لینک</button>
+                    <button class="action-button" onclick="copyClash('singbox')">کپی Clash Meta</button>
+                    <button class="action-button" onclick="downloadClash('singbox')">دانلود Clash Meta</button>
                 </div>
-            </div>
-            <div id="singbox-configs"></div>
+                <div id="singbox-configs"></div>
+            </ul>
         </div>
     </div>
 
@@ -303,9 +298,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script>
         let allConfigs = { xray: [], singbox: [] };
-        const xrayConfigsContainer = document.getElementById('xray-configs');
-        const singboxConfigsContainer = document.getElementById('singbox-configs');
-        let currentCore = 'xray';
         const API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy';
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -321,8 +313,8 @@
                 })
                 .catch(error => {
                     console.error('Error loading JSON:', error);
-                    xrayConfigsContainer.innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
-                    singboxConfigsContainer.innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
+                    document.getElementById('xray-configs').innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
+                    document.getElementById('singbox-configs').innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
                 });
         });
 
@@ -396,9 +388,11 @@
         }
 
         function runSpeedTest(core) {
-            alert(`قابلیت تست سرعت برای ${core.toUpperCase()} در حال توسعه است و به زودی اضافه خواهد شد.`);
+            allConfigs[core].sort((a, b) => a.ping - b.ping);
+            renderConfigs(core);
+            alert(`کانفیگ‌های ${core.toUpperCase()} بر اساس سرعت مرتب شدند.`);
         }
-
+        
         function getSubscriptionUrl(core) {
             const configs = allConfigs[core].map(c => c.config_str).join('\n');
             return `data:text/plain;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(configs)))}`;
