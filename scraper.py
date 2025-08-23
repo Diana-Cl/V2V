@@ -7,9 +7,9 @@ import time
 import yaml
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, parse_qs
 
-# === CONFIGURATION ===
+# Configuration (no changes)
 BASE_SOURCES = [
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt",
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt",
@@ -20,7 +20,7 @@ OUTPUT_JSON_FILE = 'all_live_configs.json'
 OUTPUT_CLASH_FILE = 'best_clash.yaml'
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'wg://')
 GITHUB_PAT = os.environ.get('GH_PAT')
-HEADERS = {'User-Agent': 'V2V-Scraper/Final'}
+HEADERS = {'User-Agent': 'V2V-Scraper/Final-v2'}
 TARGET_CONFIGS_PER_CORE = 500
 MAX_PING_THRESHOLD = 1200
 API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy'
@@ -47,8 +47,7 @@ def fetch_and_parse_url(url: str) -> set[str]:
 def parse_server_details(config_url: str) -> dict | None:
     try:
         parsed_url = urlparse(config_url)
-        protocol = parsed_url.scheme
-        if protocol == 'vmess':
+        if parsed_url.scheme == 'vmess':
             decoded = json.loads(base64.b64decode(config_url.replace("vmess://", "")).decode('utf-8'))
             return {'host': decoded.get('add'), 'port': int(decoded.get('port', 0))}
         if parsed_url.hostname:
@@ -62,9 +61,7 @@ def test_config_via_vercel_api(config_url: str) -> dict:
     if not server_details: return {'ping': 9999}
     try:
         response = requests.post(API_ENDPOINT, json=server_details, headers={'Content-Type': 'application/json'}, timeout=5)
-        if response.status_code == 200:
-            return {'config_str': config_url, 'ping': response.json().get('ping', 9999)}
-        return {'config_str': config_url, 'ping': 9999}
+        return {'config_str': config_url, 'ping': response.json().get('ping', 9999)}
     except Exception:
         return {'config_str': config_url, 'ping': 9999}
 
@@ -84,24 +81,35 @@ def generate_clash_config_from_urls(configs: list) -> str:
     for config_str in configs:
         try:
             url = urlparse(config_str)
+            # CRITICAL FIX: Exclude REALITY configs from Clash file
+            if 'reality' in url.query.lower():
+                continue
+            
             name = unquote(url.fragment) if url.fragment else url.hostname
             proxy = {'name': name, 'server': url.hostname, 'port': int(url.port)}
+
             if url.scheme == 'vmess':
                 decoded = json.loads(base64.b64decode(config_str.replace("vmess://", "")).decode('utf-8'))
                 proxy.update({'type': 'vmess', 'uuid': decoded['id'], 'alterId': decoded['aid'], 'cipher': decoded.get('scy', 'auto'),'server': decoded['add'], 'port': int(decoded['port']), 'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net', 'tcp')})
             elif url.scheme in ['vless', 'trojan']:
-                 proxy.update({'type': url.scheme, 'uuid' if url.scheme == 'vless' else 'password': url.username})
+                proxy.update({'type': url.scheme, 'uuid' if url.scheme == 'vless' else 'password': url.username})
+                params = parse_qs(url.query)
+                proxy['tls'] = params.get('security', ['none'])[0] == 'tls'
+                proxy['network'] = params.get('type', ['tcp'])[0]
+                if proxy['network'] == 'ws':
+                    proxy['ws-opts'] = {'path': params.get('path', ['/'])[0], 'headers': {'Host': params.get('host', [url.hostname])[0]}}
             elif url.scheme == 'ss':
-                cred = base64.b64decode(url.username).decode().split(':')
+                cred = base64.b64decode(unquote(url.username)).decode().split(':')
                 proxy.update({'type': 'ss', 'cipher': cred[0], 'password': cred[1]})
             else: continue
             proxies.append(proxy)
         except Exception: continue
+    
     clash_config = {'proxies': proxies, 'proxy-groups': [{'name': 'V2V-Auto', 'type': 'select', 'proxies': [p['name'] for p in proxies]}], 'rules': ['MATCH,V2V-Auto']}
-    return yaml.dump(clash_config, allow_unicode=True, sort_keys=False)
+    return yaml.dump(clash_config, allow_unicode=True, sort_keys=False, indent=2)
 
 def main():
-    print("V2V Scraper Final Version")
+    print("V2V Scraper Final Version (Meticulous)")
     with ThreadPoolExecutor(max_workers=20) as executor:
         config_sets = executor.map(fetch_and_parse_url, BASE_SOURCES)
     all_configs_raw = set.union(*config_sets)
