@@ -5,7 +5,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *' # Runs every 3 hours
+    - cron: '0 */3 * * *' # هر ۳ ساعت یک بار اجرا می‌شود
 
 jobs:
   build-and-commit:
@@ -24,50 +24,30 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          # requirements.txt should only contain 'requests' now
+          # pip install -r requirements.txt 
+          pip install requests # Or install directly
 
-      # --- مرحله نصب ابزار تست (روش جدید و مستقیم) ---
-      - name: Install Xray-core for validation testing (Direct Method)
-        run: |
-          # Download the latest release zip file for linux-64
-          curl -L -o xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
-          # Install unzip if not present and extract the binary
-          sudo apt-get update && sudo apt-get install -y unzip
-          unzip xray.zip xray
-          # Move the xray binary to a directory in the system's PATH
-          sudo mv xray /usr/local/bin/
-          # Verify the installation by checking the version
-          echo "Xray installed successfully:"
-          xray --version
+      # --- مرحله نصب Xray حذف شد (دیگر نیازی نیست) ---
 
-      - name: Run scraper script
+      - name: Run final scraper script
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
 
-      - name: Upload to ArvanCloud Object Storage
+      - name: Upload final JSON to ArvanCloud Object Storage
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         run: |
           pip install awscli
-          # Upload all new dual-core data files
-          aws s3 cp configs_xray.txt s3://v2v-data/configs_xray.txt --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File configs_xray.txt not found, skipping."
-          aws s3 cp v2v_clash_xray.yaml s3://v2v-data/v2v_clash_xray.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File v2v_clash_xray.yaml not found, skipping."
-          aws s3 cp configs_xray.json s3://v2v-data/configs_xray.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File configs_xray.json not found, skipping."
-          aws s3 cp configs_singbox.txt s3://v2v-data/configs_singbox.txt --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File configs_singbox.txt not found, skipping."
-          aws s3 cp v2v_clash_singbox.yaml s3://v2v-data/v2v_clash_singbox.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File v2v_clash_singbox.yaml not found, skipping."
-          aws s3 cp configs_singbox.json s3://v2v-data/configs_singbox.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File configs_singbox.json not found, skipping."
-          aws s3 cp configs.json s3://v2v-data/configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File configs.json not found, skipping."
-          # Upload site files
-          aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File index.html not found, skipping."
-          aws s3 cp logo.png s3://v2v-data/logo.png --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read || echo "File logo.png not found, skipping."
+          # فقط فایل خروجی نهایی آپلود می‌شود
+          aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
 
-
-      - name: Commit and Push new configs to GitHub
+      - name: Commit and Push the final JSON to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update dual-core config files with validation"
-          file_pattern: "*.txt *.yaml *.json"
+          commit_message: "📊 Update all_live_configs.json"
+          # فقط فایل خروجی نهایی Commit می‌شود
+          file_pattern: "all_live_configs.json"
           branch: main
-          push_options: --force
