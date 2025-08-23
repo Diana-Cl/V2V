@@ -23,7 +23,7 @@
             width: 100%; max-width: 700px; padding: 20px 10px;
             display: flex; flex-direction: column; flex-grow: 1;
         }
-        .header { margin-bottom: 20px; }
+        .header { margin-bottom: 20px; flex-shrink: 0; }
         .header img { width: 100px; height: 100px; }
         .container {
             width: 100%; background-color: var(--secondary-bg); padding: 20px;
@@ -54,7 +54,7 @@
         .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.9em; }
         .copy-button-container { display: flex; gap: 10px; }
         .copy-btn { background-color: #444; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; color: var(--text-color); }
-        .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; }
+        .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; flex-shrink: 0; }
         .bottom-links a { color: var(--text-color); text-decoration: none; font-size: 0.9em; }
         .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
         #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
@@ -71,11 +71,11 @@
         <div class="container">
             <div id="xray-section">
                 <div class="core-header" id="xray-header">Xray-Core / ایکس‌ری</div>
-                <div id="xray-configs-container"><div class="alert">درحال بارگذاری...</div></div>
+                <div id="xray-content-wrapper"><div class="alert">درحال بارگذاری...</div></div>
             </div>
             <div id="singbox-section">
                 <div class="core-header" id="singbox-header">Sing-box Core / سینگ‌باکس</div>
-                <div id="singbox-configs-container"><div class="alert">درحال بارگذاری...</div></div>
+                <div id="singbox-content-wrapper"><div class="alert">درحال بارگذاری...</div></div>
             </div>
         </div>
         <div class="bottom-links">
@@ -115,13 +115,13 @@
                 renderCore('singbox');
             } catch (error) {
                 const errorMsg = `<div class="alert">❌ خطا در بارگذاری فایل از تمام منابع.</div>`;
-                document.getElementById('xray-configs-container').innerHTML = errorMsg;
-                document.getElementById('singbox-configs-container').innerHTML = errorMsg;
+                document.getElementById('xray-content-wrapper').innerHTML = errorMsg;
+                document.getElementById('singbox-content-wrapper').innerHTML = errorMsg;
             }
         });
 
         function renderCore(core) {
-            const container = document.getElementById(`${core}-configs-container`);
+            const container = document.getElementById(`${core}-content-wrapper`);
             const configs = allConfigs[core] || [];
             let headerHtml = '';
 
@@ -138,16 +138,16 @@
                     <div class="action-group">
                         <h4 class="action-group-title">فایل / Clash Meta</h4>
                         <div class="action-buttons">
-                            <button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button>
-                            <button class="action-button" onclick="generateClashConfig('xray', 'download')">دانلود فایل شخصی</button>
+                             <button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button>
+                             <button class="action-button" onclick="generateClashConfig('xray', 'download')">دانلود فایل شخصی</button>
                         </div>
                     </div>`;
             } else {
                 headerHtml = `
                     <button class="test-button" onclick="runSpeedTest('singbox')">🚀 تست سرعت</button>
                     <div class="action-group">
-                        <h4 class="action-group-title">لینک اشتراک / Subscription</h4>
-                        <div class="action-buttons">
+                         <h4 class="action-group-title">لینک اشتراک / Subscription</h4>
+                         <div class="action-buttons">
                             <button class="action-button" onclick="generateSubscription('singbox', 'sub')">کپی لینک</button>
                             <button class="action-button" onclick="generateSubscription('singbox', 'qr')">QR کد</button>
                         </div>
@@ -199,7 +199,7 @@
         async function runSpeedTest(core) {
             const testButton = document.querySelector(`#${core}-section .test-button`);
             testButton.disabled = true; testButton.textContent = 'در حال تست...';
-            const items = document.querySelectorAll(`#${core}-configs-container .config-item`);
+            const items = document.querySelectorAll(`#${core}-content-wrapper .config-item`);
             const promises = Array.from(items).map(async item => {
                 item.style.opacity = '0.5';
                 const pingEl = item.querySelector('.ping');
@@ -231,7 +231,7 @@
         }
         
         function sortConfigsByPing(core) {
-            const container = document.getElementById(`${core}-configs-container`);
+            const container = document.getElementById(`${core}-content-wrapper`);
             const groups = container.querySelectorAll('.protocol-group');
             groups.forEach(group => {
                 const list = group.querySelector('.config-list');
@@ -241,6 +241,14 @@
             });
         }
         
+        function getPersonalConfigs(core) {
+            // This function is a placeholder for when checkbox selection is re-added.
+            // For now, it returns all configs sorted by the latest test.
+            const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
+            allItems.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
+            return allItems.map(item => item.dataset.config);
+        }
+
         function generateSubscription(core, action) {
             const configs = allConfigs[core].map(c => c.config_str);
             if (!configs.length) return alert('کانفیگی یافت نشد.');
@@ -250,7 +258,40 @@
             else if (action === 'qr') showQrCode(url);
         }
 
-        function generateClashConfig(core, action) { /* Implementation for personal clash file */ alert('این قابلیت به زودی تکمیل خواهد شد.'); }
+        function generateClashConfig(core, action) {
+            const configs = getPersonalConfigs(core);
+            if (configs.length === 0) return alert('کانفیگی برای ساخت فایل وجود ندارد.');
+            const proxies = configs.map(configStr => {
+                try {
+                    const url = new URL(configStr);
+                    if (url.search.includes('reality')) return null;
+                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname;
+                    let proxy = { name, server: url.hostname, port: parseInt(url.port) };
+                    // Simplified parsers for brevity
+                    if (url.protocol === 'vmess:') {
+                        const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
+                        proxy = {...proxy, type: 'vmess', uuid: decoded.id, alterId: decoded.aid, cipher: 'auto', tls: decoded.tls === 'tls', server: decoded.add, port: parseInt(decoded.port), network: decoded.net || 'tcp' };
+                    } else if (url.protocol === 'vless:' || url.protocol === 'trojan:') {
+                        proxy = {...proxy, type: url.protocol.slice(0,-1), uuid: url.username, password: url.username, tls: url.search.includes('tls')};
+                    } else if (url.protocol === 'ss:') {
+                         const cred = atob(url.username).split(':');
+                         proxy = {...proxy, type: 'ss', cipher: cred[0], password: cred[1]};
+                    } else { return null; }
+                    return proxy;
+                } catch { return null; }
+            }).filter(p => p);
+
+            const clashConfig = { proxies, 'proxy-groups': [{'name': 'V2V-Personal', 'type': 'select', 'proxies': proxies.map(p => p.name)}], 'rules': ['MATCH,V2V-Personal'] };
+            const yamlConfig = jsyaml.dump(clashConfig);
+            if (action === 'download') {
+                const blob = new Blob([yamlConfig], { type: 'text/yaml' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'v2v_clash_personal.yaml';
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }
+        }
         
         function copyClashSubscriptionUrl() { copyToClipboard(DATA_SOURCES[0].replace('all_live_configs.json', 'best_clash.yaml'), 'URL اشتراک کلش کپی شد!'); }
         function copyToClipboard(text, msg = 'کپی شد!') { navigator.clipboard.writeText(text).then(() => alert(msg)); }
