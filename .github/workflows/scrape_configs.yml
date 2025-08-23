@@ -38,8 +38,8 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_ACCESS_KEY_SECRET }}
         run: |
-          aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.ir --acl public-read
-          aws s3 cp best_clash.yaml s3://v2v-data/best_clash.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.ir --acl public-read
+          aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
+          aws s3 cp best_clash.yaml s3://v2v-data/best_clash.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
 
       - name: Commit and Push the final files to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
