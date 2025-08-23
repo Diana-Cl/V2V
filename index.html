@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Configuration ---
     const API_ENDPOINT = '/api/proxy';
-    const BATCH_SIZE = 20; // Increased batch size for faster testing
+    const BATCH_SIZE = 20;
     const CONFIG_SOURCES = [
         `https://cdn.jsdelivr.net/gh/SMBCRYP/V2V@main/all_live_configs.json?v=${Date.now()}`,
         `https://raw.githubusercontent.com/SMBCRYP/V2V/main/all_live_configs.json?v=${Date.now()}`
@@ -122,8 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Dynamic Generation Functions ---
     const generateSubscriptionContent = (configs) => {
         const topConfigs = configs.filter(c => c.ping < 9999).slice(0, TOP_N_CONFIGS);
-        const plainText = topConfigs.map(c => c.config_str).join('\n');
-        return btoa(plainText);
+        return topConfigs.map(c => c.config_str).join('\n');
     };
 
     const generateClashYaml = (configs) => {
@@ -131,25 +130,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fastestConfigs.length === 0) return null;
 
         const proxies = [];
-        const proxyNames = [];
+        const proxyNames = new Set();
 
         fastestConfigs.forEach((cfg, index) => {
             try {
+                let name = (decodeURIComponent(new URL(cfg.config_str).hash.substring(1)) || `V2V-${cfg.core}-${index}`).trim();
+                let originalName = name;
+                let counter = 1;
+                while (proxyNames.has(name)) {
+                    name = `${originalName} (${counter++})`;
+                }
+                proxyNames.add(name);
+                
                 const parsed = new URL(cfg.config_str);
-                const name = decodeURIComponent(parsed.hash.substring(1)) || `V2V-${cfg.core}-${index}`;
-                
-                if (proxyNames.includes(name)) return; // Avoid duplicate names
-                proxyNames.push(name);
-                
+                const params = new URLSearchParams(parsed.search);
                 let proxy_obj = {
-                    name: name,
-                    type: parsed.protocol.replace(':', ''),
-                    server: parsed.hostname,
-                    port: parseInt(parsed.port),
-                    udp: true
+                    name: name, type: parsed.protocol.replace(':', ''),
+                    server: parsed.hostname, port: parseInt(parsed.port), udp: true
                 };
 
-                const params = new URLSearchParams(parsed.search);
                 if (proxy_obj.type === 'vless') {
                     proxy_obj.uuid = parsed.username;
                     proxy_obj.network = params.get('type') || 'ws';
@@ -163,11 +162,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         proxy_obj['reality-opts'] = { 'public-key': params.get('pbk'), 'short-id': params.get('sid') || '' };
                     }
                 } else if (proxy_obj.type === 'vmess') {
-                    const decoded = JSON.parse(atob(parsed.hostname));
+                    const b64 = parsed.hostname + '='.repeat((-parsed.hostname.length) % 4);
+                    const decoded = JSON.parse(atob(b64));
                     proxy_obj.uuid = decoded.id;
                     proxy_obj.alterId = decoded.aid || 0;
                     proxy_obj.cipher = decoded.scy || 'auto';
                     proxy_obj.tls = decoded.tls === 'tls';
+                    proxy_obj.servername = decoded.sni || decoded.host || proxy_obj.server;
                     proxy_obj.network = decoded.net || 'ws';
                     if (proxy_obj.network === 'ws') {
                         proxy_obj['ws-opts'] = { path: decoded.path || '/', headers: { Host: decoded.host || proxy_obj.server }};
@@ -177,36 +178,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     proxy_obj.sni = params.get('sni') || parsed.hostname;
                 }
                 proxies.push(proxy_obj);
-            } catch (e) { /* Ignore invalid configs */ }
+            } catch (e) { console.error("Failed to parse config for Clash:", cfg.config_str, e); }
         });
 
         const clashConfig = {
-            'port': 7890,
-            'socks-port': 7891,
-            'allow-lan': true,
-            'mode': 'rule',
-            'log-level': 'info',
-            'external-controller': '0.0.0.0:9090',
-            'proxies': proxies,
+            'port': 7890, 'socks-port': 7891, 'allow-lan': true, 'mode': 'rule',
+            'log-level': 'info', 'external-controller': '0.0.0.0:9090', 'proxies': proxies,
             'proxy-groups': [
-                {
-                    'name': `V2V-Auto 🚀`,
-                    'type': 'url-test',
-                    'proxies': proxyNames,
-                    'url': 'http://www.gstatic.com/generate_204',
-                    'interval': 300
-                },
-                {
-                    'name': 'V2V-Select 選択',
-                    'type': 'select',
-                    'proxies': [`V2V-Auto 🚀`, ...proxyNames]
-                }
+                { 'name': `V2V-Auto 🚀`, 'type': 'url-test', 'proxies': Array.from(proxyNames), 'url': 'http://www.gstatic.com/generate_204', 'interval': 300 },
+                { 'name': 'V2V-Select 選択', 'type': 'select', 'proxies': [`V2V-Auto 🚀`, ...Array.from(proxyNames)] }
             ],
-            'rules': [
-                'DOMAIN-SUFFIX,ir,DIRECT',
-                'GEOIP,IR,DIRECT',
-                'MATCH,V2V-Select 選択'
-            ]
+            'rules': [ 'DOMAIN-SUFFIX,ir,DIRECT', 'GEOIP,IR,DIRECT', 'MATCH,V2V-Select 選択' ]
         };
         return jsyaml.dump(clashConfig);
     };
@@ -229,18 +211,34 @@ document.addEventListener('DOMContentLoaded', () => {
             showCopyFeedback(element, element.textContent);
         } catch (err) { alert('کپی کردن با خطا مواجه شد.'); }
     };
-
-    const parseServerDetails = (configUrl) => {
+    
+    const robustParseServerDetails = (configUrl) => {
         try {
+            // Handle SS protocol separately as it doesn't follow standard URL format
+            if (configUrl.startsWith('ss://')) {
+                const atIndex = configUrl.lastIndexOf('@');
+                if (atIndex === -1) return null;
+                const hostPart = configUrl.substring(atIndex + 1, configUrl.includes('#') ? configUrl.lastIndexOf('#') : undefined);
+                const colonIndex = hostPart.lastIndexOf(':');
+                if (colonIndex === -1) return null;
+                const host = hostPart.substring(0, colonIndex);
+                const port = parseInt(hostPart.substring(colonIndex + 1));
+                return { host, port };
+            }
+            // Standard URL parsing for others
             const url = new URL(configUrl);
             if (url.protocol === 'vmess:') {
                 const b64 = url.hostname + '='.repeat((-url.hostname.length) % 4);
                 const decoded = JSON.parse(atob(b64));
-                return { host: decoded.add, port: decoded.port };
+                return { host: decoded.add, port: parseInt(decoded.port) };
             }
-            return { host: url.hostname, port: url.port };
-        } catch { return null; }
+            return { host: url.hostname, port: parseInt(url.port) };
+        } catch (e) {
+            console.error(`Parsing failed for: ${configUrl}`, e);
+            return null;
+        }
     };
+
 
     const extractNameFromUrl = (url) => {
         try {
@@ -259,18 +257,19 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < configsToTest.length; i += BATCH_SIZE) {
             const batch = configsToTest.slice(i, i + BATCH_SIZE);
             const promises = batch.map(config => {
-                const details = parseServerDetails(config.config_str);
+                const details = robustParseServerDetails(config.config_str);
                 if (!details) {
-                    return Promise.resolve({ configId: config.id, ping: 9999, error: 'Invalid URL' });
+                    return Promise.resolve({ configId: config.id, ping: 9999, error: 'Parse Error' });
                 }
+                
                 return fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ host: details.host, port: details.port })
                 })
-                .then(res => res.ok ? res.json() : Promise.reject(new Error(`API Error`)))
-                .then(data => ({ configId: config.id, ping: data.ping }))
-                .catch(() => ({ configId: config.id, ping: 9999, error: 'Error' }));
+                .then(res => res.ok ? res.json() : res.json().then(err => Promise.reject(err)))
+                .then(data => ({ configId: config.id, ping: data.ping, error: data.error }))
+                .catch(() => ({ configId: config.id, ping: 9999, error: 'Network Error' }));
             });
 
             const results = await Promise.all(promises);
@@ -283,16 +282,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = document.querySelector(`.config-card[data-config-id="${configId}"]`);
                 if (card) {
                     const pingEl = card.querySelector('.ping-result');
-                    const pingText = error ? 'Error' : (ping >= 9999 ? 'Timeout' : `${ping}ms`);
+                    const pingText = error ? (error === 'Timeout' ? 'Timeout' : 'Error') : `${ping}ms`;
                     pingEl.textContent = pingText;
                     pingEl.className = 'ping-result';
                     if (error || ping >= 9999) pingEl.classList.add('timeout');
                     else if (ping < 400) pingEl.classList.add('fast');
                     else pingEl.classList.add('slow');
                 }
-                testedCount++;
             });
-            
+
+            testedCount += batch.length;
             const progress = Math.round((testedCount / configsToTest.length) * 100);
             btnElement.textContent = `... در حال تست ${progress}%`;
         }
@@ -375,11 +374,12 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = `
             <button class="speed-test-btn" id="test-${coreName}">🚀 تست سرعت کانفیگ‌های ${coreTitle}</button>
             <div class="links-container">
-                <h3>لینک‌های اشتراک و فایل‌ها</h3>
+                <h3>لینک‌های اشتراک و فایل‌ها (بعد از تست)</h3>
                 <div class="link-group">
                     <h4>لینک اشتراک (Subscription)</h4>
                     <div class="link-buttons">
                         <button class="link-btn copy-sub-btn">کپی لینک Base64</button>
+                        <button class="link-btn qr-sub-btn">QR کد لینک</button>
                     </div>
                 </div>
                 <div class="link-group">
@@ -393,23 +393,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.querySelector(`#test-${coreName}`).onclick = (e) => startClientSideBatchTest(coreName, e.target);
         
-        const subBtn = container.querySelector('.copy-sub-btn');
-        subBtn.onclick = (e) => {
+        container.querySelector('.copy-sub-btn').onclick = (e) => {
             if (!testCompleted[coreName]) { alert('لطفاً ابتدا تست سرعت را انجام دهید.'); return; }
             const subContent = generateSubscriptionContent(allConfigs[coreName]);
+            if (!subContent) { alert('هیچ کانفیگ سالمی برای تولید لینک وجود ندارد.'); return; }
             copyToClipboard(subContent, e.target);
         };
         
-        const clashBtn = container.querySelector('.download-clash-btn');
-        clashBtn.onclick = () => {
+        container.querySelector('.qr-sub-btn').onclick = (e) => {
+            if (!testCompleted[coreName]) { alert('لطفاً ابتدا تست سرعت را انجام دهید.'); return; }
+            const subContent = generateSubscriptionContent(allConfigs[coreName]);
+            if (!subContent) { alert('هیچ کانفیگ سالمی برای تولید لینک وجود ندارد.'); return; }
+            // QR codes for subscriptions are tricky. This creates a link to a service that can serve the content.
+            // A better approach would be to host the subscription file. For now, this is a placeholder.
+            alert('ساخت QR کد برای لینک اشتراک نیازمند میزبانی فایل است. این قابلیت در آینده اضافه خواهد شد.');
+        };
+        
+        container.querySelector('.download-clash-btn').onclick = () => {
             if (!testCompleted[coreName]) { alert('لطفاً ابتدا تست سرعت را انجام دهید.'); return; }
             const yamlContent = generateClashYaml(allConfigs[coreName]);
             if (!yamlContent) { alert('هیچ کانفیگ سالمی برای تولید فایل وجود ندارد.'); return; }
-            const blob = new Blob([yamlContent], { type: 'text/yaml' });
+            const blob = new Blob([yamlContent], { type: 'text/yaml;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `v2v_${coreName}_clash_meta.yaml`;
+            a.download = `v2v_${coreName}_clash.yaml`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -420,24 +428,30 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const initializeApp = async () => {
-        let rawJsonData = null;
-        for (const url of CONFIG_SOURCES) {
+        let rawJsonData;
+        try {
+            const response = await fetch(CONFIG_SOURCES[0], { cache: "no-store" });
+            if (!response.ok) throw new Error('Primary source failed');
+            rawJsonData = await response.json();
+        } catch (error) {
             try {
-                const response = await fetch(url, { cache: "no-store" });
-                if (response.ok) { rawJsonData = await response.json(); break; }
-            } catch (error) { console.warn(`Failed to load from ${url}: ${error.message}`); }
+                const response = await fetch(CONFIG_SOURCES[1], { cache: "no-store" });
+                if (!response.ok) throw new Error('Backup source failed');
+                rawJsonData = await response.json();
+            } catch (backupError) {
+                infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند. لطفاً بعداً دوباره امتحان کنید.';
+                return;
+            }
         }
 
         if (!rawJsonData || (!rawJsonData.xray && !rawJsonData.singbox)) {
-            infoContainer.textContent = '⚠️ تمام منابع در دسترس نیستند یا فایل کانفیگ خالی است. لطفاً بعداً دوباره امتحان کنید.';
-            infoContainer.style.color = 'var(--error-color)';
-            return;
+            infoContainer.textContent = '⚠️ فایل کانفیگ‌ها خالی است یا ساختار درستی ندارد.'; return;
         }
         
         let idCounter = 0;
-        allConfigs.xray = rawJsonData.xray.map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'xray', ping: null}));
-        allConfigs.singbox = rawJsonData.singbox.map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'singbox', ping: null}));
-
+        allConfigs.xray = (rawJsonData.xray || []).map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'xray', ping: null}));
+        allConfigs.singbox = (rawJsonData.singbox || []).map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'singbox', ping: null}));
+        
         const totalCount = allConfigs.xray.length + allConfigs.singbox.length;
         infoContainer.textContent = `مجموع ${totalCount} کانفیگ (Xray: ${allConfigs.xray.length}, Sing-box: ${allConfigs.singbox.length}) بارگذاری شد.`;
 
