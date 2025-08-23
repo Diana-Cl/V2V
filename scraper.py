@@ -6,8 +6,9 @@ import re
 import time
 import yaml
 import random
+import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from urllib.parse import urlparse, unquote, parse_qs
+from urllib.parse import urlparse, unquote
 
 # === CONFIGURATION ===
 BASE_SOURCES = [
@@ -20,12 +21,11 @@ OUTPUT_JSON_FILE = 'all_live_configs.json'
 OUTPUT_CLASH_FILE = 'best_clash.yaml'
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'wg://')
 GITHUB_PAT = os.environ.get('GH_PAT')
-HEADERS = {'User-Agent': 'V2V-Scraper/Final-Resilient'}
+HEADERS = {'User-Agent': 'V2V-Scraper/Final-Direct'}
 TARGET_CONFIGS_PER_CORE = 500
-MAX_PING_THRESHOLD = 1500  # Increased for more tolerance
-REQUEST_TIMEOUT = 8        # Increased for more tolerance
-API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy'
-MAX_RAW_CONFIGS_TO_TEST = 2000
+MAX_PING_THRESHOLD = 2000
+TCP_TIMEOUT = 4
+MAX_RAW_CONFIGS_TO_TEST = 2500
 TOP_CLASH_CONFIGS_COUNT = 100
 
 def get_content_from_url(url: str) -> str | None:
@@ -57,14 +57,23 @@ def parse_server_details(config_url: str) -> dict | None:
     except Exception:
         return None
 
-def test_config_via_vercel_api(config_url: str) -> dict:
+def test_config_direct_tcp(config_url: str) -> dict:
     server_details = parse_server_details(config_url)
-    if not server_details: return {'ping': 9999}
+    if not server_details:
+        return {'config_str': config_url, 'ping': 9999}
+    
+    host = server_details['host']
+    port = server_details['port']
+    
     try:
-        # Using the increased REQUEST_TIMEOUT here
-        response = requests.post(API_ENDPOINT, json=server_details, headers={'Content-Type': 'application/json'}, timeout=REQUEST_TIMEOUT)
-        return {'config_str': config_url, 'ping': response.json().get('ping', 9999)}
-    except Exception:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(TCP_TIMEOUT)
+            start_time = time.time()
+            s.connect((host, port))
+            end_time = time.time()
+            ping = round((end_time - start_time) * 1000)
+            return {'config_str': config_url, 'ping': ping}
+    except (socket.timeout, socket.error):
         return {'config_str': config_url, 'ping': 9999}
 
 def validate_and_categorize_config(config_url: str) -> dict | None:
@@ -83,7 +92,8 @@ def generate_clash_config_from_urls(configs: list) -> str:
     for config_str in configs:
         try:
             url = urlparse(config_str)
-            if 'reality' in url.query.lower(): continue
+            if 'reality' in url.query.lower():
+                continue
             name = unquote(url.fragment) if url.fragment else url.hostname
             proxy = {'name': name, 'server': url.hostname, 'port': int(url.port)}
             if url.scheme == 'vmess':
@@ -101,8 +111,8 @@ def generate_clash_config_from_urls(configs: list) -> str:
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False, indent=2)
 
 def main():
-    print("V2V Scraper Final Version (Resilient)")
-    with ThreadPoolExecutor(max_workers=20) as executor:
+    print("V2V Scraper Final Version (Direct TCP Test)")
+    with ThreadPoolExecutor(max_workers=30) as executor:
         config_sets = executor.map(fetch_and_parse_url, BASE_SOURCES)
     all_configs_raw = set.union(*config_sets)
     print(f"Found {len(all_configs_raw)} raw configs.")
@@ -119,11 +129,11 @@ def main():
         configs_to_test = random.sample(configs, min(len(configs), MAX_RAW_CONFIGS_TO_TEST))
         print(f"Testing {len(configs_to_test)} {core_name} configs...")
         
-        with ThreadPoolExecutor(max_workers=30) as executor:
-            tested_configs = list(executor.map(test_config_via_vercel_api, configs_to_test))
+        with ThreadPoolExecutor(max_workers=100) as executor:
+            tested_configs = list(executor.map(test_config_direct_tcp, configs_to_test))
 
-        live_configs = [c for c in tested_configs if c['ping'] < MAX_PING_THRESHOLD]
-        live_configs.sort(key=lambda x: x['ping'])
+        live_configs = [c for c in tested_configs if c.get('ping', 9999) < MAX_PING_THRESHOLD]
+        live_configs.sort(key=lambda x: x.get('ping', 9999))
         final_configs[core_name] = live_configs[:TARGET_CONFIGS_PER_CORE]
         print(f"Found {len(final_configs[core_name])} live {core_name} configs.")
 
