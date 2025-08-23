@@ -5,14 +5,11 @@ import json
 import socket
 import time
 import re
-import subprocess
-import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, unquote, parse_qs
 
-# === CONFIGURATION (Updated & Simplified) ===
+# === CONFIGURATION ===
 SUBSCRIPTION_SOURCES = [
-    # لیست منابع شما بدون تغییر باقی می‌ماند
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt",
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt",
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub7.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub8.txt", "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt",
@@ -22,22 +19,19 @@ SUBSCRIPTION_SOURCES = [
     "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/sub/port_8443.txt", "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/detailed/vless/2087.txt", "https://raw.githubusercontent.com/lagzian/SS-Collector/refs/heads/main/mix.txt",
     "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final.txt"
 ]
-# خروجی جدید: یک فایل JSON برای استفاده وب‌سایت
 OUTPUT_JSON_FILE = 'all_live_configs.json'
-
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
 GITHUB_PAT = os.environ.get('GH_PAT')
-HEADERS = {'User-Agent': 'V2V-Scraper/QC-v2.0'}
+HEADERS = {'User-Agent': 'V2V-Scraper/Final-v3.0'}
 if GITHUB_PAT: HEADERS['Authorization'] = f'token {GITHUB_PAT}'
 
-# === HELPER & PARSING FUNCTIONS (Unchanged) ===
+# === HELPER & PARSING FUNCTIONS ===
 def get_content_from_url(url: str) -> str | None:
     try:
         response = requests.get(url, timeout=15, headers=HEADERS)
         response.raise_for_status()
         return response.text
-    except requests.RequestException as e:
-        print(f"Failed to fetch {url}: {e}")
+    except requests.RequestException:
         return None
 
 def decode_content(content: str) -> list[str]:
@@ -65,102 +59,50 @@ def parse_config(config_url: str) -> dict | None:
         parsed_url = urlparse(config_url)
         protocol = parsed_url.scheme.lower()
         core = 'xray'
-        if protocol == 'vless':
+        if protocol in ['hysteria2', 'hy2', 'tuic']:
+            core = 'singbox'
+        elif protocol == 'vless':
             query_params = parse_qs(parsed_url.query)
-            params = {k: v[0] for k, v in query_params.items()}
-            if params.get('security') == 'reality':
+            if query_params.get('security', [''])[0] == 'reality':
                 core = 'singbox'
-            return {'protocol': 'vless', 'core': core, 'params': params, 'server': parsed_url.hostname, 'port': parsed_url.port, 'uuid': parsed_url.username}
-        elif protocol in ['hysteria2', 'hy2', 'tuic']:
-            return {'protocol': protocol, 'core': 'singbox'} # Simplified parsing for now
-        # Other parsers can remain for xray core
-        elif protocol == 'vmess':
-            decoded_part = base64.b64decode(parsed_url.netloc).decode('utf-8')
+
+        server, port = None, None
+        if protocol == 'vmess':
+            # Handle potential padding errors in base64
+            netloc = parsed_url.netloc
+            padded_netloc = netloc + '=' * (-len(netloc) % 4)
+            decoded_part = base64.b64decode(padded_netloc).decode('utf-8')
             data = json.loads(decoded_part)
-            return {'protocol': 'vmess', 'core': 'xray', 'params': data}
-        elif protocol == 'trojan':
-            return {'protocol': 'trojan', 'core': 'xray'}
+            server, port = data.get('add'), int(data.get('port', 0))
         elif protocol == 'ss':
-            return {'protocol': 'ss', 'core': 'xray'}
-        return None
-    except Exception:
-        return None
-
-# === VALIDATION LAYER FUNCTIONS (Kept as the main health check) ===
-def is_syntactically_valid(parsed_config: dict) -> bool:
-    if not parsed_config: return False
-    params = parsed_config.get('params', {})
-    if parsed_config.get('protocol') == 'vless' and params.get('security') == 'reality':
-        pbk = params.get('pbk')
-        if not pbk or not re.match(r'^[A-Za-z0-9-_]{43}$', pbk):
-            return False
-    return True
-
-def generate_xray_test_config(parsed_config: dict) -> dict | None:
-    # This function now only needs to handle protocols testable by xray-core
-    if parsed_config.get('protocol') != 'vless': return None
-    
-    params = parsed_config['params']
-    outbound = {
-        "protocol": "vless",
-        "settings": {
-            "vnext": [{
-                "address": parsed_config['server'],
-                "port": parsed_config['port'],
-                "users": [{"id": parsed_config['uuid'], "flow": params.get('flow', 'xtls-rprx-vision')}]
-            }]
-        },
-        "streamSettings": {
-            "network": params.get('type', 'tcp'),
-            "security": params.get('security', 'none')
-        },
-        "tag": "proxy"
-    }
-    
-    if outbound['streamSettings']['security'] == 'reality':
-        outbound['streamSettings']['realitySettings'] = {
-            "serverName": params.get('sni'), "publicKey": params.get('pbk'),
-            "shortId": params.get('sid', ''), "fingerprint": params.get('fp', 'chrome')
-        }
-    elif outbound['streamSettings']['security'] == 'tls':
-        outbound['streamSettings']['tlsSettings'] = { "serverName": params.get('sni') }
-
-    return {
-        "log": {"loglevel": "none"},
-        "inbounds": [{"protocol": "socks", "port": 10808, "listen": "127.0.0.1"}],
-        "outbounds": [outbound, {"protocol": "blackhole", "tag": "block"}]
-    }
-
-def is_connectable(parsed_config: dict) -> bool:
-    # Only test configs that have a test generator and are xray compatible
-    if not parsed_config or parsed_config.get('core') != 'xray':
-        return False # We only use xray to test xray-compatible configs
-
-    test_config_json = generate_xray_test_config(parsed_config)
-    if not test_config_json: return False
-    
-    tmp_path = ''
-    try:
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as tmp:
-            json.dump(test_config_json, tmp)
-            tmp_path = tmp.name
+            userinfo, _, server_part = parsed_url.netloc.rpartition('@')
+            server, port_str = server_part.split(':')
+            port = int(port_str)
+        else: # Covers vless, trojan, hysteria2, tuic
+            server, port = parsed_url.hostname, parsed_url.port
         
-        result = subprocess.run(
-            ['xray', 'test', '-config', tmp_path],
-            capture_output=True, text=True, timeout=10
-        )
-        return "Configuration OK" in result.stderr
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
+        if server and port:
+            return {'core': core, 'server': server, 'port': port, 'config_str': config_url}
+        return None
     except Exception:
-        return False
-    finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+        return None
 
-# === MAIN EXECUTION (Updated Flow) ===
+# === VALIDATION FUNCTION (TCP HEALTH CHECK) ===
+def is_connectable(parsed_config: dict, timeout: int = 2) -> tuple[bool, dict]:
+    """Performs a simple and fast TCP ping to check if the server port is open."""
+    if not parsed_config:
+        return False, None
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(timeout)
+            s.connect((parsed_config['server'], parsed_config['port']))
+        return True, parsed_config
+    except Exception:
+        return False, None
+
+# === MAIN EXECUTION (FINALIZED FLOW) ===
 def main():
-    print("🚀 V2V Scraper - Stage 1: Backend Pre-filtering")
+    print("🚀 V2V Scraper - Final Backend Stage")
     
     # 1. Fetch
     print(f"🚚 Fetching configs from {len(SUBSCRIPTION_SOURCES)} sources...")
@@ -172,38 +114,33 @@ def main():
 
     # 2. Parse
     parsed_configs = []
-    for config_str in all_configs_raw:
-        parsed = parse_config(config_str)
-        if parsed:
-            parsed['config_str'] = config_str
-            parsed_configs.append(parsed)
-    print(f"Parsed {len(parsed_configs)} configs.")
-
-    # 3. Validation Layer
-    print("📡 Performing validation (Syntax + Connection Test)...")
+    with ThreadPoolExecutor(max_workers=50) as executor:
+        for result in executor.map(parse_config, all_configs_raw):
+            if result:
+                parsed_configs.append(result)
+    print(f"Successfully parsed {len(parsed_configs)} configs.")
+    
+    # 3. Validation (Health Check for all configs)
+    print(f"📡 Performing connectivity test on all {len(parsed_configs)} candidates...")
     validated_configs = {'xray': [], 'singbox': []}
     
-    # Separate configs for testing
-    xray_test_candidates = [p for p in parsed_configs if p.get('core') == 'xray' and is_syntactically_valid(p)]
-    # For now, we assume singbox-only configs are valid if parsed, as we don't have a sing-box tester
-    singbox_validated = [p['config_str'] for p in parsed_configs if p.get('core') == 'singbox' and is_syntactically_valid(p)]
-    validated_configs['singbox'].extend(singbox_validated)
-
-    with ThreadPoolExecutor(max_workers=20) as executor:
-        future_to_config = {executor.submit(is_connectable, p): p for p in xray_test_candidates}
+    with ThreadPoolExecutor(max_workers=200) as executor:
+        future_to_config = {executor.submit(is_connectable, p): p for p in parsed_configs}
         for future in as_completed(future_to_config):
-            if future.result():
-                validated_configs['xray'].append(future_to_config[future]['config_str'])
+            is_live, config_data = future.result()
+            if is_live and config_data:
+                core = config_data.get('core')
+                if core in validated_configs:
+                    validated_configs[core].append(config_data['config_str'])
 
-    print(f"✅ Validation Complete. Found {len(validated_configs['xray'])} connectable Xray configs and {len(validated_configs['singbox'])} valid Sing-box configs.")
+    print(f"✅ Validation Complete. Found {len(validated_configs['xray'])} connectable Xray and {len(validated_configs['singbox'])} connectable Sing-box configs.")
 
-    # 4. Generate Final JSON for Frontend
+    # 4. Generate Final JSON for Frontend (No limits)
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(validated_configs, f, ensure_ascii=False)
         
     print(f"\n💾 Output for frontend saved to {OUTPUT_JSON_FILE}")
-    print("🎉 Stage 1 (Backend) completed successfully!")
+    print("🎉 Backend process completed successfully!")
 
 if __name__ == "__main__":
     main()
-
