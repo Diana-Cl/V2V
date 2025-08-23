@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # اضافه کردن fetch-depth برای رفع خطای non-fast-forward
+          # این خط برای رفع خطای non-fast-forward لازم است
           fetch-depth: 0
 
       - name: Set up Python
