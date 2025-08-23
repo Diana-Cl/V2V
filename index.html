@@ -93,10 +93,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
         let allConfigs = { xray: [], singbox: [] };
+        // CRITICAL FIX: Re-ordered data sources to prioritize stable mirrors.
         const DATA_SOURCES = [
-            'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json',
-            'https://smbcryp.github.io/V2V/all_live_configs.json',
-            'https://v2-v.vercel.app/all_live_configs.json'
+            'https://smbcryp.github.io/V2V/all_live_configs.json',      // GitHub First (Most Reliable)
+            'https://v2-v.vercel.app/all_live_configs.json',             // Vercel Second
+            'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json' // ArvanCloud Last
         ];
         
         async function fetchDataWithFallback() {
@@ -104,8 +105,9 @@
                 try {
                     const response = await fetch(url, { cache: "no-store" });
                     if (!response.ok) throw new Error(`Status: ${response.status}`);
+                    console.log(`Successfully fetched from: ${url}`);
                     return await response.json();
-                } catch (error) { console.error(`Failed: ${url}`, error); }
+                } catch (error) { console.error(`Failed to fetch from ${url}:`, error); }
             }
             throw new Error('All data sources failed.');
         }
@@ -126,11 +128,8 @@
         function renderCore(core) {
             const container = document.getElementById(`${core}-content-wrapper`);
             const configs = allConfigs[core] || [];
+            container.innerHTML = ''; // Clear previous content
             
-            // Clear previous content
-            container.innerHTML = '';
-            
-            // Create and append header controls
             const headerControls = document.createElement('div');
             if (core === 'xray') {
                 headerControls.innerHTML = `
@@ -149,7 +148,7 @@
                              <button class="action-button" onclick="generateClashConfig('xray', 'download')">دانلود فایل شخصی</button>
                         </div>
                     </div>`;
-            } else {
+            } else { // singbox
                 headerControls.innerHTML = `
                     <button class="test-button" onclick="runSpeedTest('singbox')">🚀 تست سرعت</button>
                     <div class="action-group">
@@ -169,7 +168,7 @@
                 container.appendChild(noConfigAlert);
                 return;
             }
-            
+
             const groupedByProtocol = configs.reduce((acc, config) => {
                 try {
                     const protocol = new URL(config.config_str).protocol.slice(0, -1);
@@ -181,10 +180,8 @@
 
             for (const protocol in groupedByProtocol) {
                 const protocolGroupId = `${protocol}-${core}`;
-                
                 const protocolGroup = document.createElement('div');
                 protocolGroup.className = 'protocol-group';
-                
                 const protocolHeader = document.createElement('div');
                 protocolHeader.className = 'protocol-header';
                 protocolHeader.onclick = () => toggleGroup(protocolGroupId);
@@ -198,7 +195,6 @@
                 const configList = document.createElement('ul');
                 configList.className = 'config-list';
                 configList.id = protocolGroupId;
-
                 groupedByProtocol[protocol].forEach(config => {
                     const serverName = config.config_str.includes('#') ? decodeURIComponent(config.config_str.split('#')[1]) : new URL(config.config_str).hostname;
                     const li = document.createElement('li');
@@ -216,7 +212,6 @@
                         </div>`;
                     configList.appendChild(li);
                 });
-                
                 protocolGroup.appendChild(protocolHeader);
                 protocolGroup.appendChild(configList);
                 container.appendChild(protocolGroup);
@@ -225,9 +220,7 @@
         
         function toggleGroup(groupId) {
             const list = document.getElementById(groupId);
-            if (list) {
-                list.parentNode.classList.toggle('open');
-            }
+            if (list) list.parentNode.classList.toggle('open');
         }
         
         async function runSpeedTest(core) {
@@ -280,7 +273,7 @@
             if (mustBeChecked && checkedItems.length > 0) {
                 return Array.from(checkedItems).map(cb => cb.closest('.config-item').dataset.config);
             }
-            // Fallback for subscription link if nothing is checked
+            if (mustBeChecked) return [];
             const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
             allItems.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
             return allItems.map(item => item.dataset.config);
@@ -296,7 +289,7 @@
         }
 
         function generateClashConfig(core, action) {
-            const configs = getSelectedConfigs(core, true); // Must have checked items
+            const configs = getSelectedConfigs(core, true);
             if (configs.length === 0) return alert('برای ساخت فایل شخصی، حداقل یک کانفیگ را انتخاب کنید.');
             
             const proxies = configs.map(configStr => {
@@ -305,12 +298,11 @@
                     if (url.search.includes('reality')) return null;
                     const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname;
                     let proxy = { name, server: url.hostname, port: parseInt(url.port) };
-
                     if (url.protocol === 'vmess:') {
                         const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
                         proxy = {...proxy, type: 'vmess', uuid: decoded.id, alterId: decoded.aid, cipher: 'auto', tls: decoded.tls === 'tls', server: decoded.add, port: parseInt(decoded.port), network: decoded.net || 'tcp' };
                     } else if (url.protocol === 'vless:' || url.protocol === 'trojan:') {
-                        proxy = {...proxy, type: url.protocol.slice(0,-1), uuid: url.username, password: url.username, tls: url.search.includes('tls=true')};
+                        proxy = {...proxy, type: url.protocol.slice(0,-1), uuid: url.username, password: url.username, tls: new URLSearchParams(url.search).get('security') === 'tls'};
                     } else if (url.protocol === 'ss:') {
                          const cred = atob(url.username).split(':');
                          proxy = {...proxy, type: 'ss', cipher: cred[0], password: cred[1]};
@@ -335,9 +327,7 @@
         function toggleSelectAll(event, select, core, protocol) {
             event.stopPropagation();
             const list = document.getElementById(`${protocol}-${core}`);
-            if(list) {
-                list.querySelectorAll('.config-checkbox').forEach(cb => cb.checked = select);
-            }
+            if(list) list.querySelectorAll('.config-checkbox').forEach(cb => cb.checked = select);
         }
 
         function copyClashSubscriptionUrl() { copyToClipboard(DATA_SOURCES[0].replace('all_live_configs.json', 'best_clash.yaml'), 'URL اشتراک کلش کپی شد!'); }
