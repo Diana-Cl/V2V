@@ -1,5 +1,5 @@
-# === main.yml ===
-Name: Scheduled Scrape
+# === main.yml (نسخه نهایی و کامل) ===
+name: Scheduled Scrape
 
 on:
   schedule:
@@ -16,7 +16,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # fetch-depth: 0 برای pull کردن کل تاریخچه
           fetch-depth: 0
 
       - name: Set up Python
@@ -27,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests awscli
 
       - name: Git pull before commit
         run: |
@@ -35,7 +34,7 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull --rebase origin main
 
-      - name: Run enhanced scraper script
+      - name: Run scraper script
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
@@ -46,12 +45,11 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         run: |
-          pip install awscli
           aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
 
       - name: Commit and Push the final JSON to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "📊 Update all_live_configs.json (Scheduled Enhanced)"
+          commit_message: "📊 Update all_live_configs.json (Scheduled)"
           file_pattern: "all_live_configs.json"
           branch: main
