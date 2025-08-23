@@ -1,5 +1,5 @@
-# === scraper.py ===
-Import requests
+# === scraper.py (Final Merged Version) ===
+import requests
 import base64
 import os
 import json
@@ -12,27 +12,13 @@ from urllib.parse import urlparse, parse_qs
 # === CONFIGURATION ===
 # منابع ثابت (22 منبع مطمئن)
 BASE_SUBSCRIPTION_SOURCES = [
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub7.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub8.txt",
-    "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt",
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/SSTime",
-    "https://raw.githubusercontent.com/itsyebekhe/PSG/main/lite/subscriptions/xray/normal/mix",
-    "https://raw.githubusercontent.com/arshiacomplus/v2rayExtractor/refs/heads/main/mix/sub.html",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub1.txt",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub2.txt",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub3.txt",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub4.txt",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub5.txt",
-    "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt",
-    "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/sub/port_8443.txt",
-    "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/detailed/vless/2087.txt",
-    "https://raw.githubusercontent.com/lagzian/SS-Collector/refs/heads/main/mix.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt",
+    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub7.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub8.txt", "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt",
+    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/SSTime", "https://raw.githubusercontent.com/itsyebekhe/PSG/main/lite/subscriptions/xray/normal/mix", "https://raw.githubusercontent.com/arshiacomplus/v2rayExtractor/refs/heads/main/mix/sub.html",
+    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub1.txt", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub2.txt", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub3.txt",
+    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub4.txt", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub5.txt", "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt",
+    "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/sub/port_8443.txt", "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/detailed/vless/2087.txt", "https://raw.githubusercontent.com/lagzian/SS-Collector/refs/heads/main/mix.txt",
     "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final.txt"
 ]
 
@@ -175,7 +161,7 @@ def get_content_from_url(url: str) -> str | None:
     """دانلود محتوا از URL با مدیریت خطای بهبود یافته"""
     try:
         response = requests.get(url, timeout=15, headers=HEADERS)
-        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()
         return response.text
     except requests.exceptions.HTTPError as errh:
         print(f"❌ HTTP Error: {errh}")
@@ -190,11 +176,9 @@ def get_content_from_url(url: str) -> str | None:
 def decode_content(content: str) -> list[str]:
     """رمزگشایی محتوای base64 یا برگردان خطوط مستقیم"""
     try:
-        # تلاش برای decode base64
         decoded = base64.b64decode(content).decode('utf-8').strip()
         return decoded.splitlines()
     except Exception:
-        # اگر base64 نبود، خطوط مستقیم برگردان
         return content.strip().splitlines()
 
 def fetch_and_parse_url(url: str) -> set[str]:
@@ -211,7 +195,7 @@ def fetch_and_parse_url(url: str) -> set[str]:
         if line.startswith(VALID_PREFIXES):
             configs.add(line)
     
-    pattern = r'(' + '|'.join([p.replace('://', r'://[^\s\'"<>]+') for p in VALID_PREFIXES]) + ')'
+    pattern = r'(' + '|'.join([p.replace('://', r'://[^\s\'"<]+') for p in VALID_PREFIXES]) + ')'
     found_configs = re.findall(pattern, content)
     for config in found_configs:
         configs.add(config.strip())
@@ -397,7 +381,6 @@ def main():
     
     if len(all_configs_raw) == 0:
         print("❌ هیچ کانفیگی یافت نشد!")
-        # Create an empty but valid JSON file to prevent errors
         with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
              json.dump({"xray": [], "singbox": []}, f, ensure_ascii=False, indent=2)
         return
