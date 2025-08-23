@@ -1,4 +1,5 @@
-import requests
+# === scraper.py ===
+Import requests
 import base64
 import os
 import json
@@ -9,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs
 
 # === CONFIGURATION ===
-# منابع ثابت (18 منبع مطمئن)
+# منابع ثابت (22 منبع مطمئن)
 BASE_SUBSCRIPTION_SOURCES = [
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt",
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt",
@@ -37,7 +38,7 @@ BASE_SUBSCRIPTION_SOURCES = [
 
 # تنظیمات کلی
 OUTPUT_JSON_FILE = 'all_live_configs.json'
-VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
+VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://', 'wg://') # اضافه شدن ss و wg
 GITHUB_PAT = os.environ.get('GH_PAT')
 HEADERS = {'User-Agent': 'V2V-Scraper/Complete-v3.0'}
 if GITHUB_PAT:
@@ -46,7 +47,7 @@ if GITHUB_PAT:
 # تنظیمات تست سرعت
 TARGET_CONFIGS_PER_CORE = 500  # 500 برای هر core
 MAX_PING_THRESHOLD = 1000      # حداکثر 1000ms
-API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy'  # API ورسل شما
+API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy'
 BATCH_SIZE = 15                # تعداد تست همزمان
 MAX_WORKERS = 25               # تعداد thread
 REQUEST_TIMEOUT = 8            # timeout برای هر درخواست API
@@ -87,10 +88,9 @@ def search_github_repositories(query: str, max_results: int = 10) -> list:
         repos = []
         
         for item in data.get('items', []):
-            # فیلتر repository های مناسب
-            if (item.get('size', 0) < 50000 and  # نه خیلی بزرگ
-                not item.get('fork', False) and   # اصلی باشه نه fork
-                item.get('updated_at')):          # اخیراً بروز شده
+            if (item.get('size', 0) < 50000 and
+                not item.get('fork', False) and
+                item.get('updated_at')):
                 
                 repos.append({
                     'owner': item['owner']['login'],
@@ -109,7 +109,6 @@ def get_repository_files(owner: str, repo: str) -> list:
         return []
     
     try:
-        # جستجو در root و زیرپوشه‌های معمول
         paths_to_check = ['', 'sub', 'subs', 'subscription', 'config', 'configs']
         file_urls = []
         
@@ -127,7 +126,6 @@ def get_repository_files(owner: str, repo: str) -> list:
                             item.get('name', '').lower().endswith(('.txt', '.yaml', '.yml', '.sub'))):
                             file_urls.append(item['download_url'])
                         
-                        # محدود کردن تعداد فایل‌ها از هر repo
                         if len(file_urls) >= 5:
                             break
             except:
@@ -136,7 +134,7 @@ def get_repository_files(owner: str, repo: str) -> list:
             if len(file_urls) >= 5:
                 break
         
-        return file_urls[:5]  # حداکثر 5 فایل از هر repo
+        return file_urls[:5]
     except Exception:
         return []
 
@@ -150,39 +148,44 @@ def discover_dynamic_sources() -> list:
         return []
     
     try:
-        for query in GITHUB_SEARCH_QUERIES[:3]:  # محدود کردن جستجو
+        for query in GITHUB_SEARCH_QUERIES[:3]:
             repos = search_github_repositories(query, max_results=5)
             
             for repo in repos:
                 file_urls = get_repository_files(repo['owner'], repo['name'])
                 dynamic_sources.extend(file_urls)
                 
-                # محدود کردن کل منابع پویا
                 if len(dynamic_sources) >= GITHUB_SEARCH_LIMIT:
                     break
             
             if len(dynamic_sources) >= GITHUB_SEARCH_LIMIT:
                 break
             
-            time.sleep(1)  # Rate limiting
+            time.sleep(1)
     
     except Exception as e:
         print(f"⚠️ خطا در کشف منابع پویا: {e}")
     
-    # حذف تکراری
     unique_sources = list(set(dynamic_sources))
     print(f"✅ {len(unique_sources)} منبع پویا کشف شد")
     return unique_sources
 
 # === HELPER FUNCTIONS ===
 def get_content_from_url(url: str) -> str | None:
-    """دانلود محتوا از URL"""
+    """دانلود محتوا از URL با مدیریت خطای بهبود یافته"""
     try:
         response = requests.get(url, timeout=15, headers=HEADERS)
-        response.raise_for_status()
+        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
         return response.text
-    except Exception:
-        return None
+    except requests.exceptions.HTTPError as errh:
+        print(f"❌ HTTP Error: {errh}")
+    except requests.exceptions.ConnectionError as errc:
+        print(f"❌ Connection Error: {errc}")
+    except requests.exceptions.Timeout as errt:
+        print(f"❌ Timeout Error: {errt}")
+    except requests.exceptions.RequestException as err:
+        print(f"❌ Other Request Error: {err}")
+    return None
 
 def decode_content(content: str) -> list[str]:
     """رمزگشایی محتوای base64 یا برگردان خطوط مستقیم"""
@@ -203,13 +206,11 @@ def fetch_and_parse_url(url: str) -> set[str]:
     configs = set()
     lines = decode_content(content)
     
-    # استخراج از خطوط مستقیم
     for line in lines:
         line = line.strip()
         if line.startswith(VALID_PREFIXES):
             configs.add(line)
     
-    # استخراج از HTML با regex
     pattern = r'(' + '|'.join([p.replace('://', r'://[^\s\'"<>]+') for p in VALID_PREFIXES]) + ')'
     found_configs = re.findall(pattern, content)
     for config in found_configs:
@@ -218,22 +219,22 @@ def fetch_and_parse_url(url: str) -> set[str]:
     return configs
 
 def parse_server_details(config_url: str) -> dict | None:
-    """استخراج host و port از کانفیگ برای تست ping"""
+    """استخراج host و port از کانفیگ برای تست ping (پشتیبانی از پروتکل‌های جدید)"""
     try:
+        parsed_url = urlparse(config_url)
+        protocol = parsed_url.scheme.lower()
+        
         # Handle SS protocol
-        if config_url.startswith('ss://'):
+        if protocol == 'ss':
             at_index = config_url.rfind('@')
             if at_index == -1:
                 return None
-            
             host_part = config_url[at_index + 1:]
             if '#' in host_part:
                 host_part = host_part[:host_part.rfind('#')]
-            
             colon_index = host_part.rfind(':')
             if colon_index == -1:
                 return None
-            
             host = host_part[:colon_index]
             try:
                 port = int(host_part[colon_index + 1:])
@@ -242,41 +243,35 @@ def parse_server_details(config_url: str) -> dict | None:
                 return None
         
         # Handle VMESS protocol
-        if config_url.startswith('vmess://'):
+        if protocol == 'vmess':
             try:
                 parsed = urlparse(config_url)
                 b64_data = parsed.hostname
-                
-                # Add padding if needed
                 missing_padding = len(b64_data) % 4
                 if missing_padding:
                     b64_data += '=' * (4 - missing_padding)
-                
                 decoded = json.loads(base64.b64decode(b64_data).decode('utf-8'))
                 host = decoded.get('add')
                 port = int(decoded.get('port', 0))
-                
                 if host and port:
                     return {'host': host, 'port': port}
                 return None
             except Exception:
                 return None
         
-        # Handle other protocols (vless, trojan, etc.)
-        parsed = urlparse(config_url)
-        if not parsed.hostname:
+        # Handle other protocols (vless, trojan, wg, etc.)
+        if not parsed_url.hostname:
             return None
         
-        port = parsed.port
+        port = parsed_url.port
         if not port:
-            # Default ports based on protocol
             default_ports = {
                 'vless': 443, 'trojan': 443, 'hysteria2': 443,
-                'hy2': 443, 'tuic': 443
+                'hy2': 443, 'tuic': 443, 'wg': 443
             }
-            port = default_ports.get(parsed.scheme, 443)
+            port = default_ports.get(protocol, 443)
         
-        return {'host': parsed.hostname, 'port': port}
+        return {'host': parsed_url.hostname, 'port': port}
     
     except Exception:
         return None
@@ -293,7 +288,6 @@ def test_config_via_vercel_api(config_url: str) -> dict:
         }
     
     try:
-        # ارسال درخواست به API ورسل
         response = requests.post(
             API_ENDPOINT,
             json={
@@ -339,22 +333,19 @@ def validate_and_categorize_config(config_url: str) -> dict | None:
         parsed_url = urlparse(config_url)
         protocol = parsed_url.scheme.lower()
         
-        # Basic validation
-        if not parsed_url.hostname and protocol != 'vmess':
+        if not parsed_url.hostname and protocol not in ['vmess', 'ss', 'wg']:
             return None
         
-        # Determine core type
         core = 'xray'
-        if protocol in ['hysteria2', 'hy2', 'tuic']:
+        if protocol in ['hysteria2', 'hy2', 'tuic', 'wg']:
             core = 'singbox'
         elif protocol == 'vless':
             query_params = parse_qs(parsed_url.query)
             if query_params.get('security', [''])[0] == 'reality':
                 core = 'singbox'
-                # Validate REALITY public key
                 pbk = query_params.get('pbk', [None])[0]
                 if not pbk or not re.match(r'^[A-Za-z0-9-_]{43}$', pbk):
-                    return None  # Invalid REALITY config
+                    return None
         
         return {
             'core': core,
@@ -368,7 +359,6 @@ def process_configs_batch(configs_batch: list) -> list:
     results = []
     
     with ThreadPoolExecutor(max_workers=BATCH_SIZE) as executor:
-        # ارسال همزمان درخواست‌ها
         future_to_config = {
             executor.submit(test_config_via_vercel_api, cfg): cfg 
             for cfg in configs_batch
@@ -377,7 +367,6 @@ def process_configs_batch(configs_batch: list) -> list:
         for future in as_completed(future_to_config):
             try:
                 result = future.result()
-                # فقط کانفیگ‌های زیر threshold را نگه دار
                 if result['ping'] <= MAX_PING_THRESHOLD:
                     results.append(result)
             except Exception as e:
@@ -385,20 +374,17 @@ def process_configs_batch(configs_batch: list) -> list:
     
     return results
 
-# === MAIN EXECUTION ===
 def main():
     print("🚀 V2V Enhanced Scraper - منابع ثابت + GitHub Search + تست ورسل")
     print(f"🎯 هدف: {TARGET_CONFIGS_PER_CORE} کانفیگ برای هر core")
     print(f"⚡ حداکثر ping: {MAX_PING_THRESHOLD}ms")
     
-    # 1. ترکیب منابع ثابت + پویا
     all_sources = BASE_SUBSCRIPTION_SOURCES.copy()
     dynamic_sources = discover_dynamic_sources()
     all_sources.extend(dynamic_sources)
     
     print(f"📡 مجموع منابع: {len(BASE_SUBSCRIPTION_SOURCES)} ثابت + {len(dynamic_sources)} پویا = {len(all_sources)}")
     
-    # 2. دانلود و استخراج کانفیگ‌ها
     print("🚚 دانلود و استخراج کانفیگ‌ها...")
     all_configs_raw = set()
     
@@ -411,9 +397,11 @@ def main():
     
     if len(all_configs_raw) == 0:
         print("❌ هیچ کانفیگی یافت نشد!")
+        # Create an empty but valid JSON file to prevent errors
+        with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
+             json.dump({"xray": [], "singbox": []}, f, ensure_ascii=False, indent=2)
         return
     
-    # 3. اعتبارسنجی syntax و دسته‌بندی
     print("🔬 اعتبارسنجی syntax و دسته‌بندی...")
     categorized_configs = {'xray': [], 'singbox': []}
     
@@ -432,7 +420,6 @@ def main():
     
     print(f"✅ کانفیگ‌های معتبر: Xray={len(categorized_configs['xray'])}, Singbox={len(categorized_configs['singbox'])}")
     
-    # 4. تست سرعت و انتخاب بهترین‌ها
     final_configs = {'xray': [], 'singbox': []}
     
     for core_name, configs in categorized_configs.items():
@@ -443,7 +430,6 @@ def main():
         print(f"\n🏃 تست سرعت {len(configs)} کانفیگ {core_name.upper()}...")
         tested_configs = []
         
-        # تست در batch های کوچک
         total_batches = (len(configs) + BATCH_SIZE - 1) // BATCH_SIZE
         
         for i in range(0, len(configs), BATCH_SIZE):
@@ -455,19 +441,15 @@ def main():
             batch_results = process_configs_batch(batch)
             tested_configs.extend(batch_results)
             
-            # نمایش پیشرفت
             fast_count = len([c for c in tested_configs if c['ping'] <= MAX_PING_THRESHOLD])
             print(f"   ⚡ تعداد کانفیگ سریع تا کنون: {fast_count}")
             
-            # اگر بیش از حد نیاز یافت شد، توقف زودهنگام
             if len(tested_configs) >= TARGET_CONFIGS_PER_CORE * 3:
                 print(f"   🎯 تعداد کافی کانفیگ سریع یافت شد، توقف زودهنگام")
                 break
             
-            # استراحت کوتاه برای جلوگیری از overload
             time.sleep(0.3)
         
-        # مرتب‌سازی بر اساس ping و انتخاب بهترین‌ها
         tested_configs.sort(key=lambda x: x['ping'])
         best_configs = tested_configs[:TARGET_CONFIGS_PER_CORE]
         
@@ -482,7 +464,6 @@ def main():
         print(f"🎯 {core_name.upper()}: {len(final_configs[core_name])} کانفیگ نهایی انتخاب شد")
         
         if final_configs[core_name]:
-            # محاسبه آمار
             pings = [c['ping'] for c in final_configs[core_name]]
             avg_ping = sum(pings) / len(pings)
             min_ping = min(pings)
@@ -490,14 +471,12 @@ def main():
             
             print(f"📊 آمار ping: حداقل={min_ping}ms, حداکثر={max_ping}ms, میانگین={avg_ping:.1f}ms")
     
-    # 5. ذخیره نتایج نهایی
     total_configs = len(final_configs['xray']) + len(final_configs['singbox'])
     print(f"\n💾 ذخیره {total_configs} کانفیگ نهایی در {OUTPUT_JSON_FILE}...")
     
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(final_configs, f, ensure_ascii=False, indent=2)
     
-    # 6. گزارش نهایی
     print("\n🎉 فرآیند تکمیل شد!")
     print("📈 خلاصه نتایج:")
     print(f"   🔸 Xray: {len(final_configs['xray'])} کانفیگ")
