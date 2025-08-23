@@ -1,21 +1,23 @@
-name: Auto-update V2V Configs
+# === main.yml ===
+Name: Scheduled Scrape
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *' # هر ۳ ساعت یک بار اجرا می‌شود
+    - cron: '0 */4 * * *' # هر ۴ ساعت یک بار اجرا می‌شود
 
 jobs:
   build-and-commit:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    timeout-minutes: 120  # افزایش timeout به 2 ساعت
+    timeout-minutes: 120
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # fetch-depth: 0 برای pull کردن کل تاریخچه
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -27,12 +29,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
+      - name: Git pull before commit
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+
       - name: Run enhanced scraper script
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-        timeout-minutes: 100  # timeout مخصوص scraper
-
+        timeout-minutes: 100
+          
       - name: Upload final JSON to ArvanCloud Object Storage
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
@@ -44,6 +52,6 @@ jobs:
       - name: Commit and Push the final JSON to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "🚀 Update configs: GitHub Search + Speed Test"
+          commit_message: "📊 Update all_live_configs.json (Scheduled Enhanced)"
           file_pattern: "all_live_configs.json"
           branch: main
