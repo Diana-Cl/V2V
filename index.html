@@ -7,6 +7,7 @@
     <meta name="description" content="پروژه‌ای برای تجمیع و ارائه کانفیگ‌های V2Ray با تست سرعت و دسته‌بندی هوشمند.">
     <meta property="og:title" content="V2V | دسترسی آزاد و پایدار" />
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <style>
         :root {
             --bg-color: #000000; --card-color: #1e1e1e; --text-color: #e0e0e0;
@@ -107,17 +108,110 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // State
     let allConfigs = { xray: [], singbox: [] };
+    let testCompleted = { xray: false, singbox: false };
 
-    // --- NEW: Configuration for the test engine ---
-    const API_ENDPOINT = '/api/proxy'; // Relative path to our Vercel function
-    const BATCH_SIZE = 10; // Number of configs to test in parallel
-
+    // --- Configuration ---
+    const API_ENDPOINT = '/api/proxy';
+    const BATCH_SIZE = 20; // Increased batch size for faster testing
     const CONFIG_SOURCES = [
         `https://cdn.jsdelivr.net/gh/SMBCRYP/V2V@main/all_live_configs.json?v=${Date.now()}`,
         `https://raw.githubusercontent.com/SMBCRYP/V2V/main/all_live_configs.json?v=${Date.now()}`
     ];
+    const TOP_N_CONFIGS = 500;
 
-    // Helper Functions
+    // --- Dynamic Generation Functions ---
+    const generateSubscriptionContent = (configs) => {
+        const topConfigs = configs.filter(c => c.ping < 9999).slice(0, TOP_N_CONFIGS);
+        const plainText = topConfigs.map(c => c.config_str).join('\n');
+        return btoa(plainText);
+    };
+
+    const generateClashYaml = (configs) => {
+        const fastestConfigs = configs.filter(c => c.ping < 9999).slice(0, TOP_N_CONFIGS);
+        if (fastestConfigs.length === 0) return null;
+
+        const proxies = [];
+        const proxyNames = [];
+
+        fastestConfigs.forEach((cfg, index) => {
+            try {
+                const parsed = new URL(cfg.config_str);
+                const name = decodeURIComponent(parsed.hash.substring(1)) || `V2V-${cfg.core}-${index}`;
+                
+                if (proxyNames.includes(name)) return; // Avoid duplicate names
+                proxyNames.push(name);
+                
+                let proxy_obj = {
+                    name: name,
+                    type: parsed.protocol.replace(':', ''),
+                    server: parsed.hostname,
+                    port: parseInt(parsed.port),
+                    udp: true
+                };
+
+                const params = new URLSearchParams(parsed.search);
+                if (proxy_obj.type === 'vless') {
+                    proxy_obj.uuid = parsed.username;
+                    proxy_obj.network = params.get('type') || 'ws';
+                    proxy_obj.tls = params.get('security') === 'tls' || params.get('security') === 'reality';
+                    proxy_obj.servername = params.get('sni') || parsed.hostname;
+                    if (proxy_obj.network === 'ws') {
+                        proxy_obj['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || proxy_obj.servername } };
+                    }
+                    if (params.get('security') === 'reality') {
+                        proxy_obj['client-fingerprint'] = params.get('fp') || 'chrome';
+                        proxy_obj['reality-opts'] = { 'public-key': params.get('pbk'), 'short-id': params.get('sid') || '' };
+                    }
+                } else if (proxy_obj.type === 'vmess') {
+                    const decoded = JSON.parse(atob(parsed.hostname));
+                    proxy_obj.uuid = decoded.id;
+                    proxy_obj.alterId = decoded.aid || 0;
+                    proxy_obj.cipher = decoded.scy || 'auto';
+                    proxy_obj.tls = decoded.tls === 'tls';
+                    proxy_obj.network = decoded.net || 'ws';
+                    if (proxy_obj.network === 'ws') {
+                        proxy_obj['ws-opts'] = { path: decoded.path || '/', headers: { Host: decoded.host || proxy_obj.server }};
+                    }
+                } else if (proxy_obj.type === 'trojan') {
+                    proxy_obj.password = parsed.username;
+                    proxy_obj.sni = params.get('sni') || parsed.hostname;
+                }
+                proxies.push(proxy_obj);
+            } catch (e) { /* Ignore invalid configs */ }
+        });
+
+        const clashConfig = {
+            'port': 7890,
+            'socks-port': 7891,
+            'allow-lan': true,
+            'mode': 'rule',
+            'log-level': 'info',
+            'external-controller': '0.0.0.0:9090',
+            'proxies': proxies,
+            'proxy-groups': [
+                {
+                    'name': `V2V-Auto 🚀`,
+                    'type': 'url-test',
+                    'proxies': proxyNames,
+                    'url': 'http://www.gstatic.com/generate_204',
+                    'interval': 300
+                },
+                {
+                    'name': 'V2V-Select 選択',
+                    'type': 'select',
+                    'proxies': [`V2V-Auto 🚀`, ...proxyNames]
+                }
+            ],
+            'rules': [
+                'DOMAIN-SUFFIX,ir,DIRECT',
+                'GEOIP,IR,DIRECT',
+                'MATCH,V2V-Select 選択'
+            ]
+        };
+        return jsyaml.dump(clashConfig);
+    };
+
+    // --- Helper Functions ---
     const showCopyFeedback = (element, originalText) => {
         element.textContent = "✅ کپی شد";
         setTimeout(() => { element.textContent = originalText; }, 2000);
@@ -140,7 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const url = new URL(configUrl);
             if (url.protocol === 'vmess:') {
-                const decoded = JSON.parse(atob(url.hostname));
+                const b64 = url.hostname + '='.repeat((-url.hostname.length) % 4);
+                const decoded = JSON.parse(atob(b64));
                 return { host: decoded.add, port: decoded.port };
             }
             return { host: url.hostname, port: url.port };
@@ -153,12 +248,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { return url.substring(0, 30) + '...'; }
     };
     
-    // --- NEW: Real-time Test Engine ---
     const startClientSideBatchTest = async (coreName, btnElement) => {
         const configsToTest = allConfigs[coreName];
         if (!configsToTest || configsToTest.length === 0) return;
 
         btnElement.disabled = true;
+        testCompleted[coreName] = false;
         let testedCount = 0;
 
         for (let i = 0; i < configsToTest.length; i += BATCH_SIZE) {
@@ -173,29 +268,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ host: details.host, port: details.port })
                 })
-                .then(res => res.ok ? res.json() : Promise.reject(new Error(`API Error: ${res.statusText}`)))
+                .then(res => res.ok ? res.json() : Promise.reject(new Error(`API Error`)))
                 .then(data => ({ configId: config.id, ping: data.ping }))
-                .catch(err => ({ configId: config.id, ping: 9999, error: err.message }));
+                .catch(() => ({ configId: config.id, ping: 9999, error: 'Error' }));
             });
 
-            const results = await Promise.allSettled(promises);
+            const results = await Promise.all(promises);
             
             results.forEach(result => {
-                if (result.status === 'fulfilled' && result.value) {
-                    const { configId, ping, error } = result.value;
-                    const configIndex = configsToTest.findIndex(c => c.id === configId);
-                    if (configIndex > -1) configsToTest[configIndex].ping = ping;
-                    
-                    const card = document.querySelector(`.config-card[data-config-id="${configId}"]`);
-                    if (card) {
-                        const pingEl = card.querySelector('.ping-result');
-                        const pingText = error ? 'Error' : (ping >= 9999 ? 'Timeout' : `${ping}ms`);
-                        pingEl.textContent = pingText;
-                        pingEl.className = 'ping-result'; // Reset classes
-                        if (error || ping >= 9999) pingEl.classList.add('timeout');
-                        else if (ping < 400) pingEl.classList.add('fast');
-                        else pingEl.classList.add('slow');
-                    }
+                const { configId, ping, error } = result;
+                const configIndex = configsToTest.findIndex(c => c.id === configId);
+                if (configIndex > -1) configsToTest[configIndex].ping = ping;
+                
+                const card = document.querySelector(`.config-card[data-config-id="${configId}"]`);
+                if (card) {
+                    const pingEl = card.querySelector('.ping-result');
+                    const pingText = error ? 'Error' : (ping >= 9999 ? 'Timeout' : `${ping}ms`);
+                    pingEl.textContent = pingText;
+                    pingEl.className = 'ping-result';
+                    if (error || ping >= 9999) pingEl.classList.add('timeout');
+                    else if (ping < 400) pingEl.classList.add('fast');
+                    else pingEl.classList.add('slow');
                 }
                 testedCount++;
             });
@@ -204,13 +297,13 @@ document.addEventListener('DOMContentLoaded', () => {
             btnElement.textContent = `... در حال تست ${progress}%`;
         }
         
-        // Final sort and re-render
         configsToTest.sort((a, b) => (a.ping || 9999) - (b.ping || 9999));
         const containerId = coreName === 'xray' ? '#content-xray' : '#content-singbox';
         renderProtocolAccordions(configsToTest, document.querySelector(`${containerId} .protocol-container`));
 
         btnElement.textContent = `🚀 تست سرعت مجدد`;
         btnElement.disabled = false;
+        testCompleted[coreName] = true;
         infoContainer.textContent = `تست کامل شد. کانفیگ‌ها بر اساس سرعت واقعی شما مرتب شدند.`;
     };
 
@@ -218,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const createConfigCard = (cfg) => {
         const card = document.createElement('div');
         card.className = 'config-card';
-        card.dataset.configId = cfg.id; // Unique ID for real-time updates
+        card.dataset.configId = cfg.id;
 
         card.innerHTML = `
             <div class="ping-result">...</div>
@@ -237,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = '';
         const getProtocol = (cfg) => {
              const proto = cfg.config_str.split('://')[0].toLowerCase();
-             if (proto === 'vless' && cfg.core === 'singbox') return 'reality';
+             if (proto === 'vless' && cfg.config_str.includes('reality')) return 'reality';
              return proto;
         }
 
@@ -286,8 +379,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="link-group">
                     <h4>لینک اشتراک (Subscription)</h4>
                     <div class="link-buttons">
-                        <button class="link-btn copy-sub-btn">کپی لینک</button>
-                        <button class="link-btn qr-sub-btn">QR کد</button>
+                        <button class="link-btn copy-sub-btn">کپی لینک Base64</button>
+                    </div>
+                </div>
+                <div class="link-group">
+                    <h4>فایل کلش (Clash Meta)</h4>
+                    <div class="link-buttons">
+                         <button class="link-btn download-clash-btn">دانلود فایل YAML</button>
                     </div>
                 </div>
             </div>
@@ -295,18 +393,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.querySelector(`#test-${coreName}`).onclick = (e) => startClientSideBatchTest(coreName, e.target);
         
-        container.querySelector('.copy-sub-btn').onclick = (e) => {
-            const subText = allConfigs[coreName].map(c => c.config_str).join('\n');
-            const encodedSub = btoa(subText);
-            // This is a placeholder for a real subscription link. You'd typically host this.
-            // For now, we copy the base64 content.
-            copyToClipboard(encodedSub, e.target);
-            alert('لینک اشتراک (محتوای Base64) کپی شد. می‌توانید آن را در یک فایل ذخیره و استفاده کنید.');
+        const subBtn = container.querySelector('.copy-sub-btn');
+        subBtn.onclick = (e) => {
+            if (!testCompleted[coreName]) { alert('لطفاً ابتدا تست سرعت را انجام دهید.'); return; }
+            const subContent = generateSubscriptionContent(allConfigs[coreName]);
+            copyToClipboard(subContent, e.target);
         };
-        container.querySelector('.qr-sub-btn').onclick = (e) => {
-             const subText = allConfigs[coreName].map(c => c.config_str).join('\n');
-             const encodedSub = btoa(subText);
-             openQrModal(encodedSub, `اشتراک ${coreTitle}`);
+        
+        const clashBtn = container.querySelector('.download-clash-btn');
+        clashBtn.onclick = () => {
+            if (!testCompleted[coreName]) { alert('لطفاً ابتدا تست سرعت را انجام دهید.'); return; }
+            const yamlContent = generateClashYaml(allConfigs[coreName]);
+            if (!yamlContent) { alert('هیچ کانفیگ سالمی برای تولید فایل وجود ندارد.'); return; }
+            const blob = new Blob([yamlContent], { type: 'text/yaml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `v2v_${coreName}_clash_meta.yaml`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         };
 
         renderProtocolAccordions(configs, container.querySelector('.protocol-container'));
@@ -328,15 +435,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         let idCounter = 0;
-        const processConfigs = (arr) => arr.map(cfgStr => ({
-            id: idCounter++,
-            config_str: cfgStr,
-            name: extractNameFromUrl(cfgStr),
-            core: cfgStr.includes('reality') ? 'singbox' : 'xray' // Simplified logic for demo
-        }));
-
-        allConfigs.xray = rawJsonData.xray.map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'xray'}));
-        allConfigs.singbox = rawJsonData.singbox.map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'singbox'}));
+        allConfigs.xray = rawJsonData.xray.map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'xray', ping: null}));
+        allConfigs.singbox = rawJsonData.singbox.map(cfg => ({id: idCounter++, config_str: cfg, name: extractNameFromUrl(cfg), core: 'singbox', ping: null}));
 
         const totalCount = allConfigs.xray.length + allConfigs.singbox.length;
         infoContainer.textContent = `مجموع ${totalCount} کانفیگ (Xray: ${allConfigs.xray.length}, Sing-box: ${allConfigs.singbox.length}) بارگذاری شد.`;
