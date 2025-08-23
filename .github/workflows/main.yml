@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
+    timeout-minutes: 120  # افزایش timeout به 2 ساعت
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,16 +25,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # requirements.txt should only contain 'requests' now
-          # pip install -r requirements.txt 
-          pip install requests # Or install directly
+          pip install requests
 
-      # --- مرحله نصب Xray حذف شد (دیگر نیازی نیست) ---
-
-      - name: Run final scraper script
+      - name: Run enhanced scraper script
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+        timeout-minutes: 100  # timeout مخصوص scraper
 
       - name: Upload final JSON to ArvanCloud Object Storage
         env:
@@ -41,13 +39,11 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         run: |
           pip install awscli
-          # فقط فایل خروجی نهایی آپلود می‌شود
           aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
 
       - name: Commit and Push the final JSON to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "📊 Update all_live_configs.json"
-          # فقط فایل خروجی نهایی Commit می‌شود
+          commit_message: "🚀 Update configs: GitHub Search + Speed Test"
           file_pattern: "all_live_configs.json"
           branch: main
