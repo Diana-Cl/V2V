@@ -351,6 +351,7 @@
                 protocolGroup.innerHTML = `
                     <div class="protocol-header" onclick="toggleGroup('${protocol}-${core}')">
                         <span class="protocol-title">${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span>
+                        <button class="copy-all-btn" onclick="copyAllConfigsByProtocol(event, '${protocol}', '${core}')">کپی همه</button>
                         <span>&#9660;</span>
                     </div>
                     <ul class="config-list" id="${protocol}-${core}"></ul>
@@ -454,7 +455,7 @@
                     `MATCH,V2V-${core}`
                 ]
             };
-            return JSON.stringify(clashConfig, null, 2); // Return as JSON string for now
+            return JSON.stringify(clashConfig, null, 2);
         }
 
         function copyClash(core) {
@@ -514,6 +515,22 @@
         function closeModal() {
             const modal = document.getElementById('qr-code-modal');
             modal.style.display = 'none';
+        }
+
+        function copyAllConfigsByProtocol(event, protocol, core) {
+            event.stopPropagation();
+            const configs = allConfigs[core].filter(c => new URL(c.config_str).protocol.slice(0, -1) === protocol);
+            if (configs.length === 0) {
+                alert('هیچ کانفیگی برای کپی کردن وجود ندارد.');
+                return;
+            }
+            const fullText = configs.map(c => c.config_str).join('\n');
+            navigator.clipboard.writeText(fullText).then(() => {
+                alert(`تمام کانفیگ‌های ${protocol.toUpperCase()} با موفقیت کپی شد!`);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                alert('خطا در کپی کردن.');
+            });
         }
     </script>
 </body>
