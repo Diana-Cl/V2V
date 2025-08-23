@@ -57,7 +57,7 @@
             gap: 10px;
             margin-bottom: 20px;
         }
-        .action-button, .test-button, .copy-all-btn {
+        .action-button, .test-button {
             background-color: #b30000;
             color: white;
             border: none;
@@ -67,11 +67,29 @@
             font-weight: bold;
             transition: background-color 0.3s;
         }
-        .action-button:hover, .test-button:hover, .copy-all-btn:hover {
+        .action-button:hover, .test-button:hover {
             background-color: #ff4040;
         }
         .core-tab-buttons {
-            display: none;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .core-tab-button {
+            background-color: #333;
+            color: white;
+            border: 2px solid #b30000;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .core-tab-button.active {
+            background-color: #b30000;
+        }
+        .core-tab-button:hover {
+            background-color: #ff4040;
         }
         .protocol-group {
             border: 1px solid #4d4d4d;
@@ -227,38 +245,45 @@
     </div>
 
     <div class="container">
-        <div id="xray-core-group" class="protocol-group">
-            <div class="protocol-header" onclick="toggleGroup('xray-core-group')">
-                <span class="protocol-title">کانفیگ‌های Xray-Core</span>
-                <span>&#9660;</span>
-            </div>
-            <ul class="config-list">
-                <div class="action-bar">
-                    <button class="test-button" onclick="runSpeedTest('xray')">تست سرعت</button>
-                    <button class="action-button" onclick="copySubscription('xray')">کپی ساب‌لینک</button>
-                    <button class="action-button" onclick="showQrCode(getSubscriptionUrl('xray'))">QR ساب‌لینک</button>
-                    <button class="action-button" onclick="copyClash('xray')">کپی Clash Meta</button>
-                    <button class="action-button" onclick="downloadClash('xray')">دانلود Clash Meta</button>
-                </div>
-                <div id="xray-configs"></div>
-            </ul>
+        <div class="core-tab-buttons">
+            <button class="core-tab-button active" onclick="showCore('xray')">Xray</button>
+            <button class="core-tab-button" onclick="showCore('singbox')">Sing-box</button>
         </div>
 
-        <div id="singbox-core-group" class="protocol-group">
-            <div class="protocol-header" onclick="toggleGroup('singbox-core-group')">
-                <span class="protocol-title">کانفیگ‌های Sing-box</span>
-                <span>&#9660;</span>
-            </div>
-            <ul class="config-list">
-                <div class="action-bar">
-                    <button class="test-button" onclick="runSpeedTest('singbox')">تست سرعت</button>
-                    <button class="action-button" onclick="copySubscription('singbox')">کپی ساب‌لینک</button>
-                    <button class="action-button" onclick="showQrCode(getSubscriptionUrl('singbox'))">QR ساب‌لینک</button>
-                    <button class="action-button" onclick="copyClash('singbox')">کپی Clash Meta</button>
-                    <button class="action-button" onclick="downloadClash('singbox')">دانلود Clash Meta</button>
+        <div id="xray-content" class="core-content" style="display: block;">
+            <div class="action-bar">
+                <button class="test-button" onclick="runSpeedTest('xray')">تست سرعت</button>
+                <div class="download-action-group">
+                    <a href="#" id="xray-sub-link">
+                        <button class="copy-btn">کپی ساب</button>
+                        <button class="copy-btn">QR</button>
+                    </a>
+                    <a href="#" id="xray-clash-link" download="clash_xray.yaml">
+                        <button class="copy-btn">کپی Clash</button>
+                        <button class="copy-btn">QR</button>
+                        <button class="copy-btn">دانلود</button>
+                    </a>
                 </div>
-                <div id="singbox-configs"></div>
-            </ul>
+            </div>
+            <div id="xray-configs"></div>
+        </div>
+
+        <div id="singbox-content" class="core-content" style="display: none;">
+            <div class="action-bar">
+                <button class="test-button" onclick="runSpeedTest('singbox')">تست سرعت</button>
+                <div class="download-action-group">
+                    <a href="#" id="singbox-sub-link">
+                        <button class="copy-btn">کپی ساب</button>
+                        <button class="copy-btn">QR</button>
+                    </a>
+                    <a href="#" id="singbox-clash-link" download="clash_singbox.yaml">
+                        <button class="copy-btn">کپی Clash</button>
+                        <button class="copy-btn">QR</button>
+                        <button class="copy-btn">دانلود</button>
+                    </a>
+                </div>
+            </div>
+            <div id="singbox-configs"></div>
         </div>
     </div>
 
@@ -278,6 +303,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script>
         let allConfigs = { xray: [], singbox: [] };
+        const xrayConfigsContainer = document.getElementById('xray-configs');
+        const singboxConfigsContainer = document.getElementById('singbox-configs');
+        let currentCore = 'xray';
         const API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy';
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -293,8 +321,8 @@
                 })
                 .catch(error => {
                     console.error('Error loading JSON:', error);
-                    document.getElementById('xray-configs').innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
-                    document.getElementById('singbox-configs').innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
+                    xrayConfigsContainer.innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
+                    singboxConfigsContainer.innerHTML = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره امتحان کنید.</div>`;
                 });
         });
 
@@ -321,12 +349,11 @@
                 const protocolGroup = document.createElement('div');
                 protocolGroup.className = 'protocol-group';
                 protocolGroup.innerHTML = `
-                    <div class="protocol-header" onclick="toggleGroup(this)">
+                    <div class="protocol-header" onclick="toggleGroup('${protocol}-${core}')">
                         <span class="protocol-title">${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span>
-                        <button class="copy-all-btn" onclick="copyAllConfigsByProtocol(event, '${protocol}', '${core}')">کپی همه</button>
                         <span>&#9660;</span>
                     </div>
-                    <ul class="config-list"></ul>
+                    <ul class="config-list" id="${protocol}-${core}"></ul>
                 `;
                 const list = protocolGroup.querySelector('.config-list');
                 groupedByProtocol[protocol].forEach(config => {
@@ -350,12 +377,21 @@
                 container.appendChild(protocolGroup);
             }
         }
-
+        
         function toggleGroup(groupId) {
-            const group = document.getElementById(groupId);
+            const group = document.getElementById(groupId).parentNode;
             group.classList.toggle('open');
             const arrow = group.querySelector('.protocol-header span:last-child');
             arrow.innerHTML = group.classList.contains('open') ? '&#9650;' : '&#9660;';
+        }
+
+        function showCore(core) {
+            currentCore = core;
+            document.querySelectorAll('.core-tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.core-tab-button[onclick="showCore('${core}')"]`).classList.add('active');
+            document.querySelectorAll('.core-content').forEach(content => content.style.display = 'none');
+            document.getElementById(`${core}-content`).style.display = 'block';
+            renderConfigs(core);
         }
 
         function runSpeedTest(core) {
@@ -404,7 +440,7 @@
                     proxy['skip-cert-verify'] = true;
                     proxy['servername'] = params.get('sni') || serverName;
                 }
-                // Add other protocols like VMess, Trojan, etc. here
+                // Add other protocols here for full functionality
                 return proxy;
             });
             
@@ -418,7 +454,7 @@
                     `MATCH,V2V-${core}`
                 ]
             };
-            return `yaml`;
+            return JSON.stringify(clashConfig, null, 2); // Return as JSON string for now
         }
 
         function copyClash(core) {
@@ -465,6 +501,7 @@
         function showQrCode(text) {
             const modal = document.getElementById('qr-code-modal');
             const canvas = document.getElementById('qr-code-canvas');
+            
             new QRious({
                 element: canvas,
                 value: text,
@@ -477,22 +514,6 @@
         function closeModal() {
             const modal = document.getElementById('qr-code-modal');
             modal.style.display = 'none';
-        }
-
-        function copyAllConfigsByProtocol(event, protocol, core) {
-            event.stopPropagation(); // Prevent the toggleGroup function from running
-            const configs = allConfigs[core].filter(c => new URL(c.config_str).protocol.slice(0, -1) === protocol);
-            if (configs.length === 0) {
-                alert('هیچ کانفیگی برای کپی کردن وجود ندارد.');
-                return;
-            }
-            const fullText = configs.map(c => c.config_str).join('\n');
-            navigator.clipboard.writeText(fullText).then(() => {
-                alert(`تمام کانفیگ‌های ${protocol.toUpperCase()} با موفقیت کپی شد!`);
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                alert('خطا در کپی کردن.');
-            });
         }
     </script>
 </body>
