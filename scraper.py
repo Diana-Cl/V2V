@@ -2,8 +2,6 @@ import requests
 import base64
 import os
 import json
-import socket
-import time
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, unquote, parse_qs
@@ -22,7 +20,7 @@ SUBSCRIPTION_SOURCES = [
 OUTPUT_JSON_FILE = 'all_live_configs.json'
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
 GITHUB_PAT = os.environ.get('GH_PAT')
-HEADERS = {'User-Agent': 'V2V-Scraper/Final-v3.0'}
+HEADERS = {'User-Agent': 'V2V-Scraper/Syntax-v1.0'}
 if GITHUB_PAT: HEADERS['Authorization'] = f'token {GITHUB_PAT}'
 
 # === HELPER & PARSING FUNCTIONS ===
@@ -54,10 +52,20 @@ def fetch_and_parse_url(url: str) -> set[str]:
         configs.add(config.strip())
     return configs
 
-def parse_config(config_url: str) -> dict | None:
+# === VALIDATION & CATEGORIZATION FUNCTION (SYNTAX-ONLY) ===
+def validate_and_categorize(config_url: str) -> dict | None:
+    """
+    Parses a config URL, checks its basic syntax, and categorizes it.
+    No network connection is made.
+    """
     try:
         parsed_url = urlparse(config_url)
         protocol = parsed_url.scheme.lower()
+        
+        # Basic check: Ensure there's a host part.
+        if not parsed_url.hostname:
+            return None
+
         core = 'xray'
         if protocol in ['hysteria2', 'hy2', 'tuic']:
             core = 'singbox'
@@ -65,44 +73,18 @@ def parse_config(config_url: str) -> dict | None:
             query_params = parse_qs(parsed_url.query)
             if query_params.get('security', [''])[0] == 'reality':
                 core = 'singbox'
-
-        server, port = None, None
-        if protocol == 'vmess':
-            # Handle potential padding errors in base64
-            netloc = parsed_url.netloc
-            padded_netloc = netloc + '=' * (-len(netloc) % 4)
-            decoded_part = base64.b64decode(padded_netloc).decode('utf-8')
-            data = json.loads(decoded_part)
-            server, port = data.get('add'), int(data.get('port', 0))
-        elif protocol == 'ss':
-            userinfo, _, server_part = parsed_url.netloc.rpartition('@')
-            server, port_str = server_part.split(':')
-            port = int(port_str)
-        else: # Covers vless, trojan, hysteria2, tuic
-            server, port = parsed_url.hostname, parsed_url.port
+                # Syntax check for REALITY public key
+                pbk = query_params.get('pbk', [None])[0]
+                if not pbk or not re.match(r'^[A-Za-z0-9-_]{43}$', pbk):
+                    return None # Invalid REALITY config, discard.
         
-        if server and port:
-            return {'core': core, 'server': server, 'port': port, 'config_str': config_url}
-        return None
+        return {'core': core, 'config_str': config_url}
     except Exception:
         return None
-
-# === VALIDATION FUNCTION (TCP HEALTH CHECK) ===
-def is_connectable(parsed_config: dict, timeout: int = 2) -> tuple[bool, dict]:
-    """Performs a simple and fast TCP ping to check if the server port is open."""
-    if not parsed_config:
-        return False, None
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(timeout)
-            s.connect((parsed_config['server'], parsed_config['port']))
-        return True, parsed_config
-    except Exception:
-        return False, None
 
 # === MAIN EXECUTION (FINALIZED FLOW) ===
 def main():
-    print("🚀 V2V Scraper - Final Backend Stage")
+    print("🚀 V2V Scraper - Final Backend Stage (Syntax-Only Validation)")
     
     # 1. Fetch
     print(f"🚚 Fetching configs from {len(SUBSCRIPTION_SOURCES)} sources...")
@@ -112,30 +94,22 @@ def main():
             all_configs_raw.update(results)
     print(f"Found {len(all_configs_raw)} unique raw configs.")
 
-    # 2. Parse
-    parsed_configs = []
-    with ThreadPoolExecutor(max_workers=50) as executor:
-        for result in executor.map(parse_config, all_configs_raw):
-            if result:
-                parsed_configs.append(result)
-    print(f"Successfully parsed {len(parsed_configs)} configs.")
-    
-    # 3. Validation (Health Check for all configs)
-    print(f"📡 Performing connectivity test on all {len(parsed_configs)} candidates...")
+    # 2. Validate and Categorize (No Network Test)
+    print(f"🔬 Validating syntax and categorizing all {len(all_configs_raw)} candidates...")
     validated_configs = {'xray': [], 'singbox': []}
     
-    with ThreadPoolExecutor(max_workers=200) as executor:
-        future_to_config = {executor.submit(is_connectable, p): p for p in parsed_configs}
+    with ThreadPoolExecutor(max_workers=50) as executor:
+        future_to_config = {executor.submit(validate_and_categorize, c): c for c in all_configs_raw}
         for future in as_completed(future_to_config):
-            is_live, config_data = future.result()
-            if is_live and config_data:
-                core = config_data.get('core')
+            result = future.result()
+            if result:
+                core = result.get('core')
                 if core in validated_configs:
-                    validated_configs[core].append(config_data['config_str'])
+                    validated_configs[core].append(result['config_str'])
 
-    print(f"✅ Validation Complete. Found {len(validated_configs['xray'])} connectable Xray and {len(validated_configs['singbox'])} connectable Sing-box configs.")
+    print(f"✅ Validation Complete. Found {len(validated_configs['xray'])} syntactically valid Xray configs and {len(validated_configs['singbox'])} Sing-box configs.")
 
-    # 4. Generate Final JSON for Frontend (No limits)
+    # 3. Generate Final JSON for Frontend
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(validated_configs, f, ensure_ascii=False)
         
