@@ -2,7 +2,7 @@ name: Scheduled Scrape
 
 on:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 */4 * * *' # هر ۴ ساعت یک بار اجرا می‌شود
 
 jobs:
   build-and-commit:
@@ -22,30 +22,27 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install requests # فقط نیازمندی‌های لازم نصب می‌شود
 
-      - name: Run scraper script
+      - name: Run final scraper script
         run: python scraper.py
         env:
+          # فقط Secretهایی که اسکریپت نهایی نیاز دارد باقی مانده‌اند
           GH_PAT: ${{ secrets.GH_PAT }}
-          GITLAB_API_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
-          GITLAB_SNIPPET_ID: ${{ secrets.GITLAB_SNIPPET_ID }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           
-      # بخش جدید: آپلود فایل‌ها در ابر آروان
-      - name: Upload to ArvanCloud Object Storage
+      - name: Upload final JSON to ArvanCloud Object Storage
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         run: |
-          aws s3 cp configs.txt s3://v2v-data/configs.txt --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-          aws s3 cp v2v_clash.yaml s3://v2v-data/v2v_clash.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
+          pip install awscli
+          # فقط فایل خروجی نهایی آپلود می‌شود
+          aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
 
-      - name: Commit and Push new configs to GitHub
+      - name: Commit and Push the final JSON to GitHub
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update config files"
-          file_pattern: "*.txt *.yaml"
+          commit_message: "📊 Update all_live_configs.json (Scheduled)"
+          # فقط فایل خروجی نهایی Commit می‌شود
+          file_pattern: "all_live_configs.json"
           branch: main
-          push_options: --force
