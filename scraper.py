@@ -110,12 +110,11 @@ def main():
 
     # Separate configs into xray and singbox
     for config in final_configs["xray"]:
-        if "vless" in config or "vmess" in config or "trojan" in "config":
+        if "vless" in config or "vmess" in config or "trojan" in config:
             final_configs["singbox"].append(config)
 
     # Generate Clash file from all found xray configs
     print("Generating Clash file from all found xray configs...")
-    # We are no longer taking a random sample, but all configs.
     all_xray_for_clash = final_configs['xray']
     base64_configs = [config_to_base64(config) for config in all_xray_for_clash]
 
@@ -123,7 +122,7 @@ def main():
         clash_config = f.read()
 
     with open(CLASH_CONFIGS_FILE, 'w') as f:
-        f.write(clash_config.replace GITHUB_PLACEHOLDER", '\n'.join([f"  - {config}" for config in base64_configs])))
+        f.write(clash_config.replace("GITHUB_PLACEHOLDER", '\n'.join([f"  - {config}" for config in base64_configs])))
 
     # Generate sing-box file from all found sing-box configs
     print("Generating sing-box file from all found sing-box configs...")
