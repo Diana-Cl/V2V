@@ -1,0 +1,29 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+external-controller: '127.0.0.1:9090'
+dns:
+  enable: true
+  listen: '0.0.0.0:53'
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+proxies:
+  - name: "GITHUB_PLACEHOLDER"
+    type: vless
+    server: "example.com"
+    port: 443
+    uuid: "00000000-0000-0000-0000-000000000000"
+    network: "ws"
+    tls: true
+    servername: "example.com"
+    ws-opts:
+      path: "/"
+proxy-groups:
+  - name: "Proxy"
+    type: select
+    proxies:
+      - "GITHUB_PLACEHOLDER"
+rules:
+  - 'MATCH,Proxy'
