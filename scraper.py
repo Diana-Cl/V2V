@@ -9,8 +9,6 @@ from github import Github, Auth
 # Constants
 # The token is read from an environment variable for security
 GH_PAT = os.environ.get('GH_PAT')
-# The number of configs to be added to the clash file
-TOP_CLASH_CONFIGS_COUNT = 100
 # The file that contains the list of sources for configs
 SOURCES_FILE = "sources.json"
 # The file to which the live configs will be written
@@ -41,7 +39,8 @@ def fetch_configs_from_url(url):
     Fetch configs from the given URL.
     """
     try:
-        response = requests.get(url, timeout=5)
+        # Timeout increased for better reliability
+        response = requests.get(url, timeout=10)
         if response.status_code == 200:
             return response.text.splitlines()
     except requests.exceptions.RequestException as e:
@@ -52,7 +51,6 @@ def search_github_for_configs():
     """
     Search GitHub for configs.
     """
-
     auth = Auth.Token(GH_PAT)
     g = Github(auth=auth)
 
@@ -88,25 +86,25 @@ def main():
     """
     Main function.
     """
-
     # Load sources from the JSON file
     with open(SOURCES_FILE, 'r') as f:
         sources = json.load(f)
 
     # Fetch configs from static sources
-    print("Found {} configs for static sources.".format(len(sources["static"])))
+    # Using f-string for better readability
+    print(f"Found {len(sources['static'])} configs for static sources.")
     for source in sources["static"]:
         final_configs["xray"].extend(fetch_configs_from_url(source))
 
     # Fetch configs from dynamic sources (GitHub)
     print("Searching GitHub for fresh dynamic sources...")
     github_configs = search_github_for_configs()
-    print("Found {} configs from dynamic sources.".format(len(github_configs)))
+    print(f"Found {len(github_configs)} configs from dynamic sources.")
     final_configs["xray"].extend(github_configs)
 
     # Remove duplicates and invalid protocols and empty lines
     final_configs["xray"] = list(set(filter(lambda x: is_valid_protocol(x) and x, final_configs["xray"])))
-    print("Total unique configs after enrichment: {}".format(len(final_configs["xray"])))
+    print(f"Total unique configs after enrichment: {len(final_configs['xray'])}")
 
     # Separate configs into xray and singbox
     for config in final_configs["xray"]:
