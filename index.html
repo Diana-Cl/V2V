@@ -119,7 +119,7 @@
             if (configs.length === 0) {
                 const noConfigAlert = document.createElement('div');
                 noConfigAlert.className = 'alert';
-                noConfigAlert.innerHTML = '❌ هیچ کانفیگ خامی یافت نشد. لطفاً تست سرعت را اجرا کنید.';
+                noConfigAlert.innerHTML = '❌ هیچ کانفیگ خامی یافت نشد. لطفاً منتظر آپدیت بعدی منابع بمانید یا منابع `scraper.py` را به‌روز کنید.';
                 container.appendChild(noConfigAlert);
                 return;
             }
@@ -151,11 +151,11 @@
                     const li = document.createElement('li');
                     li.className = 'config-item';
                     li.dataset.config = config.config_str;
-                    li.style.display = 'none'; // Initially hide all configs
+                    li.style.display = 'none';
                     li.innerHTML = `
                         <div class="config-details">
                             <span class="server">${serverName}</span>
-                            <span class="ping">---</span>
+                            <span class="ping">تست نشده</span>
                         </div>
                         <div class="copy-button-container">
                             <button class="copy-btn" onclick="copyToClipboard('${config.config_str}')">کپی</button>
@@ -185,18 +185,19 @@
                 item.style.opacity = '0.5';
                 const pingEl = item.querySelector('.ping');
                 const ping = await testConfigLatency(item.dataset.config);
-                pingEl.innerHTML = `پینگ: <strong>${ping}ms</strong>`;
                 
                 if (ping !== 'Timeout' && ping !== 'Error') {
                     item.dataset.newPing = ping;
-                    item.style.display = 'flex'; // Show the item
+                    pingEl.innerHTML = `پینگ: <strong>${ping}ms</strong>`;
+                    item.style.display = 'flex';
                     item.style.opacity = '1';
                     pingEl.style.color = 'var(--logo-green)';
                     liveConfigsFound++;
                 } else {
                     item.dataset.newPing = 9999;
-                    item.style.display = 'none'; // Keep it hidden
-                    pingEl.style.color = 'var(--logo-red)';
+                    pingEl.innerHTML = `پینگ: <strong style="color:var(--logo-red);">${ping}</strong>`;
+                    item.style.display = 'flex';
+                    item.style.opacity = '1';
                 }
             });
             
@@ -205,10 +206,14 @@
             sortConfigsByPing(core);
 
             if (liveConfigsFound === 0) {
-                 const noConfigAlert = document.createElement('div');
+                const noConfigAlert = document.createElement('div');
                 noConfigAlert.className = 'alert';
                 noConfigAlert.innerHTML = '❌ هیچ کانفیگ فعالی پس از تست یافت نشد.';
-                document.getElementById(`${core}-content-wrapper`).appendChild(noConfigAlert);
+                const container = document.getElementById(`${core}-content-wrapper`);
+                // Avoid appending multiple alerts
+                if (!container.querySelector('.alert')) {
+                    container.appendChild(noConfigAlert);
+                }
             }
 
             testButton.disabled = false; testButton.textContent = '🚀 تست مجدد';
