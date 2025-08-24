@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: pip install requests PyYAML
 
-      - name: Run scraper script
+      - name: Run collector script
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
@@ -48,6 +48,6 @@ jobs:
           if git diff-index --quiet HEAD; then
             echo "No changes to commit."
           else
-            git commit -m "📊 Update configs and auto-clash file"
+            git commit -m "📊 Update raw configs and auto-clash file"
             git push
           fi
