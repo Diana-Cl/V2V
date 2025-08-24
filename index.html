@@ -38,6 +38,10 @@
             background-color: var(--logo-green); color: white; border: none; padding: 10px 20px;
             border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1em; margin-bottom: 20px;
         }
+        .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .action-group-title { margin: 0 0 15px 0; font-size: 1.1em; text-align: right; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .action-button { background-color: #333; border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em; flex-grow: 1; color: var(--text-color); }
         .protocol-group { border-top: 1px solid var(--border-color); }
         .protocol-header { background-color: transparent; padding: 15px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.3s ease-out; overflow: hidden; }
@@ -119,7 +123,7 @@
             if (configs.length === 0) {
                 const noConfigAlert = document.createElement('div');
                 noConfigAlert.className = 'alert';
-                noConfigAlert.innerHTML = '❌ هیچ کانفیگ خامی یافت نشد. لطفاً منتظر آپدیت بعدی منابع بمانید یا منابع `scraper.py` را به‌روز کنید.';
+                noConfigAlert.innerHTML = '❌ هیچ کانفیگ بالقوه سالمی یافت نشد. منتظر آپدیت بعدی منابع بمانید.';
                 container.appendChild(noConfigAlert);
                 return;
             }
@@ -137,7 +141,6 @@
                 const protocolGroupId = `${protocol}-${core}`;
                 const protocolGroup = document.createElement('div');
                 protocolGroup.className = 'protocol-group';
-                
                 const protocolHeader = document.createElement('div');
                 protocolHeader.className = 'protocol-header';
                 protocolHeader.onclick = () => toggleGroup(protocolGroupId);
@@ -151,11 +154,11 @@
                     const li = document.createElement('li');
                     li.className = 'config-item';
                     li.dataset.config = config.config_str;
-                    li.style.display = 'none';
+                    const initialPing = (config.ping === 'N/A') ? 'تست نشده' : `پینگ اولیه: ${config.ping}ms`;
                     li.innerHTML = `
                         <div class="config-details">
                             <span class="server">${serverName}</span>
-                            <span class="ping">تست نشده</span>
+                            <span class="ping">${initialPing}</span>
                         </div>
                         <div class="copy-button-container">
                             <button class="copy-btn" onclick="copyToClipboard('${config.config_str}')">کپی</button>
@@ -179,43 +182,27 @@
             testButton.disabled = true; testButton.textContent = 'در حال تست...';
             
             const items = document.querySelectorAll(`#${core}-content-wrapper .config-item`);
-            let liveConfigsFound = 0;
-
-            const testPromises = Array.from(items).map(async item => {
-                item.style.opacity = '0.5';
-                const pingEl = item.querySelector('.ping');
-                const ping = await testConfigLatency(item.dataset.config);
-                
-                if (ping !== 'Timeout' && ping !== 'Error') {
-                    item.dataset.newPing = ping;
-                    pingEl.innerHTML = `پینگ: <strong>${ping}ms</strong>`;
-                    item.style.display = 'flex';
-                    item.style.opacity = '1';
-                    pingEl.style.color = 'var(--logo-green)';
-                    liveConfigsFound++;
-                } else {
-                    item.dataset.newPing = 9999;
-                    pingEl.innerHTML = `پینگ: <strong style="color:var(--logo-red);">${ping}</strong>`;
-                    item.style.display = 'flex';
-                    item.style.opacity = '1';
-                }
-            });
             
-            await Promise.all(testPromises);
-            
-            sortConfigsByPing(core);
-
-            if (liveConfigsFound === 0) {
-                const noConfigAlert = document.createElement('div');
-                noConfigAlert.className = 'alert';
-                noConfigAlert.innerHTML = '❌ هیچ کانفیگ فعالی پس از تست یافت نشد.';
-                const container = document.getElementById(`${core}-content-wrapper`);
-                // Avoid appending multiple alerts
-                if (!container.querySelector('.alert')) {
-                    container.appendChild(noConfigAlert);
-                }
+            // Batch processing for frontend test
+            const batchSize = 10;
+            const batches = [];
+            for (let i = 0; i < items.length; i += batchSize) {
+                batches.push(Array.from(items).slice(i, i + batchSize));
             }
 
+            for (const batch of batches) {
+                await Promise.all(batch.map(async item => {
+                    item.style.opacity = '0.5';
+                    const pingEl = item.querySelector('.ping');
+                    const ping = await testConfigLatency(item.dataset.config);
+                    
+                    item.dataset.newPing = (ping !== 'Timeout' && ping !== 'Error') ? ping : 9999;
+                    pingEl.innerHTML = `پینگ: <strong style="color:${(item.dataset.newPing < 9999) ? 'var(--logo-green)' : 'var(--logo-red)'};">${ping}ms</strong>`;
+                    item.style.opacity = '1';
+                }));
+            }
+            
+            sortConfigsByPing(core);
             testButton.disabled = false; testButton.textContent = '🚀 تست مجدد';
         }
 
@@ -232,9 +219,7 @@
                     } else if (parsed_url.hostname) {
                         details = { host: parsed_url.hostname, port: parseInt(parsed_url.port || 443) };
                     }
-
                     if (!details) return resolve('Error');
-                    
                     const response = await fetch('https://v2-v.vercel.app/api/proxy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(details), signal: controller.signal });
                     if (!response.ok) return resolve('Error');
                     const data = await response.json();
