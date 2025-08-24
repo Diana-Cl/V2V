@@ -90,7 +90,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
-        let allConfigs = { xray: [], singbox: [] };
         const VERCEL_API_ENDPOINT = '/api/proxy';
         const DATA_SOURCES = [
             'https://smbcryp.github.io/V2V/all_live_configs.json',
@@ -104,7 +103,7 @@
                     const response = await fetch(url, { cache: "no-store" });
                     if (!response.ok) throw new Error(`Status: ${response.status}`);
                     return await response.json();
-                } catch (error) { console.error(`Failed: ${url}`, error); }
+                } catch (error) { console.error(`Failed to fetch from ${url}:`, error); }
             }
             throw new Error('All data sources failed.');
         }
@@ -112,9 +111,8 @@
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const data = await fetchDataWithFallback();
-                allConfigs = data;
-                renderCore('xray');
-                renderCore('singbox');
+                renderCore('xray', data.xray || []);
+                renderCore('singbox', data.singbox || []);
             } catch (error) {
                 const errorMsg = `<div class="alert">❌ خطا در بارگذاری فایل از تمام منابع.</div>`;
                 document.getElementById('xray-content-wrapper').innerHTML = errorMsg;
@@ -122,12 +120,12 @@
             }
         });
 
-        function renderCore(core) {
+        function renderCore(core, configs) {
             const container = document.getElementById(`${core}-content-wrapper`);
-            const configs = allConfigs[core] || []; // configs is now an array of strings
             container.innerHTML = '';
             
             const headerControls = document.createElement('div');
+            // ... (The rest of the header controls HTML is unchanged)
             if (core === 'xray') {
                 headerControls.innerHTML = `
                     <button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت</button>
@@ -158,22 +156,28 @@
             }
             container.appendChild(headerControls);
 
-            if (configs.length === 0) {
-                container.appendChild(Object.assign(document.createElement('div'), {
+            const protocolRegex = /^(\w+):\/\//;
+            const groupedByProtocol = configs.reduce((acc, configStr) => {
+                const match = configStr.match(protocolRegex);
+                if (match && match[1]) {
+                    const protocol = match[1];
+                    if (!acc[protocol]) acc[protocol] = [];
+                    acc[protocol].push(configStr);
+                }
+                return acc;
+            }, {});
+
+            if (Object.keys(groupedByProtocol).length === 0 && configs.length > 0) {
+                 container.appendChild(Object.assign(document.createElement('div'), {
+                    className: 'alert',
+                    innerHTML: '⚠️ هیچ کانفیگ معتبری برای نمایش یافت نشد.'
+                }));
+            } else if (configs.length === 0) {
+                 container.appendChild(Object.assign(document.createElement('div'), {
                     className: 'alert',
                     innerHTML: '❌ هیچ کانفیگی یافت نشد. منتظر آپدیت بعدی منابع بمانید.'
                 }));
-                return;
             }
-
-            const groupedByProtocol = configs.reduce((acc, configStr) => {
-                try {
-                    const protocol = new URL(configStr).protocol.slice(0, -1);
-                    if (!acc[protocol]) acc[protocol] = [];
-                    acc[protocol].push(configStr);
-                } catch (e) {}
-                return acc;
-            }, {});
 
             for (const protocol in groupedByProtocol) {
                 const protocolGroupId = `${protocol}-${core}`;
@@ -209,7 +213,7 @@
                             </div>`;
                         configList.appendChild(li);
                     } catch(e) {
-                        // Ignore malformed URLs that can't be parsed
+                        console.error("Skipping malformed config:", configStr, e);
                     }
                 });
                 container.appendChild(protocolGroup);
@@ -228,6 +232,7 @@
         
         async function runSpeedTest(core) {
             const testButton = document.querySelector(`#${core}-section .test-button`);
+            if (testButton.disabled) return;
             testButton.disabled = true; testButton.textContent = 'در حال تست...';
             const items = document.querySelectorAll(`#${core}-content-wrapper .config-item`);
             
@@ -249,7 +254,7 @@
         function testConfigLatency(configStr) {
             return new Promise(async resolve => {
                 const controller = new AbortController();
-                setTimeout(() => { controller.abort(); resolve('Timeout'); }, 5000);
+                const timeoutId = setTimeout(() => { controller.abort(); resolve('Timeout'); }, 5000);
                 try {
                     const url = new URL(configStr);
                     let details = null;
@@ -263,15 +268,17 @@
                     const response = await fetch(VERCEL_API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(details), signal: controller.signal });
                     if (!response.ok) return resolve('Error');
                     const data = await response.json();
+                    clearTimeout(timeoutId);
                     resolve(data.ping < 9999 ? `${data.ping}ms` : 'Timeout');
-                } catch (e) { resolve('Error'); }
+                } catch (e) { 
+                    clearTimeout(timeoutId);
+                    resolve('Error'); 
+                }
             });
         }
         
         function sortConfigsByPing(core) {
-            const container = document.getElementById(`${core}-content-wrapper`);
-            const groups = container.querySelectorAll('.protocol-group');
-            groups.forEach(group => {
+            document.querySelectorAll(`#${core}-content-wrapper .protocol-group`).forEach(group => {
                 const list = group.querySelector('.config-list');
                 const items = Array.from(list.children);
                 items.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
@@ -296,7 +303,7 @@
         }
 
         function generateClashConfig(core, action) {
-            const configs = getSelectedConfigs(core);
+             const configs = getSelectedConfigs(core);
             if (configs.length === 0) return alert('برای ساخت فایل شخصی، حداقل یک کانفیگ را با تیک زدن انتخاب کنید.');
             
             const proxies = configs.map(configStr => {
