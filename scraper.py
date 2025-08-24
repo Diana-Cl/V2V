@@ -39,7 +39,6 @@ def fetch_configs_from_url(url):
     Fetch configs from the given URL.
     """
     try:
-        # Timeout increased for better reliability
         response = requests.get(url, timeout=10)
         if response.status_code == 200:
             return response.text.splitlines()
@@ -91,7 +90,6 @@ def main():
         sources = json.load(f)
 
     # Fetch configs from static sources
-    # Using f-string for better readability
     print(f"Found {len(sources['static'])} configs for static sources.")
     for source in sources["static"]:
         final_configs["xray"].extend(fetch_configs_from_url(source))
@@ -128,10 +126,14 @@ def main():
         singbox_config = json.load(f)
 
     # Find the index of the outbound with the tag "Internet"
-    outbound_index = next((i for i, outbound in enumerate(singbox_config["outbounds"]) if outbound["tag"] == "Internet"), None)
+    outbound_index = next((i for i, outbound in enumerate(singbox_config["outbounds"]) if outbound.get("tag") == "Internet"), None)
     if outbound_index is not None:
-        # Extend the servers list with the new configs
-        singbox_config["outbounds"][outbound_index]["servers"].extend(final_configs["singbox"])
+        # ** THE ONLY FIX IS HERE **
+        # Correctly extend the 'outbounds' list of the urltest group, not a non-existent 'servers' key.
+        # Also add a name to each config to make it a valid outbound object.
+        named_singbox_configs = [{"tag": f"config_{i+1}", **json.loads(base64.b64decode(config.split("://")[1]).decode())} for i, config in enumerate(final_configs["singbox"])]
+        singbox_config["outbounds"][outbound_index]["outbounds"].extend([sc["tag"] for sc in named_singbox_configs])
+        singbox_config["outbounds"].extend(named_singbox_configs)
 
     with open(SINGBOX_CONFIGS_FILE, 'w') as f:
         json.dump(singbox_config, f, indent=4)
