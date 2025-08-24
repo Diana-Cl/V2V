@@ -91,7 +91,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
         let allConfigs = { xray: [], singbox: [] };
-        const VERCEL_API_ENDPOINT = '/api/proxy'; //  API آدرس نسبی برای
+        const VERCEL_API_ENDPOINT = '/api/proxy';
         const DATA_SOURCES = [
             'https://smbcryp.github.io/V2V/all_live_configs.json',
             'https://v2-v.vercel.app/all_live_configs.json',
@@ -124,7 +124,7 @@
 
         function renderCore(core) {
             const container = document.getElementById(`${core}-content-wrapper`);
-            const configs = allConfigs[core] || [];
+            const configs = allConfigs[core] || []; // configs is now an array of strings
             container.innerHTML = '';
             
             const headerControls = document.createElement('div');
@@ -159,18 +159,18 @@
             container.appendChild(headerControls);
 
             if (configs.length === 0) {
-                const noConfigAlert = document.createElement('div');
-                noConfigAlert.className = 'alert';
-                noConfigAlert.innerHTML = '❌ هیچ کانفیگ بالقوه سالمی یافت نشد. منتظر آپدیت بعدی منابع بمانید.';
-                container.appendChild(noConfigAlert);
+                container.appendChild(Object.assign(document.createElement('div'), {
+                    className: 'alert',
+                    innerHTML: '❌ هیچ کانفیگی یافت نشد. منتظر آپدیت بعدی منابع بمانید.'
+                }));
                 return;
             }
 
-            const groupedByProtocol = configs.reduce((acc, config) => {
+            const groupedByProtocol = configs.reduce((acc, configStr) => {
                 try {
-                    const protocol = new URL(config.config_str).protocol.slice(0, -1);
+                    const protocol = new URL(configStr).protocol.slice(0, -1);
                     if (!acc[protocol]) acc[protocol] = [];
-                    acc[protocol].push(config);
+                    acc[protocol].push(configStr);
                 } catch (e) {}
                 return acc;
             }, {});
@@ -179,39 +179,35 @@
                 const protocolGroupId = `${protocol}-${core}`;
                 const protocolGroup = document.createElement('div');
                 protocolGroup.className = 'protocol-group';
-                const protocolHeader = document.createElement('div');
-                protocolHeader.className = 'protocol-header';
-                protocolHeader.onclick = () => toggleGroup(protocolGroupId);
-                protocolHeader.innerHTML = `
-                    <span>${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span>
-                    <div class="protocol-controls">
-                        <button class="select-all-btn" onclick="toggleSelectAll(event, true, '${core}', '${protocol}')">انتخاب همه</button>
-                        <button class="select-all-btn" onclick="toggleSelectAll(event, false, '${core}', '${protocol}')">لغو انتخاب</button>
-                    </div>`;
                 
-                const configList = document.createElement('ul');
-                configList.className = 'config-list';
-                configList.id = protocolGroupId;
-                groupedByProtocol[protocol].forEach(config => {
-                    const serverName = config.config_str.includes('#') ? decodeURIComponent(config.config_str.split('#')[1]) : new URL(config.config_str).hostname;
+                protocolGroup.innerHTML = `
+                    <div class="protocol-header" onclick="toggleGroup('${protocolGroupId}')">
+                        <span>${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span>
+                        <div class="protocol-controls">
+                            <button class="select-all-btn" onclick="toggleSelectAll(event, true, '${core}', '${protocol}')">انتخاب همه</button>
+                            <button class="select-all-btn" onclick="toggleSelectAll(event, false, '${core}', '${protocol}')">لغو انتخاب</button>
+                        </div>
+                    </div>
+                    <ul class="config-list" id="${protocolGroupId}"></ul>`;
+                
+                const configList = protocolGroup.querySelector('.config-list');
+                groupedByProtocol[protocol].forEach(configStr => {
+                    const serverName = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : new URL(configStr).hostname;
                     const li = document.createElement('li');
                     li.className = 'config-item';
-                    li.dataset.config = config.config_str;
-                    const initialPing = (config.ping && config.ping !== 'N/A') ? `پینگ اولیه: ${config.ping}ms` : 'تست نشده';
+                    li.dataset.config = configStr;
                     li.innerHTML = `
                         <input type="checkbox" class="config-checkbox" data-core="${core}" data-protocol="${protocol}">
                         <div class="config-details">
                             <span class="server">${serverName}</span>
-                            <span class="ping">${initialPing}</span>
+                            <span class="ping">تست نشده</span>
                         </div>
                         <div class="copy-button-container">
-                            <button class="copy-btn" onclick="copyToClipboard('${config.config_str}')">کپی</button>
-                            <button class="copy-btn" onclick="showQrCode('${config.config_str}')">QR</button>
+                            <button class="copy-btn" onclick="copyToClipboard('${configStr}')">کپی</button>
+                            <button class="copy-btn" onclick="showQrCode('${configStr}')">QR</button>
                         </div>`;
                     configList.appendChild(li);
                 });
-                protocolGroup.appendChild(protocolHeader);
-                protocolGroup.appendChild(configList);
                 container.appendChild(protocolGroup);
             }
         }
@@ -230,7 +226,6 @@
                 item.style.opacity = '0.5';
                 const pingEl = item.querySelector('.ping');
                 const ping = await testConfigLatency(item.dataset.config);
-                //  FIX: Store only the number for correct sorting
                 const pingValue = (ping !== 'Timeout' && ping !== 'Error') ? parseInt(ping) : 9999;
                 item.dataset.newPing = pingValue;
                 pingEl.innerHTML = `پینگ: <strong style="color:${(pingValue < 9999) ? 'var(--logo-green)' : 'var(--logo-red)'};">${ping}</strong>`;
@@ -247,13 +242,13 @@
                 const controller = new AbortController();
                 setTimeout(() => { controller.abort(); resolve('Timeout'); }, 5000);
                 try {
-                    const parsed_url = new URL(configStr);
+                    const url = new URL(configStr);
                     let details = null;
-                    if (parsed_url.protocol === 'vmess:') {
+                    if (url.protocol === 'vmess:') {
                         const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
                         details = { host: decoded.add, port: parseInt(decoded.port) };
-                    } else if (parsed_url.hostname) {
-                        details = { host: parsed_url.hostname, port: parseInt(parsed_url.port || 443) };
+                    } else if (url.hostname) {
+                        details = { host: url.hostname, port: parseInt(url.port || 443) };
                     }
                     if (!details) return resolve('Error');
                     const response = await fetch(VERCEL_API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(details), signal: controller.signal });
@@ -282,7 +277,7 @@
 
         function generateSubscription(core, action) {
             const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
-            allItems.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999)); // Sort by tested ping
+            allItems.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
             const configs = allItems.map(item => item.dataset.config);
             if (!configs.length) return alert('کانفیگی یافت نشد.');
             const sub = btoa(unescape(encodeURIComponent(configs.join('\n'))));
@@ -298,24 +293,23 @@
             const proxies = configs.map(configStr => {
                 try {
                     const url = new URL(configStr);
-                    if (url.search.includes('reality')) return null; // Clash doesn't support REALITY
+                    if (url.search.includes('reality')) return null;
                     const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname;
                     let proxy = { name, server: url.hostname, port: parseInt(url.port) };
-                    
                     if (url.protocol === 'vmess:') {
                         const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
                         proxy = {...proxy, type: 'vmess', uuid: decoded.id, alterId: decoded.aid, cipher: decoded.scy || 'auto', tls: decoded.tls === 'tls', server: decoded.add, port: parseInt(decoded.port), network: decoded.net || 'tcp', 'skip-cert-verify': true };
                         if (proxy.network === 'ws') proxy['ws-opts'] = { path: decoded.path || '/', headers: { Host: decoded.host || proxy.server } };
                     } else if (url.protocol === 'vless:') {
-                         const params = new URLSearchParams(url.search);
-                         proxy = {...proxy, type: 'vless', uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type') || 'tcp', servername: params.get('sni') || proxy.server, 'skip-cert-verify': true};
-                         if (proxy.network === 'ws') proxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || proxy.server } };
+                        const params = new URLSearchParams(url.search);
+                        proxy = {...proxy, type: 'vless', uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type') || 'tcp', servername: params.get('sni') || proxy.server, 'skip-cert-verify': true};
+                        if (proxy.network === 'ws') proxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || proxy.server } };
                     } else if (url.protocol === 'trojan:') {
                         const params = new URLSearchParams(url.search);
                         proxy = {...proxy, type: 'trojan', password: url.username, tls: true, sni: params.get('sni') || proxy.server, 'skip-cert-verify': true };
                     } else if (url.protocol === 'ss:') {
-                         const [cipher, password] = atob(url.username).split(':');
-                         proxy = {...proxy, type: 'ss', cipher, password};
+                        const [cipher, password] = atob(url.username).split(':');
+                        proxy = {...proxy, type: 'ss', cipher, password};
                     } else { return null; }
                     return proxy;
                 } catch { return null; }
@@ -341,13 +335,20 @@
             if(list) list.querySelectorAll('.config-checkbox').forEach(cb => cb.checked = select);
         }
 
-        function copyClashSubscriptionUrl() { copyToClipboard(DATA_SOURCES[0].replace('all_live_configs.json', 'best_clash.yaml'), 'URL اشتراک کلش کپی شد!'); }
+        function copyClashSubscriptionUrl() {
+            // This now correctly points to the file generated by your Python script
+            const clashUrl = DATA_SOURCES[0].replace('all_live_configs.json', 'clash_configs.yaml');
+            copyToClipboard(clashUrl, 'URL اشتراک کلش کپی شد!');
+        }
+        
         function copyToClipboard(text, msg = 'کپی شد!') { 
             navigator.clipboard.writeText(text)
                 .then(() => alert(msg))
                 .catch(err => alert('خطا: کپی در کلیپ‌بورد ناموفق بود.\n' + err));
         }
+        
         function showQrCode(text) { const modal = document.getElementById('qr-code-modal'); modal.style.display = 'flex'; new QRious({ element: modal.querySelector('canvas'), value: text, size: 250, padding: 10 }); }
+        
         function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
     </script>
 </body>
