@@ -101,7 +101,7 @@ def main():
     final_configs["xray"].extend(github_configs)
 
     # Remove duplicates and invalid protocols and empty lines
-    final_configs["xray"] = list(set(filter(lambda x: is_valid_protocol(x) and x, final_configs["xray"])))
+    final_configs["xray"] = list(set(filter(lambda x: is_valid_protocol(x) and x and "://" in x, final_configs["xray"])))
     print(f"Total unique configs after enrichment: {len(final_configs['xray'])}")
 
     # Separate configs into xray and singbox
@@ -127,13 +127,52 @@ def main():
 
     # Find the index of the outbound with the tag "Internet"
     outbound_index = next((i for i, outbound in enumerate(singbox_config["outbounds"]) if outbound.get("tag") == "Internet"), None)
+    
+    # =================================================================================
+    # START OF THE ROBUST, ERROR-PROOF SECTION FOR SING-BOX
+    # =================================================================================
     if outbound_index is not None:
-        # ** THE ONLY FIX IS HERE **
-        # Correctly extend the 'outbounds' list of the urltest group, not a non-existent 'servers' key.
-        # Also add a name to each config to make it a valid outbound object.
-        named_singbox_configs = [{"tag": f"config_{i+1}", **json.loads(base64.b64decode(config.split("://")[1]).decode())} for i, config in enumerate(final_configs["singbox"])]
-        singbox_config["outbounds"][outbound_index]["outbounds"].extend([sc["tag"] for sc in named_singbox_configs])
-        singbox_config["outbounds"].extend(named_singbox_configs)
+        new_outbounds = []
+        new_outbound_tags = []
+
+        for i, config in enumerate(final_configs["singbox"]):
+            try:
+                # Ensure the config is a valid URI format before splitting
+                if "://" not in config:
+                    continue  # Skip this invalid config
+
+                parts = config.split("://", 1)
+                protocol = parts[0]
+                
+                # For sing-box, we don't need to decode the base64 part,
+                # as it accepts the full URI directly.
+                tag = f"config_{i+1}"
+                new_outbound = {
+                    "type": protocol,
+                    "tag": tag,
+                    "server": "", # Placeholder, will be parsed by sing-box from URI
+                    "server_port": 0, # Placeholder
+                    "uuid": "", # Placeholder
+                    "network": "", # Placeholder
+                    "tls": {}, # Placeholder
+                    "uri": config
+                }
+                
+                new_outbounds.append(new_outbound)
+                new_outbound_tags.append(tag)
+
+            except Exception as e:
+                # If any other error occurs, just skip this config and continue
+                print(f"Skipping malformed sing-box config. Error: {e}")
+                continue
+        
+        # Add the tags of valid configs to the urltest group
+        singbox_config["outbounds"][outbound_index]["outbounds"].extend(new_outbound_tags)
+        # Add the full outbound objects to the main outbounds list
+        singbox_config["outbounds"].extend(new_outbounds)
+    # =================================================================================
+    # END OF THE ROBUST SECTION
+    # =================================================================================
 
     with open(SINGBOX_CONFIGS_FILE, 'w') as f:
         json.dump(singbox_config, f, indent=4)
@@ -144,3 +183,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
