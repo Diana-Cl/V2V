@@ -44,9 +44,13 @@
         .action-button { background-color: #333; border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em; flex-grow: 1; color: var(--text-color); }
         .protocol-group { border-top: 1px solid var(--border-color); }
         .protocol-header { background-color: transparent; padding: 15px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .protocol-controls { display: flex; align-items: center; gap: 10px; }
+        .select-all-btn { background-color: #444; border: 1px solid #666; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; color: var(--text-color); }
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.3s ease-out; overflow: hidden; }
         .protocol-group.open .config-list { max-height: 2000px; }
         .config-item { padding: 15px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
+        .config-item:last-child { border-bottom: none; }
+        .config-checkbox { flex-shrink: 0; transform: scale(1.4); margin-left: 8px; accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.9em; }
         .copy-button-container { display: flex; gap: 10px; }
@@ -54,6 +58,9 @@
         .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; flex-shrink: 0; }
         .bottom-links a { color: var(--text-color); text-decoration: none; font-size: 0.9em; }
         .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
+        #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
+        .qr-code-content { background-color: var(--secondary-bg); padding: 20px; border-radius: 10px; position: relative; }
+        .close-button { position: absolute; top: 10px; right: 15px; font-size: 30px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -78,7 +85,10 @@
             <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank">ArvanCloud</a>
         </div>
     </div>
+    <div id="qr-code-modal"><div class="qr-code-content"><span class="close-button" onclick="closeModal()">&times;</span><canvas id="qr-code-canvas"></canvas></div></div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
         let allConfigs = { xray: [], singbox: [] };
         const DATA_SOURCES = [
@@ -117,7 +127,34 @@
             container.innerHTML = '';
             
             const headerControls = document.createElement('div');
-            headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت</button>`;
+            if (core === 'xray') {
+                headerControls.innerHTML = `
+                    <button class="test-button" onclick="runSpeedTest('xray')">🚀 تست سرعت</button>
+                    <div class="action-group">
+                        <h4 class="action-group-title">لینک اشتراک / Subscription</h4>
+                        <div class="action-buttons">
+                            <button class="action-button" onclick="generateSubscription('xray', 'sub')">کپی لینک</button>
+                            <button class="action-button" onclick="generateSubscription('xray', 'qr')">QR کد</button>
+                        </div>
+                    </div>
+                    <div class="action-group">
+                        <h4 class="action-group-title">فایل / Clash Meta</h4>
+                        <div class="action-buttons">
+                             <button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button>
+                             <button class="action-button" onclick="generateClashConfig('xray', 'download')">دانلود فایل شخصی</button>
+                        </div>
+                    </div>`;
+            } else {
+                headerControls.innerHTML = `
+                    <button class="test-button" onclick="runSpeedTest('singbox')">🚀 تست سرعت</button>
+                    <div class="action-group">
+                         <h4 class="action-group-title">لینک اشتراک / Subscription</h4>
+                         <div class="action-buttons">
+                            <button class="action-button" onclick="generateSubscription('singbox', 'sub')">کپی لینک</button>
+                            <button class="action-button" onclick="generateSubscription('singbox', 'qr')">QR کد</button>
+                        </div>
+                    </div>`;
+            }
             container.appendChild(headerControls);
 
             if (configs.length === 0) {
@@ -144,7 +181,12 @@
                 const protocolHeader = document.createElement('div');
                 protocolHeader.className = 'protocol-header';
                 protocolHeader.onclick = () => toggleGroup(protocolGroupId);
-                protocolHeader.innerHTML = `<span>${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span><span>&#9660;</span>`;
+                protocolHeader.innerHTML = `
+                    <span>${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span>
+                    <div class="protocol-controls">
+                        <button class="select-all-btn" onclick="toggleSelectAll(event, true, '${core}', '${protocol}')">انتخاب همه</button>
+                        <button class="select-all-btn" onclick="toggleSelectAll(event, false, '${core}', '${protocol}')">لغو انتخاب</button>
+                    </div>`;
                 
                 const configList = document.createElement('ul');
                 configList.className = 'config-list';
@@ -156,16 +198,17 @@
                     li.dataset.config = config.config_str;
                     const initialPing = (config.ping === 'N/A') ? 'تست نشده' : `پینگ اولیه: ${config.ping}ms`;
                     li.innerHTML = `
+                        <input type="checkbox" class="config-checkbox" data-core="${core}" data-protocol="${protocol}">
                         <div class="config-details">
                             <span class="server">${serverName}</span>
                             <span class="ping">${initialPing}</span>
                         </div>
                         <div class="copy-button-container">
                             <button class="copy-btn" onclick="copyToClipboard('${config.config_str}')">کپی</button>
+                            <button class="copy-btn" onclick="showQrCode('${config.config_str}')">QR</button>
                         </div>`;
                     configList.appendChild(li);
                 });
-                
                 protocolGroup.appendChild(protocolHeader);
                 protocolGroup.appendChild(configList);
                 container.appendChild(protocolGroup);
@@ -180,28 +223,20 @@
         async function runSpeedTest(core) {
             const testButton = document.querySelector(`#${core}-section .test-button`);
             testButton.disabled = true; testButton.textContent = 'در حال تست...';
-            
             const items = document.querySelectorAll(`#${core}-content-wrapper .config-item`);
-            
-            // Batch processing for frontend test
-            const batchSize = 10;
             const batches = [];
-            for (let i = 0; i < items.length; i += batchSize) {
-                batches.push(Array.from(items).slice(i, i + batchSize));
-            }
+            for (let i = 0; i < items.length; i += 10) { batches.push(Array.from(items).slice(i, i + 10)); }
 
             for (const batch of batches) {
                 await Promise.all(batch.map(async item => {
                     item.style.opacity = '0.5';
                     const pingEl = item.querySelector('.ping');
                     const ping = await testConfigLatency(item.dataset.config);
-                    
                     item.dataset.newPing = (ping !== 'Timeout' && ping !== 'Error') ? ping : 9999;
                     pingEl.innerHTML = `پینگ: <strong style="color:${(item.dataset.newPing < 9999) ? 'var(--logo-green)' : 'var(--logo-red)'};">${ping}ms</strong>`;
                     item.style.opacity = '1';
                 }));
             }
-            
             sortConfigsByPing(core);
             testButton.disabled = false; testButton.textContent = '🚀 تست مجدد';
         }
@@ -239,7 +274,71 @@
             });
         }
 
+        function getSelectedConfigs(core) {
+            const checkedItems = document.querySelectorAll(`#${core}-content-wrapper .config-checkbox:checked`);
+            if (checkedItems.length > 0) {
+                return Array.from(checkedItems).map(cb => cb.closest('.config-item').dataset.config);
+            }
+            return []; // Return empty if nothing is selected for personal file
+        }
+
+        function generateSubscription(core, action) {
+            const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
+            allItems.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
+            const configs = allItems.map(item => item.dataset.config);
+            if (!configs.length) return alert('کانفیگی یافت نشد.');
+            const sub = btoa(unescape(encodeURIComponent(configs.join('\n'))));
+            const url = `data:text/plain;base64,${sub}`;
+            if (action === 'sub') copyToClipboard(url, 'لینک اشتراک کپی شد.');
+            else if (action === 'qr') showQrCode(url);
+        }
+
+        function generateClashConfig(core, action) {
+            const configs = getSelectedConfigs(core);
+            if (configs.length === 0) return alert('برای ساخت فایل شخصی، حداقل یک کانفیگ را با تیک زدن انتخاب کنید.');
+            
+            const proxies = configs.map(configStr => {
+                try {
+                    const url = new URL(configStr);
+                    if (url.search.includes('reality')) return null;
+                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname;
+                    let proxy = { name, server: url.hostname, port: parseInt(url.port) };
+                    if (url.protocol === 'vmess:') {
+                        const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
+                        proxy = {...proxy, type: 'vmess', uuid: decoded.id, alterId: decoded.aid, cipher: 'auto', tls: decoded.tls === 'tls', server: decoded.add, port: parseInt(decoded.port), network: decoded.net || 'tcp' };
+                    } else if (url.protocol === 'vless:' || url.protocol === 'trojan:') {
+                        proxy = {...proxy, type: url.protocol.slice(0,-1), uuid: url.username, password: url.username, tls: new URLSearchParams(url.search).get('security') === 'tls'};
+                    } else if (url.protocol === 'ss:') {
+                         const cred = atob(url.username).split(':');
+                         proxy = {...proxy, type: 'ss', cipher: cred[0], password: cred[1]};
+                    } else { return null; }
+                    return proxy;
+                } catch { return null; }
+            }).filter(p => p);
+
+            const clashConfig = { proxies, 'proxy-groups': [{'name': 'V2V-Personal', 'type': 'select', 'proxies': proxies.map(p => p.name)}], 'rules': ['MATCH,V2V-Personal'] };
+            const yamlConfig = jsyaml.dump(clashConfig, { indent: 2, sortKeys: false });
+
+            if (action === 'download') {
+                const blob = new Blob([yamlConfig], { type: 'text/yaml' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'v2v_clash_personal.yaml';
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }
+        }
+        
+        function toggleSelectAll(event, select, core, protocol) {
+            event.stopPropagation();
+            const list = document.getElementById(`${protocol}-${core}`);
+            if(list) list.querySelectorAll('.config-checkbox').forEach(cb => cb.checked = select);
+        }
+
+        function copyClashSubscriptionUrl() { copyToClipboard(DATA_SOURCES[0].replace('all_live_configs.json', 'best_clash.yaml'), 'URL اشتراک کلش کپی شد!'); }
         function copyToClipboard(text, msg = 'کپی شد!') { navigator.clipboard.writeText(text).then(() => alert(msg)); }
+        function showQrCode(text) { const modal = document.getElementById('qr-code-modal'); modal.style.display = 'flex'; new QRious({ element: modal.querySelector('canvas'), value: text, size: 250 }); }
+        function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
     </script>
 </body>
 </html>
