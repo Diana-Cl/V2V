@@ -10,7 +10,7 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
       
     steps:
       - name: Checkout repository
@@ -22,12 +22,15 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests PyYAML
 
-      - name: Run collector script
+      - name: Run scraper script
         run: python scraper.py
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        timeout-minutes: 15
           
-      - name: Upload file to ArvanCloud
+      - name: Upload files to ArvanCloud
         continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
@@ -35,15 +38,16 @@ jobs:
         run: |
           pip install awscli
           aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
+          aws s3 cp best_clash.yaml s3://v2v-data/best_clash.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
 
-      - name: Commit and Push the file to GitHub
+      - name: Commit and Push the final files to GitHub
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add all_live_configs.json
+          git add all_live_configs.json best_clash.yaml
           if git diff-index --quiet HEAD; then
             echo "No changes to commit."
           else
-            git commit -m "📊 Update raw configs"
+            git commit -m "📊 Update configs and auto-clash file"
             git push
           fi
