@@ -1,141 +1,147 @@
-import requests
-import base64
 import os
-import json
 import re
-import time
-import yaml
-from concurrent.futures import ThreadPoolExecutor
-from urllib.parse import urlparse, unquote
+import json
+import base64
+import requests
+from urllib.parse import urlparse, parse_qs, quote
+from github import Github, Auth
 
-# === CONFIGURATION ===
-BASE_SOURCES = [
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub4.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub5.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub7.txt",
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub8.txt",
-    "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt",
-    "https://raw.githubusercontent.com/itsyebekhe/PSG/main/lite/subscriptions/xray/normal/mix",
-    "https://raw.githubusercontent.com/arshiacomplus/v2rayExtractor/refs/heads/main/mix/sub.html",
-    "https://raw.githubusercontent.com/lagzian/SS-Collector/refs/heads/main/mix.txt",
-    "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/SSTime",
-    "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/sub/port_8443.txt",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub1.txt",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub2.txt",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub3.txt",
-    "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt",
-    "https://robin.nscl.ir/"
-]
-OUTPUT_JSON_FILE = 'all_live_configs.json'
-OUTPUT_CLASH_FILE = 'best_clash.yaml'
-GITHUB_PAT = os.environ.get('GH_PAT')
-HEADERS = {'User-Agent': 'V2V-Collector/2.0'}
-TARGET_CONFIGS_PER_CORE = 500
+# Constants
+# The token is read from an environment variable for security
+GH_PAT = os.environ.get('GH_PAT')
+# The number of configs to be added to the clash file
 TOP_CLASH_CONFIGS_COUNT = 100
-GITHUB_SEARCH_QUERIES = ['"vless://" "vmess://" path:*.txt', '"v2ray" "subscription" path:*.txt']
+# The file that contains the list of sources for configs
+SOURCES_FILE = "sources.json"
+# The file to which the live configs will be written
+LIVE_CONFIGS_FILE = "all_live_configs.json"
+# The file to which the clash configs will be written
+CLASH_CONFIGS_FILE = "clash_configs.yaml"
+# The file to which the sing-box configs will be written
+SINGBOX_CONFIGS_FILE = "singbox_configs.json"
+# The file that contains the clash configurations
+CLASH_CONFIG_FILE = "clash.yaml"
+# The file that contains the sing-box configurations
+SINGBOX_CONFIG_FILE = "singbox.json"
 
-def get_content_from_url(url: str) -> str | None:
+# List of protocols that are supported by the script
+SUPPORTED_PROTOCOLS = ["vmess", "vless", "trojan", "ss", "ss-aead", "socks", "http"]
+
+# Initialize the final configs dictionary
+final_configs = {"xray": [], "singbox": []}
+
+def is_valid_protocol(config_str):
+    """
+    Check if the given config string is a valid protocol.
+    """
+    return any(proto in config_str for proto in SUPPORTED_PROTOCOLS)
+
+def fetch_configs_from_url(url):
+    """
+    Fetch configs from the given URL.
+    """
     try:
-        response = requests.get(url, timeout=10, headers=HEADERS)
-        response.raise_for_status()
-        return response.text
-    except Exception:
-        return None
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            return response.text.splitlines()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching configs from {url}: {e}")
+    return []
 
-def fetch_and_parse_url(url: str) -> set[str]:
-    content = get_content_from_url(url)
-    if not content: return set()
-    try:
-        content = base64.b64decode(content).decode('utf-8')
-    except: pass
-    return set(re.findall(r'(vless|vmess|trojan|ss|wg)://[^\s\'"<]+', content))
+def search_github_for_configs():
+    """
+    Search GitHub for configs.
+    """
 
-def search_github_for_fresh_sources() -> set[str]:
-    if not GITHUB_PAT:
-        print("GitHub PAT not found. Skipping dynamic search.")
-        return set()
-    print("Searching GitHub for fresh dynamic sources...")
-    fresh_configs = set()
-    headers = {'Authorization': f'token {GITHUB_PAT}', 'Accept': 'application/vnd.github.v3.text-match+json'}
-    for query in GITHUB_SEARCH_QUERIES:
+    auth = Auth.Token(GH_PAT)
+    g = Github(auth=auth)
+
+    # Search for files that contain the supported protocols and have the .txt extension
+    query = ' OR '.join([f'"{ext}"' for ext in SUPPORTED_PROTOCOLS]) + ' extension:txt'
+    repositories = g.search_code(query)
+
+    print(f"Found {repositories.totalCount} code results")
+
+    # Limit the number of repositories to 200 to avoid hitting the rate limit
+    repo_limit = 200
+    if repositories.totalCount > repo_limit:
+        print(f"Limiting to {repo_limit} repositories")
+
+    configs = []
+    # Iterate over the first 200 repositories and decode the content of the files
+    for repo in repositories[:repo_limit]:
         try:
-            url = f"https://api.github.com/search/code?q={query}&sort=indexed&order=desc&per_page=100"
-            response = requests.get(url, headers=headers, timeout=15)
-            if response.status_code == 200:
-                items = response.json().get('items', [])
-                for item in items:
-                    if item.get('repository', {}).get('fork'): continue
-                    download_url = item.get('html_url', '').replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')
-                    fresh_configs.update(fetch_and_parse_url(download_url))
-            else:
-                print(f"GitHub API search failed with status: {response.status_code}")
-                print(response.text)
-            time.sleep(5) 
+            content = repo.decoded_content.decode('utf-8')
+            configs.extend(content.splitlines())
         except Exception as e:
-            print(f"Error during GitHub search: {e}")
-            continue
-    print(f"Found {len(fresh_configs)} configs from dynamic sources.")
-    return fresh_configs
+            print(f"Error decoding content from {repo.repository.full_name}/{repo.path}: {e}")
 
-def generate_clash_config_from_urls(configs: list) -> str:
-    proxies = []
-    for config_str in configs:
-        try:
-            url = urlparse(config_str)
-            if 'reality' in url.query.lower(): continue
-            name = unquote(url.fragment) if url.fragment else url.hostname
-            proxy = {'name': name, 'server': url.hostname, 'port': int(url.port)}
-            if url.scheme == 'vmess':
-                decoded = json.loads(base64.b64decode(config_str.replace("vmess://", "")).decode('utf-8'))
-                proxy.update({'type': 'vmess', 'uuid': decoded['id'], 'alterId': decoded['aid'], 'cipher': 'auto', 'server': decoded['add'], 'port': int(decoded['port']), 'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net', 'tcp')})
-            elif url.scheme in ['vless', 'trojan']:
-                proxy.update({'type': url.scheme, 'uuid' if url.scheme == 'vless' else 'password': url.username, 'tls': 'security=tls' in url.query})
-            elif url.scheme == 'ss':
-                cred = base64.b64decode(unquote(url.username)).decode().split(':')
-                proxy.update({'type': 'ss', 'cipher': cred[0], 'password': cred[1]})
-            else: continue
-            proxies.append(proxy)
-        except Exception: continue
-    clash_config = {'proxies': proxies, 'proxy-groups': [{'name': 'V2V-Auto', 'type': 'select', 'proxies': [p['name'] for p in proxies]}], 'rules': ['MATCH,V2V-Auto']}
-    return yaml.dump(clash_config, allow_unicode=True, sort_keys=False, indent=2)
+    return configs
+
+def config_to_base64(config):
+    """
+    Encode the given config to base64.
+    """
+    return base64.b64encode(config.encode('utf-8')).decode('utf-8')
 
 def main():
-    print("V2V Collector Final Architecture")
-    with ThreadPoolExecutor(max_workers=30) as executor:
-        static_configs_sets = executor.map(fetch_and_parse_url, BASE_SOURCES)
-    all_static_configs = set.union(*static_configs_sets)
-    print(f"Found {len(all_static_configs)} configs from static sources.")
+    """
+    Main function.
+    """
 
-    dynamic_configs = search_github_for_fresh_sources()
-    all_configs_combined = all_static_configs | dynamic_configs
-    print(f"Total unique configs after enrichment: {len(all_configs_combined)}")
+    # Load sources from the JSON file
+    with open(SOURCES_FILE, 'r') as f:
+        sources = json.load(f)
 
-    final_configs = {'xray': [], 'singbox': []}
-    for cfg in all_configs_combined:
-        protocol = cfg.split('://')[0]
-        if 'reality' in cfg or protocol == 'wg':
-             final_configs['singbox'].append({'config_str': cfg})
-        else:
-             final_configs['xray'].append({'config_str': cfg})
-    
-    final_configs['xray'] = final_configs['xray'][:TARGET_CONFIGS_PER_CORE]
-    final_configs['singbox'] = final_configs['singbox'][:TARGET_CONFIGS_PER_CORE]
-    
-    if final_configs['xray']:
-        print(f"Generating Clash file from a sample of {TOP_CLASH_CONFIGS_COUNT} raw configs...")
-        sample_for_clash = random.sample(final_configs['xray'], min(len(final_configs['xray']), TOP_CLASH_CONFIGS_COUNT))
-        clash_content = generate_clash_config_from_urls([c['config_str'] for c in sample_for_clash])
-        with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f: f.write(clash_content)
+    # Fetch configs from static sources
+    print("Found {} configs for static sources.".format(len(sources["static"])))
+    for source in sources["static"]:
+        final_configs["xray"].extend(fetch_configs_from_url(source))
 
-    with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
-        json.dump(final_configs, f, ensure_ascii=False, indent=2)
-    
-    print("Process completed successfully.")
-    print(f"Saved {len(final_configs['xray'])} xray configs and {len(final_configs['singbox'])} singbox configs.")
+    # Fetch configs from dynamic sources (GitHub)
+    print("Searching GitHub for fresh dynamic sources...")
+    github_configs = search_github_for_configs()
+    print("Found {} configs from dynamic sources.".format(len(github_configs)))
+    final_configs["xray"].extend(github_configs)
+
+    # Remove duplicates and invalid protocols and empty lines
+    final_configs["xray"] = list(set(filter(lambda x: is_valid_protocol(x) and x, final_configs["xray"])))
+    print("Total unique configs after enrichment: {}".format(len(final_configs["xray"])))
+
+    # Separate configs into xray and singbox
+    for config in final_configs["xray"]:
+        if "vless" in config or "vmess" in config or "trojan" in "config":
+            final_configs["singbox"].append(config)
+
+    # Generate Clash file from all found xray configs
+    print("Generating Clash file from all found xray configs...")
+    # We are no longer taking a random sample, but all configs.
+    all_xray_for_clash = final_configs['xray']
+    base64_configs = [config_to_base64(config) for config in all_xray_for_clash]
+
+    with open(CLASH_CONFIG_FILE, 'r') as f:
+        clash_config = f.read()
+
+    with open(CLASH_CONFIGS_FILE, 'w') as f:
+        f.write(clash_config.replace GITHUB_PLACEHOLDER", '\n'.join([f"  - {config}" for config in base64_configs])))
+
+    # Generate sing-box file from all found sing-box configs
+    print("Generating sing-box file from all found sing-box configs...")
+    with open(SINGBOX_CONFIG_FILE, 'r') as f:
+        singbox_config = json.load(f)
+
+    # Find the index of the outbound with the tag "Internet"
+    outbound_index = next((i for i, outbound in enumerate(singbox_config["outbounds"]) if outbound["tag"] == "Internet"), None)
+    if outbound_index is not None:
+        # Extend the servers list with the new configs
+        singbox_config["outbounds"][outbound_index]["servers"].extend(final_configs["singbox"])
+
+    with open(SINGBOX_CONFIGS_FILE, 'w') as f:
+        json.dump(singbox_config, f, indent=4)
+
+    # Write all live configs to the file
+    with open(LIVE_CONFIGS_FILE, 'w') as f:
+        json.dump(final_configs, f, indent=4)
 
 if __name__ == "__main__":
     main()
