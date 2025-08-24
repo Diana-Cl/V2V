@@ -1,16 +1,17 @@
-name: Scheduled Scrape
+name: Scheduled Scrape and Build
 
 on:
-  push:
-    branches:
-      - main
   schedule:
-    - cron: '0 * * * *' # At the top of every hour
-  workflow_dispatch:
+    - cron: '0 */4 * * *' # هر ۴ ساعت یک بار اجرا می‌شود
+  workflow_dispatch: # قابلیت اجرای دستی
 
 jobs:
   build-and-commit:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,25 +21,37 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Install Python dependencies
+        run: pip install requests PyYAML PyGithub
 
-      - name: Run collector script
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+      - name: Run scraper script
         run: python scraper.py
-
-      - name: Commit and push if changes exist
+        env:
+          # از این Secret برای جستجوی پویا در گیت‌هاب استفاده می‌شود
+          GH_PAT: ${{ secrets.GH_PAT }}
+        timeout-minutes: 15
+          
+      - name: Upload files to ArvanCloud and Invalidate Cache
+        continue-on-error: true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_ACCESS_KEY_SECRET }}
         run: |
-          git config --global user.name "SMBCRYP"
-          git config --global user.email "smbcryp@gmail.com"
-          git add -A
-          if git diff --staged --quiet; then
+          pip install awscli
+          # آپلود فایل‌ها با هدر Cache-Control برای حل مشکل آپدیت نشدن
+          aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
+          aws s3 cp clash_subscription.yaml s3://v2v-data/clash_subscription.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
+          aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --content-type "text/html" --cache-control "max-age=300"
+
+      - name: Commit and Push the final files to GitHub
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          # هر دو فایل خروجی را به ریپازیتوری اضافه می‌کنیم
+          git add all_live_configs.json clash_subscription.yaml
+          if git diff-index --quiet HEAD; then
             echo "No changes to commit."
           else
-            git commit -m "Update configs"
-            git push --force # <--- تغییر اصلی اینجاست
+            git commit -m "📊 Update configs and auto-clash file"
+            git push
           fi
-
