@@ -130,29 +130,29 @@
             const headerControls = document.createElement('div');
             if (core === 'xray') {
                 headerControls.innerHTML = `
-                    <button class="test-button" onclick="runSpeedTest('xray')">🚀 تست سرعت</button>
+                    <button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت</button>
                     <div class="action-group">
                         <h4 class="action-group-title">لینک اشتراک / Subscription</h4>
                         <div class="action-buttons">
-                            <button class="action-button" onclick="generateSubscription('xray', 'sub')">کپی لینک</button>
-                            <button class="action-button" onclick="generateSubscription('xray', 'qr')">QR کد</button>
+                            <button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button>
+                            <button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button>
                         </div>
                     </div>
                     <div class="action-group">
                         <h4 class="action-group-title">فایل / Clash Meta</h4>
                         <div class="action-buttons">
                              <button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button>
-                             <button class="action-button" onclick="generateClashConfig('xray', 'download')">دانلود فایل شخصی</button>
+                             <button class="action-button" onclick="generateClashConfig('${core}', 'download')">دانلود فایل شخصی</button>
                         </div>
                     </div>`;
             } else {
                 headerControls.innerHTML = `
-                    <button class="test-button" onclick="runSpeedTest('singbox')">🚀 تست سرعت</button>
+                    <button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت</button>
                     <div class="action-group">
                          <h4 class="action-group-title">لینک اشتراک / Subscription</h4>
                          <div class="action-buttons">
-                            <button class="action-button" onclick="generateSubscription('singbox', 'sub')">کپی لینک</button>
-                            <button class="action-button" onclick="generateSubscription('singbox', 'qr')">QR کد</button>
+                            <button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button>
+                            <button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button>
                         </div>
                     </div>`;
             }
@@ -184,29 +184,33 @@
                     <div class="protocol-header" onclick="toggleGroup('${protocolGroupId}')">
                         <span>${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span>
                         <div class="protocol-controls">
-                            <button class="select-all-btn" onclick="toggleSelectAll(event, true, '${core}', '${protocol}')">انتخاب همه</button>
-                            <button class="select-all-btn" onclick="toggleSelectAll(event, false, '${core}', '${protocol}')">لغو انتخاب</button>
+                            <button class="select-all-btn" onclick="toggleSelectAll(event, true, '${protocolGroupId}')">انتخاب همه</button>
+                            <button class="select-all-btn" onclick="toggleSelectAll(event, false, '${protocolGroupId}')">لغو انتخاب</button>
                         </div>
                     </div>
                     <ul class="config-list" id="${protocolGroupId}"></ul>`;
                 
                 const configList = protocolGroup.querySelector('.config-list');
                 groupedByProtocol[protocol].forEach(configStr => {
-                    const serverName = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : new URL(configStr).hostname;
                     const li = document.createElement('li');
                     li.className = 'config-item';
                     li.dataset.config = configStr;
-                    li.innerHTML = `
-                        <input type="checkbox" class="config-checkbox" data-core="${core}" data-protocol="${protocol}">
-                        <div class="config-details">
-                            <span class="server">${serverName}</span>
-                            <span class="ping">تست نشده</span>
-                        </div>
-                        <div class="copy-button-container">
-                            <button class="copy-btn" onclick="copyToClipboard('${configStr}')">کپی</button>
-                            <button class="copy-btn" onclick="showQrCode('${configStr}')">QR</button>
-                        </div>`;
-                    configList.appendChild(li);
+                    try {
+                        const serverName = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : new URL(configStr).hostname;
+                        li.innerHTML = `
+                            <input type="checkbox" class="config-checkbox">
+                            <div class="config-details">
+                                <span class="server">${serverName}</span>
+                                <span class="ping">تست نشده</span>
+                            </div>
+                            <div class="copy-button-container">
+                                <button class="copy-btn" onclick="copyToClipboard('${configStr}')">کپی</button>
+                                <button class="copy-btn" onclick="showQrCode('${configStr}')">QR</button>
+                            </div>`;
+                        configList.appendChild(li);
+                    } catch(e) {
+                        // Ignore malformed URLs that can't be parsed
+                    }
                 });
                 container.appendChild(protocolGroup);
             }
@@ -215,6 +219,11 @@
         function toggleGroup(groupId) {
             const list = document.getElementById(groupId);
             if (list) list.parentNode.classList.toggle('open');
+        }
+
+        function toggleSelectAll(event, select, groupId) {
+            event.stopPropagation();
+            document.querySelectorAll(`#${groupId} .config-checkbox`).forEach(cb => cb.checked = select);
         }
         
         async function runSpeedTest(core) {
@@ -329,14 +338,7 @@
             }
         }
         
-        function toggleSelectAll(event, select, core, protocol) {
-            event.stopPropagation();
-            const list = document.getElementById(`${protocol}-${core}`);
-            if(list) list.querySelectorAll('.config-checkbox').forEach(cb => cb.checked = select);
-        }
-
         function copyClashSubscriptionUrl() {
-            // This now correctly points to the file generated by your Python script
             const clashUrl = DATA_SOURCES[0].replace('all_live_configs.json', 'clash_configs.yaml');
             copyToClipboard(clashUrl, 'URL اشتراک کلش کپی شد!');
         }
