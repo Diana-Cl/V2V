@@ -6,6 +6,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 BASE_SOURCES = [
+    # // Main Sources from Barry-far
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub1.txt",
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub2.txt",
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub3.txt",
@@ -14,9 +15,23 @@ BASE_SOURCES = [
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub6.txt",
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub7.txt",
     "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Sub8.txt",
+
+    # // Popular & High-Quality Aggregators
     "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt",
+    "https://raw.githubusercontent.com/itsyebekhe/PSG/main/lite/subscriptions/xray/normal/mix",
+    "https://raw.githubusercontent.com/arshiacomplus/v2rayExtractor/refs/heads/main/mix/sub.html",
+    "https://raw.githubusercontent.com/lagzian/SS-Collector/refs/heads/main/mix.txt",
+    
+    # // User-Added & Corrected Links
     "https://raw.githubusercontent.com/NiREvil/vless/refs/heads/main/sub/SSTime",
-    "https://raw.githubusercontent.com/arshiacomplus/v2rayExtractor/refs/heads/main/mix/sub.html"
+    "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/sub/port_8443.txt",
+    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub1.txt",
+    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub2.txt",
+    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/refs/heads/main/Sub3.txt",
+    "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt",
+
+    # // High-Quality Base64 Source
+    "https://robin.nscl.ir/"
 ]
 OUTPUT_JSON_FILE = 'all_live_configs.json'
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'wg://')
