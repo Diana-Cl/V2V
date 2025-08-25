@@ -2,8 +2,8 @@ name: Scheduled Scrape and Build
 
 on:
   schedule:
-    # هر ۸ ساعت یک بار اجرا می‌شود تا از محدودیت‌های API جلوگیری شود
-    - cron: '0 */8 * * *'
+    # طبق درخواست شما به هر ۶ ساعت یک بار تغییر کرد
+    - cron: '0 */6 * * *'
   workflow_dispatch: # قابلیت اجرای دستی
 
 jobs:
@@ -11,7 +11,6 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    # مهلت اجرای کل জব را افزایش دادیم تا زمان کافی وجود داشته باشد
     timeout-minutes: 45
       
     steps:
@@ -26,7 +25,6 @@ jobs:
       - name: Install Python dependencies
         run: pip install requests PyYAML PyGithub
 
-      # --- مرحله ۱: نگهداری نسخه سالم قبلی ---
       - name: Preserve previous clash subscription if it exists
         run: |
           if [ -f "clash_subscription.yaml" ]; then
@@ -37,12 +35,9 @@ jobs:
       - name: Run scraper script
         run: python scraper.py
         env:
-          # از این Secret برای جستجوی پویا در گیت‌هاب استفاده می‌شود
           GH_PAT: ${{ secrets.GH_PAT }}
-        # مهلت اجرای اسکریپت را به شدت افزایش دادیم چون تست سرعت زمان‌بر است
         timeout-minutes: 40
       
-      # --- مرحله ۲: بازیابی نسخه قبلی در صورت نیاز ---
       - name: Restore previous clash subscription if scraper did not generate one
         run: |
           if [ ! -f "clash_subscription.yaml" ] && [ -f "clash_subscription.yaml.bak" ]; then
@@ -51,12 +46,13 @@ jobs:
           fi
           
       - name: Upload files to ArvanCloud
+        # --- FIX: Re-added continue-on-error as requested ---
+        continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_ACCESS_KEY_SECRET }}
         run: |
           pip install awscli
-          # آپلود فایل‌ها فقط در صورت وجود
           if [ -f "all_live_configs.json" ]; then
             aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
           fi
@@ -71,7 +67,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # فقط فایل‌های موجود را اضافه کن
           git add all_live_configs.json || echo "all_live_configs.json not found to commit"
           git add clash_subscription.yaml || echo "clash_subscription.yaml not found to commit"
           
