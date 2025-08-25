@@ -2,7 +2,8 @@ name: Scheduled Scrape and Build
 
 on:
   schedule:
-    - cron: '0 */4 * * *' # هر ۴ ساعت یک بار اجرا می‌شود
+    # هر ۸ ساعت یک بار اجرا می‌شود تا از محدودیت‌های API جلوگیری شود
+    - cron: '0 */8 * * *'
   workflow_dispatch: # قابلیت اجرای دستی
 
 jobs:
@@ -10,7 +11,8 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # مهلت اجرای کل জব را افزایش دادیم تا زمان کافی وجود داشته باشد
+    timeout-minutes: 45
       
     steps:
       - name: Checkout repository
@@ -29,7 +31,8 @@ jobs:
         env:
           # از این Secret برای جستجوی پویا در گیت‌هاب استفاده می‌شود
           GH_PAT: ${{ secrets.GH_PAT }}
-        timeout-minutes: 15
+        # مهلت اجرای اسکریپت را به شدت افزایش دادیم چون تست سرعت زمان‌بر است
+        timeout-minutes: 40
           
       - name: Upload files to ArvanCloud and Invalidate Cache
         continue-on-error: true
@@ -38,7 +41,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_ACCESS_KEY_SECRET }}
         run: |
           pip install awscli
-          # آپلود فایل‌ها با هدر Cache-Control برای حل مشکل آپدیت نشدن
           aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
           aws s3 cp clash_subscription.yaml s3://v2v-data/clash_subscription.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
           aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --content-type "text/html" --cache-control "max-age=300"
@@ -47,11 +49,11 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          # هر دو فایل خروجی را به ریپازیتوری اضافه می‌کنیم
           git add all_live_configs.json clash_subscription.yaml
           if git diff-index --quiet HEAD; then
             echo "No changes to commit."
           else
-            git commit -m "📊 Update configs and auto-clash file"
+            git commit -m "📊 Update configs [$(date -u)]"
             git push
           fi
+
