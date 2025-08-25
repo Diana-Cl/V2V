@@ -26,6 +26,14 @@ jobs:
       - name: Install Python dependencies
         run: pip install requests PyYAML PyGithub
 
+      # --- مرحله ۱: نگهداری نسخه سالم قبلی ---
+      - name: Preserve previous clash subscription if it exists
+        run: |
+          if [ -f "clash_subscription.yaml" ]; then
+            mv clash_subscription.yaml clash_subscription.yaml.bak
+            echo "Previous clash_subscription.yaml has been backed up."
+          fi
+
       - name: Run scraper script
         run: python scraper.py
         env:
@@ -33,27 +41,43 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
         # مهلت اجرای اسکریپت را به شدت افزایش دادیم چون تست سرعت زمان‌بر است
         timeout-minutes: 40
+      
+      # --- مرحله ۲: بازیابی نسخه قبلی در صورت نیاز ---
+      - name: Restore previous clash subscription if scraper did not generate one
+        run: |
+          if [ ! -f "clash_subscription.yaml" ] && [ -f "clash_subscription.yaml.bak" ]; then
+            mv clash_subscription.yaml.bak clash_subscription.yaml
+            echo "Scraper did not generate a new clash file. Restored the previous version."
+          fi
           
-      - name: Upload files to ArvanCloud and Invalidate Cache
-        continue-on-error: true
+      - name: Upload files to ArvanCloud
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_ACCESS_KEY_SECRET }}
         run: |
           pip install awscli
-          aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
-          aws s3 cp clash_subscription.yaml s3://v2v-data/clash_subscription.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
-          aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --content-type "text/html" --cache-control "max-age=300"
+          # آپلود فایل‌ها فقط در صورت وجود
+          if [ -f "all_live_configs.json" ]; then
+            aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
+          fi
+          if [ -f "clash_subscription.yaml" ]; then
+            aws s3 cp clash_subscription.yaml s3://v2v-data/clash_subscription.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
+          fi
+          if [ -f "index.html" ]; then
+            aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --content-type "text/html" --cache-control "max-age=300"
+          fi
 
       - name: Commit and Push the final files to GitHub
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add all_live_configs.json clash_subscription.yaml
+          # فقط فایل‌های موجود را اضافه کن
+          git add all_live_configs.json || echo "all_live_configs.json not found to commit"
+          git add clash_subscription.yaml || echo "clash_subscription.yaml not found to commit"
+          
           if git diff-index --quiet HEAD; then
             echo "No changes to commit."
           else
             git commit -m "📊 Update configs [$(date -u)]"
             git push
           fi
-
