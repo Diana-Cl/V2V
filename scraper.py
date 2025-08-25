@@ -10,6 +10,8 @@ import yaml
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qsl, unquote, urlencode
+# --- FIX: The required classes 'Github' and 'Auth' are now correctly imported ---
+from github import Github, Auth
 
 # =================================================================================
 # === CONFIGURATION (تنظیمات) ===
@@ -27,7 +29,6 @@ HEADERS = {'User-Agent': 'V2V-Scraper/v5.0-Final'}
 # --- تنظیمات گیت‌هاب
 GITHUB_PAT = os.environ.get('GH_PAT')
 GITHUB_SEARCH_LIMIT = 50
-# --- MODIFIED: Flexibility Increased ---
 GITHUB_FRESHNESS_HOURS = 120 # (5 روز)
 GITHUB_SEARCH_QUERIES = ['v2ray subscription', 'vless subscription', 'proxy subscription']
 
@@ -35,7 +36,6 @@ GITHUB_SEARCH_QUERIES = ['v2ray subscription', 'vless subscription', 'proxy subs
 SPEED_TEST_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy'
 MAX_CONFIGS_TO_TEST = 2000
 SPEED_TEST_BATCH_SIZE = 20
-# --- MODIFIED: Flexibility Increased ---
 MAX_PING_THRESHOLD = 2000 # (2 ثانیه)
 TARGET_CONFIGS_PER_CORE = 500
 REQUEST_TIMEOUT = 10
@@ -91,7 +91,6 @@ def discover_dynamic_sources() -> list:
     print(f"✅ {len(dynamic_sources)} منبع پویای تازه کشف شد.")
     return list(dynamic_sources)
 
-# --- NEW FUNCTION: To parse structured JSON like sing-box configs ---
 def parse_structured_json(content: dict) -> set:
     """
     پردازش فایل‌های JSON ساختاریافته (مانند کانفیگ Sing-box)
@@ -116,7 +115,6 @@ def parse_structured_json(content: dict) -> set:
                         'host': outbound.get('transport', {}).get('headers', {}).get('Host', server)
                     }
                     
-                    # Add reality params if they exist
                     if outbound.get('tls', {}).get('reality', {}).get('enabled'):
                         params['security'] = 'reality'
                         params['pbk'] = outbound['tls']['reality']['public_key']
@@ -125,12 +123,10 @@ def parse_structured_json(content: dict) -> set:
                     query_string = urlencode({k: v for k, v in params.items() if v})
                     config_str = f"vless://{uuid}@{server}:{port}?{query_string}#{name}"
                     configs.add(config_str)
-
             except Exception:
                 continue
     return configs
 
-# --- MODIFIED: This function is now smarter ---
 def fetch_and_parse_url(url: str) -> set:
     """
     دانلود و استخراج کانفیگ از یک URL.
@@ -143,32 +139,24 @@ def fetch_and_parse_url(url: str) -> set:
         response = requests.get(url, timeout=15, headers=HEADERS)
         response.raise_for_status()
         content = response.text
-
-        # 1. Try to parse as structured JSON
         try:
             json_content = json.loads(content)
             parsed_configs = parse_structured_json(json_content)
             if parsed_configs:
                 return parsed_configs
         except json.JSONDecodeError:
-            pass # Not a JSON file, proceed to next methods
-
-        # 2. Try to decode as Base64
+            pass
         try:
             decoded_content = base64.b64decode(content).decode('utf-8')
             content = decoded_content
         except Exception:
-            pass # If not Base64, use the original content
-
-        # 3. Parse as plain text with regex
+            pass
         pattern = r'(' + '|'.join(p for p in VALID_PREFIXES) + r')[^\s\'"<>]+'
         return set(re.findall(pattern, content))
-
     except requests.RequestException:
         return set()
 
 def test_config_via_api(config_str: str) -> dict:
-    # ... (This function remains unchanged)
     try:
         parsed = urlparse(config_str)
         host = parsed.hostname
@@ -188,7 +176,6 @@ def test_config_via_api(config_str: str) -> dict:
         return {'config_str': config_str, 'ping': 9999}
 
 def validate_and_categorize_configs(configs: set) -> dict:
-    # ... (This function remains unchanged)
     categorized = {'xray': set(), 'singbox': set()}
     for cfg in configs:
         try:
@@ -204,7 +191,6 @@ def validate_and_categorize_configs(configs: set) -> dict:
     return categorized
 
 def generate_clash_subscription(configs: list) -> str | None:
-    # ... (This function remains unchanged)
     proxies = []; used_names = set()
     for config_str in configs:
         try:
@@ -240,7 +226,8 @@ def generate_clash_subscription(configs: list) -> str | None:
                 if len(cred) < 2 or not cred[0] or not cred[1]: raise ValueError("SS config malformed credentials")
                 proxy.update({'cipher': cred[0], 'password': cred[1]})
             proxies.append(proxy)
-        except Exception: continue
+        except Exception as e:
+            continue
     if not proxies: return None
     clash_config = {'proxies': proxies}
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False)
@@ -249,7 +236,6 @@ def generate_clash_subscription(configs: list) -> str | None:
 # === MAIN EXECUTION (اجرای اصلی) ===
 # =================================================================================
 def main():
-    # ... (The main function remains largely the same, but now benefits from the improved fetch_and_parse_url)
     print(f"🚀 V2V Scraper v5.0 - شروع فرآیند با معیارهای منعطف و پارسر JSON...")
     start_time = time.time()
     static_sources = get_static_sources()
