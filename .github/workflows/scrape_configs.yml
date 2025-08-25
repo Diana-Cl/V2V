@@ -9,7 +9,6 @@ jobs:
   build-and-commit:
     permissions:
       contents: write
-      pages: write
     runs-on: ubuntu-latest
     timeout-minutes: 45
       
@@ -66,7 +65,6 @@ jobs:
         run: echo "$(date +%s)" > cache_version.txt
 
       - name: Commit and Push the final files to GitHub
-        id: commit_step
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -76,17 +74,7 @@ jobs:
           
           if git diff-index --quiet HEAD; then
             echo "No changes to commit."
-            echo "changes_pushed=false" >> $GITHUB_OUTPUT
           else
             git commit -m "📊 Update configs [$(date -u)]"
             git push
-            echo "changes_pushed=true" >> $GITHUB_OUTPUT
           fi
-      
-      - name: Purge GitHub Pages Cache by Re-deploying
-        if: steps.commit_step.outputs.changes_pushed == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Triggering a new GitHub Pages deployment to purge the cache..."
-          gh api --method POST -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/pages/deployments
