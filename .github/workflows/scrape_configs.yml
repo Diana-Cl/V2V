@@ -2,7 +2,7 @@ name: Scheduled Scrape and Build
 
 on:
   schedule:
-    # طبق درخواست شما به هر ۶ ساعت یک بار تغییر کرد
+    # هر ۶ ساعت یک بار اجرا می‌شود
     - cron: '0 */6 * * *'
   workflow_dispatch: # قابلیت اجرای دستی
 
@@ -10,6 +10,8 @@ jobs:
   build-and-commit:
     permissions:
       contents: write
+      # دسترسی لازم برای پاک‌سازی کش گیت‌هاب پیجز
+      deployments: write
     runs-on: ubuntu-latest
     timeout-minutes: 45
       
@@ -46,7 +48,6 @@ jobs:
           fi
           
       - name: Upload files to ArvanCloud
-        # --- FIX: Re-added continue-on-error as requested ---
         continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
@@ -64,6 +65,7 @@ jobs:
           fi
 
       - name: Commit and Push the final files to GitHub
+        id: commit_step
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -72,7 +74,16 @@ jobs:
           
           if git diff-index --quiet HEAD; then
             echo "No changes to commit."
+            echo "changes_pushed=false" >> $GITHUB_OUTPUT
           else
             git commit -m "📊 Update configs [$(date -u)]"
             git push
+            echo "changes_pushed=true" >> $GITHUB_OUTPUT
           fi
+      
+      # --- FIX: New step to purge the GitHub Pages cache ---
+      - name: Purge GitHub Pages Cache
+        # این مرحله فقط زمانی اجرا می‌شود که مرحله قبل تغییراتی را پوش کرده باشد
+        if: steps.commit_step.outputs.changes_pushed == 'true'
+        uses: c-hive/purge-gh-pages-cache-action@v1
+
