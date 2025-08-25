@@ -77,7 +77,7 @@
             <img src="https://raw.githubusercontent.com/SMBCRYP/V2V/main/logo.png" alt="V2V Logo">
             <p>سپاس هرآنکه خواه یا ناخواه دستی بر این راهک رهایی داشت</p>
         </div>
-        <div class="status-bar" id="status-bar">درحال اتصال به آینه‌ها...</div>
+        <div class="status-bar" id="status-bar"></div>
         <div class="container">
             <div id="xray-section">
                 <div class="core-header" id="xray-header">Xray-Core / ایکس‌ری</div>
@@ -113,11 +113,10 @@
                     const response = await fetch(url + `?t=${new Date().getTime()}`, { cache: "no-store" });
                     if (!response.ok) throw new Error(`Status: ${response.status}`);
                     
-                    document.getElementById('status-bar').textContent = `✅ داده‌ها با موفقیت از آینه ${new URL(url).hostname} بارگذاری شد.`;
+                    document.getElementById('status-bar').textContent = '✅ بارگذاری موفق';
                     return await response.json();
                 } catch (error) { 
-                    console.error(`Failed to fetch from ${url}:`, error); 
-                    document.getElementById('status-bar').textContent = `⚠️ تلاش برای اتصال به آینه بعدی... (${new URL(url).hostname} ناموفق بود)`;
+                    console.error(`Failed to fetch from ${url}:`, error);
                 }
             }
             throw new Error('All data sources failed.');
@@ -130,7 +129,7 @@
                 renderCore('singbox', data.singbox || []);
             } catch (error) {
                 const errorMsg = `<div class="alert">❌ خطا در بارگذاری فایل از تمام آینه‌ها. لطفاً بعداً دوباره تلاش کنید.</div>`;
-                document.getElementById('status-bar').textContent = '⛔ تمام منابع داده از دسترس خارج هستند.';
+                document.getElementById('status-bar').textContent = '❌ بارگذاری ناموفق';
                 document.getElementById('xray-content-wrapper').innerHTML = errorMsg;
                 document.getElementById('singbox-content-wrapper').innerHTML = errorMsg;
             }
@@ -302,9 +301,7 @@
             else if (action === 'qr') showQrCode(url); 
         }
         
-        // === MODIFIED FUNCTION: copyClashSubscriptionUrl ===
         function copyClashSubscriptionUrl() { 
-            // FIX: Use the GitHub source (index 1) for the subscription URL
             const clashUrl = DATA_SOURCES[1].replace('all_live_configs.json', 'clash_subscription.yaml'); 
             copyToClipboard(clashUrl, 'URL اشتراک کلش از گیت‌هاب کپی شد!'); 
         }
@@ -312,7 +309,6 @@
         function generateClashConfig(core, action) {
             let configs = getSelectedConfigs(core);
 
-            // HYBRID LOGIC: If no configs are manually selected, auto-select the best ones.
             if (configs.length === 0) {
                 const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
                 const testedItems = allItems.filter(item => item.dataset.newPing && parseInt(item.dataset.newPing, 10) < 9999);
