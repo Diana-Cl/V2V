@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>پروژه V2V</title>
+
+    <meta name="theme-color" content="#121212">
+    <link rel="apple-touch-icon" href="/V2V/icon-192.png">
+    <link rel="manifest" href="manifest.json">
+
     <style>
         :root {
             --primary-bg: #121212; --secondary-bg: #1a1a1a; --text-color: #d1d1d1;
@@ -302,7 +307,6 @@
             copyToClipboard(clashUrl, 'URL اشتراک کلش کپی شد!'); 
         }
 
-        // === MODIFIED FUNCTION: generateClashConfig ===
         function generateClashConfig(core, action) {
             let configs = getSelectedConfigs(core);
 
@@ -322,7 +326,6 @@
                 configs = testedItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
             }
             
-            // The rest of the function remains the same, processing the `configs` array.
             const proxies = configs.map(configStr => { 
                 try { 
                     const url = new URL(configStr); 
