@@ -2,7 +2,7 @@ name: Scheduled Scrape and Build
 
 on:
   schedule:
-    # طبق درخواست شما به هر ۶ ساعت یک بار تغییر کرد
+    # هر ۶ ساعت یک بار اجرا می‌شود
     - cron: '0 */6 * * *'
   workflow_dispatch: # قابلیت اجرای دستی
 
@@ -10,8 +10,8 @@ jobs:
   build-and-commit:
     permissions:
       contents: write
-      # دسترسی لازم برای پاک‌سازی کش گیت‌هاب پیجز
-      deployments: write
+      # دسترسی لازم برای پاک‌سازی کش (ایجاد دیپلوی جدید)
+      pages: write
     runs-on: ubuntu-latest
     timeout-minutes: 45
       
@@ -81,8 +81,10 @@ jobs:
             echo "changes_pushed=true" >> $GITHUB_OUTPUT
           fi
       
-      - name: Purge GitHub Pages Cache
-        # این مرحله فقط زمانی اجرا می‌شود که مرحله قبل تغییراتی را پوش کرده باشد
+      - name: Purge GitHub Pages Cache by Re-deploying
         if: steps.commit_step.outputs.changes_pushed == 'true'
-        uses: c-hive/gh-pages-cache-purge-action@v1
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Triggering a new GitHub Pages deployment to purge the cache..."
+          gh api --method POST -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/pages/deployments
