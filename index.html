@@ -302,9 +302,11 @@
             else if (action === 'qr') showQrCode(url); 
         }
         
+        // === MODIFIED FUNCTION: copyClashSubscriptionUrl ===
         function copyClashSubscriptionUrl() { 
-            const clashUrl = DATA_SOURCES[0].replace('all_live_configs.json', 'clash_subscription.yaml'); 
-            copyToClipboard(clashUrl, 'URL اشتراک کلش کپی شد!'); 
+            // FIX: Use the GitHub source (index 1) for the subscription URL
+            const clashUrl = DATA_SOURCES[1].replace('all_live_configs.json', 'clash_subscription.yaml'); 
+            copyToClipboard(clashUrl, 'URL اشتراک کلش از گیت‌هاب کپی شد!'); 
         }
 
         function generateClashConfig(core, action) {
