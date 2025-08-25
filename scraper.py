@@ -122,7 +122,10 @@ def test_config_via_api(config_str: str) -> dict:
         port = parsed.port
 
         if parsed.scheme == 'vmess':
-            decoded = json.loads(base64.b64decode(config_str.replace("vmess://", "")).decode('utf-8'))
+            # Add padding if needed for base64 decoding
+            b64_str = config_str.replace("vmess://", "")
+            b64_str += '=' * (-len(b64_str) % 4)
+            decoded = json.loads(base64.b64decode(b64_str).decode('utf-8'))
             host, port = decoded['add'], int(decoded['port'])
         
         if not port:
@@ -160,10 +163,9 @@ def validate_and_categorize_configs(configs: set) -> dict:
 # === MODIFIED FUNCTION: generate_clash_subscription ===
 def generate_clash_subscription(configs: list) -> str | None:
     """
-    تولید فایل اشتراک کلش سالم و بدون خطا.
-    این تابع شامل ۳ لایه کنترلی است:
+    تولید فایل اشتراک کلش سالم و بدون خطا با ۳ لایه کنترلی:
     ۱. حل نام‌های تکراری (Duplicate)
-    ۲. اعتبارسنجی سخت‌گیرانه برای حذف کانفیگ‌های ناقص (مثل نبود پسوورد)
+    ۲. اعتبارسنجی سخت‌گیرانه برای حذف کانفیگ‌های ناقص
     ۳. نادیده گرفتن پروتکل‌های ناسازگار
     """
     proxies = []
@@ -200,7 +202,9 @@ def generate_clash_subscription(configs: list) -> str | None:
                     proxy['ws-opts'] = {'path': params.get('path', '/'), 'headers': {'Host': params.get('host', url.hostname)}}
             
             elif protocol == 'vmess':
-                decoded = json.loads(base64.b64decode(config_str.replace("vmess://", "")).decode('utf-8'))
+                b64_str = config_str.replace("vmess://", "")
+                b64_str += '=' * (-len(b64_str) % 4)
+                decoded = json.loads(base64.b64decode(b64_str).decode('utf-8'))
                 if not decoded.get('id'): raise ValueError("VMESS config missing ID")
                 proxy.update({'uuid': decoded.get('id'), 'alterId': decoded.get('aid'), 'cipher': decoded.get('scy', 'auto'), 'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net', 'tcp'), 'servername': decoded.get('sni', decoded.get('add')), 'skip-cert-verify': True})
                 proxy.update({'server': decoded.get('add'), 'port': int(decoded.get('port'))})
@@ -213,7 +217,6 @@ def generate_clash_subscription(configs: list) -> str | None:
             elif protocol == 'ss':
                 if not url.username: raise ValueError("SS config missing credentials")
                 cred_part = unquote(url.username)
-                # Add padding for base64
                 cred_part += '=' * (-len(cred_part) % 4)
                 cred = base64.b64decode(cred_part).decode().split(':')
                 if len(cred) < 2 or not cred[0] or not cred[1]: raise ValueError("SS config malformed credentials")
@@ -221,7 +224,8 @@ def generate_clash_subscription(configs: list) -> str | None:
             
             proxies.append(proxy)
         except Exception as e:
-            #print(f"Skipping invalid Clash config: {config_str} | Error: {e}")
+            # Uncomment the line below for debugging malformed configs
+            # print(f"Skipping invalid Clash config: {config_str} | Error: {e}")
             continue
             
     # --- FIX 3: Prevent generating empty file ---
@@ -235,7 +239,7 @@ def generate_clash_subscription(configs: list) -> str | None:
 # === MAIN EXECUTION (اجرای اصلی) ===
 # =================================================================================
 def main():
-    print("🚀 V2V Scraper v4.0 - شروع فرآیند ادغام و بهینه‌سازی...")
+    print("🚀 V2V Scraper v4.1 - شروع فرآیند ادغام و بهینه‌سازی...")
     start_time = time.time()
 
     # --- 1. جمع‌آوری منابع ---
@@ -254,6 +258,10 @@ def main():
 
     if not raw_configs:
         print("❌ هیچ کانفیگی یافت نشد. عملیات متوقف شد.")
+        # --- FIX: Ensure empty files are created if no configs are found ---
+        with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
+            json.dump({'xray': [], 'singbox': []}, f)
+        # We don't touch the clash file, leaving the old one in place.
         return
 
     # --- 3. اعتبارسنجی و دسته‌بندی ---
@@ -268,15 +276,16 @@ def main():
     for core_name, configs_to_test in categorized_configs.items():
         if not configs_to_test: continue
         
-        if len(configs_to_test) > MAX_CONFIGS_TO_TEST:
-            print(f"⚠️ تعداد کانفیگ‌های {core_name} ({len(configs_to_test)}) زیاد است. {MAX_CONFIGS_TO_TEST} عدد برای تست نمونه‌گیری می‌شود.")
-            configs_to_test = list(configs_to_test)[:MAX_CONFIGS_TO_TEST]
+        configs_to_test_list = list(configs_to_test)
+        if len(configs_to_test_list) > MAX_CONFIGS_TO_TEST:
+            print(f"⚠️ تعداد کانفیگ‌های {core_name} ({len(configs_to_test_list)}) زیاد است. {MAX_CONFIGS_TO_TEST} عدد برای تست نمونه‌گیری می‌شود.")
+            configs_to_test_list = configs_to_test_list[:MAX_CONFIGS_TO_TEST]
 
-        print(f"\n🏃‍♂️ در حال تست سرعت {len(configs_to_test)} کانفیگ برای هسته {core_name.upper()}...")
+        print(f"\n🏃‍♂️ در حال تست سرعت {len(configs_to_test_list)} کانفیگ برای هسته {core_name.upper()}...")
         
         fast_configs = []
         with ThreadPoolExecutor(max_workers=30) as executor:
-            future_to_config = {executor.submit(test_config_via_api, cfg): cfg for cfg in configs_to_test}
+            future_to_config = {executor.submit(test_config_via_api, cfg): cfg for cfg in configs_to_test_list}
             for future in as_completed(future_to_config):
                 result = future.result()
                 if result['ping'] < MAX_PING_THRESHOLD:
@@ -290,7 +299,7 @@ def main():
     # --- 5. تولید فایل‌های خروجی ---
     print("\n💾 در حال تولید فایل‌های خروجی نهایی...")
 
-    # 5.1: تولید all_live_configs.json (با فرمت ساده برای فرانت‌اند)
+    # 5.1: تولید all_live_configs.json (با فرمت سازگار با فرانت‌اند)
     output_for_frontend = {
         'xray': [cfg['config_str'] for cfg in final_configs['xray']],
         'singbox': [cfg['config_str'] for cfg in final_configs['singbox']]
@@ -314,7 +323,7 @@ def main():
     print("\n🎉 فرآیند با موفقیت تکمیل شد!")
     print("="*30)
     print("📊 خلاصه نتایج:")
-    print(f"   -  Xray کانفیگ نهایی: {len(output_for_frontend['xray'])}")
+    print(f"   - Xray کانفیگ نهایی: {len(output_for_frontend['xray'])}")
     print(f"   - Sing-box کانفیگ نهایی: {len(output_for_frontend['singbox'])}")
     print(f"   - مجموع کل: {total_final_configs} کانفیگ سالم و سریع")
     print(f"   - مدت زمان اجرا: {elapsed_time:.2f} ثانیه")
@@ -322,4 +331,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
