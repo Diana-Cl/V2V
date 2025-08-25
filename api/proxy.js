@@ -38,7 +38,14 @@ export default function handler(req, res) {
         const endTime = new Date();
         const ping = endTime - startTime;
         socket.destroy();
-        res.status(200).json({ host, port, ping });
+
+        // === FIX: Handle unrealistic pings (like 0ms) as errors ===
+        // A ping below 5ms is highly unlikely and usually indicates an error.
+        if (ping < 5) {
+            res.status(200).json({ host, port, ping: 9998, error: `Unrealistic ping detected: ${ping}ms` });
+        } else {
+            res.status(200).json({ host, port, ping });
+        }
     });
 
     socket.on('error', (err) => {
