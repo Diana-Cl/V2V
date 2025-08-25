@@ -107,24 +107,46 @@
             'https://v2-v.vercel.app/all_live_configs.json'
         ];
         
-        async function fetchDataWithFallback() {
-            for (const url of DATA_SOURCES) {
+        // --- START OF PROFESSIONAL CACHE BUSTING FIX ---
+
+        // This new function robustly fetches data by first getting a unique version number from cache_version.txt
+        async function fetchDataWithCacheBusting() {
+            // Convert full URLs to base paths (e.g., https://domain.com/path/file.json -> https://domain.com/path)
+            const baseSources = DATA_SOURCES.map(url => url.substring(0, url.lastIndexOf('/')));
+
+            for (const baseUrl of baseSources) {
                 try {
-                    const response = await fetch(url + `?t=${new Date().getTime()}`, { cache: "no-store" });
-                    if (!response.ok) throw new Error(`Status: ${response.status}`);
+                    console.log(`Attempting to fetch from source: ${baseUrl}`);
                     
-                    document.getElementById('status-bar').textContent = '✅ بارگذاری موفق';
-                    return await response.json();
+                    // Step 1: Fetch the unique version number from the server
+                    const versionResponse = await fetch(`${baseUrl}/cache_version.txt`, { cache: 'no-store' });
+                    if (!versionResponse.ok) throw new Error('cache_version.txt not found.');
+                    const version = (await versionResponse.text()).trim();
+                    
+                    // Step 2: Use the version number to create a unique URL that bypasses CDN cache
+                    const uniqueUrl = `${baseUrl}/all_live_configs.json?v=${version}`;
+                    console.log(`Fetching unique URL: ${uniqueUrl}`);
+                    
+                    const dataResponse = await fetch(uniqueUrl, { cache: 'no-store' });
+                    if (!dataResponse.ok) throw new Error('Main config file not found.');
+                    
+                    // Success!
+                    document.getElementById('status-bar').textContent = `✅ بارگذاری موفق از: ${new URL(baseUrl).hostname}`;
+                    return await dataResponse.json();
                 } catch (error) { 
-                    console.error(`Failed to fetch from ${url}:`, error);
+                    console.error(`Failed to fetch from source ${baseUrl}:`, error);
+                    // If this source fails, the loop will automatically try the next one.
                 }
             }
+            
+            // This error is thrown only if all sources have failed
             throw new Error('All data sources failed.');
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const data = await fetchDataWithFallback();
+                // Call the new, improved function
+                const data = await fetchDataWithCacheBusting();
                 renderCore('xray', data.xray || []);
                 renderCore('singbox', data.singbox || []);
             } catch (error) {
@@ -134,6 +156,9 @@
                 document.getElementById('singbox-content-wrapper').innerHTML = errorMsg;
             }
         });
+
+        // --- END OF FIX ---
+        // The rest of your functions remain unchanged as they were well-written.
 
         function renderCore(core, configObjects) {
             const container = document.getElementById(`${core}-content-wrapper`);
@@ -156,7 +181,7 @@
             }
             
             const groupedByProtocol = configObjects.reduce((acc, item) => {
-                const configStr = item.config_str;
+                const configStr = item; // Assuming the array contains config strings directly now based on the new scraper output
                 const match = configStr.match(/^(\w+):\/\//);
                 if (match && match[1]) {
                     const protocol = match[1];
@@ -182,10 +207,7 @@
                     <ul class="config-list" id="${protocolGroupId}"></ul>`;
                 
                 const configList = protocolGroup.querySelector('.config-list');
-                groupedByProtocol[protocol].forEach(item => {
-                    const configStr = item.config_str;
-                    const initialPing = item.ping;
-
+                groupedByProtocol[protocol].forEach(configStr => { // Simplified loop
                     const li = document.createElement('li');
                     li.className = 'config-item';
                     li.dataset.config = configStr;
@@ -193,15 +215,12 @@
                     try {
                         const serverName = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : new URL(configStr).hostname;
                         
-                        let pingColor = 'var(--ping-good)';
-                        if (initialPing > 500) pingColor = 'var(--ping-medium)';
-                        if (initialPing > 1000) pingColor = 'var(--ping-bad)';
-
+                        // Initial ping is no longer available in the new JSON structure, so we just show the name
                         li.innerHTML = `
                             <input type="checkbox" class="config-checkbox">
                             <div class="config-details">
                                 <span class="server">${serverName}</span>
-                                <span class="ping" style="color:${pingColor};">پینگ اولیه: ${initialPing}ms</span>
+                                <span class="ping"></span>
                             </div>
                             <div class="copy-button-container">
                                 <button class="copy-btn" onclick="copyToClipboard('${configStr}')">کپی</button>
@@ -220,7 +239,7 @@
         function toggleSelectAll(event, select, groupId) { event.stopPropagation(); document.querySelectorAll(`#${groupId} .config-checkbox`).forEach(cb => cb.checked = select); }
         function showQrCode(text) { const modal = document.getElementById('qr-code-modal'); modal.style.display = 'flex'; new QRious({ element: modal.querySelector('canvas'), value: text, size: 250, padding: 10 }); }
         function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
-        function copyToClipboard(text, msg = 'کپی شد!') {  navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی در کلیپ‌بورد ناموفق بود.\n' + err));}
+        function copyToClipboard(text, msg = 'کپی شد!') {  navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی در کلیپ‌بود ناموفق بود.\n' + err));}
         
         async function runSpeedTest(core) {
             const testButton = document.querySelector(`#${core}-section .test-button`);
