@@ -1,4 +1,4 @@
-name: Scheduled Scrape and Build
+Name: Scheduled Scrape and Build
 
 on:
   schedule:
@@ -64,6 +64,10 @@ jobs:
             aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --content-type "text/html" --cache-control "max-age=300"
           fi
 
+      # --- CHANGE 1: A new step to generate a unique version file ---
+      - name: Generate Cache Buster Version
+        run: echo "$(date +%s)" > cache_version.txt
+
       - name: Commit and Push the final files to GitHub
         id: commit_step
         run: |
@@ -71,6 +75,8 @@ jobs:
           git config --local user.name "GitHub Action"
           git add all_live_configs.json || echo "all_live_configs.json not found to commit"
           git add clash_subscription.yaml || echo "clash_subscription.yaml not found to commit"
+          # --- CHANGE 2: Add the new version file to the commit ---
+          git add cache_version.txt || echo "cache_version.txt not found to commit"
           
           if git diff-index --quiet HEAD; then
             echo "No changes to commit."
@@ -88,3 +94,4 @@ jobs:
         run: |
           echo "Triggering a new GitHub Pages deployment to purge the cache..."
           gh api --method POST -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/pages/deployments
+
