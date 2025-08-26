@@ -2,8 +2,8 @@ name: Scheduled Scrape and Build
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
-  workflow_dispatch:
+    - cron: '0 */6 * * *' # اجرا در هر ۶ ساعت
+  workflow_dispatch: # قابلیت اجرای دستی
 
 jobs:
   build-and-commit:
@@ -11,7 +11,7 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 45
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,14 +21,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Python dependencies
-        run: pip install requests PyYAML PyGithub
+      # بهبود: تمام پکیج‌ها در یک مرحله نصب می‌شوند
+      - name: Install dependencies
+        run: |
+          pip install requests PyYAML PyGithub awscli
 
       - name: Preserve previous clash subscription if it exists
         run: |
           if [ -f "clash_subscription.yaml" ]; then
             mv clash_subscription.yaml clash_subscription.yaml.bak
-            echo "Previous clash_subscription.yaml has been backed up."
+            echo "Backed up clash_subscription.yaml"
           fi
 
       - name: Run scraper script
@@ -36,44 +38,55 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         timeout-minutes: 40
-      
-      - name: Restore previous clash subscription if scraper did not generate one
+
+      - name: Restore previous clash subscription if scraper failed
         run: |
           if [ ! -f "clash_subscription.yaml" ] && [ -f "clash_subscription.yaml.bak" ]; then
             mv clash_subscription.yaml.bak clash_subscription.yaml
-            echo "Scraper did not generate a new clash file. Restored the previous version."
+            echo "Scraper failed to generate a new clash file. Restored from backup."
           fi
-          
+
+      # اصلاح: آدرس Endpoint آروان تصحیح و اسکریپت مرتب‌سازی شد
       - name: Upload files to ArvanCloud
         continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_ACCESS_KEY_SECRET }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_KEY_SECRET }}
         run: |
-          pip install awscli
+          ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.ir" # <-- آدرس صحیح
+          BUCKET_NAME="s3://v2v-data"
+          
           if [ -f "all_live_configs.json" ]; then
-            aws s3 cp all_live_configs.json s3://v2v-data/all_live_configs.json --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
+            aws s3 cp all_live_configs.json "$BUCKET_NAME/all_live_configs.json" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
           fi
+          
           if [ -f "clash_subscription.yaml" ]; then
-            aws s3 cp clash_subscription.yaml s3://v2v-data/clash_subscription.yaml --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --cache-control "max-age=300"
+            aws s3 cp clash_subscription.yaml "$BUCKET_NAME/clash_subscription.yaml" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
           fi
+          
           if [ -f "index.html" ]; then
-            aws s3 cp index.html s3://v2v-data/index.html --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --content-type "text/html" --cache-control "max-age=300"
+            aws s3 cp index.html "$BUCKET_NAME/index.html" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/html" --cache-control "max-age=300"
           fi
 
       - name: Generate Cache Buster Version
-        run: echo "$(date +%s)" > cache_version.txt
+        run: |
+          # یک فایل حاوی زمان فعلی به فرمت یونیکس می‌سازد
+          echo "$(date +%s)" > cache_version.txt
 
-      - name: Commit and Push the final files to GitHub
+      # بهبود: روش مرتب‌تر برای اضافه کردن فایل‌ها به کامیت
+      - name: Commit and Push final files to GitHub
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add all_live_configs.json || echo "all_live_configs.json not found to commit"
-          git add clash_subscription.yaml || echo "clash_subscription.yaml not found to commit"
-          git add cache_version.txt || echo "cache_version.txt not found to commit"
           
+          # فقط در صورت وجود، فایل‌ها را برای کامیت اضافه می‌کند
+          if [ -f "all_live_configs.json" ]; then git add all_live_configs.json; fi
+          if [ -f "clash_subscription.yaml" ]; then git add clash_subscription.yaml; fi
+          if [ -f "cache_version.txt" ]; then git add cache_version.txt; fi
+          
+          # فقط در صورت وجود تغییرات، کامیت و پوش می‌کند
           if git diff-index --quiet HEAD; then
-            echo "No changes to commit."
+            echo "No new changes to commit."
           else
             git commit -m "📊 Update configs [$(date -u)]"
             git push
