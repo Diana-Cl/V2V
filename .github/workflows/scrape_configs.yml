@@ -1,4 +1,4 @@
-name: Scheduled Scrape and Build
+Name: Scheduled Scrape and Build
 
 on:
   schedule:
@@ -21,10 +21,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      # بهبود: تمام پکیج‌ها در یک مرحله نصب می‌شوند
+      # اصلاح: پکیج مورد نیاز برای خواندن HTML اضافه شد
       - name: Install dependencies
         run: |
-          pip install requests PyYAML PyGithub awscli
+          pip install requests PyYAML PyGithub awscli beautifulsoup4
 
       - name: Preserve previous clash subscription if it exists
         run: |
@@ -46,7 +46,6 @@ jobs:
             echo "Scraper failed to generate a new clash file. Restored from backup."
           fi
 
-      # اصلاح: آدرس Endpoint آروان تصحیح و اسکریپت مرتب‌سازی شد
       - name: Upload files to ArvanCloud
         continue-on-error: true
         env:
@@ -73,7 +72,6 @@ jobs:
           # یک فایل حاوی زمان فعلی به فرمت یونیکس می‌سازد
           echo "$(date +%s)" > cache_version.txt
 
-      # بهبود: روش مرتب‌تر برای اضافه کردن فایل‌ها به کامیت
       - name: Commit and Push final files to GitHub
         run: |
           git config --local user.email "action@github.com"
