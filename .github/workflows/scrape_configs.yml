@@ -2,8 +2,8 @@ Name: Scheduled Scrape and Build
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # اجرا در هر ۶ ساعت
-  workflow_dispatch: # قابلیت اجرای دستی
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
   build-and-commit:
@@ -23,26 +23,33 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo ">>> DEBUG: Installing dependencies..."
           pip install requests PyYAML PyGithub awscli beautifulsoup4
+          echo ">>> DEBUG: Dependencies installed."
 
       - name: Preserve previous clash subscription if it exists
         run: |
+          echo ">>> DEBUG: Checking for existing clash file to back up..."
           if [ -f "clash_subscription.yaml" ]; then
             mv clash_subscription.yaml clash_subscription.yaml.bak
-            echo "Backed up clash_subscription.yaml"
+            echo ">>> DEBUG: Backed up clash_subscription.yaml"
           fi
 
       - name: Run scraper script
-        run: python scraper.py
+        run: |
+          echo ">>> DEBUG: RUNNING SCRAPER SCRIPT (This is the longest step)..."
+          python scraper.py
+          echo ">>> DEBUG: SCRAPER SCRIPT FINISHED."
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         timeout-minutes: 40
 
       - name: Restore previous clash subscription if scraper failed
         run: |
+          echo ">>> DEBUG: Checking if clash file needs to be restored..."
           if [ ! -f "clash_subscription.yaml" ] && [ -f "clash_subscription.yaml.bak" ]; then
             mv clash_subscription.yaml.bak clash_subscription.yaml
-            echo "Scraper failed to generate a new clash file. Restored from backup."
+            echo ">>> DEBUG: Restored clash file from backup."
           fi
 
       - name: Upload files to ArvanCloud
@@ -51,38 +58,43 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_KEY_SECRET }}
         run: |
+          echo ">>> DEBUG: Uploading files to ArvanCloud..."
           ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.ir"
           BUCKET_NAME="s3://v2v-data"
-          
           if [ -f "all_live_configs.json" ]; then
             aws s3 cp all_live_configs.json "$BUCKET_NAME/all_live_configs.json" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
           fi
-          
           if [ -f "clash_subscription.yaml" ]; then
             aws s3 cp clash_subscription.yaml "$BUCKET_NAME/clash_subscription.yaml" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
           fi
-          
           if [ -f "index.html" ]; then
             aws s3 cp index.html "$BUCKET_NAME/index.html" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/html" --cache-control "max-age=300"
           fi
+          echo ">>> DEBUG: Upload to ArvanCloud finished."
 
       - name: Generate Cache Buster Version
         run: |
+          echo ">>> DEBUG: Generating cache buster file..."
           echo "$(date +%s)" > cache_version.txt
+          echo ">>> DEBUG: Cache buster generated."
 
       - name: Commit and Push final files to GitHub
         run: |
+          echo ">>> DEBUG: Starting commit and push process..."
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
+          echo "--- Adding files to git..."
           if [ -f "all_live_configs.json" ]; then git add all_live_configs.json; fi
           if [ -f "clash_subscription.yaml" ]; then git add clash_subscription.yaml; fi
           if [ -f "cache_version.txt" ]; then git add cache_version.txt; fi
           
           if git diff-index --quiet HEAD; then
-            echo "No new changes to commit."
+            echo ">>> DEBUG: No new changes to commit."
           else
-            # --- FIX: Added [skip ci] to prevent workflow loops ---
+            echo "--- Committing changes..."
             git commit -m "📊 Update configs [$(date -u)] [skip ci]"
+            echo "--- Pushing to remote..."
             git push
+            echo ">>> DEBUG: Push successful."
           fi
