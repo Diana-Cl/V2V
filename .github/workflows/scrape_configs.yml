@@ -21,7 +21,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      # اصلاح: پکیج مورد نیاز برای خواندن HTML اضافه شد
       - name: Install dependencies
         run: |
           pip install requests PyYAML PyGithub awscli beautifulsoup4
@@ -52,7 +51,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_KEY_SECRET }}
         run: |
-          ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.ir" # <-- آدرس صحیح
+          ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.ir"
           BUCKET_NAME="s3://v2v-data"
           
           if [ -f "all_live_configs.json" ]; then
@@ -69,7 +68,6 @@ jobs:
 
       - name: Generate Cache Buster Version
         run: |
-          # یک فایل حاوی زمان فعلی به فرمت یونیکس می‌سازد
           echo "$(date +%s)" > cache_version.txt
 
       - name: Commit and Push final files to GitHub
@@ -77,15 +75,14 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # فقط در صورت وجود، فایل‌ها را برای کامیت اضافه می‌کند
           if [ -f "all_live_configs.json" ]; then git add all_live_configs.json; fi
           if [ -f "clash_subscription.yaml" ]; then git add clash_subscription.yaml; fi
           if [ -f "cache_version.txt" ]; then git add cache_version.txt; fi
           
-          # فقط در صورت وجود تغییرات، کامیت و پوش می‌کند
           if git diff-index --quiet HEAD; then
             echo "No new changes to commit."
           else
-            git commit -m "📊 Update configs [$(date -u)]"
+            # --- FIX: Added [skip ci] to prevent workflow loops ---
+            git commit -m "📊 Update configs [$(date -u)] [skip ci]"
             git push
           fi
