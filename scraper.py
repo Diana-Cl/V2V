@@ -9,8 +9,9 @@ import time
 import yaml
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from urllib.parse import urlparse, parse_qsl, unquote, urlencode
+from urllib.parse import urlparse, parse_qsl, unquote, urlencode, quote
 from github import Github, Auth, GithubException
+from bs4 import BeautifulSoup
 
 # =================================================================================
 # === CONFIGURATION (تنظیمات) ===
@@ -24,9 +25,9 @@ OUTPUT_CLASH_FILE = "clash_subscription.yaml"
 # --- تنظیمات عمومی
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
 
-# --- FIX: Anti-Cache Headers added to solve the caching problem ---
+# --- هدرهای ضد کش برای اطمینان از دریافت محتوای تازه
 HEADERS = {
-    'User-Agent': 'V2V-Scraper/v5.3-Flexible',
+    'User-Agent': 'V2V-Scraper/v5.4-MultiFormat',
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Pragma': 'no-cache',
     'Expires': '0'
@@ -41,8 +42,7 @@ GITHUB_SEARCH_QUERIES = ['v2ray subscription', 'vless subscription', 'proxy subs
 # --- تنظیمات تست سرعت و کیفیت‌سنجی
 SPEED_TEST_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy'
 MAX_CONFIGS_TO_TEST = 2000
-# --- CHANGE: Increased ping threshold for more flexibility ---
-MAX_PING_THRESHOLD = 5000 # (5 ثانیه) - افزایش انعطاف‌پذیری
+MAX_PING_THRESHOLD = 5000 # (5 ثانیه)
 TARGET_CONFIGS_PER_CORE = 500
 REQUEST_TIMEOUT = 10
 
@@ -54,15 +54,171 @@ if GITHUB_PAT:
 # =================================================================================
 
 def _decode_padded_b64(encoded_str: str) -> str:
-    """
-    یک رشته Base64 را رمزگشایی می‌کند و در صورت نیاز به آن padding اضافه می‌کند.
-    """
+    """یک رشته Base64 را رمزگشایی می‌کند و در صورت نیاز به آن padding اضافه می‌کند."""
     padded_str = encoded_str + '=' * (-len(encoded_str) % 4)
-    return base64.b64decode(padded_str).decode('utf-8')
+    try:
+        return base64.b64decode(padded_str).decode('utf-8')
+    except Exception:
+        return ""
+
+def _encode_b64(text: str) -> str:
+    """یک رشته را به Base64 انکود می‌کند."""
+    return base64.b64encode(text.encode('utf-8')).decode('utf-8')
 
 # =================================================================================
-# === CORE FUNCTIONS (توابع اصلی) ===
+# === PARSING ENGINE (موتور پردازشگر فرمت‌های مختلف) ===
 # =================================================================================
+
+def parse_structured_json(content: dict) -> set:
+    """پردازش فایل‌های JSON ساختاریافته (مانند کانفیگ Sing-box) برای تمام پروتکل‌ها."""
+    configs = set()
+    if 'outbounds' not in content or not isinstance(content['outbounds'], list):
+        return configs
+        
+    for outbound in content['outbounds']:
+        try:
+            protocol = outbound.get('protocol') or outbound.get('type')
+            if not protocol: continue
+            
+            config_str = ""
+            if protocol == 'vless':
+                server, port, uuid = outbound.get('server'), outbound.get('server_port'), outbound.get('uuid')
+                if not all([server, port, uuid]): continue
+                name = outbound.get('tag', server)
+                params = { 'type': outbound.get('transport', {}).get('type', 'tcp') }
+                if outbound.get('tls', {}).get('enabled'):
+                    tls_settings = outbound['tls']
+                    params['security'] = 'tls'
+                    params['sni'] = tls_settings.get('server_name', server)
+                    if tls_settings.get('reality', {}).get('enabled'):
+                        params['security'] = 'reality'
+                        params['pbk'] = tls_settings['reality']['public_key']
+                        params['sid'] = tls_settings['reality'].get('short_id', '')
+                query_string = urlencode({k: v for k, v in params.items() if v})
+                config_str = f"vless://{uuid}@{server}:{port}?{query_string}#{quote(name)}"
+
+            elif protocol == 'vmess':
+                server, port, uuid = outbound.get('server'), outbound.get('server_port'), outbound.get('uuid')
+                if not all([server, port, uuid]): continue
+                name = outbound.get('tag', server)
+                vmess_data = {
+                    "v": "2", "ps": name, "add": server, "port": port, "id": uuid,
+                    "aid": outbound.get('alter_id', 0), "net": outbound.get('transport', {}).get('type', 'tcp'),
+                    "type": "none", "host": "", "path": "", "tls": "none", "sni": ""
+                }
+                config_str = f"vmess://{_encode_b64(json.dumps(vmess_data, separators=(',', ':')))}"
+
+            if config_str:
+                configs.add(config_str)
+        except (KeyError, TypeError):
+            continue
+    return configs
+
+def parse_structured_yaml(content: dict) -> set:
+    """پردازش فایل‌های YAML (مانند کانفیگ Clash) و تبدیل آن‌ها به لینک استاندارد."""
+    configs = set()
+    if 'proxies' not in content or not isinstance(content['proxies'], list):
+        return configs
+
+    for proxy in content['proxies']:
+        try:
+            protocol = proxy.get('type')
+            server, port, name = proxy.get('server'), proxy.get('port'), proxy.get('name')
+            if not all([protocol, server, port, name]): continue
+            
+            config_str = ""
+            if protocol == 'vless':
+                uuid = proxy.get('uuid')
+                if not uuid: continue
+                params = {'type': proxy.get('network', 'tcp'), 'sni': proxy.get('servername', server)}
+                if proxy.get('tls'): params['security'] = 'tls'
+                query_string = urlencode({k: v for k, v in params.items() if v})
+                config_str = f"vless://{uuid}@{server}:{port}?{query_string}#{quote(name)}"
+
+            elif protocol == 'vmess':
+                uuid = proxy.get('uuid')
+                if not uuid: continue
+                vmess_data = {
+                    "v": "2", "ps": name, "add": server, "port": port, "id": uuid,
+                    "aid": proxy.get('alterId', 0), "net": proxy.get('network', 'tcp'),
+                    "type": "none", "host": proxy.get('ws-opts', {}).get('headers', {}).get('Host', ''),
+                    "path": proxy.get('ws-opts', {}).get('path', ''), "tls": "tls" if proxy.get('tls') else "none",
+                    "sni": proxy.get('servername', server)
+                }
+                config_str = f"vmess://{_encode_b64(json.dumps(vmess_data, separators=(',', ':')))}"
+            
+            elif protocol == 'trojan':
+                password = proxy.get('password')
+                if not password: continue
+                params = {'sni': proxy.get('sni', server)}
+                query_string = urlencode({k: v for k, v in params.items() if v})
+                config_str = f"trojan://{password}@{server}:{port}?{query_string}#{quote(name)}"
+
+            if config_str:
+                configs.add(config_str)
+        except (KeyError, TypeError, AttributeError):
+            continue
+    return configs
+
+def parse_html_content(content: str) -> set:
+    """استخراج لینک‌های کانفیگ از محتوای HTML."""
+    soup = BeautifulSoup(content, 'html.parser')
+    text_content = soup.get_text(separator='\n')
+    pattern = r'(' + '|'.join(p for p in VALID_PREFIXES) + r')[^\s\'"<>]+'
+    return set(re.findall(pattern, text_content))
+
+def fetch_and_parse_url(url: str) -> set:
+    """دانلود و استخراج کانفیگ از یک URL با موتور پردازشگر هوشمند."""
+    try:
+        response = requests.get(url, timeout=15, headers=HEADERS)
+        response.raise_for_status()
+        content = response.text
+
+        # --- موتور پردازشگر هوشمند ---
+        # 1. تلاش برای پردازش به عنوان JSON
+        try:
+            json_content = json.loads(content)
+            parsed_configs = parse_structured_json(json_content)
+            if parsed_configs: return parsed_configs
+        except json.JSONDecodeError:
+            pass # اگر جیسون نبود، به مرحله بعد می‌رود
+
+        # 2. تلاش برای پردازش به عنوان YAML
+        try:
+            yaml_content = yaml.safe_load(content)
+            if isinstance(yaml_content, dict):
+                parsed_configs = parse_structured_yaml(yaml_content)
+                if parsed_configs: return parsed_configs
+        except yaml.YAMLError:
+            pass # اگر یمل نبود، به مرحله بعد می‌رود
+
+        # 3. تلاش برای پردازش به عنوان HTML
+        if '<html>' in content.lower() or url.endswith(('.html', '.htm')):
+            return parse_html_content(content)
+
+        # 4. تلاش برای رمزگشایی کل محتوا به عنوان Base64
+        decoded_content = _decode_padded_b64(content)
+        if decoded_content:
+            content = decoded_content
+            
+        # 5. استخراج با Regex به عنوان آخرین راه حل
+        pattern = r'(' + '|'.join(p for p in VALID_PREFIXES) + r')[^\s\'"<>]+'
+        return set(re.findall(pattern, content))
+
+    except requests.RequestException as e:
+        print(f"   - هشدار: خطای شبکه در دسترسی به {url[:50]}... دلیل: {e}")
+        return set()
+    except Exception as e:
+        print(f"   - هشدار: خطای نامشخص در پردازش {url[:50]}... دلیل: {e}")
+        return set()
+
+# =================================================================================
+# === CORE FUNCTIONS (توابع اصلی - بدون تغییر) ===
+# =================================================================================
+# تابع‌های get_static_sources, discover_dynamic_sources, test_config_via_api, 
+# validate_and_categorize_configs, generate_clash_subscription و main
+# بدون تغییر باقی می‌مانند، مگر اینکه نیاز به فراخوانی توابع جدید داشته باشند.
+# در اینجا کد کامل آورده شده است.
 
 def get_static_sources() -> list:
     """خواندن منابع ثابت از فایل sources.json"""
@@ -107,77 +263,6 @@ def discover_dynamic_sources() -> list:
     print(f"✅ {len(dynamic_sources)} منبع پویای تازه کشف شد.")
     return list(dynamic_sources)
 
-def parse_structured_json(content: dict) -> set:
-    """
-    پردازش فایل‌های JSON ساختاریافته (مانند کانفیگ Sing-box)
-    """
-    configs = set()
-    if 'outbounds' in content and isinstance(content['outbounds'], list):
-        for outbound in content['outbounds']:
-            try:
-                protocol = outbound.get('protocol') or outbound.get('type')
-                if protocol == 'vless' and 'server' in outbound and 'uuid' in outbound:
-                    server = outbound['server']
-                    port = outbound.get('server_port', 443)
-                    uuid = outbound['uuid']
-                    name = outbound.get('tag', server)
-                    
-                    tls_settings = outbound.get('tls', {})
-                    transport_settings = outbound.get('transport', {})
-                    
-                    security = 'none'
-                    if tls_settings.get('enabled'):
-                        security = 'tls'
-                        if tls_settings.get('reality', {}).get('enabled'):
-                            security = 'reality'
-                    
-                    params = {
-                        'security': security,
-                        'sni': tls_settings.get('server_name', server),
-                        'type': transport_settings.get('type', 'tcp'),
-                        'path': transport_settings.get('path', '/'),
-                        'host': transport_settings.get('headers', {}).get('Host', server)
-                    }
-                    
-                    if security == 'reality':
-                        params['pbk'] = tls_settings['reality']['public_key']
-                        params['sid'] = tls_settings['reality'].get('short_id', '')
-
-                    query_string = urlencode({k: v for k, v in params.items() if v and k != 'security' or v != 'none'})
-                    config_str = f"vless://{uuid}@{server}:{port}?{query_string}#{unquote(name)}"
-                    configs.add(config_str)
-            except (KeyError, TypeError):
-                continue
-    return configs
-
-def fetch_and_parse_url(url: str) -> set:
-    """
-    دانلود و استخراج کانفیگ از یک URL با نادیده گرفتن کش.
-    """
-    try:
-        # The global HEADERS with anti-cache directives is used here
-        response = requests.get(url, timeout=15, headers=HEADERS)
-        response.raise_for_status()
-        content = response.text
-        try:
-            json_content = json.loads(content)
-            parsed_configs = parse_structured_json(json_content)
-            if parsed_configs:
-                return parsed_configs
-        except json.JSONDecodeError:
-            pass
-        
-        try:
-            decoded_content = _decode_padded_b64(content)
-            content = decoded_content
-        except Exception:
-            pass
-        
-        pattern = r'(' + '|'.join(p for p in VALID_PREFIXES) + r')[^\s\'"<>]+'
-        return set(re.findall(pattern, content))
-    except requests.RequestException:
-        return set()
-
 def test_config_via_api(config_str: str) -> dict:
     """تست پینگ یک کانفیگ از طریق API خارجی."""
     try:
@@ -210,7 +295,8 @@ def validate_and_categorize_configs(configs: set) -> dict:
     for cfg in configs:
         try:
             parsed = urlparse(cfg)
-            if parsed.scheme in ('hysteria2', 'hy2', 'tuic') or 'reality' in parse_qsl(parsed.query):
+            query_params = dict(parse_qsl(parsed.query))
+            if parsed.scheme in ('hysteria2', 'hy2', 'tuic') or query_params.get('security') == 'reality':
                 categorized['singbox_only'].add(cfg)
             else:
                 categorized['xray'].add(cfg)
@@ -250,16 +336,13 @@ def generate_clash_subscription(configs: list) -> str | None:
                 decoded = json.loads(_decode_padded_b64(config_str.replace("vmess://", "")))
                 if not decoded.get('id'): raise ValueError("VMESS config missing ID")
                 proxy.update({
-                    'server': decoded.get('add'), 
-                    'port': int(decoded.get('port')),
-                    'uuid': decoded.get('id'), 
-                    'alterId': decoded.get('aid'), 
-                    'cipher': decoded.get('scy', 'auto'), 
-                    'tls': decoded.get('tls') == 'tls', 
-                    'network': decoded.get('net', 'tcp'), 
-                    'servername': decoded.get('sni', decoded.get('add')), 
-                    'skip-cert-verify': True
+                    'server': decoded.get('add'), 'port': int(decoded.get('port')), 'uuid': decoded.get('id'), 
+                    'alterId': decoded.get('aid'), 'cipher': decoded.get('scy', 'auto'), 
+                    'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net', 'tcp'), 
+                    'servername': decoded.get('sni', decoded.get('add')), 'skip-cert-verify': True
                 })
+                if proxy.get('network') == 'ws':
+                    proxy['ws-opts'] = {'path': decoded.get('path', '/'), 'headers': {'Host': decoded.get('host', decoded.get('add'))}}
             elif protocol == 'trojan':
                 if not url.username: raise ValueError("Trojan config missing password")
                 params = dict(parse_qsl(url.query))
@@ -270,8 +353,7 @@ def generate_clash_subscription(configs: list) -> str | None:
                 proxy.update({'cipher': cred[0], 'password': cred[1]})
             
             proxies.append(proxy)
-        except Exception as e:
-            # print(f"   - هشدار: کانفیگ {config_str[:40]}... برای کلش قابل پردازش نبود. دلیل: {e}")
+        except Exception:
             continue
             
     if not proxies: return None
@@ -279,11 +361,8 @@ def generate_clash_subscription(configs: list) -> str | None:
     clash_config = {'proxies': proxies}
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False)
 
-# =================================================================================
-# === MAIN EXECUTION (اجرای اصلی) ===
-# =================================================================================
 def main():
-    print(f"🚀 V2V Scraper v5.3 - شروع فرآیند با معیارهای منعطف...")
+    print(f"🚀 V2V Scraper v5.4 - شروع فرآیند با موتور پردازشگر چند فرمتی...")
     start_time = time.time()
     
     static_sources = get_static_sources()
@@ -291,7 +370,7 @@ def main():
     all_sources = list(set(static_sources + dynamic_sources))
     print(f"📡 مجموع منابع جمع‌آوری شده: {len(all_sources)} ( {len(static_sources)} ثابت + {len(dynamic_sources)} پویا )")
     
-    print("\n🚚 در حال دانلود و استخراج کانفیگ‌ها (با نادیده گرفتن کش)...")
+    print("\n🚚 در حال دانلود و استخراج کانفیگ‌ها (با موتور هوشمند)...")
     raw_configs = set()
     with ThreadPoolExecutor(max_workers=30) as executor:
         for result in executor.map(fetch_and_parse_url, all_sources):
