@@ -26,7 +26,7 @@ VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 
 
 # --- FIX: Anti-Cache Headers added to solve the caching problem ---
 HEADERS = {
-    'User-Agent': 'V2V-Scraper/v5.2-CacheFix',
+    'User-Agent': 'V2V-Scraper/v5.3-Flexible',
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Pragma': 'no-cache',
     'Expires': '0'
@@ -41,7 +41,8 @@ GITHUB_SEARCH_QUERIES = ['v2ray subscription', 'vless subscription', 'proxy subs
 # --- تنظیمات تست سرعت و کیفیت‌سنجی
 SPEED_TEST_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy'
 MAX_CONFIGS_TO_TEST = 2000
-MAX_PING_THRESHOLD = 2000 # (2 ثانیه)
+# --- CHANGE: Increased ping threshold for more flexibility ---
+MAX_PING_THRESHOLD = 5000 # (5 ثانیه) - افزایش انعطاف‌پذیری
 TARGET_CONFIGS_PER_CORE = 500
 REQUEST_TIMEOUT = 10
 
@@ -282,7 +283,7 @@ def generate_clash_subscription(configs: list) -> str | None:
 # === MAIN EXECUTION (اجرای اصلی) ===
 # =================================================================================
 def main():
-    print(f"🚀 V2V Scraper v5.2 - شروع فرآیند با تست بهینه و رفع مشکل کش...")
+    print(f"🚀 V2V Scraper v5.3 - شروع فرآیند با معیارهای منعطف...")
     start_time = time.time()
     
     static_sources = get_static_sources()
