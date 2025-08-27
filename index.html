@@ -29,7 +29,7 @@
         }
         .header { margin-bottom: 20px; flex-shrink: 0; }
         .header img { width: 100px; height: 100px; }
-        .status-bar { font-size: 0.8em; color: #888; margin-bottom: 15px; min-height: 1em; /* To prevent layout shift */ }
+        .status-bar { font-size: 0.8em; color: #888; margin-bottom: 15px; min-height: 1em; }
         .container {
             width: 100%; background-color: var(--secondary-bg); padding: 20px;
             border-radius: 10px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
@@ -42,27 +42,27 @@
         #xray-header { background-color: var(--logo-red); }
         #singbox-header { background-color: var(--logo-green); }
         .test-button {
-            background-color: var(--logo-green); color: white; border: none; padding: 8px 18px;
-            border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.95em; margin-bottom: 20px;
+            background-color: var(--logo-green); color: white; border: none; padding: 7px 15px;
+            border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.9em; margin-bottom: 20px;
         }
-        .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-        .action-group-title { margin: 0 0 12px 0; font-size: 1.1em; text-align: right; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
-        .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-        .action-button { background-color: #333; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 0.85em; flex-grow: 1; color: var(--text-color); }
+        .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+        .action-group-title { margin: 0 0 10px 0; font-size: 1.05em; text-align: right; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+        .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+        .action-button { background-color: #333; border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; flex-grow: 1; color: var(--text-color); }
         .protocol-group { border-top: 1px solid var(--border-color); }
-        .protocol-header { background-color: transparent; padding: 12px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .protocol-controls { display: flex; align-items: center; gap: 10px; }
-        .select-all-btn { background-color: #444; border: 1px solid #666; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 0.8em; color: var(--text-color); }
+        .protocol-header { background-color: transparent; padding: 10px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .protocol-controls { display: flex; align-items: center; gap: 8px; }
+        .select-all-btn { background-color: #444; border: 1px solid #666; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 0.75em; color: var(--text-color); }
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.3s ease-out; overflow: hidden; }
         .protocol-group.open .config-list { max-height: 2000px; }
-        .config-item { padding: 12px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
+        .config-item { padding: 10px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
         .config-item:last-child { border-bottom: none; }
-        .config-checkbox { flex-shrink: 0; transform: scale(1.3); margin-left: 8px; accent-color: var(--logo-green); }
+        .config-checkbox { flex-shrink: 0; transform: scale(1.2); margin-left: 8px; accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
-        .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.85em; }
-        .ping { font-weight: bold; font-size: 0.9em; }
-        .copy-button-container { display: flex; gap: 8px; }
-        .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.9em; }
+        .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.8em; }
+        .ping { font-weight: bold; font-size: 0.85em; }
+        .copy-button-container { display: flex; gap: 6px; }
+        .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
         .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; flex-shrink: 0; }
         .bottom-links a { color: var(--text-color); text-decoration: none; font-size: 0.9em; }
         .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
@@ -107,45 +107,46 @@
             'https://v2-v.vercel.app/all_live_configs.json'
         ];
         
-        // --- START OF PROFESSIONAL CACHE BUSTING FIX ---
-
-        // This new function robustly fetches data by first getting a unique version number from cache_version.txt
         async function fetchDataWithCacheBusting() {
-            // Convert full URLs to base paths (e.g., https://domain.com/path/file.json -> https://domain.com/path)
             const baseSources = DATA_SOURCES.map(url => url.substring(0, url.lastIndexOf('/')));
 
             for (const baseUrl of baseSources) {
                 try {
                     console.log(`Attempting to fetch from source: ${baseUrl}`);
                     
-                    // Step 1: Fetch the unique version number from the server
                     const versionResponse = await fetch(`${baseUrl}/cache_version.txt`, { cache: 'no-store' });
                     if (!versionResponse.ok) throw new Error('cache_version.txt not found.');
                     const version = (await versionResponse.text()).trim();
                     
-                    // Step 2: Use the version number to create a unique URL that bypasses CDN cache
-                    const uniqueUrl = `${baseUrl}/all_live_configs.json?v=${version}`;
-                    console.log(`Fetching unique URL: ${uniqueUrl}`);
+                    // --- اصلاح قالب‌بندی تاریخ و ساعت ---
+                    const unixTimestamp = parseInt(version, 10);
+                    if (!isNaN(unixTimestamp)) {
+                        const date = new Date(unixTimestamp * 1000);
+                        const options = {
+                            year: 'numeric', month: 'long', day: 'numeric',
+                            hour: '2-digit', minute: '2-digit', hour12: false,
+                            timeZone: 'Asia/Tehran'
+                        };
+                        const formattedDate = date.toLocaleString('fa-IR', options);
+                        document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${formattedDate}`;
+                    } else {
+                        document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${version}`;
+                    }
                     
+                    const uniqueUrl = `${baseUrl}/all_live_configs.json?v=${version}`;
                     const dataResponse = await fetch(uniqueUrl, { cache: 'no-store' });
                     if (!dataResponse.ok) throw new Error('Main config file not found.');
                     
-                    // Success!
-                    document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${version}`;
                     return await dataResponse.json();
                 } catch (error) { 
                     console.error(`Failed to fetch from source ${baseUrl}:`, error);
-                    // If this source fails, the loop will automatically try the next one.
                 }
             }
-            
-            // This error is thrown only if all sources have failed
             throw new Error('All data sources failed.');
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Call the new, improved function
                 const data = await fetchDataWithCacheBusting();
                 renderCore('xray', data.xray || []);
                 renderCore('singbox', data.singbox || []);
@@ -156,9 +157,6 @@
                 document.getElementById('singbox-content-wrapper').innerHTML = errorMsg;
             }
         });
-
-        // --- END OF FIX ---
-        // The rest of your functions remain unchanged as they were well-written.
 
         function renderCore(core, configObjects) {
             const container = document.getElementById(`${core}-content-wrapper`);
@@ -181,7 +179,7 @@
             }
             
             const groupedByProtocol = configObjects.reduce((acc, item) => {
-                const configStr = item; // Assuming the array contains config strings directly now based on the new scraper output
+                const configStr = item;
                 const match = configStr.match(/^(\w+):\/\//);
                 if (match && match[1]) {
                     const protocol = match[1];
@@ -207,7 +205,7 @@
                     <ul class="config-list" id="${protocolGroupId}"></ul>`;
                 
                 const configList = protocolGroup.querySelector('.config-list');
-                groupedByProtocol[protocol].forEach(configStr => { // Simplified loop
+                groupedByProtocol[protocol].forEach(configStr => {
                     const li = document.createElement('li');
                     li.className = 'config-item';
                     li.dataset.config = configStr;
@@ -215,7 +213,6 @@
                     try {
                         const serverName = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : new URL(configStr).hostname;
                         
-                        // Initial ping is no longer available in the new JSON structure, so we just show the name
                         li.innerHTML = `
                             <input type="checkbox" class="config-checkbox">
                             <div class="config-details">
