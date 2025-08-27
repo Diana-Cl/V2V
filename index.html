@@ -69,6 +69,28 @@
         #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
         .qr-code-content { background-color: var(--secondary-bg); padding: 20px; border-radius: 10px; position: relative; }
         .close-button { position: absolute; top: 10px; right: 15px; font-size: 30px; cursor: pointer; }
+
+        /* --- استایل‌های جدید برای آیکون باز/بسته شدن --- */
+        .protocol-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* فاصله بین عنوان و آیکون */
+        }
+        .toggle-icon {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-bottom: 2px solid var(--text-color);
+            border-right: 2px solid var(--text-color);
+            transform: rotate(45deg); /* فلش رو به پایین */
+            transition: transform 0.3s ease-in-out;
+        }
+        .protocol-group.open .toggle-icon {
+            transform: rotate(-135deg); /* فلش رو به بالا */
+        }
+        /* --- پایان استایل‌های جدید --- */
+
     </style>
 </head>
 <body>
@@ -118,7 +140,6 @@
                     if (!versionResponse.ok) throw new Error('cache_version.txt not found.');
                     const version = (await versionResponse.text()).trim();
                     
-                    // --- اصلاح قالب‌بندی تاریخ و ساعت ---
                     const unixTimestamp = parseInt(version, 10);
                     if (!isNaN(unixTimestamp)) {
                         const date = new Date(unixTimestamp * 1000);
@@ -194,9 +215,13 @@
                 const protocolGroup = document.createElement('div');
                 protocolGroup.className = 'protocol-group';
                 
+                // --- ویرایش برای اضافه کردن آیکون ---
                 protocolGroup.innerHTML = `
                     <div class="protocol-header" onclick="toggleGroup('${protocolGroupId}')">
-                        <span>${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span>
+                        <div class="protocol-title-wrapper">
+                             <span>${protocol.toUpperCase()} (${groupedByProtocol[protocol].length})</span>
+                             <span class="toggle-icon"></span>
+                        </div>
                         <div class="protocol-controls">
                             <button class="select-all-btn" onclick="toggleSelectAll(event, true, '${protocolGroupId}')">انتخاب همه</button>
                             <button class="select-all-btn" onclick="toggleSelectAll(event, false, '${protocolGroupId}')">لغو انتخاب</button>
