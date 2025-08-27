@@ -122,11 +122,8 @@ def parse_subscription_content(content: str) -> set:
         for match in matches:
             if isinstance(match, tuple):
                 match = match[0] if match[0] else (match[1] if len(match) > 1 else '')
-            
-            # --- اصلاح سینتکس ---
-            clean_match = match.strip().strip('\'"') # روش صحیح برای حذف کوتیشن‌ها
-            if clean_match and _is_valid_config_format(clean_match):
-                configs.add(clean_match)
+            if match and _is_valid_config_format(match.strip().strip('"\'""'')):
+                configs.add(match.strip().strip('"\'""'''))
     
     # مرحله 3: جستجو در خطوط جداگانه
     lines = content.split('\n')
