@@ -6,7 +6,7 @@ import net from 'net';
  */
 export default function handler(req, res) {
     // Set CORS and Cache-Control headers for security and reliability
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow requests from any origin
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -23,43 +23,70 @@ export default function handler(req, res) {
 
     const { host, port } = req.body;
 
-    // Validate input
-    if (!host || !port || typeof port !== 'number') {
-        return res.status(400).json({ message: 'A valid host and port number are required' });
+    // Improved validation - accept both string and number ports
+    if (!host || !port) {
+        return res.status(400).json({ message: 'Both host and port are required' });
     }
 
-    const startTime = new Date();
+    // Convert port to number and validate
+    const portNum = parseInt(port, 10);
+    if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+        return res.status(400).json({ message: 'Port must be a valid number between 1-65535' });
+    }
+
+    // Validate host format (basic check)
+    if (typeof host !== 'string' || host.trim().length === 0) {
+        return res.status(400).json({ message: 'Host must be a valid string' });
+    }
+
+    const cleanHost = host.trim();
+    const startTime = Date.now();
     const socket = new net.Socket();
 
-    // Set a timeout for the connection attempt
-    socket.setTimeout(5000); // 5 seconds
+    // Increase timeout for better compatibility
+    socket.setTimeout(10000); // 10 seconds
 
     socket.on('connect', () => {
-        const endTime = new Date();
+        const endTime = Date.now();
         const ping = endTime - startTime;
         socket.destroy();
 
-        // === FIX: Handle unrealistic pings (like 0ms) as errors ===
-        // A ping below 5ms is highly unlikely and usually indicates an error.
-        if (ping < 5) {
-            res.status(200).json({ host, port, ping: 9998, error: `Unrealistic ping detected: ${ping}ms` });
-        } else {
-            res.status(200).json({ host, port, ping });
-        }
+        // Return the ping result - remove the unrealistic ping check as it can be valid for local servers
+        res.status(200).json({ host: cleanHost, port: portNum, ping });
     });
 
     socket.on('error', (err) => {
         socket.destroy();
-        // Still return 200 OK so the scraper can process it as a 'failed' ping
-        res.status(200).json({ host, port, ping: 9999, error: err.message });
+        // Return high ping value for failed connections
+        res.status(200).json({ 
+            host: cleanHost, 
+            port: portNum, 
+            ping: 9999, 
+            error: err.message 
+        });
     });
 
     socket.on('timeout', () => {
         socket.destroy();
-        // Still return 200 OK for timeouts
-        res.status(200).json({ host, port, ping: 9999, error: 'Connection Timeout' });
+        // Return high ping value for timeouts
+        res.status(200).json({ 
+            host: cleanHost, 
+            port: portNum, 
+            ping: 9999, 
+            error: 'Connection timeout' 
+        });
     });
 
-    // Initiate the connection
-    socket.connect(port, host);
+    // Add connection error handling
+    try {
+        socket.connect(portNum, cleanHost);
+    } catch (err) {
+        socket.destroy();
+        res.status(200).json({ 
+            host: cleanHost, 
+            port: portNum, 
+            ping: 9999, 
+            error: `Connection failed: ${err.message}` 
+        });
+    }
 }
