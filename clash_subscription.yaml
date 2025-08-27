@@ -1,14 +1,16 @@
 proxies:
-- name: 🏁RELAY-77.74.228.194-0677
-  type: trojan
-  server: 77.74.228.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: → @Hddify 🛑
+- name: 🇩🇪 | XpnTeam - Telegrams-3pxighv9
   type: vless
-  server: 104.21.67.12
+  server: 151.101.3.8
+  port: 80
+  uuid: 0aece0c9-cb42-4b7e-8490-e6fe0aad4e68
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: 172.64.151.232
+  type: vless
+  server: 172.64.151.232
   port: 443
   uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
   tls: true
@@ -16,33 +18,26 @@ proxies:
   servername: carlotta.shoorekeeper.cloudns.org
   skip-cert-verify: true
   ws-opts:
-    path: /?TELEGRAM-MTMVPN?ed=512
+    path: /proxyip=zani.yaemiko.ggff.net/?JOKERRVPN_BIA_CHANEL@JOKERRVPN
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: '@meli_proxyy'
+- name: '@Golestan_VPN - JOIN'
   type: vless
-  server: 154.92.9.46
+  server: 104.16.34.128
   port: 443
-  uuid: ec8a65ad-aafc-4095-9b8c-ea10890ca629
+  uuid: 267613d7-f53f-4005-b642-d6f1f687b7cf
   tls: true
   network: ws
-  servername: simorgh.hpcode.ir
+  servername: ensHOLP-91s.pageS.DEv
   skip-cert-verify: true
   ws-opts:
-    path: /Javid-SHAH-KingRezaPahlavi/?ed=2560
+    path: /dQMN2VQLkaE52qWD?ed=2560
     headers:
-      Host: simorgh.hpcode.ir
-- name: 🏁RELAY-45.149.12.194-0641
-  type: trojan
-  server: 45.149.12.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
+      Host: ensHOLP-91s.pageS.DEv
 - name: 💎کانفیگ های بیشتر در چنل تلگرام💎 Config_Rayegan@
   type: vless
-  server: 104.26.14.69
-  port: 2096
+  server: 172.64.151.232
+  port: 443
   uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
   tls: true
   network: ws
@@ -52,7 +47,62 @@ proxies:
     path: =zani.yaemiko.ggff.net/?Join---MARAMBASHI---Join---MARAMBASHI---Join---MARAMBASHI---Join---MARAMBASHI?ed=2560
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: '🇩🇪 جوین بده کانکت بمونی: @STAPersiaNews'
+- name: 🇺🇸US-45.40.151.194-0617
+  type: trojan
+  server: 45.40.151.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: RU_speednode_0063
+  type: vless
+  server: 193.9.49.188
+  port: 8880
+  uuid: 583ceab3-4022-4553-9158-9bedc625ad4e
+  tls: false
+  network: ws
+  servername: Telegram-channel-WangCai2
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: ip.langmanshanxi.top
+- name: '@meli_proxyy'
+  type: vless
+  server: 104.17.147.22
+  port: 2087
+  uuid: 9e769ce1-34be-4e3f-b0a6-823f30eb8f69
+  tls: true
+  network: ws
+  servername: smart.v2plusify.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: smart.v2plusify.org
+- name: '@v2rayng_fars'
+  type: vless
+  server: 104.21.67.12
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /proxyip
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: XpnTeam🇳🇱-iow14li0r
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 25d0b00d-6b17-45c8-df12-4e7e08fd8c19
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: IRAN 634 (@Outline_Vpn) free
   type: vless
   server: 104.19.144.33
   port: 8443
@@ -65,309 +115,56 @@ proxies:
     path: /
     headers:
       Host: PmQ1cCsP9x.GhEiChI.oRg
-- name: 🏁RELAY-14.102.228.194-0600
+- name: 🏁RELAY-5.182.84.216-1047
   type: trojan
-  server: 14.102.228.194
+  server: 5.182.84.216
   port: 2096
   password: ttfang
   sni: ttfang.fange.me
   skip-cert-verify: true
-- name: 🇩🇪@FreakConfig
-  type: vless
-  server: 104.16.53.11
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: hetzner-9.cfuk.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: hetzner-9.cfuk.name.ng
-- name: 🇩🇪 All Operator 2 @MaSTeRSeRVeR1
-  type: vless
-  server: 198.41.216.98
-  port: 8080
-  uuid: 0cf2d14a-399f-4bf8-b646-5457ede472b2
-  tls: false
-  network: httpupgrade
-  servername: 198.41.216.98
-  skip-cert-verify: true
-- name: Channel:@BeFreeWithUs
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 255b378e-cf94-4b7e-816b-d8d882583214
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: '@IRAN_V2RAY1{All operator}'
-  type: vless
-  server: 190.93.246.246
-  port: 8443
-  uuid: b5441b0d-2147-4898-8a6a-9b2c87f58382
-  tls: true
-  network: ws
-  servername: bitget1.asdasd.click
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: bitget1.asdasd.click
-- name: 🇺🇸US-45.40.146.194-0612
-  type: trojan
-  server: 45.40.146.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: ☞ 𝗝𝗼𝗶𝗻 ➠ @Viturey
-  type: trojan
-  server: 172.67.181.173
-  port: 443
-  password: f282b878-8711-45a1-8c69-5564172123c1
-  sni: vpn.stupidworld.web.id
-  skip-cert-verify: true
-- name: '@Hope_Net-join-us-on-Telegram'
-  type: trojan
-  server: 104.20.17.208
-  port: 443
-  password: auto
-  sni: b96ef9ae.trojanfree-76s.pages.dev
-  skip-cert-verify: true
-- name: '@V2rayNG3'
-  type: vless
-  server: 151.101.2.133
-  port: 80
-  uuid: 275d87d1-221a-4e47-96b1-9a6f76a7daba
-  tls: false
-  network: xhttp
-  servername: 151.101.2.133
-  skip-cert-verify: true
-- name: '@i10VPN 🚀| با ما متصل بمون⚡'
-  type: vless
-  server: 160.153.0.153
-  port: 8443
-  uuid: 376734bc-4db8-4317-b451-af0262cb01c7
-  tls: true
-  network: ws
-  servername: InviNCIble.FAfA20.shOP
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join---i10VPN---Join---i10VPN---Join---i10VPN---Join---i10VPN=?ed=2560
-    headers:
-      Host: invincible.fafa20.shop
-- name: 🇮🇷𝐣𝐨𝐢𝐍-@𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
-  type: vless
-  server: 45.131.4.85
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 45.131.4.85
-  skip-cert-verify: true
-  ws-opts:
-    path: 𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: 💎کانفیگ های بیشتر در چنل تلگرا_1
+- name: '@v2ray313 کانالمون 🫦'
   type: vless
   server: 104.19.144.33
   port: 8443
-  uuid: e999db7a-1b17-4da6-bc37-c9fa24af2e93
-  tls: true
-  network: ws
-  servername: Q9cI2lEeUz.GiTi4.OrG
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: Q9cI2lEeUz.GiTi4.OrG
-- name: '@Daily_Configs`'
-  type: vless
-  server: 172.67.68.36
-  port: 443
-  uuid: 401374e6-df77-41fb-f638-dad8184f175b
-  tls: true
-  network: grpc
-  servername: vp38.hiddendom.shop
-  skip-cert-verify: true
-- name: 🛒@v2rayngsupbot 🛡️@ai_duet
-  type: vless
-  server: 185.133.35.251
-  port: 8880
-  uuid: 0132166f-e702-48ed-a9e7-b07af768faf8
-  tls: false
-  network: ws
-  servername: Telegram-channel-WangCai2
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegramًں‡¨ًں‡³
-    headers:
-      Host: cf.d3z.net
-- name: 'Telegram : @Alfa_v2ray_ng 🔥'
-  type: vless
-  server: 104.26.15.69
-  port: 2096
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 🇨🇦@vpn_ioss ♻️ عضو شو
-  type: vless
-  server: 104.21.112.1
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.21.112.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: '@Hope_Net-join-us-on-Telegram_1'
-  type: trojan
-  server: 172.64.150.145
-  port: 443
-  password: bpb-trojan
-  sni: mindrOOm-5cz.pAgEs.dEV
-  skip-cert-verify: true
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_1'
-  type: vless
-  server: 172.64.151.232
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: =zani.yaemiko.ggff.net/?Join---JKVPN---Join---JKVPN---Join---JKVPN---Join---JKVPN?ed=2560
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: '@Selinc'
-  type: vless
-  server: 104.19.144.33
-  port: 2096
   uuid: 0d0782a3-2c62-4936-b893-5790188778ea
   tls: true
   network: ws
   servername: 104.19.144.33
   skip-cert-verify: true
   ws-opts:
-    path: /
+    path: /?𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
     headers:
-      Host: 83L79jOdPv.GiGa1.OrG
-- name: '@v2rayfast_7❤️‍🔥'
+      Host: 0FwUb7BcVt.GiGa3.OrG
+- name: 🇨🇦𝐣𝐨𝐢𝐍-@𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
   type: vless
-  server: 185.251.82.170
-  port: 2096
-  uuid: 2d1d4287-2ac1-4a71-bd5a-d6c6371f0627
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: 🇨🇦𝐣𝐨𝐢𝐍-@𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆_1
+  type: vless
+  server: 104.19.144.33
+  port: 8443
+  uuid: 0d0782a3-2c62-4936-b893-5790188778ea
   tls: true
   network: ws
-  servername: www.dollardoon.com
+  servername: 104.19.144.33
   skip-cert-verify: true
   ws-opts:
-    path: /@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7?ed=2048
+    path: /?𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
     headers:
-      Host: www.dollardoon.com
-- name: '@meli_proxyy_1'
+      Host: 0FwUb7BcVt.GiGa3.OrG
+- name: 🅼🅴🅷🅳🅸
   type: vless
-  server: 172.67.157.220
+  server: 104.21.67.12
   port: 443
-  uuid: ffcf7ec1-3e09-4821-b3d9-b426a107b73b
-  tls: true
-  network: ws
-  servername: XXCsDERT6.777159.XyZ
-  skip-cert-verify: true
-  ws-opts:
-    path: /O9jlBCbIm3xr1D40NK
-    headers:
-      Host: xxcsdert6.777159.xyz
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_2'
-  type: vless
-  server: 104.16.68.95
-  port: 8880
-  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
-  tls: false
-  network: ws
-  servername: 104.16.68.95
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: vghavi32.ip-ddns.com
-- name: '@Capoit'
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 2739711a-fb3b-471a-9956-14f1a877ce9e
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: b.jOin.zEdMoDeOn.oNl.
-- name: '@mehrosaboran'
-  type: vless
-  server: 104.26.11.194
-  port: 80
-  uuid: 01232cb4-ceab-43c1-f384-09f698db6c19
-  tls: false
-  network: ws
-  servername: 104.26.11.194
-  skip-cert-verify: true
-  ws-opts:
-    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
-    headers:
-      Host: join-to-Vmessorg.sabadyt.ir
-- name: 🏁RELAY-172.67.181.173-1051
-  type: trojan
-  server: 172.67.181.173
-  port: 443
-  password: f282b878-8711-45a1-8c69-5564172123c1
-  sni: vpn.stupidworld.web.id
-  skip-cert-verify: true
-- name: '@CaV2ray ⚡️'
-  type: vless
-  server: 104.17.147.22
-  port: 80
-  uuid: 1f5056ca-fb4c-4b51-a31e-891083588351
-  tls: false
-  network: ws
-  servername: 104.17.147.22
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram@V2ray_Alpha/?ed=2560
-    headers:
-      Host: pamchall.com.
-- name: US_speednode_0086
-  type: vless
-  server: 209.94.90.63
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
-  tls: false
-  network: ws
-  servername: jp.laoyoutiao.link
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram🇨🇳
-    headers:
-      Host: jp.laoyoutiao.link
-- name: 🇨🇵v2rayng (FR)🔐-confegraigan
-  type: vless
-  server: 104.26.14.69
-  port: 2096
   uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
   tls: true
   network: ws
@@ -377,155 +174,46 @@ proxies:
     path: /proxyip=zani.yaemiko.ggff.net
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: → @Hddify 🪡
-  type: vless
-  server: 104.26.15.69
-  port: 2096
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Hddify---@Hddify---@Hddify---@Hddify---@Hddify---@Hddify?ed=2560
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 🇹🇷@vpn_ioss ♻️ عضو شو
-  type: vless
-  server: 45.85.119.151
-  port: 8880
-  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
-  tls: false
-  network: ws
-  servername: 45.85.119.151
-  skip-cert-verify: true
-  ws-opts:
-    path: /6TvG8D6HimXKgdp2?ed=2560
-    headers:
-      Host: vngsupply.ip-ddns.com
-- name: RU_speednode_0062
-  type: vless
-  server: 5.182.84.63
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
-  tls: false
-  network: ws
-  servername: jp.laoyoutiao.link
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram
-    headers:
-      Host: jp.laoyoutiao.link
-- name: '@Hope_Net-join-us-on-Telegram_2'
+- name: '@awlix_ir'
   type: trojan
-  server: 104.21.21.129
+  server: 23.227.60.8
+  port: 443
+  password: bpb-trojan
+  sni: 403b3611-99bc-43b7-88D7-26Ed5D0825A9-3.paGeS.dev
+  skip-cert-verify: true
+- name: '@Hope_Net-join-us-on-Telegram'
+  type: trojan
+  server: 172.64.35.202
   port: 443
   password: auto
   sni: trojanmz.pages.dev
   skip-cert-verify: true
-- name: '@Hope_Net-join-us-on-Telegram_3'
-  type: trojan
-  server: 198.41.219.190
-  port: 443
-  password: bpb-trojan
-  sni: adagio.us.kg
-  skip-cert-verify: true
-- name: 🩵+@Azarakhsh_Proxy+🩷
+- name: '@icv2ray'
   type: vless
-  server: 172.67.71.217
-  port: 443
-  uuid: 2df56fd0-d1b7-4793-b877-acd356d960f7
-  tls: true
-  network: ws
-  servername: pages.dev
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=8080
-    headers:
-      Host: download-93w.pages.dev
-- name: 'Channel : @Mrsoulb 🏴🏳'
-  type: vless
-  server: 104.21.96.1
+  server: 151.101.3.8
   port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  uuid: 0134428a-02d8-4f94-8221-a1e858552212
   tls: false
-  network: ws
-  servername: 104.21.96.1
+  network: xhttp
+  servername: 151.101.3.8
   skip-cert-verify: true
-  ws-opts:
-    path: /Join---@Mrsoulb=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: raha new1
-  type: vless
-  server: 104.18.26.90
-  port: 443
-  uuid: 1343289b-3518-48da-9ee6-1bc99860b505
-  tls: true
-  network: ws
-  servername: mrdnzdtnbkwbdfsqoncu.dissertationhelpspecialist.com
-  skip-cert-verify: true
-  ws-opts:
-    path: /TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService-TwixService?ed=2560
-    headers:
-      Host: mrdnzdtnbkwbdfsqoncu.dissertationhelpspecialist.com
-- name: '@Hope_Net-join-us-on-Telegram_4'
-  type: trojan
-  server: 172.66.44.86
-  port: 443
-  password: auto
-  sni: trojanfree-76s.pages.dev
-  skip-cert-verify: true
-- name: Telegram--- https://t.me/ConfigX2ray Telegram--- https://t.me/ConfigX2ray
-    Telegram--- https://t.me/ConfigX2ray Telegram--- https://t.me/ConfigX2ray Telegram---
-    https://t.me/ConfigX2ray Telegram--- https://t.me/ConfigX2ray Telegram--- https://t.me/ConfigX2ray
-    Telegram--- https://t.me/ConfigX2ray
+- name: =@&security=none&encryption=none&host=Li.testi21.ddns-ip.net&type=ws#@icv2ray
   type: vless
   server: 172.66.40.99
   port: 8080
-  uuid: 2023c5f3-6ee4-4a6d-be55-44a06570f8dd
+  uuid: 012354de-a667-4d19-ae51-76e4808b5a04
   tls: false
-  network: ws
+  network: tcp
   servername: 172.66.40.99
   skip-cert-verify: true
-  ws-opts:
-    path: /telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE?ed=2048
-    headers:
-      Host: az221.mashkestan.com
-- name: 🇩🇪[Telegram:v2rayng_fars]
-  type: vless
-  server: 104.21.96.1
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.21.96.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: 🏁RELAY-45.131.209.216-1048
+- name: t.me/entryNET/config=1841590083305972
   type: trojan
-  server: 45.131.209.216
+  server: 92.53.189.194
   port: 2096
   password: ttfang
   sni: ttfang.fange.me
   skip-cert-verify: true
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_3'
-  type: vless
-  server: 104.16.69.64
-  port: 8880
-  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
-  tls: false
-  network: ws
-  servername: 104.16.69.64
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: vghavi32.ip-ddns.com
-- name: 💎کانفیگ های بیشتر در چنل تلگرا_2
+- name: 'Telegram : @Alfa_v2ray_ng 🔥'
   type: vless
   server: 160.153.0.32
   port: 443
@@ -535,24 +223,101 @@ proxies:
   servername: carlotta.shoorekeeper.cloudns.org
   skip-cert-verify: true
   ws-opts:
-    path: /
+    path: /proxyip=zani.yaemiko.ggff.net
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: Telegram:@config_proxy 🔥
+- name: 🇩🇪 All Operator 2 @MaSTeRSeRVeR1
   type: vless
-  server: 104.18.26.90
-  port: 80
-  uuid: 1523920e-b41f-42d9-970e-6f672b56f025
+  server: 198.41.216.98
+  port: 8080
+  uuid: 18fd1328-3f06-4040-a370-f2891c2d8b8b
   tls: false
   network: httpupgrade
-  servername: 104.18.26.90
+  servername: 198.41.216.98
   skip-cert-verify: true
-- name: 🇺🇸US-45.40.148.194-0614
+- name: 🇩🇪@Alfred_Config
+  type: vless
+  server: 162.159.9.106
+  port: 8880
+  uuid: 16b63755-3171-4623-8960-a112f4490333
+  tls: false
+  network: httpupgrade
+  servername: 162.159.9.106
+  skip-cert-verify: true
+- name: '@meli_proxyy_1'
+  type: vless
+  server: 45.194.53.52
+  port: 443
+  uuid: d4e52293-4a82-404c-ac29-93afc006dcbb
+  tls: true
+  network: ws
+  servername: crolindd.dearcarlotta.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram@V2ray_Alpha?ed=512
+    headers:
+      Host: crolindd.dearcarlotta.cloudns.org
+- name: 🏁RELAY-45.131.7.194-0633
   type: trojan
-  server: 45.40.148.194
+  server: 45.131.7.194
   port: 2096
   password: ttfang
   sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: Telegram@ConfingV2RaayNG
+  type: vless
+  server: 188.114.98.112
+  port: 80
+  uuid: 065f26d1-53f1-4664-98e3-77a74e0509b3
+  tls: false
+  network: ws
+  servername: 188.114.98.112
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram:@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG?ed=2560
+    headers:
+      Host: ELENA.ddNS-ip.net.
+- name: 🇬🇧@FreakConfig
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  tls: true
+  network: ws
+  servername: lease-17.access.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: lease-17.access.name.ng
+- name: '[60907] - Telegram : @V2All'
+  type: trojan
+  server: 104.17.157.109
+  port: 443
+  password: NISHIKUITAN111
+  sni: 104.17.157.109
+  skip-cert-verify: true
+- name: '@HiByeVPNN👈⚡❤️‍🔥'
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  tls: true
+  network: ws
+  servername: lease-20.access.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2048@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN
+    headers:
+      Host: lease-20.access.name.ng
+- name: '@ZedBaz_vpn'
+  type: vless
+  server: www.speedtest.net
+  port: 8880
+  uuid: 14ccded0-d192-4a52-96d6-92ed10139cbe
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
   skip-cert-verify: true
 - name: '@AblNet7 🇮🇷 نت ملی  🇨🇦'
   type: vless
@@ -567,202 +332,21 @@ proxies:
     path: /
     headers:
       Host: PmQ1cCsP9x.GhEiChI.oRg
-- name: کانال+ما+در+تلگرام+@Asak_Vpn+🔥
-  type: vless
-  server: 104.16.209.110
-  port: 443
-  uuid: 10d9df89-9a20-4110-9711-bca119490ee9
-  tls: true
-  network: ws
-  servername: masaleini.mahsaamini.dpdns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: masaleini.mahsaamini.dpdns.org
-- name: 🇩🇪@configfree20255
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 19fd73f4-e036-4686-8a8e-7873fb284159
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: b.jOin.zEdMoDeOn.oNl.
-- name: '@icv2ray'
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 25d0b00d-6b17-45c8-df12-4e7e08fd8c19
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: '@NpvV2rayFilTer'
-  type: vless
-  server: 172.64.151.232
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net/?JOKERRVPN_BIA_CHANEL@JOKERRVPN
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 🇸🇪 Sweden Fast
-  type: vless
-  server: 172.67.133.49
-  port: 8880
-  uuid: 6d0b71e4-b843-4acc-a239-884e422c9f33
-  tls: false
-  network: ws
-  servername: 172.67.133.49
-  skip-cert-verify: true
-  ws-opts:
-    path: /rAnzZ41YzhPlT0iC?ed=2560
-    headers:
-      Host: ponq0qxlwnh55dbid7ebc1j6ltxdcyer.mamadibaram.workers.dev
-- name: 🇩🇪v2rayng (DE)🔐-confegraigan
+- name: 🏁RELAY-14.102.229.216-1049
   type: trojan
-  server: 172.67.181.173
-  port: 443
-  password: f282b878-8711-45a1-8c69-5564172123c1
-  sni: vpn.stupidworld.web.id
-  skip-cert-verify: true
-- name: 💎کانفیگ های بیشتر در چنل تلگرا_3
-  type: vless
-  server: 104.21.67.12
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?Join---MARAMBASHI---Join---MARAMBASHI---Join---MARAMBASHI---Join---MARAMBASHI?ed=2560
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: https://t.me/HiTechVPlus ⚡
-  type: vless
-  server: 104.21.112.1
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.21.112.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: '@V2RAYNG_1378'
-  type: vless
-  server: 104.21.112.1
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.21.112.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: 104.17.148.22
-  type: vless
-  server: 104.17.148.22
-  port: 8443
-  uuid: 616997f9-fff3-4280-8760-adddf9048203
-  tls: true
-  network: ws
-  servername: pishgam.pinpen.ir.
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: pishgam.pinpen.ir.
-- name: 'Channel id: @ShadowProxy66 🇨🇦'
-  type: trojan
-  server: 172.67.181.173
-  port: 443
-  password: f282b878-8711-45a1-8c69-5564172123c1
-  sni: vpn.stupidworld.web.id
-  skip-cert-verify: true
-- name: IRAN 558 (@Outline_Vpn) free
-  type: vless
-  server: 104.21.112.1
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.21.112.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: '@Hope_Net-join-us-on-Telegram_5'
-  type: trojan
-  server: 104.20.20.243
-  port: 443
-  password: auto
-  sni: b96ef9ae.trojanfree-76s.pages.dev
-  skip-cert-verify: true
-- name: 🇳🇱@EXPRESSVPN_420 | All¹
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 11c89ba7-b173-4372-9976-c9e8b97557aa
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420?ed=80
-    headers:
-      Host: Kk78.4qwertyuiopasdfGhjklzxcvbnmmnbvccjzlkjhgfdsapoiuytre010751.Academigroup.iR.
-- name: XpnTeam🇳🇱-kk9n346k5
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 280609a3-c660-4b84-e9b1-00ac2b19a4c6
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: BG_speednode_0003
-  type: vless
-  server: 147.78.140.254
-  port: 8880
-  uuid: 34c01e61-f4f3-4afb-a83b-406caf8caa33
-  tls: false
-  network: ws
-  servername: yg.bantony199.top
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram
-    headers:
-      Host: yg.bantony199.top
-- name: '@Hddify |~| چنل هدیفای 🦠'
-  type: vless
-  server: 104.26.15.69
+  server: 14.102.229.216
   port: 2096
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
+  password: ttfang
+  sni: ttfang.fange.me
   skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: → @Hddify🥢
+- name: US2
+  type: trojan
+  server: 216.24.57.30
+  port: 443
+  password: tg-fq521free
+  sni: torjan.xn--xhq44j.eu.org
+  skip-cert-verify: true
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_1'
   type: vless
   server: 104.18.36.24
   port: 443
@@ -772,227 +356,221 @@ proxies:
   servername: carlotta.shoorekeeper.cloudns.org
   skip-cert-verify: true
   ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net/@Hddify---@Hddify---@Hddify---@Hddify---@Hddify---@Hddify---@Hddify---@Hddify---@Hddify
+    path: /?@MTMVPN@MTMVPN@MTMVPN?ed=512
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: 🏁RELAY-45.131.5.194-0631
+- name: l🇩🇪@v2ray_fark
+  type: vless
+  server: 104.16.199.186
+  port: 2087
+  uuid: '-----v2ray_fark-----'
+  tls: true
+  network: grpc
+  servername: wu.foxnt-telegram-foxnt.shop
+  skip-cert-verify: true
+- name: '@mehrosaboran'
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 1271a698-7db4-455d-b7e2-daa07389bb6c
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
+    headers:
+      Host: k.ft.ip-ddns.com
+- name: RU_speednode_0048
+  type: vless
+  server: 185.174.138.213
+  port: 8880
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  tls: false
+  network: ws
+  servername: jp.laoyoutiao.link
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: jp.laoyoutiao.link
+- name: '@icv2ray_1'
+  type: vless
+  server: 172.66.40.99
+  port: 80
+  uuid: 1b333390-4165-4d9a-b50f-8572e6153e56
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: join-to-Vmessorg.sabadyt.ir
+- name: '@bored_vpn'
+  type: vless
+  server: 104.17.147.22
+  port: 8080
+  uuid: 02151ca0-a1d5-437c-d818-ffa739176fab
+  tls: false
+  network: ws
+  servername: 104.17.147.22
+  skip-cert-verify: true
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: Unlimiteddev-join.paradoxone.ir
+- name: '@Selinc'
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: 91.206.71.162
+  type: vless
+  server: 91.206.71.162
+  port: 8880
+  uuid: 26bc13af-e442-4956-afd4-b8f85744d26f
+  tls: false
+  network: ws
+  servername: barayeiran-mahsang.gerald81.dpdns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /@ShadowProxy66-?ed=2560
+    headers:
+      Host: barayeiran-mahsang.gerald81.dpdns.org
+- name: 🍰65@oneclickvpnkeys
+  type: vless
+  server: 162.159.137.3
+  port: 443
+  uuid: 12f591ba-d695-4396-9190-f2f3aaa9ea47
+  tls: true
+  network: ws
+  servername: at.xiejiang.dpdns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /XYXY0721
+    headers:
+      Host: at.xiejiang.dpdns.org
+- name: 🇨🇦 Proxy Canada
+  type: vless
+  server: 104.18.26.90
+  port: 80
+  uuid: 3ac2de34-47c5-4dd5-afc0-8fb4b05d4077
+  tls: false
+  network: ws
+  servername: 104.18.26.90
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed
+    headers:
+      Host: blaze-can-118.blazecanada.site
+- name: 🇺🇸US-198.62.62.67-0586
   type: trojan
-  server: 45.131.5.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
+  server: 198.62.62.67
+  port: 443
+  password: tg-fq521free
+  sni: torjan.xn--xhq44j.eu.org
+  skip-cert-verify: true
+- name: '@Iran_V2RAY1'
+  type: vless
+  server: 172.66.44.253
+  port: 8443
+  uuid: efed37ed-37e5-4100-a540-049dc7929984
+  tls: true
+  network: ws
+  servername: net-aCcOUNt02.Pages.DEv
+  skip-cert-verify: true
+  ws-opts:
+    path: /dy26vBaDi5RTblzP?ed=2560
+    headers:
+      Host: net-aCcOUNt02.Pages.DEv
+- name: ☞ 𝗝𝗼𝗶𝗻 ➠ @Viturey
+  type: vless
+  server: 25.129.199.251
+  port: 8880
+  uuid: 0132166f-e702-48ed-a9e7-b07af768faf8
+  tls: false
+  network: ws
+  servername: 25.129.199.251
+  skip-cert-verify: true
+  ws-opts:
+    path: /---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---
+      /?ed=2560
+    headers:
+      Host: cf.d3z.net
+- name: 🇩🇪 All Operator 1 @MaSTeRSeRVeR1
+  type: vless
+  server: 173.245.59.132
+  port: 8080
+  uuid: 090d1971-1f5b-48c3-9b65-a6b23902e950
+  tls: false
+  network: httpupgrade
+  servername: 173.245.59.132
   skip-cert-verify: true
 - name: 🇩🇪@v2ray_fark
   type: vless
-  server: 103.160.204.92
+  server: 103.160.204.88
   port: 2096
   uuid: '-----v2ray_fark-----'
   tls: true
   network: grpc
   servername: wu.foxnt-telegram-foxnt.shop
   skip-cert-verify: true
-- name: 🚩 CF | 🔓 VLESS | @Fr33C0nfig [41]
+- name: 💎کانفیگ های بیشتر در چنل تلگرا_1
   type: vless
-  server: 104.18.26.90
-  port: 80
-  uuid: 6f690965-3be3-43bb-9331-3ead6efb20aa
-  tls: false
-  network: ws
-  servername: 104.18.26.90
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: sib.sibzamini.dpdns.org
-- name: '🇩🇪 جوین بده کانکت بمونی: @STAP_1'
-  type: vless
-  server: 104.16.69.64
-  port: 8880
-  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
-  tls: false
-  network: ws
-  servername: 104.16.69.64
-  skip-cert-verify: true
-  ws-opts:
-    path: /7YVyoVNnbaVzgl6D?ed=2560
-    headers:
-      Host: vghavi32.ip-ddns.com
-- name: Channel:@BeFreeWithUs_1
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 1574e278-682c-41b2-aa64-11812856c65d
-  tls: false
-  network: ws
-  servername: 151.101.3.8
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: befreewithus.net
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_4'
-  type: vless
-  server: 172.64.151.232
-  port: 443
+  server: 104.26.14.69
+  port: 2096
   uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
   tls: true
   network: ws
   servername: carlotta.shoorekeeper.cloudns.org
   skip-cert-verify: true
   ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net/?
+    path: =zani.yaemiko.ggff.net/?Join---MARAMBASHI---Join---MARAMBASHI---Join---MARAMBASHI---Join---MARAMBASHI?ed=2560
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: 🇺🇸US-45.40.154.194-0620
-  type: trojan
-  server: 45.40.154.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: '🇩🇪 جوین بده کانکت بمونی: @STAP_2'
+- name: US_speednode_0088
   type: vless
-  server: 45.131.4.85
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 45.131.4.85
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: 172.66.47.61
-  type: vless
-  server: 172.66.47.61
-  port: 8443
-  uuid: a396b860-11b7-4af3-9950-146caf79735e
-  tls: true
-  network: ws
-  servername: gGHDFa.pAgeS.Dev
-  skip-cert-verify: true
-  ws-opts:
-    path: /8WuhXm4QjK0L68Uf?ed=2560
-    headers:
-      Host: gghdfa.pages.dev
-- name: 🏁RELAY-5.10.245.194-0593
-  type: trojan
-  server: 5.10.245.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: FR_speednode_0011
-  type: vless
-  server: 141.11.203.168
+  server: 167.68.4.63
   port: 8880
   uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
   tls: false
   network: ws
-  servername: kjgx.laoyoutiao.link
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram@WangCai2/?ed=2560
-    headers:
-      Host: kjgx.laoyoutiao.link
-- name: https://t.me/HiTechVPlus
-  type: vless
-  server: 104.21.96.1
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.21.96.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: '🇩🇪 جوین بده کانکت بمونی: @STAP_3'
-  type: vless
-  server: 104.21.96.1
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.21.96.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: '@Maznet-46158-1'
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 283180d3-8fc0-4dd7-a700-290ce8a778dc
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: inFo.laLezaRanegomaNandish.sNap.ir.sNaPtripUppoRt.spaCe.
-- name: → @Hddify 🗿
-  type: vless
-  server: 104.26.15.69
-  port: 2096
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: =zani.yaemiko.ggff.net/@@Hddify---@Hddify---@Hddify?ed=2560
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 🇩🇪 @v2ngnet
-  type: vless
-  server: 190.93.244.170
-  port: 2082
-  uuid: 06be7b9f-5e99-47d2-82e8-667cedecc829
-  tls: false
-  network: httpupgrade
-  servername: 190.93.244.170
-  skip-cert-verify: true
-- name: '@V2ray1_Ng'
-  type: vless
-  server: 104.21.112.1
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.21.112.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: '@Hope_Net-join-us-on-Telegram_6'
-  type: vless
-  server: 151.101.194.165
-  port: 80
-  uuid: 2487c34c-016e-43f3-9460-cb13b1f4c418
-  tls: false
-  network: ws
-  servername: UNLIMITEDDEV.channel-telegram-1.ir
+  servername: jp.laoyoutiao.link
   skip-cert-verify: true
   ws-opts:
     path: /
     headers:
-      Host: UNLIMITEDDEV.channel-telegram-1.ir
-- name: =@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub&security=none&encryption=none&host=az221.mashkestan.com&type=ws#@confiig_hub
+      Host: jp.laoyoutiao.link
+- name: 'Channel : @Mrsoulb 🏴🏳'
   type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 2023c5f3-6ee4-4a6d-be55-44a06570f8dd
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
   tls: false
-  network: tcp
-  servername: 172.66.40.99
+  network: ws
+  servername: 104.21.96.1
   skip-cert-verify: true
-- name: '@i10VPN 🚀| با ما متصل بمون⚡_1'
+  ws-opts:
+    path: /Join---@Mrsoulb=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: '@Hope_Net-join-us-on-Telegram_1'
+  type: trojan
+  server: 104.18.32.69
+  port: 443
+  password: 1b3b276f-44b4-4c39-bfdf-67ff6337b41f
+  sni: POOrIaREd--persEPolIS.pAGEs.Dev
+  skip-cert-verify: true
+- name: '@ToxicVid ⁶'
   type: vless
   server: 104.21.112.1
   port: 80
@@ -1005,7 +583,33 @@ proxies:
     path: /193.123.81.105=443
     headers:
       Host: zoomgov.vipren.biz.id
-- name: WS-@ghalagyann2
+- name: IRAN 360 (@Outline_Vpn) free
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: DE_speednode_0008
+  type: vless
+  server: 77.37.33.186
+  port: 8880
+  uuid: 583ceab3-4022-4553-9158-9bedc625ad4e
+  tls: false
+  network: ws
+  servername: Telegram-channel-WangCai2
+  skip-cert-verify: true
+  ws-opts:
+    path: /TelegramU0001F1E8U0001F1F3 @WangCai2 /?ed=2560
+    headers:
+      Host: ip.langmanshanxi.top
+- name: WS-@ELiV2RaY
   type: vless
   server: 188.114.98.112
   port: 80
@@ -1018,76 +622,57 @@ proxies:
     path: /ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY?ed=2560
     headers:
       Host: JOIN---ELiV2-RAY.cloudns.pro.
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_5'
+- name: 104.21.112.1
   type: vless
-  server: 104.18.36.24
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz?ed=512
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 🇺🇲@vpn_ioss ♻️ عضو شو
-  type: vless
-  server: 104.16.86.73
-  port: 8880
-  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
+  server: 104.21.112.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
   tls: false
   network: ws
-  servername: 104.16.86.73
+  servername: 104.21.112.1
   skip-cert-verify: true
   ws-opts:
-    path: /J5aLQOY1R9ONWYCM?ed=2560
+    path: /193.123.81.105=443
     headers:
-      Host: vngsupply.ip-ddns.com
-- name: 🇮🇳telegram ➠ @v2rayNG_Matsuri
+      Host: zoomgov.vipren.biz.id
+- name: '@FASTSHOVPN عضو شو'
   type: vless
-  server: 104.19.247.78
-  port: 443
-  uuid: 90d7db9b-972b-4073-8738-12cf42124260
-  tls: true
-  network: ws
-  servername: kawaiifreevpn.pages.dev
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: kawaiifreevpn.pages.dev
-- name: '@Hope_Net-join-us-on-Telegram_7'
-  type: trojan
-  server: 104.25.116.172
-  port: 443
-  password: bpb-trojan
-  sni: adagio.us.kg
-  skip-cert-verify: true
-- name: '[60902] - Telegram : @V2All'
-  type: trojan
-  server: 104.17.208.66
-  port: 443
-  password: blue2024
-  sni: ha.lii2010.us.kg
-  skip-cert-verify: true
-- name: 🇩🇪@v2ray_fark_1
-  type: vless
-  server: 103.160.204.92
-  port: 2053
-  uuid: '-----v2ray_fark-----'
-  tls: true
-  network: grpc
-  servername: wu.foxnt-telegram-foxnt.shop
-  skip-cert-verify: true
-- name: '@CaV2ray ⚡️_1'
-  type: trojan
-  server: 104.17.148.22
+  server: 104.16.1.106
   port: 80
-  password: redfree8
-  sni: 104.17.148.22
+  uuid: 04a39a67-0f65-475c-c5b1-345b9ad63d2a
+  tls: false
+  network: ws
+  servername: 104.16.1.106
   skip-cert-verify: true
-- name: '@AblNet7 🐔'
+  ws-opts:
+    path: /FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM?ed=2048
+    headers:
+      Host: eng.vinamarketcenter.ir
+- name: → @Hddify 🛝
+  type: trojan
+  server: 172.67.181.173
+  port: 443
+  password: f282b878-8711-45a1-8c69-5564172123c1
+  sni: vpn.stupidworld.web.id
+  skip-cert-verify: true
+- name: /?Join---i10VPN---Join---i10VPN---Join---i10VPN---Join---i10VPN?ed=2560&security=tls&encryption=none&host=bitget1.asdasd.click&fp=chrome&type=ws&sni=bitget1.asdasd.click#@i10VPN
+    🚀| با ما متصل بمون⚡
+  type: vless
+  server: 104.24.40.146
+  port: 8443
+  uuid: b5441b0d-2147-4898-8a6a-9b2c87f58382
+  tls: false
+  network: tcp
+  servername: 104.24.40.146
+  skip-cert-verify: true
+- name: 🏁RELAY-25.25.25.194-0602
+  type: trojan
+  server: 25.25.25.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_2'
   type: vless
   server: 172.64.151.232
   port: 443
@@ -1100,48 +685,18 @@ proxies:
     path: /
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: 🅼🅴🅷🅳🅸
+- name: 🐻43@oneclickvpnkeys
   type: vless
-  server: 104.16.161.143
-  port: 2096
-  uuid: f690c2da-bdc3-4538-999e-d2bb8a541188
+  server: 172.67.68.36
+  port: 443
+  uuid: 401374e6-df77-41fb-f638-dad8184f175b
   tls: true
-  network: ws
-  servername: baomei.pages.dev
+  network: grpc
+  servername: vp38.hiddendom.shop
   skip-cert-verify: true
-  ws-opts:
-    path: /?ed
-    headers:
-      Host: baomei.pages.dev
-- name: RU_speednode_0051
+- name: 💎کانفیگ های بیشتر در چنل تلگرا_2
   type: vless
-  server: 45.8.211.63
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
-  tls: false
-  network: ws
-  servername: jp.laoyoutiao.link
-  skip-cert-verify: true
-  ws-opts:
-    path: /TelegramU0001F1E8U0001F1F3 @WangCai2 /?ed=2560fp=chrome
-    headers:
-      Host: jp.laoyoutiao.link
-- name: '@Maznet-46123-2'
-  type: vless
-  server: 172.66.40.99
-  port: 2052
-  uuid: 24aa24d1-3b3e-4e8b-aad2-a02adae07b40
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: dAta.bAckup.hafeZejanEbi.scaptapsi.sNaPtripUppoRt.spaCe.
-- name: '@IP_CF 🇨🇦'
-  type: vless
-  server: 104.21.67.12
+  server: 172.64.151.232
   port: 443
   uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
   tls: true
@@ -1149,9 +704,51 @@ proxies:
   servername: carlotta.shoorekeeper.cloudns.org
   skip-cert-verify: true
   ws-opts:
-    path: /vpnowl-vpnowl-vpnowl-vpnowl=zani.yaemiko.ggff.net
+    path: /proxyip=zani.yaemiko.ggff.net/?
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
+- name: GB_speednode_0015
+  type: vless
+  server: 25.129.196.213
+  port: 8880
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  tls: false
+  network: ws
+  servername: jp.laoyoutiao.link
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: jp.laoyoutiao.link
+- name: 'Telegram : @EXPRESSVPN_420'
+  type: vless
+  server: 104.21.112.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.112.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: '@configfree_1'
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 0c41105e-22b7-48e8-9f7f-81f1cd43c8ac
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: '@Hope_Net-join-us-on-Telegram_2'
+  type: trojan
+  server: 104.24.206.177
+  port: 443
+  password: bpb-trojan
+  sni: adagio.us.kg
+  skip-cert-verify: true
 - name: 'Channel id: @ShadowProxy66 🇨🇷'
   type: vless
   server: 190.93.245.232
@@ -1165,66 +762,91 @@ proxies:
     path: /?ed=2560
     headers:
       Host: bitget1.asdasd.click
-- name: US2
-  type: trojan
-  server: 216.24.57.30
-  port: 443
-  password: tg-fq521free
-  sni: torjan.xn--xhq44j.eu.org
-  skip-cert-verify: true
-- name: 🇩🇪𝗚𝗲𝗿𝗺𝗮𝗻𝘆 ➠ همه اپراتورها
+- name: 🌐𝐣𝐨𝐢𝐍-@𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
   type: vless
-  server: zula.ir
+  server: 45.131.4.85
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 45.131.4.85
+  skip-cert-verify: true
+  ws-opts:
+    path: FREEV2RNG
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: TAHA
+  type: vless
+  server: 104.16.69.64
+  port: 8880
+  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
+  tls: false
+  network: ws
+  servername: 104.16.69.64
+  skip-cert-verify: true
+  ws-opts:
+    path: /7YVyoVNnbaVzgl6D?ed=2560
+    headers:
+      Host: vghavi32.ip-ddns.com
+- name: 🏁RELAY-92.53.191.194-0696
+  type: trojan
+  server: 92.53.191.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: RU_speednode_0058
+  type: vless
+  server: 46.254.92.4
+  port: 8880
+  uuid: 0132166f-e702-48ed-a9e7-b07af768faf8
+  tls: false
+  network: ws
+  servername: cf.d3z.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /TelegramU0001F1E8U0001F1F3 @WangCai2 /?ed=2560
+    headers:
+      Host: cf.d3z.net
+- name: 🏁RELAY-77.232.140.194-0680
+  type: trojan
+  server: 77.232.140.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: 🇩🇪 All Operator 1 @MaSTeRSeRVe_1
+  type: vless
+  server: 173.245.59.132
+  port: 8080
+  uuid: 24163874-2dc3-4c8c-ab81-d289dd573ead
+  tls: false
+  network: httpupgrade
+  servername: 173.245.59.132
+  skip-cert-verify: true
+- name: '@icv2ray_2'
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 25d0b00d-6b17-45c8-df12-4e7e08fd8c19
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: 👉 𝗝𝗼𝗶𝗻 ➠ @Viturey | تلگرام 🇺🇳
+  type: vless
+  server: 172.64.151.232
   port: 443
-  uuid: 10b20a7e-56df-4828-91a0-9d53cb58bb7b
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
   tls: true
   network: ws
-  servername: www.amin-app.ir
+  servername: carlotta.shoorekeeper.cloudns.org
   skip-cert-verify: true
   ws-opts:
-    path: /@Archive_Android/@Archive_Android/@Archive_Android/@Archive_Android/@Archive_Android/@Archive_Android/@Archive_Android
+    path: =Join---Viturey---Viturey---Viturey---Viturey---Viturey---Viturey---
     headers:
-      Host: www.amin-app.ir
-- name: '@v2rayng_fars'
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 04dcaa2c-b287-4a04-9253-634cffbb1711
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
-    headers:
-      Host: t.lightningg.ip-ddns.com
-- name: tm⚡|@lightning6
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 012354de-a667-4d19-ae51-76e4808b5a04
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
-    headers:
-      Host: Li.testi21.ddns-ip.net
-- name: '@bored_vpn'
-  type: vless
-  server: 172.67.72.39
-  port: 80
-  uuid: 2c102887-2209-42c3-ffb1-35a5ddd831a9
-  tls: false
-  network: ws
-  servername: 172.67.72.39
-  skip-cert-verify: true
-  ws-opts:
-    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
-    headers:
-      Host: joinbdebe.vmessorg.ir
-- name: '@i10VPN 🚀| با ما متصل بمون⚡_2'
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: '@i10VPN 🚀| با ما متصل بمون⚡'
   type: vless
   server: 190.93.245.232
   port: 8443
@@ -1237,112 +859,56 @@ proxies:
     path: /
     headers:
       Host: bitget1.asdasd.click
-- name: 🇨🇵v2rayng (FR)🔐-confegraigan_1
+- name: 🇬🇧@FreakConfig_1
   type: vless
-  server: 172.67.188.18
-  port: 80
-  uuid: 2cf5523e-c4e2-4e97-be1f-b9b7d356c140
-  tls: false
-  network: ws
-  servername: 172.67.188.18
-  skip-cert-verify: true
-  ws-opts:
-    path: /aioproxybot/8.215.59.6-443
-    headers:
-      Host: aio.loophole.Biz.iD
-- name: 🇩🇪 Cloudflare Plus - IRDevs 2
-  type: vless
-  server: www.speedtest.net
-  port: 443
-  uuid: 826f524a-cea1-4e44-9b49-3381d13b7593
-  tls: true
-  network: ws
-  servername: FK31lnDM4w8UJ0YP1dRWLtdtDKO6Y-cu.pages.dEv
-  skip-cert-verify: true
-  ws-opts:
-    path: /kDPocrIW3Ice02v4
-    headers:
-      Host: fk31lndm4w8uj0yp1drwltdtdko6y-cu.pages.dev
-- name: ☞ 𝗝𝗼𝗶𝗻 ➠ @Viturey_1
-  type: vless
-  server: www.speedtest.net
+  server: 104.17.148.22
   port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  uuid: 655a6041-0ab8-4a92-ad79-f0dba34f5ace
   tls: true
-  network: ws
-  servername: lease-19.access.name.ng
+  network: xhttp
+  servername: uk-09.allhubb.info
   skip-cert-verify: true
-  ws-opts:
-    path: /?---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---
-    headers:
-      Host: lease-19.access.name.ng
-- name: 🇮🇹@configfree20255
-  type: vless
-  server: privasi.turah.my.id
-  port: 443
-  uuid: 0fbf4f81-2598-4b6a-a623-0ead4cb9efa8
-  tls: true
-  network: ws
-  servername: privasi.turah.my.id
-  skip-cert-verify: true
-  ws-opts:
-    path: /Free-CF-Proxy-AD192.3.113.4-19318?ed=2048@
-    headers:
-      Host: privasi.turah.my.id
-- name: '@bored_vpn_1'
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 21e6d7f3-08bd-4dbc-abf5-8012d9838af5
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2?ed=2560
-    headers:
-      Host: dfgopee-workers.dev.
-- name: 🏁RELAY-104.21.112.1-5021
+- name: 🏁RELAY-104.21.79.246-8829
   type: trojan
-  server: 104.21.112.1
+  server: 104.21.79.246
   port: 443
-  password: psycho
-  sni: pSYcho.sUeX12.IR
+  password: e35026da-e985-49ca-b43b-276062a535a6
+  sni: notdirect.howhealthyistoomajreally.homes
   skip-cert-verify: true
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_6'
-  type: vless
-  server: 104.18.36.24
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?@MTMVPN@MTMVPN@MTMVPN?ed=512
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: '@EXPRESSVPN_420-2'
+- name: '@Maznet-46155-1'
   type: vless
   server: 172.66.40.99
   port: 8080
-  uuid: 2201f026-64c2-4705-9ecf-7289671d0f09
+  uuid: 035006d2-51e5-4c1e-9549-bb48bff99b02
   tls: false
   network: ws
   servername: 172.66.40.99
   skip-cert-verify: true
   ws-opts:
-    path: /@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420
+    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
     headers:
-      Host: s6.inFo.laLezaRanegomaNandish.suB420-mohaMad.online.
-- name: 🩵+@Azarakhsh_Proxy+🩷_1
+      Host: inFo.laLezaRanegomaNandish.sNap.ir.sNaPtripUppoRt.spaCe.
+- name: 🏁RELAY-31.43.179.194-0605
   type: trojan
-  server: 190.93.244.202
-  port: 443
-  password: bpb-trojan
-  sni: fcspring.ggff.net
+  server: 31.43.179.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
   skip-cert-verify: true
-- name: '@IP_CF 🇨🇦_1'
+- name: Channel:@BeFreeWithUs
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 160e8ffb-1f51-4a9f-a5d8-fd89c7ab1e6f
+  tls: false
+  network: ws
+  servername: 151.101.3.8
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: befreewithus.net
+- name: '⚜️Telegram: @IP_CF 🇨🇦'
   type: vless
   server: 104.18.36.24
   port: 443
@@ -1355,191 +921,33 @@ proxies:
     path: /proxyip=zani.yaemiko.ggff.net/?/ShadowProxy66
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: =@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub&security=none&encryption=none&host=T.ubuntu-linuxmirror.ir&type=ws#@confiig_hub
+- name: کانال+ما+در+تلگرام+@Asak_Vpn+🏆
   type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 2b38bf86-8034-4d55-9257-67783f6746f6
-  tls: false
-  network: tcp
-  servername: 172.66.40.99
-  skip-cert-verify: true
-- name: '[🇳🇱] @EXPRESSVPN_420-(1)'
-  type: vless
-  server: 104.16.1.106
-  port: 8880
-  uuid: 1b766abe-05da-46fa-973c-0d06d9605736
-  tls: false
-  network: ws
-  servername: 104.16.1.106
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420?ed=2080
-    headers:
-      Host: zZz.ZzZ.zZz.snap-Iranian-ali.dai.sub420-mohamad.onlinE.
-- name: '@Maznet-46131-1'
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 0958c659-ba18-4d82-b53b-eee50cc4bcbd
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: inFo.laLezaRanegomaNandish.sNap.ir.sNaPtripUppoRt.spaCe.
-- name: 🇺🇸 US | 🔒 VLESS | @NamiraConfigs [60]
-  type: vless
-  server: 92.53.188.36
-  port: 443
-  uuid: 401374e6-df77-41fb-f638-dad8184f175b
-  tls: true
-  network: grpc
-  servername: pqh23v4.hiddendom.shop
-  skip-cert-verify: true
-- name: '@mehrosaboran_1'
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 03c7a062-fa7d-4e08-a261-aa9b18df7495
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
-    headers:
-      Host: t.lightningg.ip-ddns.com
-- name: WS-@ELiV2RaY
-  type: vless
-  server: 188.114.98.112
+  server: 167.82.1.141
   port: 80
-  uuid: 20234969-9140-4edb-9c3b-d78432ca0dee
+  uuid: 253ef561-9e57-4336-befd-878ddd30df01
   tls: false
   network: ws
-  servername: 188.114.98.112
+  servername: 167.82.1.141
   skip-cert-verify: true
   ws-opts:
-    path: /ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY?ed=2560
+    path: /?ed=2048
     headers:
-      Host: ELENA.ddNS-ip.net.
-- name: 𝗝𝗼𝗶𝗻 ➠ @vpnplusee_free | کانال ما
-  type: vless
-  server: 172.67.188.18
-  port: 80
-  uuid: 2cf5523e-c4e2-4e97-be1f-b9b7d356c140
-  tls: false
-  network: ws
-  servername: 172.67.188.18
-  skip-cert-verify: true
-  ws-opts:
-    path: /aioproxybot/8.215.59.6-443
-    headers:
-      Host: aio.loophole.Biz.iD
-- name: '@v2ray313 کانالمون ⭐'
-  type: vless
-  server: 104.17.148.22
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: iphoster-quran-iran-4.coin.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: iphoster-quran-iran-4.coin.name.ng
-- name: '@AblNet7 🇮🇷 نت ملی'
-  type: vless
-  server: 104.21.67.12
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: '@bored_vpn_2'
-  type: vless
-  server: 45.82.161.120
-  port: 42671
-  uuid: 03b57c92-813c-48d7-d25b-b03348270330
-  tls: false
-  network: tcp
-  servername: 45.82.161.120
-  skip-cert-verify: true
-- name: '@Selinc_1'
-  type: vless
-  server: 190.93.246.246
-  port: 8443
-  uuid: b5441b0d-2147-4898-8a6a-9b2c87f58382
-  tls: true
-  network: ws
-  servername: bitget1.asdasd.click
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: bitget1.asdasd.click
-- name: '@icv2ray_1'
-  type: vless
-  server: 104.18.36.24
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net/?/V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 🏁RELAY-45.153.7.194-0642
-  type: trojan
-  server: 45.153.7.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: 🏁RELAY-5.182.85.194-0599
-  type: trojan
-  server: 5.182.85.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: 🇩🇪@configfree20255_1
-  type: vless
-  server: 104.17.148.22
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: iphoster-quran-iran-4.coin.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: iphoster-quran-iran-4.coin.name.ng
-- name: کانال+ما+در+تلگرام+@Asak_Vpn+💛
+      Host: teleirani.ir
+- name: 𝗝𝗼𝗶𝗻 ➠ @PlanB_Proxy | کانال ما 🆔
   type: vless
   server: www.speedtest.net
   port: 8443
-  uuid: 96a1b724-68d2-4f4d-ab25-38ecd83577bc
+  uuid: 8e615b78-0905-48bb-ab68-fb0dfdff7688
   tls: true
   network: ws
-  servername: NvOvRkPi12.mInTiVo.oRg
+  servername: server13.coin.name.ng
   skip-cert-verify: true
   ws-opts:
     path: /
     headers:
-      Host: NvOvRkPi12.mInTiVo.oRg
-- name: '@v2ray313 کانالمون 🧠'
+      Host: server13.coin.name.ng
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_3'
   type: vless
   server: 104.26.15.69
   port: 2096
@@ -1552,437 +960,27 @@ proxies:
     path: /?ed=2560
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: '@Hope_Net-join-us-on-Telegram_8'
-  type: trojan
-  server: 104.18.32.69
-  port: 443
-  password: 1b3b276f-44b4-4c39-bfdf-67ff6337b41f
-  sni: POOrIaREd--persEPolIS.pAGEs.Dev
-  skip-cert-verify: true
-- name: tm⚡|@lightning6_1
+- name: TLS-ALL-@ISVvpn
   type: vless
   server: 172.66.40.99
-  port: 8080
-  uuid: 2b38bf86-8034-4d55-9257-67783f6746f6
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
-    headers:
-      Host: T.ubuntu-linuxmirror.ir
-- name: همراه اول vmesskhodam@
-  type: vless
-  server: 104.26.7.89
-  port: 8443
-  uuid: f5cf098f-5143-440f-a490-7fc24ff27fb0
-  tls: true
-  network: ws
-  servername: brmahasang.ahaysiahzangi.dpdns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: brmahasang.ahaysiahzangi.dpdns.org
-- name: 🏁RELAY-45.159.216.194-0643
-  type: trojan
-  server: 45.159.216.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: '@bored_vpn_3'
-  type: vless
-  server: 104.26.10.194
-  port: 80
-  uuid: 1f21f605-917a-4b31-8415-cad059b4aea4
-  tls: false
-  network: ws
-  servername: 104.26.10.194
-  skip-cert-verify: true
-  ws-opts:
-    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
-    headers:
-      Host: Vmessorg.paradoxone.ir
-- name: '@meli_proxyy_2'
-  type: vless
-  server: 45.194.53.52
   port: 443
-  uuid: d4e52293-4a82-404c-ac29-93afc006dcbb
+  uuid: '----telegram--ISVvpn----1'
   tls: true
   network: ws
-  servername: crolindd.dearcarlotta.cloudns.org
+  servername: eDg.IsVcLoD.cOm
   skip-cert-verify: true
   ws-opts:
-    path: /
+    path: /telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn?ed=2048
     headers:
-      Host: crolindd.dearcarlotta.cloudns.org
-- name: '@CaV2ray ⚡️_2'
+      Host: eDg.IsVcLoD.cOm
+- name: 🏁RELAY-104.21.71.8-5018
   type: trojan
-  server: 172.67.207.27
-  port: 443
-  password: 5a5d1112-4ae7-431f-bdde-0d008fb473dd
-  sni: 90.tAIpEI108.dpDnS.orG
+  server: 104.21.71.8
+  port: 2053
+  password: 9kHuEbiX7Bcp
+  sni: khabaronline.itn24.ir
   skip-cert-verify: true
-- name: 🇫🇮@vpn_ioss ♻️ عضو شو
-  type: vless
-  server: 45.85.119.151
-  port: 8880
-  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
-  tls: false
-  network: ws
-  servername: 45.85.119.151
-  skip-cert-verify: true
-  ws-opts:
-    path: /6TvG8D6HimXKgdp2?ed=2560
-    headers:
-      Host: vngsupply.ip-ddns.com
-- name: 🇺🇸US-198.62.62.67-0586
-  type: trojan
-  server: 198.62.62.67
-  port: 443
-  password: tg-fq521free
-  sni: torjan.xn--xhq44j.eu.org
-  skip-cert-verify: true
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_7'
-  type: vless
-  server: 104.21.67.12
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?Join---MARAMBASHI---Join---MARAMBASHI?ed=2560
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: '@Hope_Net-join-us-on-Telegram_9'
-  type: trojan
-  server: 104.20.22.19
-  port: 443
-  password: auto
-  sni: b96ef9ae.trojanfree-76s.pages.dev
-  skip-cert-verify: true
-- name: '@bored_vpn_4'
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 006741b4-8a77-41f0-80d4-d35e6c2f5825
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: c.jOin.zEdMoDeOn.oNl.
-- name: 💎کانفیگ های بیشتر در چنل تلگرا_4
-  type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: hetzner-12.apple.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: hetzner-12.apple.name.ng
-- name: '@HiByeVPNN👈⚡❤️‍🔥'
-  type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: lease-11.access.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2048@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN
-    headers:
-      Host: lease-11.access.name.ng
-- name: '>>@v2ray1_ng::GB'
-  type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: lease-17.access.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: lease-17.access.name.ng
-- name: 🇺🇸US-50.62.195.194-0660
-  type: trojan
-  server: 50.62.195.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: IRAN 627 (@Outline_Vpn) free
-  type: vless
-  server: 104.26.7.89
-  port: 8443
-  uuid: f5cf098f-5143-440f-a490-7fc24ff27fb0
-  tls: true
-  network: ws
-  servername: brmahasang.ahaysiahzangi.dpdns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed
-    headers:
-      Host: brmahasang.ahaysiahzangi.dpdns.org
-- name: channel @ghalagyann
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 012354de-a667-4d19-ae51-76e4808b5a04
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
-    headers:
-      Host: Li.testi21.ddns-ip.net
-- name: 🇳🇱 @G0dv2ray
-  type: vless
-  server: 104.26.11.194
-  port: 80
-  uuid: 1f21f605-917a-4b31-8415-cad059b4aea4
-  tls: false
-  network: ws
-  servername: 104.26.11.194
-  skip-cert-verify: true
-  ws-opts:
-    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
-    headers:
-      Host: Vmessorg.paradoxone.ir
-- name: '@Hddify |♦| چنل هدیفای 🛰️'
-  type: vless
-  server: 104.26.15.69
-  port: 2096
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 🇺🇸US-50.62.198.194-0661
-  type: trojan
-  server: 50.62.198.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: عضو کانال و ربات شوید👆
-  type: vless
-  server: 104.26.9.63
-  port: 2083
-  uuid: 1ccc1dd8-d8ed-4b69-b0c2-27f6282f9755
-  tls: true
-  network: ws
-  servername: test.bujidao.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: test.bujidao.org
-- name: tm@ghalagyann2
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 2b38bf86-8034-4d55-9257-67783f6746f6
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
-    headers:
-      Host: T.ubuntu-linuxmirror.ir
 - name: '@V2RAYNG_1378_1'
-  type: vless
-  server: 104.21.67.12
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /proxyip
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 🇩🇪 | XpnTeam - Telegrams-4mij7j1o
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 080e6a17-1770-4fad-8b22-a2031cf0a4f4
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: 🏁RELAY-45.159.217.194-0644
-  type: trojan
-  server: 45.159.217.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: 🏁RELAY-80.93.202.194-0681
-  type: trojan
-  server: 80.93.202.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: GB_speednode_0021
-  type: vless
-  server: 25.25.25.19
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
-  tls: false
-  network: ws
-  servername: hk.laoyoutiao.link
-  skip-cert-verify: true
-  ws-opts:
-    path: /telegram🇨🇳 @pgkj666 /?ed=2560
-    headers:
-      Host: hk.laoyoutiao.link
-- name: TEHRANARGO
-  type: vless
-  server: 104.26.15.69
-  port: 2096
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 🇩🇪 Cloudflare Plus - IRDevs 3
-  type: vless
-  server: 172.66.46.247
-  port: 443
-  uuid: 826f524a-cea1-4e44-9b49-3381d13b7593
-  tls: true
-  network: ws
-  servername: fk31lnDM4W8uJ0Yp1drWlTdTdkO6Y-Cu.pages.deV
-  skip-cert-verify: true
-  ws-opts:
-    path: /laGekhA1Q1IhSqJe
-    headers:
-      Host: fk31lndm4w8uj0yp1drwltdtdko6y-cu.pages.dev
-- name: WS-@ELiV2RaY_1
-  type: vless
-  server: 188.114.98.112
-  port: 80
-  uuid: 07042893-9818-4eff-89c3-d13339c45faa
-  tls: false
-  network: ws
-  servername: 188.114.98.112
-  skip-cert-verify: true
-  ws-opts:
-    path: /ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY?ed=2560
-    headers:
-      Host: ELENA.ddNS-ip.net.
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_8'
-  type: vless
-  server: 104.18.36.24
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz?ed=2560
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: '@Maznet-46141-2'
-  type: vless
-  server: 172.66.40.99
-  port: 2052
-  uuid: 2262d419-522f-42d2-bb4b-e9cd8b721af0
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: dAta.bAckup.hafeZejanEbi.scaptapsi.sNaPtripUppoRt.spaCe.
-- name: '@i10VPN 🚀| با ما متصل بمون⚡_3'
-  type: vless
-  server: 170.114.46.251
-  port: 8880
-  uuid: 0132166f-e702-48ed-a9e7-b07af768faf8
-  tls: false
-  network: ws
-  servername: 170.114.46.251
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join---i10VPN---Join---i10VPN---Join---i10VPN---Join---i10VPN /
-    headers:
-      Host: cf.d3z.net
-- name: '@meli_proxyy_3'
-  type: vless
-  server: 45.194.53.52
-  port: 443
-  uuid: d4e52293-4a82-404c-ac29-93afc006dcbb
-  tls: true
-  network: ws
-  servername: crolindd.dearcarlotta.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram@V2ray_Alpha?ed=512
-    headers:
-      Host: crolindd.dearcarlotta.cloudns.org
-- name: '@v2ray313 کانالمون ♥️'
-  type: vless
-  server: 104.16.53.11
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.16.53.11
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: Bya to @Iran_V2ray1
-  type: trojan
-  server: 104.26.4.60
-  port: 443
-  password: bpb-trojan
-  sni: zamim340.ggff.net
-  skip-cert-verify: true
-- name: '@`'
-  type: vless
-  server: 45.131.4.85
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 45.131.4.85
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_9'
   type: vless
   server: 104.21.96.1
   port: 80
@@ -1992,629 +990,9 @@ proxies:
   servername: 104.21.96.1
   skip-cert-verify: true
   ws-opts:
-    path: /Join---PlanB_proxy=443
+    path: /193.123.81.105=443
     headers:
       Host: zoomgov.vipren.biz.id
-- name: '@mehrosaboran_2'
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 2b38bf86-8034-4d55-9257-67783f6746f6
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
-    headers:
-      Host: T.ubuntu-linuxmirror.ir
-- name: 🇮🇷𝐣𝐨𝐢𝐍-@𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆_1
-  type: vless
-  server: 45.131.4.85
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 45.131.4.85
-  skip-cert-verify: true
-  ws-opts:
-    path: FreeV2rng
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: '@configfree_1'
-  type: vless
-  server: 160.153.0.32
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: '@Hope_Net-join-us-on-Telegram_10'
-  type: trojan
-  server: 162.159.152.42
-  port: 443
-  password: tg-dns68
-  sni: vip.putata.eu.org
-  skip-cert-verify: true
-- name: 🏁RELAY-77.37.33.194-0676
-  type: trojan
-  server: 77.37.33.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: 🏁RELAY-46.254.93.194-0650
-  type: trojan
-  server: 46.254.93.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: uf6k-%2540Fr33C0nfig%2520%252F%2520%25DA%25A9%25D8%25A7%25D9%2586%25D9%2581%25DB%258C%25DA%25AF%2520%25D8%25B1%25D8%25A7%25DB%258C%25DA%25AF%25D8%25A7%25D9%2586%2520🔗
-  type: vless
-  server: 104.18.26.90
-  port: 80
-  uuid: 6f690965-3be3-43bb-9331-3ead6efb20aa
-  tls: false
-  network: ws
-  servername: 104.18.26.90
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560/?BIA_CHANEL@JOKERRVPN
-    headers:
-      Host: sib.sibzamini.dpdns.org
-- name: '@V2rayNG3_1'
-  type: vless
-  server: 104.16.190.131
-  port: 8443
-  uuid: 9d5e7586-64e1-4c29-9d47-6cbbd57fe8d1
-  tls: true
-  network: ws
-  servername: pardazeshvpn-tg48.pages.dev
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2048
-    headers:
-      Host: pardazeshvpn-tg48.pages.dev
-- name: 🇩🇪 All Operator 2 @MaSTeRSeRVe_1
-  type: vless
-  server: 198.41.216.98
-  port: 8080
-  uuid: 18fd1328-3f06-4040-a370-f2891c2d8b8b
-  tls: false
-  network: httpupgrade
-  servername: 198.41.216.98
-  skip-cert-verify: true
-- name: 🇧🇷@vpn_ioss ♻️ عضو شو
-  type: vless
-  server: 45.85.119.151
-  port: 8880
-  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
-  tls: false
-  network: ws
-  servername: 45.85.119.151
-  skip-cert-verify: true
-  ws-opts:
-    path: /6TvG8D6HimXKgdp2?ed=2560
-    headers:
-      Host: vngsupply.ip-ddns.com
-- name: 🅼🅴🅷🅳🅸_1
-  type: vless
-  server: 104.16.108.84
-  port: 443
-  uuid: a89357b8-a501-46bd-ac6d-c0f37f1fd0f5
-  tls: true
-  network: ws
-  servername: shutu.pages.dev
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: shutu.pages.dev
-- name: kwj9-@Fr33C0nfig / کانفیگ رایگان 🔗
-  type: vless
-  server: 104.18.26.90
-  port: 443
-  uuid: d300ae15-2ba2-4f91-b1b0-b4510912e4cc
-  tls: true
-  network: ws
-  servername: 2free2.aparatir.xyz
-  skip-cert-verify: true
-  ws-opts:
-    path: /admin
-    headers:
-      Host: 2free2.aparatir.xyz
-- name: '@Daily_Configs'
-  type: vless
-  server: 104.26.6.89
-  port: 80
-  uuid: b360267f-81aa-4740-a9c0-9a64fe7f9775
-  tls: false
-  network: ws
-  servername: 104.26.6.89
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: onlytesla1.xz027.com
-- name: qn_284
-  type: vless
-  server: 172.64.38.235
-  port: 8443
-  uuid: 1832c043-bb14-41c5-a9a0-dc8dc5fc9f06
-  tls: true
-  network: ws
-  servername: FREe1091.sue100.WorKerS.dEv
-  skip-cert-verify: true
-  ws-opts:
-    path: /SdCpSUjxBqU8Z5wK?ed=2560
-    headers:
-      Host: FREe1091.sue100.WorKerS.dEv
-- name: 🇺🇸US-50.62.174.194-0657
-  type: trojan
-  server: 50.62.174.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: US_speednode_0094
-  type: vless
-  server: 63.141.128.1
-  port: 80
-  uuid: 7d22d6f7-bd15-4ae3-a41c-707427f51753
-  tls: false
-  network: ws
-  servername: c.jOin.zEdMoDeOn.oNl.
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: c.jOin.zEdMoDeOn.oNl.
-- name: '[🇨🇦]t.me/ConfigsHub'
-  type: trojan
-  server: 162.159.152.42
-  port: 443
-  password: tg-dns68
-  sni: vip.putata.eu.org
-  skip-cert-verify: true
-- name: '@CaV2ray ⚡️_3'
-  type: vless
-  server: 104.16.104.151
-  port: 80
-  uuid: 1f431db3-1918-4e7b-a855-c93485e11694
-  tls: false
-  network: ws
-  servername: 104.16.104.151
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: pari.parinazz.dpdns.org
-- name: 🚩 CF | 🔒 VLESS | @iranproxypro [1]
-  type: vless
-  server: www.speedtest.net
-  port: 443
-  uuid: 157cb924-2adc-4f4e-9d54-ba105b6dff30
-  tls: true
-  network: ws
-  servername: vip.hackers855.sbs
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: vip.hackers855.sbs
-- name: '@meli_proxyy_4'
-  type: vless
-  server: 104.18.26.90
-  port: 2096
-  uuid: 4bcb875b-bc40-4455-b242-cc32e58ae871
-  tls: true
-  network: ws
-  servername: 638874929583386193.zagreb-prx-dnraaad.info
-  skip-cert-verify: true
-  ws-opts:
-    path: /nodudrws
-    headers:
-      Host: 638874929583386193.zagreb-prx-dnraaad.info
-- name: TLS-@ELiV2Ry
-  type: vless
-  server: 172.66.46.246
-  port: 443
-  uuid: 327f1f36-7cfa-4e0c-87a4-5da7f5fa6f8f
-  tls: true
-  network: ws
-  servername: 172.66.46.246
-  skip-cert-verify: true
-  ws-opts:
-    path: /ELiV2RAY----ELiV2RAY----ELiV2RAY----ELiV2RAY----ELiV2RAY----ELiV2RAY?ed=2560
-    headers:
-      Host: ELENA.ELENA.ddns-ip.net
-- name: '[🇳🇱] @EXPRESSVPN_420-(2)'
-  type: vless
-  server: 172.66.40.99
-  port: 8880
-  uuid: 1b766abe-05da-46fa-973c-0d06d9605736
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420?ed=2080
-    headers:
-      Host: zZz.ZzZ.zZz.snap-Iranian-ali.dai.sub420-mohamad.onlinE.
-- name: '[60834] - Telegram : @V2All'
-  type: trojan
-  server: 92.243.74.3
-  port: 8443
-  password: Aimer
-  sni: ngep.ambercc.filegear-sg.me
-  skip-cert-verify: true
-- name: 🏁RELAY-46.202.30.194-0648
-  type: trojan
-  server: 46.202.30.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: '>>@v2rayNG_Matsuri::GB'
-  type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: lease-12.access.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: lease-12.access.name.ng
-- name: 🇩🇪 All Operator 1 @MaSTeRSeRVeR1
-  type: vless
-  server: 173.245.59.132
-  port: 8080
-  uuid: 0cf2d14a-399f-4bf8-b646-5457ede472b2
-  tls: false
-  network: httpupgrade
-  servername: 173.245.59.132
-  skip-cert-verify: true
-- name: '@TokaVpn'
-  type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: hetzner-12.apple.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: hetzner-12.apple.name.ng
-- name: '@NETMelliAnti'
-  type: vless
-  server: 104.16.53.11
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: hetzner-9.cfuk.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: hetzner-9.cfuk.name.ng
-- name: → @Hddify 🎷
-  type: vless
-  server: 104.18.36.24
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /Channel--Telegram--@Hddify--@Hddify--@Hddify
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 💎کانفیگ های بیشتر در چنل تلگرا_5
-  type: vless
-  server: 172.67.188.18
-  port: 80
-  uuid: 2cf5523e-c4e2-4e97-be1f-b9b7d356c140
-  tls: false
-  network: ws
-  servername: 172.67.188.18
-  skip-cert-verify: true
-  ws-opts:
-    path: /aioproxybot/8.215.59.6-443
-    headers:
-      Host: aio.loophole.Biz.iD
-- name: '@Maznet-46129-1'
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 20549d64-10f1-4cd0-82db-74d5b923191e
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: inFo.laLezaRanegomaNandish.sNap.ir.sNaPtripUppoRt.spaCe.
-- name: '@V2RAYROZ'
-  type: vless
-  server: 104.16.1.106
-  port: 80
-  uuid: 04a39a67-0f65-475c-c5b1-345b9ad63d2a
-  tls: false
-  network: ws
-  servername: 104.16.1.106
-  skip-cert-verify: true
-  ws-opts:
-    path: /FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM?ed=2048
-    headers:
-      Host: eng.vinamarketcenter.ir
-- name: 🇺🇸US-38.86.135.36-6731
-  type: ss
-  server: 38.86.135.36
-  port: 8080
-  cipher: aes-256-gcm
-  password: KixLvKzwjekG00rm
-- name: 🇷🇺RU-45.67.215.95-1018
-  type: trojan
-  server: 45.67.215.95
-  port: 443
-  password: tg-fq521free
-  sni: torjan.xn--xhq44j.eu.org
-  skip-cert-verify: true
-- name: '@mehrosaboran_3'
-  type: vless
-  server: 172.67.92.147
-  port: 443
-  uuid: 75fde681-ec64-4654-86fa-30732e8e179c
-  tls: true
-  network: ws
-  servername: NGINX.NSCl.IR
-  skip-cert-verify: true
-  ws-opts:
-    path: /assets
-    headers:
-      Host: nginx.nscl.ir
-- name: 💎 @AblNet7 💎
-  type: vless
-  server: 104.19.144.33
-  port: 8443
-  uuid: e999db7a-1b17-4da6-bc37-c9fa24af2e93
-  tls: true
-  network: ws
-  servername: 104.19.144.33
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: Q4cPsPt6G5.gItI3.oRg
-- name: '@meli_proxyy_5'
-  type: vless
-  server: 45.194.53.26
-  port: 443
-  uuid: d4e52293-4a82-404c-ac29-93afc006dcbb
-  tls: true
-  network: ws
-  servername: crolindd.dearcarlotta.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /proxyip=citlali.shorekeeper.ir
-    headers:
-      Host: crolindd.dearcarlotta.cloudns.org
-- name: 🚩 CF | 🔒 VLESS | @Fr33C0nfig [40]
-  type: vless
-  server: 104.18.26.90
-  port: 443
-  uuid: d300ae15-2ba2-4f91-b1b0-b4510912e4cc
-  tls: true
-  network: ws
-  servername: 2free2.aparatir.xyz
-  skip-cert-verify: true
-  ws-opts:
-    path: /admin
-    headers:
-      Host: 2free2.aparatir.xyz
-- name: 🇩🇪 Germany 🌚🙋‍♂️
-  type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: 3d1c38ee-64b9-4792-8752-a7fa128a1d0d
-  tls: true
-  network: ws
-  servername: maHsA.allUNIVeRsiTY.onLine
-  skip-cert-verify: true
-  ws-opts:
-    path: /bjPG7HijNQbb27YI/c2hpcmVuLnlhZW1pa28uZ2dmZi5uZXQ=
-    headers:
-      Host: mahsa.alluniversity.online
-- name: 🏁RELAY-5.10.215.194-0591
-  type: trojan
-  server: 5.10.215.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: '@AblNet7 🇮🇷 نت ملی  🇨🇦_1'
-  type: vless
-  server: 104.19.144.33
-  port: 8443
-  uuid: e999db7a-1b17-4da6-bc37-c9fa24af2e93
-  tls: true
-  network: ws
-  servername: 104.19.144.33
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: RcIhRfOgXf.GiTi3.OrG
-- name: 🍰68@oneclickvpnkeys
-  type: vless
-  server: 104.18.26.90
-  port: 443
-  uuid: 0fbecce1-acf9-4b6e-a0f7-f48be9d2b7d0
-  tls: true
-  network: ws
-  servername: maxnetvipap-cloud252.netkh3.site
-  skip-cert-verify: true
-  ws-opts:
-    path: /linkws
-    headers:
-      Host: maxnetvipap-cloud252.netkh3.site
-- name: Telegram@ConfingV2RaayNG
-  type: vless
-  server: 172.66.46.246
-  port: 443
-  uuid: 327f1f36-7cfa-4e0c-87a4-5da7f5fa6f8f
-  tls: true
-  network: ws
-  servername: 172.66.46.246
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram:@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG?ed=2560
-    headers:
-      Host: ELENA.ELENA.ddns-ip.net
-- name: '@Daily_Configs_1'
-  type: vless
-  server: 104.18.26.90
-  port: 2096
-  uuid: 147d63c1-2f68-4f45-b3ea-cb3172fab133
-  tls: true
-  network: ws
-  servername: 638874929583954786.zagreb-prx-dnraaad.info
-  skip-cert-verify: true
-  ws-opts:
-    path: /jmgjhhws
-    headers:
-      Host: 638874929583954786.zagreb-prx-dnraaad.info
-- name: /?Join------Join---?ed=2560&security=tls&encryption=none&host=bitget1.asdasd.click&fp=chrome&type=ws&sni=bitget1.asdasd.click#💎کانفیگ
-    های بیشتر در چنل تلگرام💎 Config_Rayegan@
-  type: vless
-  server: 190.93.245.232
-  port: 8443
-  uuid: b5441b0d-2147-4898-8a6a-9b2c87f58382
-  tls: false
-  network: tcp
-  servername: 190.93.245.232
-  skip-cert-verify: true
-- name: '@V2ray1_Ng_1'
-  type: vless
-  server: 172.67.188.18
-  port: 80
-  uuid: 2cf5523e-c4e2-4e97-be1f-b9b7d356c140
-  tls: false
-  network: ws
-  servername: 172.67.188.18
-  skip-cert-verify: true
-  ws-opts:
-    path: /aioproxybot/8.215.59.6-443
-    headers:
-      Host: aio.loophole.Biz.iD
-- name: '@Selinc_2'
-  type: vless
-  server: 104.26.14.69
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: =zani.yaemiko.ggff.net/?MTMVPN?ed=512
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: bia @v2rayng_fars @Pruuxi
-  type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: 8e615b78-0905-48bb-ab68-fb0dfdff7688
-  tls: true
-  network: ws
-  servername: server12.coin.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: server12.coin.name.ng
-- name: '@V2ray1_Ng_2'
-  type: vless
-  server: 104.19.144.33
-  port: 8443
-  uuid: e999db7a-1b17-4da6-bc37-c9fa24af2e93
-  tls: true
-  network: ws
-  servername: PmQ1cCsP9x.GhEiChI.oRg
-  skip-cert-verify: true
-  ws-opts:
-    path: /?Join---FREEV2RNG?ed
-    headers:
-      Host: PmQ1cCsP9x.GhEiChI.oRg
-- name: '@V2RAYROZ_1'
-  type: vless
-  server: 172.67.188.18
-  port: 80
-  uuid: 2cf5523e-c4e2-4e97-be1f-b9b7d356c140
-  tls: false
-  network: ws
-  servername: 172.67.188.18
-  skip-cert-verify: true
-  ws-opts:
-    path: /aioproxybot/8.215.59.6-443
-    headers:
-      Host: aio.loophole.Biz.iD
-- name: 🏁RELAY-14.102.229.216-1049
-  type: trojan
-  server: 14.102.229.216
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: 🇩🇪 All Operator 2 @MaSTeRSeRVe_2
-  type: vless
-  server: 198.41.216.98
-  port: 8080
-  uuid: 24163874-2dc3-4c8c-ab81-d289dd573ead
-  tls: false
-  network: httpupgrade
-  servername: 198.41.216.98
-  skip-cert-verify: true
-- name: qn_355
-  type: vless
-  server: 104.24.47.48
-  port: 8443
-  uuid: 1832c043-bb14-41c5-a9a0-dc8dc5fc9f06
-  tls: true
-  network: ws
-  servername: FrEe1091.sUE100.woRKERS.dev
-  skip-cert-verify: true
-  ws-opts:
-    path: /ZafWY6LQ3R5hiHQ1?ed=2560
-    headers:
-      Host: FrEe1091.sUE100.woRKERS.dev
-- name: → @Hddify 🍧
-  type: vless
-  server: 104.26.15.69
-  port: 2096
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
 - name: SI_speednode_0068
   type: vless
   server: 92.53.188.168
@@ -2628,85 +1006,225 @@ proxies:
     path: /Telegram@freecodes
     headers:
       Host: kjgx.laoyoutiao.link
-- name: '@v2rayng_fars_1'
+- name: 🇩🇪v2rayng (DE)🔐-confegraigan
+  type: trojan
+  server: 172.67.181.173
+  port: 443
+  password: f282b878-8711-45a1-8c69-5564172123c1
+  sni: vpn.stupidworld.web.id
+  skip-cert-verify: true
+- name: '@icv2ray_3'
   type: vless
-  server: www.speedtest.net
+  server: 151.101.3.8
+  port: 80
+  uuid: 0134428a-02d8-4f94-8221-a1e858552212
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: t.me/entryNET/config=1841584924643730
+  type: trojan
+  server: 104.20.20.23
+  port: 443
+  password: auto
+  sni: b96ef9ae.trojanfree-76s.pages.dev
+  skip-cert-verify: true
+- name: 🇩🇪 All Operator 2 @MaSTeRSeRVe_1
+  type: vless
+  server: 198.41.216.98
+  port: 8080
+  uuid: 27345940-42d5-4508-a803-7c24da1c3080
+  tls: false
+  network: httpupgrade
+  servername: 198.41.216.98
+  skip-cert-verify: true
+- name: 🏁RELAY-74.49.214.194-0674
+  type: trojan
+  server: 74.49.214.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: '@AblNet7 🇨🇦'
+  type: vless
+  server: 104.21.32.1
+  port: 443
+  uuid: 0f0c8014-6c01-46b6-b0cc-2f76d6bae7f6
+  tls: true
+  network: ws
+  servername: FqJEDazA7b2VofJ9iHeMX319rmO41l7b.paGEs.DeV
+  skip-cert-verify: true
+  ws-opts:
+    path: /vpghRaDdORhcsIFV/MzUuMTU3LjI0MC4yMzcsMTguMTk4LjIyNy4xNjE=?ed=2560
+    headers:
+      Host: fqjedaza7b2vofj9ihemx319rmo41l7b.pages.dev
+- name: 🇩🇪@FreakConfig
+  type: vless
+  server: 104.17.147.22
   port: 8443
   uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
   tls: true
   network: ws
-  servername: hetzner-2.access.name.ng
+  servername: hetzner-8.cache.name.ng
   skip-cert-verify: true
   ws-opts:
     path: /
     headers:
-      Host: hetzner-2.access.name.ng
-- name: 🩵Telegram:@Asak_Vpn
+      Host: hetzner-8.cache.name.ng
+- name: '@Capoit'
   type: vless
-  server: 160.153.0.131
-  port: 8443
-  uuid: 96a1b724-68d2-4f4d-ab25-38ecd83577bc
+  server: 104.26.15.69
+  port: 2096
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
   tls: true
   network: ws
-  servername: HdWyNdJd78.kHoSgElBaLaToChIpAs-nAdIdAmEt.cOm
+  servername: carlotta.shoorekeeper.cloudns.org
   skip-cert-verify: true
   ws-opts:
-    path: /
+    path: /?ed=2560
     headers:
-      Host: HdWyNdJd78.kHoSgElBaLaToChIpAs-nAdIdAmEt.cOm
-- name: GB_speednode_0024
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: Telegram@ConfingV2RaayNG_1
   type: vless
-  server: 25.25.25.177
-  port: 8880
-  uuid: 583ceab3-4022-4553-9158-9bedc625ad4e
+  server: 172.66.46.246
+  port: 443
+  uuid: 07042893-9818-4eff-89c3-d13339c45faa
+  tls: true
+  network: ws
+  servername: 172.66.46.246
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram:@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG?ed=2560
+    headers:
+      Host: ELENA.ELENA.ddns-ip.net
+- name: 🏁RELAY-91.124.127.194-0690
+  type: trojan
+  server: 91.124.127.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: 🇺🇸US-45.40.154.194-0620
+  type: trojan
+  server: 45.40.154.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: 🇨🇦𝐣𝐨𝐢𝐍-@𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆_2
+  type: vless
+  server: 172.64.151.232
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: =Join---FREEV2RNG
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: Telgrm:@ai_duet|@v2rayngsupbot
+  type: vless
+  server: 104.18.26.90
+  port: 80
+  uuid: 148709e4-402b-48dd-8892-ed39b55ea45c
   tls: false
   network: ws
-  servername: Telegram-channel-WangCai2
+  servername: barayeiranmahsang.loseyourself.dpdns.org
   skip-cert-verify: true
   ws-opts:
-    path: /TelegramU0001F1E8U0001F1F3 @WangCai2fp=chrome
+    path: /?ed=2560/?JOKERRVPNBIA_CHANEL@JOKERRVPN
     headers:
-      Host: ip.langmanshanxi.top
-- name: '@EXPRESSVPN_420 🇳🇱-2'
+      Host: barayeiranmahsang.loseyourself.dpdns.org
+- name: '@CaV2ray ⚡️'
+  type: vless
+  server: 172.67.226.132
+  port: 80
+  uuid: 26bc13af-e442-4956-afd4-b8f85744d26f
+  tls: false
+  network: ws
+  servername: 172.67.226.132
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: fggerlad.gerald81.dpdns.org
+- name: '@CaV2ray ⚡️_1'
+  type: trojan
+  server: 172.67.207.27
+  port: 443
+  password: 5a5d1112-4ae7-431f-bdde-0d008fb473dd
+  sni: 90.tAIpEI108.dpDnS.orG
+  skip-cert-verify: true
+- name: =@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub&security=none&encryption=none&host=T.ubuntu-linuxmirror.ir&type=ws#@confiig_hub
   type: vless
   server: 172.66.40.99
-  port: 80
-  uuid: 04731aea-13a7-4b4d-8713-8d3ac5183811
+  port: 8080
+  uuid: 2b38bf86-8034-4d55-9257-67783f6746f6
   tls: false
-  network: ws
+  network: tcp
   servername: 172.66.40.99
   skip-cert-verify: true
-  ws-opts:
-    path: /Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420?ed=2080
-    headers:
-      Host: Kk78.4Qwertyuiopasdfghjklzxcvbnmmnbvccjzlkjhgfdsapoiuytre0107252.sub420-mohamad.OnlinE.
-- name: '@confiig_hub'
+- name: 🏁RELAY-77.74.228.194-0677
+  type: trojan
+  server: 77.74.228.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: 🇩🇪 All Operator 2 @MaSTeRSeRVe_2
   type: vless
-  server: www.speedtest.net
+  server: 198.41.216.98
+  port: 8080
+  uuid: 1441c6bc-9ecc-4b5a-b98a-3252aaf8abac
+  tls: false
+  network: httpupgrade
+  servername: 198.41.216.98
+  skip-cert-verify: true
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_4'
+  type: vless
+  server: 104.26.10.194
   port: 80
-  uuid: 2d4a3764-db86-4515-8193-23bc49e73189
+  uuid: 1f21f605-917a-4b31-8415-cad059b4aea4
   tls: false
   network: ws
-  servername: www.speedtest.net
+  servername: 104.26.10.194
   skip-cert-verify: true
   ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
     headers:
-      Host: b.jOin.zEdMoDeOn.oNl.
-- name: 🇬🇧[Telegram:@v2rayng_fars]
+      Host: Vmessorg.paradoxone.ir
+- name: 🇮🇹 Italy Monster 3 🔥
   type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  server: 188.114.96.9
+  port: 443
+  uuid: 229a61b0-5925-43dc-83f9-661670cfe41d
   tls: true
   network: ws
-  servername: lease-11.access.name.ng
+  servername: n8yt9i7dizcb4nbicv55vdqyfahovzb6jvwipqntbtfmvpa4ugrxmzrlhqrfgfr.u19x5rr.workers.Dev
   skip-cert-verify: true
   ws-opts:
     path: /
     headers:
-      Host: lease-11.access.name.ng
-- name: 💎کانفیگ های بیشتر در چنل تلگرا_6
+      Host: n8yt9i7dizcb4nbicv55vdqyfahovzb6jvwipqntbtfmvpa4ugrxmzrlhqrfgfr.u19x5rr.workers.Dev
+- name: '[60944] - Telegram : @V2All'
+  type: trojan
+  server: 135.84.64.77
+  port: 2096
+  password: SSorg
+  sni: ssjj.esslh.filegear-sg.me
+  skip-cert-verify: true
+- name: 🇩🇪 | XpnTeam - Telegrams-k7o6dhdk
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 1aaf960c-a970-4d57-e5a5-235ca11c5c27
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_5'
   type: vless
   server: 104.18.36.24
   port: 443
@@ -2716,17 +1234,92 @@ proxies:
   servername: carlotta.shoorekeeper.cloudns.org
   skip-cert-verify: true
   ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net/?
+    path: /?@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz---@V2rayBaaz?ed=512
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: 🏁RELAY-89.116.250.194-0688
+- name: '[60834] - Telegram : @V2All'
   type: trojan
-  server: 89.116.250.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
+  server: 92.243.74.3
+  port: 8443
+  password: Aimer
+  sni: ngep.ambercc.filegear-sg.me
   skip-cert-verify: true
-- name: 💎کانفیگ های بیشتر در چنل تلگرا_7
+- name: '@Hope_Net-join-us-on-Telegram_3'
+  type: trojan
+  server: 104.17.148.22
+  port: 2052
+  password: 4b0915d7-8544-5d48-946a-a708d7288447
+  sni: 104.17.148.22
+  skip-cert-verify: true
+- name: '@bored_vpn_1'
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 21a8d1f1-09cd-4255-9a24-4f3a0a3dabaa
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
+    headers:
+      Host: k.ft.ip-ddns.com
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_6'
+  type: vless
+  server: 91.206.71.162
+  port: 8880
+  uuid: 26bc13af-e442-4956-afd4-b8f85744d26f
+  tls: false
+  network: ws
+  servername: barayeiran-mahsang.gerald81.dpdns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: barayeiran-mahsang.gerald81.dpdns.org
+- name: '@Selinc_1'
+  type: vless
+  server: 190.93.246.246
+  port: 8443
+  uuid: b5441b0d-2147-4898-8a6a-9b2c87f58382
+  tls: true
+  network: ws
+  servername: bitget1.asdasd.click
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: bitget1.asdasd.click
+- name: Telegram:@config_proxy 💦
+  type: trojan
+  server: 172.67.181.173
+  port: 443
+  password: f282b878-8711-45a1-8c69-5564172123c1
+  sni: vpn.stupidworld.web.id
+  skip-cert-verify: true
+- name: 'Channel : @Mrsoulb 🏴🏳_1'
+  type: vless
+  server: 104.16.53.11
+  port: 8080
+  uuid: 1343298e-2118-435d-9dcc-9f8c3fd60cef
+  tls: false
+  network: httpupgrade
+  servername: 104.16.53.11
+  skip-cert-verify: true
+- name: '@mehrosaboran_1'
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 1a4784a5-49ed-4345-b5f9-98cdd70a81b8
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
+    headers:
+      Host: k.ft.ip-ddns.com
+- name: '@AblNet7 🇺🇲'
   type: vless
   server: 104.16.69.64
   port: 8880
@@ -2739,35 +1332,52 @@ proxies:
     path: /7YVyoVNnbaVzgl6D?ed=2560
     headers:
       Host: vghavi32.ip-ddns.com
-- name: '@v2ray313 کانالمون ⚡'
+- name: RU_speednode_0061
   type: vless
-  server: 104.17.148.22
-  port: 8443
-  uuid: 655a6041-0ab8-4a92-ad79-f0dba34f5ace
-  tls: true
-  network: xhttp
-  servername: uk-09.allhubb.info
+  server: 5.182.85.213
+  port: 8880
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  tls: false
+  network: ws
+  servername: jp.laoyoutiao.link
   skip-cert-verify: true
-- name: 🏁RELAY-88.216.67.194-0683
+  ws-opts:
+    path: /
+    headers:
+      Host: jp.laoyoutiao.link
+- name: '@CaV2ray ⚡️_2'
+  type: vless
+  server: 104.16.181.110
+  port: 80
+  uuid: 1f431db3-1918-4e7b-a855-c93485e11694
+  tls: false
+  network: ws
+  servername: 104.16.181.110
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2580
+    headers:
+      Host: pari.parinazz.dpdns.org
+- name: 🏁RELAY-45.85.119.194-0627
   type: trojan
-  server: 88.216.67.194
+  server: 45.85.119.194
   port: 2096
   password: ttfang
   sni: ttfang.fange.me
   skip-cert-verify: true
-- name: 'Channel id: @@proxy_kafee 🇨🇦'
+- name: '@v2ray313 کانالمون 😆'
   type: vless
-  server: 104.21.3.219
-  port: 8443
-  uuid: 57ba2ab1-a283-42eb-82ee-dc3561a805b8
+  server: 104.21.80.1
+  port: 443
+  uuid: 0f0c8014-6c01-46b6-b0cc-2f76d6bae7f6
   tls: true
   network: ws
-  servername: ovhwuxian.pai50288.uk
+  servername: fqJeDaZA7b2VoFJ9IHEMx319Rmo41l7b.pAGeS.dEv
   skip-cert-verify: true
   ws-opts:
-    path: /57ba2ab1
+    path: /6XiwfHqD0d8sijSE/MzUuMTU3LjI0MC4yMzcsMTguMTk4LjIyNy4xNjE=?ed=2560
     headers:
-      Host: ovhwuxian.pai50288.uk
+      Host: fqjedaza7b2vofj9ihemx319rmo41l7b.pages.dev
 - name: 🇮🇹 ProxyCloud Italy Fast
   type: vless
   server: 188.114.96.6
@@ -2781,7 +1391,1337 @@ proxies:
     path: /Tel-@V2ray_Alpha/?ed=2560
     headers:
       Host: F1.paRsa.fiLegEar-Sg.Me
-- name: '@ev2rayy mci'
+- name: '@IRAN_V2RAY1'
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  tls: true
+  network: ws
+  servername: lease-17.access.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: lease-17.access.name.ng
+- name: RU_speednode_0057
+  type: vless
+  server: 46.254.92.2
+  port: 8880
+  uuid: 0132166f-e702-48ed-a9e7-b07af768faf8
+  tls: false
+  network: ws
+  servername: cf.d3z.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /TelegramU0001F1E8U0001F1F3 @WangCai2 /?ed=2560
+    headers:
+      Host: cf.d3z.net
+- name: '[🇳🇱] @EXPRESSVPN_420-(3)'
+  type: vless
+  server: www.speedtest.net
+  port: 8880
+  uuid: 1b766abe-05da-46fa-973c-0d06d9605736
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420?ed=2080
+    headers:
+      Host: zZz.ZzZ.zZz.snap-Iranian-ali.dai.sub420-mohamad.onlinE.
+- name: 🇨🇦𝐣𝐨𝐢𝐍-@𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆_3
+  type: vless
+  server: 104.21.67.12
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /vpnowl-vpnowl-vpnowl-vpnowl=zani.yaemiko.ggff.net
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: '@Selinc_2'
+  type: vless
+  server: 172.64.151.232
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: www.speedtest.net
+  type: vless
+  server: www.speedtest.net
+  port: 80
+  uuid: 249de927-f5fc-4b6e-a4c9-f95b973ad1e4
+  tls: false
+  network: tcp
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: ☞ 𝗝𝗼𝗶𝗻 ➠ @Viturey_1
+  type: vless
+  server: 45.82.161.120
+  port: 42671
+  uuid: 0855af4e-ec2c-4382-ac60-c54f9db3e04a
+  tls: false
+  network: tcp
+  servername: 45.82.161.120
+  skip-cert-verify: true
+- name: ☞ 𝗝𝗼𝗶𝗻 ➠ @Viturey_2
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  tls: true
+  network: ws
+  servername: iphoster-quran-iran-4.coin.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /?---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---
+    headers:
+      Host: iphoster-quran-iran-4.coin.name.ng
+- name: 🇩🇪@Alfred_Config_1
+  type: vless
+  server: www.speedtest.net
+  port: 8880
+  uuid: 1a5ba606-a4f6-4a01-d9bc-7dce3b246851
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: '⚜️Telegram: @IP_CF 🇨🇦_1'
+  type: vless
+  server: 104.21.67.12
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /vpnowl-vpnowl-vpnowl-vpnowl=zani.yaemiko.ggff.net
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_7'
+  type: vless
+  server: 104.16.68.95
+  port: 8880
+  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
+  tls: false
+  network: ws
+  servername: 104.16.68.95
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: vghavi32.ip-ddns.com
+- name: '@v2ray313 کانالمون 👆🏻'
+  type: vless
+  server: 104.19.144.33
+  port: 8443
+  uuid: e999db7a-1b17-4da6-bc37-c9fa24af2e93
+  tls: true
+  network: ws
+  servername: Q9cI2lEeUz.GiTi4.OrG
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: Q9cI2lEeUz.GiTi4.OrG
+- name: 🇺🇸US-72.167.242.194-0672
+  type: trojan
+  server: 72.167.242.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: 🇩🇪 All Operator 1 @MaSTeRSeRVe_2
+  type: vless
+  server: 173.245.59.132
+  port: 8080
+  uuid: 206b6081-24e9-4516-aa1c-90fc57614f9a
+  tls: false
+  network: httpupgrade
+  servername: 173.245.59.132
+  skip-cert-verify: true
+- name: '@i10VPN 🚀| با ما متصل بمون⚡_1'
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join---i10VPN---Join---i10VPN---Join---i10VPN=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: 🚩 CF | 🔒 VLESS | @filtershekan_channel [11]
+  type: vless
+  server: 172.66.44.253
+  port: 8443
+  uuid: efed37ed-37e5-4100-a540-049dc7929984
+  tls: true
+  network: ws
+  servername: net-aCcOUNt02.Pages.DEv
+  skip-cert-verify: true
+  ws-opts:
+    path: /dy26vBaDi5RTblzP?ed=2560
+    headers:
+      Host: net-aCcOUNt02.Pages.DEv
+- name: '🇩🇪 جوین بده کانکت بمونی: @STAPersiaNews'
+  type: vless
+  server: 45.131.4.85
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 45.131.4.85
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: '@Hope_Net-join-us-on-Telegram_4'
+  type: trojan
+  server: 104.21.21.129
+  port: 443
+  password: auto
+  sni: trojanmz.pages.dev
+  skip-cert-verify: true
+- name: '@mehrosaboran_2'
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 2b38bf86-8034-4d55-9257-67783f6746f6
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
+    headers:
+      Host: T.ubuntu-linuxmirror.ir
+- name: 𝗝𝗼𝗶𝗻 ➠ @vpnplusee_free | کانال ما
+  type: vless
+  server: 104.21.72.109
+  port: 80
+  uuid: 21e6d7f3-08bd-4dbc-abf5-8012d9838af5
+  tls: false
+  network: ws
+  servername: dfgopee-workers.dev
+  skip-cert-verify: true
+  ws-opts:
+    path: /Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2?ed=2560
+    headers:
+      Host: dfgopee-workers.dev.
+- name: Channel-@vmesskhodam
+  type: vless
+  server: 104.26.15.69
+  port: 2096
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: Join Sho@Iran_V2RAY{MCI}
+  type: vless
+  server: www.speedtest.net
+  port: 2095
+  uuid: 1a6be941-2c95-489f-9dd6-fd0d9fb1ac73
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: '@icv2ray_4'
+  type: vless
+  server: 104.18.36.24
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /proxyip=zani.yaemiko.ggff.net/?/V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: 🇺🇸US-38.107.226.49-6226
+  type: ss
+  server: 38.107.226.49
+  port: 3306
+  cipher: aes-256-gcm
+  password: Y6R9pAtvxxzmGC
+- name: 🇳🇱@FreakConfig
+  type: trojan
+  server: 92.53.189.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: IRAN 695 (@Outline_Vpn) free
+  type: vless
+  server: 162.159.137.3
+  port: 443
+  uuid: 12f591ba-d695-4396-9190-f2f3aaa9ea47
+  tls: true
+  network: ws
+  servername: at.xiejiang.dpdns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /XYXY0721
+    headers:
+      Host: at.xiejiang.dpdns.org
+- name: '>>@v2ray1_ng::GB'
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  tls: true
+  network: ws
+  servername: lease-17.access.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: lease-17.access.name.ng
+- name: 🚩 CF | 🔒 VLESS | @iranproxypro [5]
+  type: vless
+  server: www.speedtest.net
+  port: 443
+  uuid: 882ed1e8-41ff-491f-8134-e0ead86b78ab
+  tls: true
+  network: ws
+  servername: vip.hackers855.sbs
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: vip.hackers855.sbs
+- name: '@Maznet-46141-2'
+  type: vless
+  server: 172.66.40.99
+  port: 2052
+  uuid: 2262d419-522f-42d2-bb4b-e9cd8b721af0
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
+    headers:
+      Host: dAta.bAckup.hafeZejanEbi.scaptapsi.sNaPtripUppoRt.spaCe.
+- name: NZ_speednode_0047
+  type: vless
+  server: 114.129.43.7
+  port: 8880
+  uuid: 583ceab3-4022-4553-9158-9bedc625ad4e
+  tls: false
+  network: ws
+  servername: Telegram-channel-WangCai2
+  skip-cert-verify: true
+  ws-opts:
+    path: /TelegramU0001F1E8U0001F1F3 @WangCai2
+    headers:
+      Host: ip.langmanshanxi.top
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_8'
+  type: vless
+  server: 172.64.151.232
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: =Join---i10VPN---Join---i10VPN---Join---i10VPN---Join---i10VPN
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: 🇳🇱 @G0dv2ray
+  type: vless
+  server: 172.67.72.39
+  port: 80
+  uuid: 2c102887-2209-42c3-ffb1-35a5ddd831a9
+  tls: false
+  network: ws
+  servername: 172.67.72.39
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: joinbdebe.vmessorg.ir
+- name: Telegram:@config_proxy 🔥
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: 8e615b78-0905-48bb-ab68-fb0dfdff7688
+  tls: true
+  network: ws
+  servername: server13.coin.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: server13.coin.name.ng
+- name: '@icv2ray_5'
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 0c41105e-22b7-48e8-9f7f-81f1cd43c8ac
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: '@ZedBaz_vpn_1'
+  type: vless
+  server: www.speedtest.net
+  port: 8880
+  uuid: 075fa06b-2ad2-4466-8a5d-8aeb255ce509
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: '@NpvV2rayFilTer'
+  type: vless
+  server: 91.206.71.162
+  port: 8880
+  uuid: 26bc13af-e442-4956-afd4-b8f85744d26f
+  tls: false
+  network: ws
+  servername: barayeiran-mahsang.gerald81.dpdns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /Barayeiranmahsang/----@-?ed=2560
+    headers:
+      Host: barayeiran-mahsang.gerald81.dpdns.org
+- name: '@configfree_1_1'
+  type: vless
+  server: 160.153.0.32
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: All_@IRAN_V2RAY1
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  tls: true
+  network: ws
+  servername: hetzner-12.apple.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: hetzner-12.apple.name.ng
+- name: '@Hope_Net-join-us-on-Telegram_5'
+  type: trojan
+  server: 162.159.152.42
+  port: 443
+  password: tg-dns68
+  sni: vip.putata.eu.org
+  skip-cert-verify: true
+- name: 💎 @AblNet7 💎
+  type: vless
+  server: 172.66.40.99
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: 🇮🇳telegram ➠ @v2rayNG_Matsuri
+  type: vless
+  server: 104.19.247.78
+  port: 443
+  uuid: 90d7db9b-972b-4073-8738-12cf42124260
+  tls: true
+  network: ws
+  servername: kawaiifreevpn.pages.dev
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: kawaiifreevpn.pages.dev
+- name: '@ZenixVPN_Channel'
+  type: vless
+  server: wild-bird.seotoolsforyou.co.uk
+  port: 80
+  uuid: 1d0dfde1-9f18-4557-9af8-4f3124ee5dcd
+  tls: false
+  network: ws
+  servername: wild-bird.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: wild-bird.seotoolsforyou.co.uk
+- name: 🚩 CF | 🔓 VLESS | @Fr33C0nfig [41]
+  type: vless
+  server: 104.18.26.90
+  port: 80
+  uuid: 6f690965-3be3-43bb-9331-3ead6efb20aa
+  tls: false
+  network: ws
+  servername: 104.18.26.90
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: sib.sibzamini.dpdns.org
+- name: 'Channel id: @proxy_kafee 🇨🇷'
+  type: vless
+  server: 190.93.246.246
+  port: 8443
+  uuid: b5441b0d-2147-4898-8a6a-9b2c87f58382
+  tls: true
+  network: ws
+  servername: bitget1.asdasd.click
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed
+    headers:
+      Host: bitget1.asdasd.click
+- name: 🇩🇪 Germany X
+  type: vless
+  server: 188.114.96.3
+  port: 80
+  uuid: 260c4900-69a9-465c-8c3a-272eb1b4ec00
+  tls: false
+  network: ws
+  servername: 188.114.96.3
+  skip-cert-verify: true
+  ws-opts:
+    path: /pgLUAo7mya6xC60a
+    headers:
+      Host: sHAhRamConfIGWorKERCJsa9898.coNFiGSHahrAMCOnFiG.wOrkErS.DeV
+- name: 🏁RELAY-45.131.208.194-0634
+  type: trojan
+  server: 45.131.208.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: '@V2ray1_Ng'
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: 🇩🇪@FreakConfig_1
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 26e4ec0d-1be2-47c9-8a47-638af889b421
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram_configMs_Telegram_configMs_Telegram_configMs?ed=2048
+    headers:
+      Host: K.mangoap.org
+- name: 🅼🅴🅷🅳🅸_1
+  type: vless
+  server: 172.67.164.5
+  port: 443
+  uuid: ec7de7e0-3f09-4ef4-8a34-e441917d65fa
+  tls: true
+  network: ws
+  servername: verina.ccantarella.dns-dynamic.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: verina.ccantarella.dns-dynamic.net
+- name: 🇩🇪@FreakConfig_2
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  tls: true
+  network: ws
+  servername: hetzner-9.cfuk.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: hetzner-9.cfuk.name.ng
+- name: 🇳🇱@ghalagyann2 | All¹
+  type: vless
+  server: www.speedtest.net
+  port: 8080
+  uuid: 045cfbcb-0571-4561-97b1-55913aacc239
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy
+    headers:
+      Host: inFo.laLezaRanegomaNandish.onlineshopbb.org.
+- name: → @Hddify 🗿
+  type: vless
+  server: 104.26.15.69
+  port: 2096
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: =zani.yaemiko.ggff.net/@@Hddify---@Hddify---@Hddify?ed=2560
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: 🚩 CF | 🔓 VLESS | @dgkbza [11]
+  type: vless
+  server: www.speedtest.net
+  port: 8880
+  uuid: 01b794fb-fa59-46a4-8140-50c63dda3621
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /Channel----VPNCUSTOMIZE----VPNCUSTOMIZE----VPNCUSTOMIZE---VPNCUSTOMIZE---VPNCUSTOMIZE---VPNCUSTOMIZE?ed=2048
+    headers:
+      Host: VPNCUSTOMIZE.www.webdade.com.www.speedtest.net.irna.ir.ips.ddns-ip.net.
+- name: فیلترشکن رایگان👈Prime_Verse@
+  type: vless
+  server: www.speedtest.net
+  port: 443
+  uuid: 17d43328-bbd2-40df-bd45-c94aeb554e89
+  tls: true
+  network: ws
+  servername: pages.dev
+  skip-cert-verify: true
+  ws-opts:
+    path: /Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-Prime_Verse-?ed=2560
+    headers:
+      Host: 09sp38aey76eabnpj79orvawf-0ssxts.pages.dev
+- name: 🇩🇪@v2ray_fark_1
+  type: vless
+  server: 104.16.48.41
+  port: 2096
+  uuid: '-----v2ray_fark-----'
+  tls: true
+  network: grpc
+  servername: wu.foxnt-telegram-foxnt.shop
+  skip-cert-verify: true
+- name: 🇬🇧 GB | 🔒 VLESS | @dalton_ping [4]
+  type: vless
+  server: ipw.gfdv54cvghhgfhgj-njhgj64.info
+  port: 8443
+  uuid: e999db7a-1b17-4da6-bc37-c9fa24af2e93
+  tls: true
+  network: ws
+  servername: F237qFxLw0.LiRa0Xc8.InFo
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: F237qFxLw0.LiRa0Xc8.InFo
+- name: /?Join---i10VPN---Join---i10VPN---Join---i10VPN---Join---i10VPN?ed=2560&security=tls&encryption=none&host=edgb.esslh.filegear-sg.me&type=ws&sni=edgb.esslh.filegear-sg.me#@i10VPN
+    🚀| با ما متصل بمون⚡
+  type: vless
+  server: 27.50.48.239
+  port: 8443
+  uuid: ee6774c0-9b19-4ff1-8b30-2da4b71977e2
+  tls: false
+  network: tcp
+  servername: 27.50.48.239
+  skip-cert-verify: true
+- name: '@v2ray313 کانالمون 🫀'
+  type: vless
+  server: 104.26.15.69
+  port: 2096
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /proxyip=zani.yaemiko.ggff.net
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: '@Golestan_VPN - JOIN_1'
+  type: vless
+  server: 185.176.24.159
+  port: 443
+  uuid: 0a506a60-ae3e-499d-9cbd-ab003f9f3f3b
+  tls: true
+  network: ws
+  servername: FREEDOm.ZiStarvInbioTeCh.ir
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: freedom.zistarvinbiotech.ir
+- name: '🇩🇪 جوین بده کانکت بمونی: @STAP_1'
+  type: vless
+  server: ipw.gfdv54cvghhgfhgj-njhgj64.info
+  port: 8443
+  uuid: e999db7a-1b17-4da6-bc37-c9fa24af2e93
+  tls: true
+  network: ws
+  servername: F237qFxLw0.LiRa0Xc8.InFo
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: F237qFxLw0.LiRa0Xc8.InFo
+- name: '@mehrosaboran_3'
+  type: vless
+  server: 63.141.128.13
+  port: 8080
+  uuid: 094af2f8-b421-4d0c-a96c-00625147a30c
+  tls: false
+  network: ws
+  servername: 63.141.128.13
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: c.jOin.zEdMoDeOn.oNl.
+- name: 🇩🇪 @V2ngFast
+  type: vless
+  server: 104.26.15.69
+  port: 8880
+  uuid: 2abe7939-69f1-4c82-952b-ccd5e1571103
+  tls: false
+  network: httpupgrade
+  servername: 104.26.15.69
+  skip-cert-verify: true
+- name: '@v2ray313 کانالمون ✨'
+  type: vless
+  server: 45.131.4.85
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 45.131.4.85
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: =@&security=none&encryption=none&host=Li.testi21.ddns-ip.net&type=ws#@bored_vpn
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 012354de-a667-4d19-ae51-76e4808b5a04
+  tls: false
+  network: tcp
+  servername: 172.66.40.99
+  skip-cert-verify: true
+- name: 💎کانفیگ های بیشتر در چنل تلگرا_3
+  type: vless
+  server: 104.21.112.1
+  port: 8080
+  uuid: 0518ca46-4313-45ce-df4d-5268c1b30cf2
+  tls: false
+  network: ws
+  servername: 104.21.112.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: shad.ir.fin.test.digicyber.click.
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_9'
+  type: vless
+  server: 104.17.26.182
+  port: 2087
+  uuid: 20b0fff2-d44e-4198-9649-2194f4adfddf
+  tls: true
+  network: ws
+  servername: NeT.RpTmSvMVm.ToP
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram@FreeConnection_VPN/?ed=2560
+    headers:
+      Host: NeT.rPtMsVmVm.ToP
+- name: US_speednode_0083
+  type: vless
+  server: 195.13.55.247
+  port: 8880
+  uuid: d60fc3c5-9f07-4cdb-b81f-70af27936bdc
+  tls: false
+  network: ws
+  servername: ex.sue.x10.mx
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram🇨🇳
+    headers:
+      Host: ex.sue.x10.mx
+- name: 🇩🇪 Germany 🌚
+  type: vless
+  server: 104.18.9.132
+  port: 2087
+  uuid: 25c5cbda-39e5-47ed-b36c-b87ffef2378d
+  tls: true
+  network: ws
+  servername: worker-fancy-base-7d08.yajici1215.workers.DEV
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: 104.18.9.132
+- name: '@mehrosaboran_4'
+  type: vless
+  server: 104.26.10.194
+  port: 80
+  uuid: 1f21f605-917a-4b31-8415-cad059b4aea4
+  tls: false
+  network: ws
+  servername: 104.26.10.194
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: Vmessorg.paradoxone.ir
+- name: '@AblNet7 🇮🇷 نت ملی'
+  type: vless
+  server: 104.18.36.24
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /proxyip
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: TLS-ALL-@ISVvpn_1
+  type: vless
+  server: 172.66.40.99
+  port: 443
+  uuid: '----telegram--ISVvpn----'
+  tls: true
+  network: ws
+  servername: dEv.IsVcLoD.cOm
+  skip-cert-verify: true
+  ws-opts:
+    path: /telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn?ed=2048
+    headers:
+      Host: dEv.IsVcLoD.cOm
+- name: '@CodeClubiR'
+  type: vless
+  server: 91.206.71.162
+  port: 8880
+  uuid: 26bc13af-e442-4956-afd4-b8f85744d26f
+  tls: false
+  network: ws
+  servername: 91.206.71.162
+  skip-cert-verify: true
+  ws-opts:
+    path: /Barayeiranmahsang/----@-?ed=2560
+    headers:
+      Host: barayeiran-mahsang.gerald81.dpdns.org
+- name: '@V2RAYROZ'
+  type: vless
+  server: 104.16.1.106
+  port: 80
+  uuid: 1a691112-bf37-4306-98f6-17a74e1576fa
+  tls: false
+  network: ws
+  servername: 104.16.1.106
+  skip-cert-verify: true
+  ws-opts:
+    path: /FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM?ed=2048
+    headers:
+      Host: eng.vinamarketcenter.ir
+- name: '@Hope_Net-join-us-on-Telegram_6'
+  type: trojan
+  server: 172.67.180.238
+  port: 443
+  password: bpb-trojan
+  sni: 403b3611-99BC-43B7-88d7-26eD5D0825A9-3.PAges.DEV
+  skip-cert-verify: true
+- name: '@Daily_Configs'
+  type: vless
+  server: 104.16.53.11
+  port: 8443
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  tls: true
+  network: ws
+  servername: hetzner-9.cfuk.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: hetzner-9.cfuk.name.ng
+- name: '@configfree_1_2'
+  type: vless
+  server: 104.16.69.64
+  port: 8880
+  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
+  tls: false
+  network: ws
+  servername: 104.16.69.64
+  skip-cert-verify: true
+  ws-opts:
+    path: /7YVyoVNnbaVzgl6D?ed=2560
+    headers:
+      Host: vghavi32.ip-ddns.com
+- name: '@V2RAYNG_1378_2'
+  type: vless
+  server: privasi.turah.my.id
+  port: 443
+  uuid: 0fbf4f81-2598-4b6a-a623-0ead4cb9efa8
+  tls: true
+  network: ws
+  servername: privasi.turah.my.id
+  skip-cert-verify: true
+  ws-opts:
+    path: /Free-CF-Proxy-AD192.3.113.4-19318
+    headers:
+      Host: privasi.turah.my.id
+- name: 🇺🇸US-72.167.230.194-0670
+  type: trojan
+  server: 72.167.230.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: 💎 @AblNet7 💎_1
+  type: vless
+  server: 104.26.15.69
+  port: 2096
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: '@meli_proxyy_2'
+  type: vless
+  server: 104.26.2.186
+  port: 443
+  uuid: 401374e6-df77-41fb-f638-dad8184f175b
+  tls: true
+  network: grpc
+  servername: pqh31v7.hiddendom.shop
+  skip-cert-verify: true
+- name: 'CF中转_0813046185&security=tls&alpn=h3&encryption=none&host=MaIncrafT.dPdnS.OrG&fp=chrome&type=ws&sni=MaIncrafT.dPdnS.OrG#Telegram
+    : @Alfa_v2ray_ng 🔥'
+  type: vless
+  server: 172.67.178.14
+  port: 443
+  uuid: 252df5e8-0428-4345-b236-a6dae7b3457d
+  tls: false
+  network: tcp
+  servername: 172.67.178.14
+  skip-cert-verify: true
+- name: 🏁RELAY-45.12.30.194-0608
+  type: trojan
+  server: 45.12.30.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: ☞ 𝗝𝗼𝗶𝗻 ➠ @Viturey_3
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: 8e615b78-0905-48bb-ab68-fb0dfdff7688
+  tls: true
+  network: ws
+  servername: server13.coin.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /?---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---
+    headers:
+      Host: server13.coin.name.ng
+- name: '@Golestan_VPN 👈 چنل'
+  type: vless
+  server: 104.21.114.48
+  port: 443
+  uuid: 1f431db3-1918-4e7b-a855-c93485e11694
+  tls: true
+  network: ws
+  servername: pari.parinazz.dpdns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: pari.parinazz.dpdns.org
+- name: 🏁RELAY-45.130.125.194-0629
+  type: trojan
+  server: 45.130.125.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: '@i10VPN 🚀| با ما متصل بمون⚡_2'
+  type: vless
+  server: 190.93.246.246
+  port: 8443
+  uuid: b5441b0d-2147-4898-8a6a-9b2c87f58382
+  tls: true
+  network: ws
+  servername: bitget1.asdasd.click
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join---i10VPN---Join---i10VPN?ed=2560
+    headers:
+      Host: bitget1.asdasd.click
+- name: '@Capoit_1'
+  type: vless
+  server: 172.66.40.99
+  port: 80
+  uuid: 04c8f48c-cd9d-4829-9e11-24b355431e84
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: d.jOin.zEdMoDeOn.oNl.
+- name: IRAN 484 (@Outline_Vpn) free
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: '@meli_proxyy_3'
+  type: vless
+  server: ipw.gfdv54cvghhgfhgj-njhgj64.info
+  port: 2096
+  uuid: 337bf72e-bb79-4d5f-be3f-7822eb77100c
+  tls: true
+  network: ws
+  servername: Ft77Ta8Q1m.EmShAbKhObE.oRg
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: Ft77Ta8Q1m.EmShAbKhObE.oRg
+- name: Telegram:@config_proxy 💢
+  type: trojan
+  server: 104.18.13.229
+  port: 8443
+  password: trojan
+  sni: pangpi.pages.dev
+  skip-cert-verify: true
+- name: '@IRAN_V2RAY1_2'
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: '@v2rayng_fars_1'
+  type: vless
+  server: privasi.turah.my.id
+  port: 443
+  uuid: 0fbf4f81-2598-4b6a-a623-0ead4cb9efa8
+  tls: true
+  network: ws
+  servername: privasi.turah.my.id
+  skip-cert-verify: true
+  ws-opts:
+    path: /Free-CF-Proxy-AD192.3.113.4-19318?---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS
+    headers:
+      Host: privasi.turah.my.id
+- name: 💎 @AblNet7 💎_2
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  tls: true
+  network: ws
+  servername: lease-14.access.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: lease-14.access.name.ng
+- name: 'Channel id: @@proxy_kafee 🇨🇦'
+  type: vless
+  server: ipw.gfdv54cvghhgfhgj-njhgj64.info
+  port: 8443
+  uuid: e999db7a-1b17-4da6-bc37-c9fa24af2e93
+  tls: true
+  network: ws
+  servername: Rh0Pw06CtP.wAsAbI7890.oRg
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: Rh0Pw06CtP.wAsAbI7890.oRg
+- name: 🇸🇪 Sweden Fast
+  type: vless
+  server: 172.67.133.49
+  port: 8880
+  uuid: 6d0b71e4-b843-4acc-a239-884e422c9f33
+  tls: false
+  network: ws
+  servername: 172.67.133.49
+  skip-cert-verify: true
+  ws-opts:
+    path: /rAnzZ41YzhPlT0iC?ed=2560
+    headers:
+      Host: ponq0qxlwnh55dbid7ebc1j6ltxdcyer.mamadibaram.workers.dev
+- name: Channel :@vmessorg
+  type: vless
+  server: 104.21.112.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.112.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_10'
+  type: vless
+  server: 172.64.151.232
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /proxyip=zani.yaemiko.ggff.net/?v2ray_configs_pools_BIA_CHANEL
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: '@Golestan_VPN - JOIN_2'
+  type: vless
+  server: 172.66.44.253
+  port: 8443
+  uuid: efed37ed-37e5-4100-a540-049dc7929984
+  tls: true
+  network: ws
+  servername: net-aCcOUNt02.Pages.DEv
+  skip-cert-verify: true
+  ws-opts:
+    path: /dy26vBaDi5RTblzP?ed=2560
+    headers:
+      Host: net-aCcOUNt02.Pages.DEv
+- name: 'Telegram: @configfree20255'
+  type: vless
+  server: privasi.turah.my.id
+  port: 443
+  uuid: 0fbf4f81-2598-4b6a-a623-0ead4cb9efa8
+  tls: true
+  network: ws
+  servername: privasi.turah.my.id
+  skip-cert-verify: true
+  ws-opts:
+    path: /Free-CF-Proxy-AD192.3.113.4-19318?ed=2048@
+    headers:
+      Host: privasi.turah.my.id
+- name: =@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub&security=none&encryption=none&host=Vmessorg.paradoxone.ir&type=ws#@confiig_hub
+  type: vless
+  server: 172.66.40.99
+  port: 80
+  uuid: 1f21f605-917a-4b31-8415-cad059b4aea4
+  tls: false
+  network: tcp
+  servername: 172.66.40.99
+  skip-cert-verify: true
+- name: tm⚡|@lightning6
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 21a8d1f1-09cd-4255-9a24-4f3a0a3dabaa
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
+    headers:
+      Host: k.ft.ip-ddns.com
+- name: برای اتصال دائمی جوین شو🫆 TelegramID ⌲Express_freevpn 🪩
+  type: vless
+  server: 63.141.128.0
+  port: 80
+  uuid: 5fd9c3f7-bd70-4dab-8915-4c57bfe2b309
+  tls: false
+  network: ws
+  servername: 63.141.128.0
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: d.jOin.zEdMoDeOn.oNl.
+- name: '👈🏻 چنل تلگرامی : سرچ کن هدیفای 👉🏻'
+  type: vless
+  server: 104.18.36.24
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Hddify---@Hddify---@Hddify---@Hddify---@Hddify---@Hddify---@Hddify?ed=2560
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: '@i10VPN 🚀| با ما متصل بمون⚡_3'
+  type: vless
+  server: 104.19.144.33
+  port: 8443
+  uuid: a5e0c391-accd-45a7-8bb9-99ffb9b09b16
+  tls: true
+  network: ws
+  servername: 104.19.144.33
+  skip-cert-verify: true
+  ws-opts:
+    path: /?Join---i10VPN---Join---i10VPN---Join---i10VPN---Join---i10VPN?ed=2560
+    headers:
+      Host: FnNf9627Af.MeTaL5.oRg
+- name: '@mehrosaboran_5'
+  type: vless
+  server: 172.66.40.99
+  port: 80
+  uuid: 02483314-2042-451b-b0ab-f9bab9a1be9d
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: b.jOin.zEdMoDeOn.oNl.
+- name: 🇺🇸US-216.24.57.30-0588
+  type: trojan
+  server: 216.24.57.30
+  port: 443
+  password: tg-fq521free
+  sni: torjan.xn--xhq44j.eu.org
+  skip-cert-verify: true
+- name: 🏁RELAY-45.131.209.194-0635
+  type: trojan
+  server: 45.131.209.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: '@mehrosaboran_6'
+  type: vless
+  server: cumhuriyet.com.tr
+  port: 80
+  uuid: 1b333390-4165-4d9a-b50f-8572e6153e56
+  tls: false
+  network: ws
+  servername: cumhuriyet.com.tr
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: join-to-Vmessorg.sabadyt.ir
+- name: → @Hddify 👔
+  type: vless
+  server: 104.21.67.12
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /?TELEGRAM-@V2rayBaaz?ed=512
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: 🏁RELAY-45.159.216.194-0643
+  type: trojan
+  server: 45.159.216.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: '@i10VPN 🚀| با ما متصل بمون⚡_4'
+  type: vless
+  server: 170.114.46.251
+  port: 8880
+  uuid: 0132166f-e702-48ed-a9e7-b07af768faf8
+  tls: false
+  network: ws
+  servername: 170.114.46.251
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join---i10VPN---Join---i10VPN---Join---i10VPN---Join---i10VPN /
+    headers:
+      Host: cf.d3z.net
+- name: RU_speednode_0051
+  type: vless
+  server: 45.8.211.63
+  port: 8880
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  tls: false
+  network: ws
+  servername: jp.laoyoutiao.link
+  skip-cert-verify: true
+  ws-opts:
+    path: /TelegramU0001F1E8U0001F1F3 @WangCai2 /?ed=2560fp=chrome
+    headers:
+      Host: jp.laoyoutiao.link
+- name: 'Channel : @Mrdarc 🏴🏳'
+  type: vless
+  server: tgju.org
+  port: 80
+  uuid: 2b277eea-66b2-4f3a-b934-46225c1f5e6f
+  tls: false
+  network: ws
+  servername: tgju.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed
+    headers:
+      Host: SeRvER10.VtNEt.InFO
+- name: '@ev2rayy mtn'
   type: vless
   server: zula.ir
   port: 8443
@@ -2790,20 +2730,235 @@ proxies:
   network: xhttp
   servername: har.harchi.monster
   skip-cert-verify: true
-- name: 🇩🇪@Alfred_Config
+- name: 🇩🇪 Cloudflare Plus - IRDevs 4
+  type: vless
+  server: 172.66.45.9
+  port: 443
+  uuid: 826f524a-cea1-4e44-9b49-3381d13b7593
+  tls: true
+  network: ws
+  servername: fk31LnDm4W8uj0yP1dRwLTDTdKo6Y-cu.pAGES.dEv
+  skip-cert-verify: true
+  ws-opts:
+    path: /gL8gLANdh881Nj22
+    headers:
+      Host: fk31lndm4w8uj0yp1drwltdtdko6y-cu.pages.dev
+- name: 🚩 CF | 🔒 VLESS | @NamiraConfigs [59]
+  type: vless
+  server: 104.26.0.73
+  port: 443
+  uuid: c93b1359-c570-4703-894a-ce18883faac3
+  tls: true
+  network: ws
+  servername: bsw8xmeczkaqznfcbu7sdx39baabahluzcnr9xyifcgpnzls6jsodqndaygtww3.yju9y2x.workers.Dev
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: bsw8xmeczkaqznfcbu7sdx39baabahluzcnr9xyifcgpnzls6jsodqndaygtww3.yju9y2x.workers.Dev
+- name: Join Telegram 🆔️ibahad 🇨🇦```
+  type: vless
+  server: www.speedtest.net
+  port: 2053
+  uuid: 074d7498-4aa9-41f9-b322-3e0debb686c7
+  tls: true
+  network: ws
+  servername: cdn-assets.cyberscaler.com
+  skip-cert-verify: true
+  ws-opts:
+    path: /cdn/app-assets/v3.3.2/
+    headers:
+      Host: cdn-assets.cyberscaler.com
+- name: 🟣🔥 کانفینگ  اختصاصی @ParsiV2ray پر سرعت
+  type: vless
+  server: 104.16.122.80
+  port: 443
+  uuid: 90d7db9b-972b-4073-8738-12cf42124260
+  tls: true
+  network: ws
+  servername: kawaiifreevpn.pages.dev
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: kawaiifreevpn.pages.dev
+- name: 𝗝𝗼𝗶𝗻➠ᴬᴸᴸ³🇳🇱@JKVPN
+  type: vless
+  server: www.speedtest.net
+  port: 80
+  uuid: 1808f71a-0c64-4767-bbe2-ef87e6f0c676
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /TELEGRAM_JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-jKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JkVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKvPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN?ed=2048
+    headers:
+      Host: joker.ahang-alpha.ir
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_11'
+  type: vless
+  server: 172.66.146.26
+  port: 443
+  uuid: 0fbf4f81-2598-4b6a-a623-0ead4cb9efa8
+  tls: true
+  network: ws
+  servername: privasi.turah.my.id
+  skip-cert-verify: true
+  ws-opts:
+    path: /Free-CF-Proxy-AD192.3.113.4-19318?ed=2048/?TELEGRAM_CHANEL_JKVPN_JKVPN_JKVPN
+    headers:
+      Host: privasi.turah.my.id
+- name: 🇺🇾@vpn_ioss ♻️ عضو شو
+  type: vless
+  server: 185.146.173.39
+  port: 8880
+  uuid: Parsashonam-287
+  tls: false
+  network: httpupgrade
+  servername: 185.146.173.39
+  skip-cert-verify: true
+- name: TELEGRAM-MARAMBASHI_MARAMBASHI?ed=512&security=tls&alpn=http/1.1&encryption=none&host=carlotta.shoorekeeper.cloudns.org&fp=chrome&type=ws&sni=carlotta.shoorekeeper.cloudns.org#@Hddify
+    |~| چنل هدیفای 💍
+  type: vless
+  server: 104.26.15.69
+  port: 2096
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: false
+  network: tcp
+  servername: 104.26.15.69
+  skip-cert-verify: true
+- name: 💯T.me/Asak_Vpn💯
+  type: trojan
+  server: 103.116.7.133
+  port: 2083
+  password: Aimer
+  sni: epmk.ambercc.filegear-sg.me
+  skip-cert-verify: true
+- name: '@ev2rayy mtn_1'
+  type: vless
+  server: zula.ir
+  port: 8443
+  uuid: fbbf3b87-5f9d-4358-8a40-3cf9ab6533e9
+  tls: true
+  network: xhttp
+  servername: main.kasler.lol
+  skip-cert-verify: true
+- name: 🇩🇪 Germany-1
+  type: vless
+  server: 185.143.234.46
+  port: 443
+  uuid: 0ee3d06e-a584-4fd4-bada-1b8fa049df77
+  tls: true
+  network: ws
+  servername: marz-vip.nikatel.store
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: marz-vip.nikatel.store
+- name: US
+  type: trojan
+  server: 198.62.62.67
+  port: 443
+  password: tg-fq521free
+  sni: torjan.xn--xhq44j.eu.org
+  skip-cert-verify: true
+- name: 🚩 CF | 🔓 VLESS | @dgkbza [9]
+  type: vless
+  server: www.speedtest.net
+  port: 8880
+  uuid: 21d889b6-78c3-4ad0-be32-145bc41f68d6
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /Channel----VPNCUSTOMIZE----VPNCUSTOMIZE----VPNCUSTOMIZE---VPNCUSTOMIZE---VPNCUSTOMIZE---VPNCUSTOMIZE?ed=2048
+    headers:
+      Host: VPNCUSTOMIZE.www.webdade.com.www.speedtest.net.irna.ir.ips.ddns-ip.net.
+- name: TELEGRAM-MARAMBASHI_MARAMBASHI?ed=512&security=tls&alpn=http/1.1&encryption=none&host=carlotta.shoorekeeper.cloudns.org&fp=chrome&type=ws&sni=carlotta.shoorekeeper.cloudns.org#💎کانفیگ
+    های بیشتر در چنل تلگرام💎 Config_Rayegan@
+  type: vless
+  server: 104.26.15.69
+  port: 2096
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: false
+  network: tcp
+  servername: 104.26.15.69
+  skip-cert-verify: true
+- name: US_speednode_0092
+  type: trojan
+  server: 198.62.62.67
+  port: 443
+  password: tg-fq521free
+  sni: torjan.xn--xhq44j.eu.org
+  skip-cert-verify: true
+- name: 🟣🔥 کانفینگ  اختصاصی @ParsiV2ra_1
+  type: vless
+  server: 188.114.97.202
+  port: 8443
+  uuid: c2e177d4-e610-4abd-85cd-1a869d158751
+  tls: true
+  network: ws
+  servername: teslakit1.pages.dev
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: teslakit1.pages.dev
+- name: 🇨🇵v2rayng (FR)🔐-confegraigan
   type: vless
   server: www.speedtest.net
   port: 8443
-  uuid: 5b64efe0-6a3d-4301-8656-0d4ed4f3769f
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
   tls: true
   network: ws
-  servername: www.speedtest-iran.ir
+  servername: hetzner-4.access.name.ng
   skip-cert-verify: true
   ws-opts:
-    path: /@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config?ed=2048
+    path: /
     headers:
-      Host: www.speedtest-iran.ir
-- name: 🇲🇩@vpn_ioss ♻️ عضو شو
+      Host: hetzner-4.access.name.ng
+- name: qn_284
+  type: vless
+  server: 172.64.38.235
+  port: 8443
+  uuid: 1832c043-bb14-41c5-a9a0-dc8dc5fc9f06
+  tls: true
+  network: ws
+  servername: FREe1091.sue100.WorKerS.dEv
+  skip-cert-verify: true
+  ws-opts:
+    path: /SdCpSUjxBqU8Z5wK?ed=2560
+    headers:
+      Host: FREe1091.sue100.WorKerS.dEv
+- name: 🇹🇷@vpn_ioss ♻️ عضو شو
+  type: vless
+  server: 45.85.119.151
+  port: 8880
+  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
+  tls: false
+  network: ws
+  servername: 45.85.119.151
+  skip-cert-verify: true
+  ws-opts:
+    path: /6TvG8D6HimXKgdp2?ed=2560
+    headers:
+      Host: vngsupply.ip-ddns.com
+- name: 🐻47@oneclickvpnkeys
+  type: vless
+  server: 104.26.8.156
+  port: 443
+  uuid: c4587bda-09fc-4b3b-8221-4450fccc33d1
+  tls: true
+  network: ws
+  servername: yx.yushan.dpdns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: yx.yushan.dpdns.org
+- name: 🇨🇵@vpn_ioss ♻️ عضو شو
   type: vless
   server: 104.17.1.197
   port: 8880
@@ -2816,14 +2971,431 @@ proxies:
     path: /fgvtHUpS6R8Rv8s5?ed=2560
     headers:
       Host: VngSuPpLY.IP-Ddns.com
-- name: 🇩🇪 | XpnTeam - Telegrams-3pxighv9
+- name: '@icv2ray_6'
   type: vless
-  server: 151.101.3.8
+  server: 172.66.40.99
   port: 80
-  uuid: 0aece0c9-cb42-4b7e-8490-e6fe0aad4e68
+  uuid: 03d25213-a034-4021-8310-b56ab9ef4c8b
   tls: false
-  network: xhttp
-  servername: 151.101.3.8
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: c.jOin.zEdMoDeOn.oNl.
+- name: '@Hope_Net-join-us-on-Telegram_7'
+  type: vless
+  server: 104.17.148.22
+  port: 2086
+  uuid: 2a308dee-d258-420d-b516-1ca0d83440d6
+  tls: false
+  network: httpupgrade
+  servername: 104.17.148.22
+  skip-cert-verify: true
+- name: '@mehrosaboran_7'
+  type: vless
+  server: 104.26.11.194
+  port: 8080
+  uuid: 02151ca0-a1d5-437c-d818-ffa739176fab
+  tls: false
+  network: ws
+  servername: 104.26.11.194
+  skip-cert-verify: true
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: Unlimiteddev-join.paradoxone.ir
+- name: TLS-ALL | @ISVvpn
+  type: vless
+  server: 172.66.40.99
+  port: 443
+  uuid: '----telegram--ISVvpn----'
+  tls: true
+  network: ws
+  servername: dEv.IsVcLoD.cOm
+  skip-cert-verify: true
+  ws-opts:
+    path: /telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn-telegram-@ISVvpn?ed=2048
+    headers:
+      Host: dEv.IsVcLoD.cOm
+- name: '@Hope_Net-join-us-on-Telegram_8'
+  type: trojan
+  server: 104.18.89.137
+  port: 443
+  password: bpb-trojan
+  sni: fcspring.ggff.net
+  skip-cert-verify: true
+- name: '@v2ray_cartel'
+  type: vless
+  server: 91.206.71.162
+  port: 8880
+  uuid: 26bc13af-e442-4956-afd4-b8f85744d26f
+  tls: false
+  network: ws
+  servername: 91.206.71.162
+  skip-cert-verify: true
+  ws-opts:
+    path: /Barayeiranmahsang/----@-?ed=2560
+    headers:
+      Host: barayeiran-mahsang.gerald81.dpdns.org
+- name: '@Daily_Configs_1'
+  type: vless
+  server: 104.18.26.90
+  port: 2096
+  uuid: 147d63c1-2f68-4f45-b3ea-cb3172fab133
+  tls: true
+  network: ws
+  servername: 638874929583954786.zagreb-prx-dnraaad.info
+  skip-cert-verify: true
+  ws-opts:
+    path: /jmgjhhws
+    headers:
+      Host: 638874929583954786.zagreb-prx-dnraaad.info
+- name: '@mehrosaboran_8'
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 03c7a062-fa7d-4e08-a261-aa9b18df7495
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
+    headers:
+      Host: t.lightningg.ip-ddns.com
+- name: tm⚡|@lightning6_1
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 2b38bf86-8034-4d55-9257-67783f6746f6
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
+    headers:
+      Host: T.ubuntu-linuxmirror.ir
+- name: 🇬🇧@FreakConfig_2
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
+  tls: true
+  network: ws
+  servername: lease-20.access.name.ng
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: lease-20.access.name.ng
+- name: 104.21.96.1
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_12'
+  type: vless
+  server: 104.21.32.1
+  port: 443
+  uuid: 0503fa3c-f914-4421-a1e5-72c1f8d781a2
+  tls: true
+  network: ws
+  servername: hpgBAG3G9Kik7asE4cn1tT8INexozr4NJi7.PaGes.DeV
+  skip-cert-verify: true
+  ws-opts:
+    path: /wGEZwUQmT9ld3Qa5/dHVyay5yYWRpY2FsaXphdGlvbi5pciwxMDQuMTY4LjEwMi4xNjM=
+    headers:
+      Host: hpgbag3g9kik7ase4cn1tt8inexozr4nji7.pages.dev
+- name: kwj9-@Fr33C0nfig / کانفیگ رایگان 🔗
+  type: vless
+  server: 104.18.26.90
+  port: 443
+  uuid: d300ae15-2ba2-4f91-b1b0-b4510912e4cc
+  tls: true
+  network: ws
+  servername: 2free2.aparatir.xyz
+  skip-cert-verify: true
+  ws-opts:
+    path: /admin
+    headers:
+      Host: 2free2.aparatir.xyz
+- name: '@V2rayNG3'
+  type: vless
+  server: 104.17.147.22
+  port: 443
+  uuid: 08ef1330-8ffb-4001-a15e-96befc065c06
+  tls: true
+  network: grpc
+  servername: hq3.newretr432as.info
+  skip-cert-verify: true
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_13'
+  type: vless
+  server: 172.64.151.232
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: =zani.yaemiko.ggff.net/?Join---JKVPN---Join---JKVPN---Join---JKVPN---Join---JKVPN?ed=2560
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: '@Hope_Net-join-us-on-Telegram_9'
+  type: trojan
+  server: 104.26.2.3
+  port: 443
+  password: c95a5a3a-5a4c-4ee5-b11a-96f72cf80661
+  sni: 4cbba020.fastpurnet3.pages.dev
+  skip-cert-verify: true
+- name: '@Selinc_3'
+  type: vless
+  server: 104.19.144.33
+  port: 2096
+  uuid: 0d0782a3-2c62-4936-b893-5790188778ea
+  tls: true
+  network: ws
+  servername: 104.19.144.33
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: 83L79jOdPv.GiGa1.OrG
+- name: → @Hddify 🍧
+  type: vless
+  server: 104.26.15.69
+  port: 2096
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /proxyip=zani.yaemiko.ggff.net
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: 🇺🇸 USA 4 by AzadNet
+  type: vless
+  server: 154.83.2.167
+  port: 443
+  uuid: 401374e6-df77-41fb-f638-dad8184f175b
+  tls: true
+  network: grpc
+  servername: pqh23v4.hiddendom.shop
+  skip-cert-verify: true
+- name: 0pdw-%2540Fr33C0nfig%2520%252F%2520%25DA%25A9%25D8%25A7%25D9%2586%25D9%2581%25DB%258C%25DA%25AF%2520%25D8%25B1%25D8%25A7%25DB%258C%25DA%25AF%25D8%25A7%25D9%2586%2520🔗
+  type: vless
+  server: 104.18.26.90
+  port: 80
+  uuid: 6f690965-3be3-43bb-9331-3ead6efb20aa
+  tls: false
+  network: ws
+  servername: 104.18.26.90
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560/?BIA_CHANEL@JOKERRVPN
+    headers:
+      Host: sib.sibzamini.dpdns.org
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_14'
+  type: vless
+  server: 104.26.14.69
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /proxyip=zani.yaemiko.ggff.net
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: → @Hddify 🐒
+  type: vless
+  server: 104.21.67.12
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /proxyip
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: 🇺🇸US-50.62.89.194-0652
+  type: trojan
+  server: 50.62.89.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: '[🇨🇦]t.me/ConfigsHub'
+  type: vless
+  server: privasi.turah.my.id
+  port: 443
+  uuid: 0fbf4f81-2598-4b6a-a623-0ead4cb9efa8
+  tls: true
+  network: ws
+  servername: privasi.turah.my.id
+  skip-cert-verify: true
+  ws-opts:
+    path: /Free-CF-Proxy-AD192.3.113.4-19318?ed=2048@
+    headers:
+      Host: privasi.turah.my.id
+- name: '@Selinc_4'
+  type: trojan
+  server: 172.67.181.173
+  port: 443
+  password: f282b878-8711-45a1-8c69-5564172123c1
+  sni: vpn.stupidworld.web.id
+  skip-cert-verify: true
+- name: '@mehrosaboran_9'
+  type: vless
+  server: 172.66.40.99
+  port: 80
+  uuid: 21e6d7f3-08bd-4dbc-abf5-8012d9838af5
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2?ed=2560
+    headers:
+      Host: dfgopee-workers.dev.
+- name: '@vmesskhodam'
+  type: vless
+  server: 104.16.69.64
+  port: 8880
+  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
+  tls: false
+  network: ws
+  servername: 104.16.69.64
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: vghavi32.ip-ddns.com
+- name: IRAN 592 (@Outline_Vpn) free
+  type: vless
+  server: 104.21.112.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.112.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: '@Golestan_VPN - JOIN_3'
+  type: vless
+  server: 172.66.132.196
+  port: 8443
+  uuid: 89b3cbba-e6ac-485a-9481-976a0415eab9
+  tls: true
+  network: ws
+  servername: UuHuHyygESDFGh.uyHjhGVGfcJGUJHbUilbvfdxdXM.xYz
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: UuHuHyygESDFGh.uyHjhGVGfcJGUJHbUilbvfdxdXM.xYz
+- name: '@DHLIM0'
+  type: vless
+  server: 172.66.47.63
+  port: 443
+  uuid: 2836c061-ea09-45e5-a98e-4ca478e744b0
+  tls: true
+  network: ws
+  servername: aDD-1cV.pAGeS.Dev
+  skip-cert-verify: true
+  ws-opts:
+    path: /f2GYY0YixkpPeMtx/Y2RuLWIxMDAueG4tLWI2Z2FjLmV1Lm9yZw?ed=2048@DHLIM0--@DHLIM0--@DHLIM0
+    headers:
+      Host: aDD-1cV.pAGeS.Dev
+- name: 'Owner id: @FF_crony'
+  type: vless
+  server: 104.18.36.24
+  port: 443
+  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
+  tls: true
+  network: ws
+  servername: carlotta.shoorekeeper.cloudns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /proxyip=zani.yaemiko.ggff.net/?JOKERRVPN_BIA_CHANEL@JOKERRVPN
+    headers:
+      Host: carlotta.shoorekeeper.cloudns.org
+- name: 🇩🇪 Germany X io
+  type: vless
+  server: 104.21.58.212
+  port: 80
+  uuid: 5a4e040a-8de6-4222-bd6f-9f535b8772fd
+  tls: false
+  network: ws
+  servername: 104.21.58.212
+  skip-cert-verify: true
+  ws-opts:
+    path: /lrJO6NEVRGHecfbo?ed=2560
+    headers:
+      Host: calm-violet-0e47.pomofoc222.workers.dev
+- name: '@i10VPN 🚀| با ما متصل بمون⚡_5'
+  type: vless
+  server: 104.16.69.64
+  port: 8880
+  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
+  tls: false
+  network: ws
+  servername: 104.16.69.64
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join---i10VPN---Join---i10VPN---Join---i10VPN---Join---i10VPN?ed=2560
+    headers:
+      Host: vghavi32.ip-ddns.com
+- name: 💎کانفیگ های بیشتر در چنل تلگرا_4
+  type: vless
+  server: 172.66.40.99
+  port: 443
+  uuid: 1127fc22-993c-420b-897e-38b1dd21b629
+  tls: true
+  network: ws
+  servername: 2free2.aparatir.xyz
+  skip-cert-verify: true
+  ws-opts:
+    path: /admin
+    headers:
+      Host: 2free2.aparatir.xyz
+- name: tm@ghalagyann2
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 2b38bf86-8034-4d55-9257-67783f6746f6
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
+    headers:
+      Host: T.ubuntu-linuxmirror.ir
+- name: '@Daily_Configs_2'
+  type: trojan
+  server: 92.53.189.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
   skip-cert-verify: true
 - name: '@CONFIIG_HUB'
   type: vless
@@ -2838,22 +3410,22 @@ proxies:
     path: /Telegram_configMs_Telegram_configMs_Telegram_configMs?ed=2048
     headers:
       Host: K.mangoap.org
-- name: '@v2ray313 کانالمون 👄'
+- name: '@IRan_V2ray1'
   type: vless
-  server: 104.16.69.64
-  port: 8880
-  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
-  tls: false
+  server: 104.17.148.22
+  port: 8443
+  uuid: 616997f9-fff3-4280-8760-adddf9048203
+  tls: true
   network: ws
-  servername: 104.16.69.64
+  servername: pishgam.pinpen.ir.
   skip-cert-verify: true
   ws-opts:
-    path: /7YVyoVNnbaVzgl6D?ed=2560
+    path: /
     headers:
-      Host: vghavi32.ip-ddns.com
-- name: '⚜️Telegram: @IP_CF 🇨🇦'
+      Host: pishgam.pinpen.ir.
+- name: → @Hddify ☄️
   type: vless
-  server: 104.21.67.12
+  server: 104.26.14.69
   port: 443
   uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
   tls: true
@@ -2861,467 +3433,72 @@ proxies:
   servername: carlotta.shoorekeeper.cloudns.org
   skip-cert-verify: true
   ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net
+    path: =zani.yaemiko.ggff.net/?Join---@Hddify---Join---@Hddify?ed=2560
     headers:
       Host: carlotta.shoorekeeper.cloudns.org
-- name: '@bored_vpn_5'
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 01232cb4-ceab-43c1-f384-09f698db6c19
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
-    headers:
-      Host: join-to-Vmessorg.sabadyt.ir
-- name: 🏁RELAY-102.177.176.194-0703
+- name: 🏁RELAY-45.8.211.194-0607
   type: trojan
-  server: 102.177.176.194
+  server: 45.8.211.194
   port: 2096
   password: ttfang
   sni: ttfang.fange.me
   skip-cert-verify: true
-- name: کانال+ما+در+تلگرام+@Asak_Vpn+🔷
+- name: US_speednode_0076
   type: vless
-  server: 104.18.41.190
-  port: 8443
-  uuid: 59860b15-b2d9-47f9-9b92-81bd1639fcc5
-  tls: true
-  network: ws
-  servername: 5-55sfjslf.ifenxiang.cfd
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: 5-55sfjslf.ifenxiang.cfd
-- name: '@awlix_ir'
-  type: vless
-  server: 172.67.158.146
-  port: 443
-  uuid: 03c93f49-d573-4889-a4bb-187047c5a314
-  tls: true
-  network: ws
-  servername: m7rtTYu.777169.xyz
-  skip-cert-verify: true
-  ws-opts:
-    path: /bstMMelSTch7YcAPgiEbt
-    headers:
-      Host: 7rttyu.777169.xyz
-- name: RU_speednode_0057
-  type: vless
-  server: 46.254.92.2
+  server: 45.159.217.123
   port: 8880
-  uuid: 0132166f-e702-48ed-a9e7-b07af768faf8
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
   tls: false
   network: ws
-  servername: cf.d3z.net
+  servername: sg.laoyoutiao.link
   skip-cert-verify: true
   ws-opts:
-    path: /TelegramU0001F1E8U0001F1F3 @WangCai2 /?ed=2560
+    path: /Telegram@freecodes
     headers:
-      Host: cf.d3z.net
-- name: t.me/entryNET/config=1841590083305972
-  type: trojan
-  server: 92.53.189.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: '@i10VPN 🚀| با ما متصل بمون⚡_4'
+      Host: sg.laoyoutiao.link
+- name: 🇫🇮@vpn_ioss ♻️ عضو شو
   type: vless
-  server: 190.93.245.232
-  port: 8443
-  uuid: b5441b0d-2147-4898-8a6a-9b2c87f58382
-  tls: true
-  network: ws
-  servername: bitget1.asdasd.click
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join---i10VPN?ed=2560
-    headers:
-      Host: bitget1.asdasd.click
-- name: 🇳🇱@vpn_ioss ♻️ عضو شو
-  type: vless
-  server: 104.16.86.73
+  server: 45.85.119.151
   port: 8880
   uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
   tls: false
   network: ws
-  servername: 104.16.86.73
+  servername: 45.85.119.151
   skip-cert-verify: true
   ws-opts:
-    path: /J5aLQOY1R9ONWYCM?ed=2560
+    path: /6TvG8D6HimXKgdp2?ed=2560
     headers:
       Host: vngsupply.ip-ddns.com
-- name: 🇩🇪@Alfred_Config_1
-  type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: bd7ea3d1-bcd0-4048-85fd-18c5397d0320
-  tls: true
-  network: ws
-  servername: www.speedtest-iran.ir
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config-@Alfred_Config?ed=2048
-    headers:
-      Host: www.speedtest-iran.ir
-- name: '@ZedBaz_vpn'
-  type: vless
-  server: www.speedtest.net
-  port: 8880
-  uuid: 075fa06b-2ad2-4466-8a5d-8aeb255ce509
-  tls: false
-  network: httpupgrade
-  servername: www.speedtest.net
-  skip-cert-verify: true
-- name: 🇩🇪 Germany Proxy CloudFlare
-  type: vless
-  server: 104.26.8.156
-  port: 443
-  uuid: c4587bda-09fc-4b3b-8221-4450fccc33d1
-  tls: true
-  network: ws
-  servername: yx.yushan.dpdns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: yx.yushan.dpdns.org
-- name: '@Daily_Configs_2'
+- name: 🏁RELAY-66.225.252.194-0666
   type: trojan
-  server: 92.53.189.194
+  server: 66.225.252.194
   port: 2096
   password: ttfang
   sni: ttfang.fange.me
   skip-cert-verify: true
-- name: LT_speednode_0040
-  type: trojan
-  server: 86.38.214.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: 'Channel id: @ShadowProxy66 🇺🇸'
-  type: vless
-  server: ipw.gfdv54cvghhgfhgj-njhgj64.info
-  port: 8443
-  uuid: e999db7a-1b17-4da6-bc37-c9fa24af2e93
-  tls: true
-  network: ws
-  servername: Nw5Q3gZlVv.LiRa9Xc7.InFo
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: Nw5Q3gZlVv.LiRa9Xc7.InFo
-- name: IRAN 477 (@Outline_Vpn) free
-  type: vless
-  server: 104.21.112.1
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.21.112.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /193.123.81.105=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: XpnTeam🇳🇱-jr8y93ujz
-  type: vless
-  server: www.speedtest.net
-  port: 2052
-  uuid: 097b8c5f-9557-440e-9a7f-997e3378b55a
-  tls: false
-  network: httpupgrade
-  servername: www.speedtest.net
-  skip-cert-verify: true
-- name: '@confiig_hub_1'
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 1aaf960c-a970-4d57-e5a5-235ca11c5c27
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: '@mehrosaboran_4'
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 03d25213-a034-4021-8310-b56ab9ef4c8b
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: c.jOin.zEdMoDeOn.oNl.
-- name: '@icv2ray_2'
-  type: vless
-  server: 104.26.10.194
-  port: 80
-  uuid: 1f21f605-917a-4b31-8415-cad059b4aea4
-  tls: false
-  network: ws
-  servername: 104.26.10.194
-  skip-cert-verify: true
-  ws-opts:
-    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
-    headers:
-      Host: Vmessorg.paradoxone.ir
-- name: '@Hope_Net-join-us-on-Telegram_11'
-  type: trojan
-  server: 206.238.237.1
-  port: 2087
-  password: dns68
-  sni: trojan.putata.us.kg
-  skip-cert-verify: true
-- name: '@icv2ray_3'
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 2c102887-2209-42c3-ffb1-35a5ddd831a9
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
-    headers:
-      Host: joinbdebe.vmessorg.ir
-- name: 🏁RELAY-89.116.161.194-0686
-  type: trojan
-  server: 89.116.161.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: '[🇩🇪]@configLINE(2)'
+- name: tm⚡|@lightning6_2
   type: vless
   server: 172.66.40.99
   port: 8080
-  uuid: 2023c5f3-6ee4-4a6d-be55-44a06570f8dd
+  uuid: 14d2dac5-0159-4975-8b7a-f9c4b5ddb2cd
   tls: false
   network: ws
   servername: 172.66.40.99
   skip-cert-verify: true
   ws-opts:
-    path: /telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE?ed=2048
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
     headers:
-      Host: az221.mashkestan.com
-- name: '[60904] - Telegram : @V2All'
-  type: trojan
-  server: 104.16.121.21
-  port: 443
-  password: NISHIKUITAN111
-  sni: 104.16.121.21
-  skip-cert-verify: true
-- name: 𝗝𝗼𝗶𝗻 ➠ @PlanB_Proxy | کانال ما 🆔
+      Host: k.ft.ip-ddns.com
+- name: ✨72@oneclickvpnkeys
   type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: 8e615b78-0905-48bb-ab68-fb0dfdff7688
-  tls: true
-  network: ws
-  servername: server13.coin.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: server13.coin.name.ng
-- name: 🔒@v2rayngsupbot
-  type: vless
-  server: 104.26.9.63
-  port: 2083
-  uuid: 1ccc1dd8-d8ed-4b69-b0c2-27f6282f9755
-  tls: true
-  network: ws
-  servername: test.bujidao.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: test.bujidao.org
-- name: 𝗝𝗼𝗶𝗻➠ᴬᴸᴸ³🇳🇱@JKVPN
-  type: vless
-  server: www.speedtest.net
-  port: 80
-  uuid: 1808f71a-0c64-4767-bbe2-ef87e6f0c676
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /TELEGRAM_JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-jKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JkVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKvPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN?ed=2048
-    headers:
-      Host: joker.ahang-alpha.ir
-- name: '@i10VPN 🚀| با ما متصل بمون⚡_5'
-  type: vless
-  server: 104.21.96.1
-  port: 80
-  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
-  tls: false
-  network: ws
-  servername: 104.21.96.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join---i10VPN---Join---i10VPN---Join---i10VPN=443
-    headers:
-      Host: zoomgov.vipren.biz.id
-- name: All_@IRAN_V2RAY1
-  type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: hetzner-12.apple.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: hetzner-12.apple.name.ng
-- name: Telegram@ConfingV2RaayNG_1
-  type: vless
-  server: 172.66.46.246
-  port: 443
-  uuid: 07042893-9818-4eff-89c3-d13339c45faa
-  tls: true
-  network: ws
-  servername: 172.66.46.246
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram:@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG?ed=2560
-    headers:
-      Host: ELENA.ELENA.ddns-ip.net
-- name: ᴬᴸᴸ¹🇳🇱➣@JKVPN
-  type: trojan
-  server: www.speedtest.net
-  port: 80
-  password: jkvpn
-  sni: www.speedtest.net
-  skip-cert-verify: true
-- name: 'Channel : @Mrsoulb 🏴🏳_1'
-  type: vless
-  server: tgju.org
-  port: 80
-  uuid: 2b277eea-66b2-4f3a-b934-46225c1f5e6f
-  tls: false
-  network: ws
-  servername: tgju.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed
-    headers:
-      Host: NoDE28.VtNEt.InFO
-- name: → @Hddify 🍌
-  type: vless
-  server: 160.153.0.32
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: 🍰58@oneclickvpnkeys
-  type: vless
-  server: 141.11.203.139
+  server: 154.83.2.167
   port: 443
   uuid: 401374e6-df77-41fb-f638-dad8184f175b
   tls: true
   network: grpc
-  servername: pqh23v5.hiddendom.shop
+  servername: pqh23v4.hiddendom.shop
   skip-cert-verify: true
-- name: 🟣🔥 کانفینگ  اختصاصی @ParsiV2ray پر سرعت
-  type: vless
-  server: 104.18.29.253
-  port: 443
-  uuid: 9dd24d01-2b7a-4bd8-8c76-129d6ca89b8c
-  tls: true
-  network: ws
-  servername: kawaiifreevpn-7ds.pages.dev
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: kawaiifreevpn-7ds.pages.dev
-- name: 🇺🇸US-50.62.175.194-0658
-  type: trojan
-  server: 50.62.175.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: '@icv2ray_4'
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 03d25213-a034-4021-8310-b56ab9ef4c8b
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: c.jOin.zEdMoDeOn.oNl.
-- name: '@hopev2ray💚'
-  type: vless
-  server: 172.67.65.158
-  port: 2087
-  uuid: 1618024f-7ee0-4355-bdfc-ac49f7ae66a8
-  tls: true
-  network: ws
-  servername: eDwFUd6Sa8Q0iR8h56.hopebook75zulawu.online
-  skip-cert-verify: true
-  ws-opts:
-    path: /@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray,@hopev2ray,
-    headers:
-      Host: eDwFUd6Sa8Q0iR8h56.hopebook75zulawu.online
-- name: '@V2rayNG3_2'
-  type: trojan
-  server: 104.20.19.168
-  port: 2083
-  password: auto
-  sni: e9464f45.trauma-2r4.pages.dev
-  skip-cert-verify: true
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_10'
-  type: vless
-  server: 104.21.32.1
-  port: 443
-  uuid: 0f0c8014-6c01-46b6-b0cc-2f76d6bae7f6
-  tls: true
-  network: ws
-  servername: FqJEDazA7b2VofJ9iHeMX319rmO41l7b.paGEs.DeV
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join---planB_proxy---BIA---planB_proxy---BIA---planB_proxy---BIA---planB_proxy=?ed=2560
-    headers:
-      Host: fqjedaza7b2vofj9ihemx319rmo41l7b.pages.dev
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_11'
-  type: vless
-  server: ipw.gfdv54cvghhgfhgj-njhgj64.info
-  port: 8443
-  uuid: 9e769ce1-34be-4e3f-b0a6-823f30eb8f69
-  tls: true
-  network: ws
-  servername: Vk1YdTaPjV.wAsAbI1.oRg
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: Vk1YdTaPjV.wAsAbI1.oRg
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_12'
+- name: '@i10VPN 🚀| با ما متصل بمون⚡_6'
   type: vless
   server: 172.66.47.140
   port: 8443
@@ -3334,278 +3511,3 @@ proxies:
     path: /WwPEDup8yShFB1Wp/NzguNDYuNzMuNDk=?ed=2560
     headers:
       Host: v2rayminer.pages.dev
-- name: 🇩🇪@configfree20255_2
-  type: vless
-  server: www.speedtest.net
-  port: 8443
-  uuid: ccbe6b7c-9264-40c4-8bc1-ef8f6205d7a4
-  tls: true
-  network: ws
-  servername: hetzner-12.apple.name.ng
-  skip-cert-verify: true
-  ws-opts:
-    path: /?TELEGRAM-MARAMBASHI_MARAMBASHI_MARAMBASHI?ed=512
-    headers:
-      Host: hetzner-12.apple.name.ng
-- name: '@bored_vpn_6'
-  type: vless
-  server: 63.141.128.8
-  port: 8080
-  uuid: 19fd73f4-e036-4686-8a8e-7873fb284159
-  tls: false
-  network: ws
-  servername: 63.141.128.8
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: b.jOin.zEdMoDeOn.oNl.
-- name: BG_speednode_0002
-  type: vless
-  server: 147.78.140.63
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
-  tls: false
-  network: ws
-  servername: jp.laoyoutiao.link
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram🇨🇳
-    headers:
-      Host: jp.laoyoutiao.link
-- name: '@i10VPN 🚀| با ما متصل بمون⚡_6'
-  type: vless
-  server: 104.21.32.1
-  port: 443
-  uuid: 0f0c8014-6c01-46b6-b0cc-2f76d6bae7f6
-  tls: true
-  network: ws
-  servername: FqJEDazA7b2VofJ9iHeMX319rmO41l7b.paGEs.DeV
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join---i10VPN---Join---i10VPN---Join---i10VPN---Join---i10VPN=?ed=2560
-    headers:
-      Host: fqjedaza7b2vofj9ihemx319rmo41l7b.pages.dev
-- name: '@v2rayng_fars_2'
-  type: vless
-  server: 45.82.161.120
-  port: 42671
-  uuid: 0855af4e-ec2c-4382-ac60-c54f9db3e04a
-  tls: false
-  network: tcp
-  servername: 45.82.161.120
-  skip-cert-verify: true
-- name: 美国07 付费推荐：https://dafei.de
-  type: vless
-  server: csgo.com
-  port: 8080
-  uuid: 27425750-5bf5-497b-92d4-16e67030e154
-  tls: false
-  network: ws
-  servername: csgo.com
-  skip-cert-verify: true
-  ws-opts:
-    path: /profile/telegram@ssrsub
-    headers:
-      Host: cdn-node-oss-99.paofu.de
-- name: '@v2rayng_fars_3'
-  type: vless
-  server: privasi.turah.my.id
-  port: 443
-  uuid: 0fbf4f81-2598-4b6a-a623-0ead4cb9efa8
-  tls: true
-  network: ws
-  servername: privasi.turah.my.id
-  skip-cert-verify: true
-  ws-opts:
-    path: /Free-CF-Proxy-AD192.3.113.4-19318?---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS---V2RAYNG_FARS
-    headers:
-      Host: privasi.turah.my.id
-- name: 🇩🇪@Alfred_Config_2
-  type: vless
-  server: zula.ir
-  port: 8443
-  uuid: d88d7c72-6204-4385-cf55-cd7738b4b4bd
-  tls: true
-  network: httpupgrade
-  servername: www.speedtest-iran.ir
-  skip-cert-verify: true
-- name: '@Selinc_3'
-  type: vless
-  server: 160.153.0.32
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: CA_speednode_0004
-  type: vless
-  server: 74.49.214.63
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
-  tls: false
-  network: ws
-  servername: jp.laoyoutiao.link
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram🇨🇳 @WangCai2 /?ed=2560fp=chrome
-    headers:
-      Host: jp.laoyoutiao.link
-- name: '@Hope_Net-join-us-on-Telegram_12'
-  type: trojan
-  server: 104.17.148.22
-  port: 2052
-  password: 4b0915d7-8544-5d48-946a-a708d7288447
-  sni: 104.17.148.22
-  skip-cert-verify: true
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_13'
-  type: trojan
-  server: 172.67.181.173
-  port: 443
-  password: f282b878-8711-45a1-8c69-5564172123c1
-  sni: vpn.stupidworld.web.id
-  skip-cert-verify: true
-- name: '@awlix_ir_1'
-  type: trojan
-  server: 104.21.30.195
-  port: 443
-  password: bpb-trojan
-  sni: 403b3611-99BC-43B7-88D7-26eD5d0825a9-3.PagES.DEv
-  skip-cert-verify: true
-- name: → @Hddify ✌🏻
-  type: vless
-  server: 104.21.67.12
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: tm⚡|@lightning6_2
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 21a8d1f1-09cd-4255-9a24-4f3a0a3dabaa
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
-    headers:
-      Host: k.ft.ip-ddns.com
-- name: Telegram@ConfingV2RaayNG_2
-  type: vless
-  server: 188.114.98.112
-  port: 80
-  uuid: 21e6d7f3-08bd-4dbc-abf5-8012d9838af5
-  tls: false
-  network: ws
-  servername: 188.114.98.112
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram:@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG,@ConfingV2RaayNG?ed=2560
-    headers:
-      Host: jOIN---ELiV2-RAY.cloudns.pro.
-- name: 🏁RELAY-45.135.235.194-0638
-  type: trojan
-  server: 45.135.235.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_14'
-  type: vless
-  server: 104.26.15.69
-  port: 2096
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /proxyip=zani.yaemiko.ggff.net
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: '@Hope_Net-join-us-on-Telegram_13'
-  type: trojan
-  server: 104.19.128.93
-  port: 443
-  password: bpb-trojan
-  sni: adagio.us.kg
-  skip-cert-verify: true
-- name: 🏁RELAY-31.43.179.194-0605
-  type: trojan
-  server: 31.43.179.194
-  port: 2096
-  password: ttfang
-  sni: ttfang.fange.me
-  skip-cert-verify: true
-- name: '@Emadt3ch_56'
-  type: vless
-  server: blog.ruangguru.com.servpn.my.id
-  port: 443
-  uuid: 496e91a6-c90c-483d-adb1-133d04d8e725
-  tls: true
-  network: ws
-  servername: blog.ruangguru.com.servpn.my.id
-  skip-cert-verify: true
-  ws-opts:
-    path: /sg1
-    headers:
-      Host: blog.ruangguru.com.servpn.my.id
-- name: 'Telegram : @Alfa_v2ray_ng 🔥_15'
-  type: vless
-  server: 91.206.71.162
-  port: 8880
-  uuid: 26bc13af-e442-4956-afd4-b8f85744d26f
-  tls: false
-  network: ws
-  servername: barayeiran-mahsang.gerald81.dpdns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /Barayeiranmahsang/----@-?ed=2560
-    headers:
-      Host: barayeiran-mahsang.gerald81.dpdns.org
-- name: '👈🏻 چنل تلگرامی : سرچ کن هدیفای 👉🏻'
-  type: vless
-  server: 104.18.36.24
-  port: 443
-  uuid: 30f2d443-af46-4dd6-83c9-b5e17299ebd2
-  tls: true
-  network: ws
-  servername: carlotta.shoorekeeper.cloudns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Hddify---@Hddify---@Hddify---@Hddify---@Hddify---@Hddify---@Hddify?ed=2560
-    headers:
-      Host: carlotta.shoorekeeper.cloudns.org
-- name: '@Selinc_4'
-  type: trojan
-  server: 172.67.181.173
-  port: 443
-  password: f282b878-8711-45a1-8c69-5564172123c1
-  sni: vpn.stupidworld.web.id
-  skip-cert-verify: true
-- name: Channel:@BeFreeWithUs_2
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 2f899c15-090f-4c76-8260-62be0d02d0f5
-  tls: false
-  network: ws
-  servername: 151.101.3.8
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: befreewithus.net
