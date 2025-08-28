@@ -76,6 +76,7 @@
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.8em; }
         .ping { font-weight: bold; font-size: 0.85em; }
+        .ping .api-marker { font-size: 0.7em; color: #aaa; font-weight: normal; }
         .copy-button-container { display: flex; gap: 6px; }
         .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
         .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; flex-shrink: 0; }
@@ -120,7 +121,9 @@
             'https://smbcryp.github.io/V2V/all_live_configs.json',
             'https://v2-v.vercel.app/all_live_configs.json'
         ];
-        
+        // آدرس اندپوینت API تست پینگ در ورسل. این یک نمونه است و باید در سمت سرور ساخته شود
+        const VERCEL_API_ENDPOINT = '/api/ping';
+
         async function fetchDataWithCacheBusting() {
             const baseSources = DATA_SOURCES.map(url => url.substring(0, url.lastIndexOf('/')));
             for (const baseUrl of baseSources) {
@@ -163,9 +166,9 @@
             container.innerHTML = '';
             const headerControls = document.createElement('div');
             if (core === 'xray') {
-                headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت واقعی از شبکه شما</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div><div class="action-group"><h4 class="action-group-title">فایل / Clash Meta</h4><div class="action-buttons"><button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button><button class="action-button" onclick="generateClashConfig('${core}', 'download')">دانلود فایل شخصی</button></div></div>`;
+                headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت (منطق ترکیبی)</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div><div class="action-group"><h4 class="action-group-title">فایل / Clash Meta</h4><div class="action-buttons"><button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button><button class="action-button" onclick="generateClashConfig('${core}', 'download')">دانلود فایل شخصی</button></div></div>`;
             } else {
-                headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت واقعی از شبکه شما</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div>`;
+                headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت (منطق ترکیبی)</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div>`;
             }
             container.appendChild(headerControls);
             if (configObjects.length === 0) {
@@ -228,55 +231,99 @@
         function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
         function copyToClipboard(text, msg = 'کپی شد!') {  navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی ناموفق بود.\n' + err));}
         
+        // --- START: Hybrid Test Logic ---
         async function runSpeedTest(core) {
             const testButton = document.querySelector(`#${core}-section .test-button`);
             if (testButton.disabled) return;
-            testButton.disabled = true; testButton.textContent = 'در حال تست...';
+            testButton.disabled = true;
+            testButton.textContent = 'در حال تست...';
             const items = document.querySelectorAll(`#${core}-content-wrapper .config-item`);
-            
-            const testPromises = Array.from(items).map(async item => {
+
+            const testPromises = Array.from(items).map(async (item) => {
                 const pingEl = item.querySelector('.ping');
                 pingEl.textContent = 'درحال تست...';
                 const configStr = item.dataset.config;
-                const pingResult = await testConfigLatency(configStr);
-                
+                let isApiResult = false;
+
+                // 🥇 اولویت با تست واقعی از مرورگر
+                let pingResult = await testConfigLatencyFromBrowser(configStr);
+
+                // 🤔 بررسی نتیجه و استفاده از API به عنوان پشتیبان (Fallback)
+                if (['N/A', 'Error', 'Timeout'].includes(pingResult)) {
+                    try {
+                        const apiResponse = await fetch(VERCEL_API_ENDPOINT, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ config: configStr })
+                        });
+                        if (!apiResponse.ok) throw new Error('API response not OK');
+                        const apiData = await apiResponse.json();
+
+                        if (apiData.ping) {
+                            pingResult = apiData.ping;
+                            isApiResult = true; // این نتیجه از API آمده است
+                        } else {
+                            pingResult = 'Error';
+                        }
+                    } catch (e) {
+                        console.error("API Ping failed:", e);
+                        pingResult = 'Error';
+                    }
+                }
+
+                // 🖥️ نمایش هوشمند نتیجه
                 let pingValue, pingText, pingColor;
-                if (pingResult === 'Timeout' || pingResult === 'Error' || pingResult === 'N/A') {
+                const apiMarker = isApiResult ? ' <span class="api-marker">(API)</span>' : '';
+
+                if (['Timeout', 'Error', 'N/A'].includes(pingResult)) {
                     pingValue = 9999;
                     pingText = pingResult;
                     pingColor = 'var(--ping-bad)';
                 } else {
-                    pingValue = parseInt(pingResult);
+                    pingValue = parseInt(pingResult, 10);
                     pingText = `${pingValue}ms`;
                     pingColor = 'var(--ping-good)';
                     if (pingValue > 350) pingColor = 'var(--ping-medium)';
                     if (pingValue > 800) pingColor = 'var(--ping-bad)';
                 }
                 item.dataset.newPing = pingValue;
-                pingEl.innerHTML = `پینگ شما: <strong style="color:${pingColor};">${pingText}</strong>`;
+                pingEl.innerHTML = `پینگ: <strong style="color:${pingColor};">${pingText}</strong>${apiMarker}`;
             });
-            
+
             await Promise.all(testPromises);
             sortConfigsByPing(core);
-            testButton.disabled = false; testButton.textContent = '🚀 تست مجدد سرعت واقعی';
+            testButton.disabled = false;
+            testButton.textContent = '🚀 تست مجدد سرعت';
         }
-
-        // --- START: Smart Frontend Ping Test Engine ---
 
         function testWebSocketLatency(url, timeout = 3000) {
             return new Promise(resolve => {
                 const startTime = performance.now();
                 let ws;
-                try { ws = new WebSocket(url); } catch (e) { return resolve('Error'); }
-                const timeoutId = setTimeout(() => { if (ws) ws.close(); resolve('Timeout'); }, timeout);
-                ws.onopen = () => { clearTimeout(timeoutId); ws.close(); resolve(Math.round(performance.now() - startTime)); };
-                ws.onerror = () => { clearTimeout(timeoutId); resolve('Error'); };
+                try {
+                    ws = new WebSocket(url);
+                } catch (e) {
+                    return resolve('Error');
+                }
+                const timeoutId = setTimeout(() => {
+                    if (ws) ws.close();
+                    resolve('Timeout');
+                }, timeout);
+                ws.onopen = () => {
+                    clearTimeout(timeoutId);
+                    ws.close();
+                    resolve(Math.round(performance.now() - startTime));
+                };
+                ws.onerror = () => {
+                    clearTimeout(timeoutId);
+                    resolve('Error');
+                };
             });
         }
 
-        function testConfigLatency(configStr) {
+        function testConfigLatencyFromBrowser(configStr) {
             try {
-                // --- WebSocket Test ---
+                // --- فقط تست WebSocket از مرورگر ممکن است ---
                 if (configStr.startsWith('vmess://')) {
                     const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
                     if (decoded.net === 'ws') {
@@ -294,16 +341,15 @@
                     }
                 }
                 
-                // --- For other protocols like SS or non-WS VLESS/Trojan, direct test is not feasible ---
+                // --- برای سایر پروتکل‌ها، تست مستقیم ممکن نیست ---
                 return Promise.resolve('N/A');
 
             } catch (e) {
-                console.error("Ping test error:", e);
+                console.error("Browser ping test error:", e);
                 return Promise.resolve('Error');
             }
         }
-
-        // --- END: Smart Frontend Ping Test Engine ---
+        // --- END: Hybrid Test Logic ---
         
         function sortConfigsByPing(core) { document.querySelectorAll(`#${core}-content-wrapper .protocol-group`).forEach(group => { const list = group.querySelector('.config-list'); const items = Array.from(list.children); items.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999)); items.forEach(item => list.appendChild(item)); }); }
         
