@@ -121,8 +121,8 @@
             'https://smbcryp.github.io/V2V/all_live_configs.json',
             'https://v2-v.vercel.app/all_live_configs.json'
         ];
-        // آدرس اندپوینت API تست پینگ در ورسل. این یک نمونه است و باید در سمت سرور ساخته شود
-        const VERCEL_API_ENDPOINT = '/api/ping';
+        // آدرس اندپوینت API تست پینگ در ورسل آپدیت شد
+        const VERCEL_API_ENDPOINT = '/api/proxy';
 
         async function fetchDataWithCacheBusting() {
             const baseSources = DATA_SOURCES.map(url => url.substring(0, url.lastIndexOf('/')));
