@@ -1,92 +1,107 @@
+// File: /api/proxy.js
+
 import net from 'net';
 
 /**
- * Handles the TCP ping request.
- * This serverless function is designed to be called by the scraper and the frontend.
+ * Parses various config URI formats to extract host and port.
+ * @param {string} configStr The configuration string (vless://, vmess://, etc.)
+ * @returns {{host: string, port: number} | null}
  */
-export default function handler(req, res) {
-    // Set CORS and Cache-Control headers for security and reliability
+function parseConfig(configStr) {
+    try {
+        // Handle vmess:// which is Base64 encoded JSON
+        if (configStr.startsWith('vmess://')) {
+            const jsonStr = Buffer.from(configStr.substring(8), 'base64').toString('utf-8');
+            const decoded = JSON.parse(jsonStr);
+            return { host: decoded.add, port: parseInt(decoded.port, 10) };
+        }
+        
+        // Handle URL-based formats like vless, trojan, ss
+        const url = new URL(configStr);
+        if (url.hostname && url.port) {
+            return { host: url.hostname, port: parseInt(url.port, 10) };
+        }
+        return null;
+    } catch (e) {
+        console.error(`Failed to parse config: ${configStr.substring(0, 30)}...`);
+        return null;
+    }
+}
+
+/**
+ * Measures the latency of a TCP connection.
+ * @param {string} host The server address.
+ * @param {number} port The server port.
+ * @param {number} timeout Timeout in milliseconds.
+ * @returns {Promise<number>} The latency in milliseconds.
+ */
+function getTcpPing(host, port, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+        const startTime = process.hrtime.bigint();
+        const socket = new net.Socket();
+
+        socket.setTimeout(timeout);
+
+        socket.on('connect', () => {
+            const endTime = process.hrtime.bigint();
+            // Convert nanoseconds to milliseconds
+            const latency = Math.round(Number(endTime - startTime) / 1e6);
+            socket.destroy();
+            resolve(latency);
+        });
+
+        socket.on('error', (err) => {
+            socket.destroy();
+            reject(err);
+        });
+
+        socket.on('timeout', () => {
+            socket.destroy();
+            reject(new Error('Connection timed out'));
+        });
+
+        socket.connect(port, host);
+    });
+}
+
+// Main serverless function handler
+export default async function handler(req, res) {
+    // Set CORS and Cache-Control headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
-    // Handle pre-flight requests for CORS
     if (req.method === 'OPTIONS') {
         return res.status(204).send('');
     }
 
-    // Ensure only POST requests are processed
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Only POST requests are allowed' });
     }
 
-    const { host, port } = req.body;
+    const { config } = req.body;
 
-    // Improved validation - accept both string and number ports
-    if (!host || !port) {
-        return res.status(400).json({ message: 'Both host and port are required' });
+    if (!config || typeof config !== 'string') {
+        return res.status(400).json({ message: 'Config string is required.' });
     }
 
-    // Convert port to number and validate
-    const portNum = parseInt(port, 10);
-    if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
-        return res.status(400).json({ message: 'Port must be a valid number between 1-65535' });
-    }
+    const serverInfo = parseConfig(config);
 
-    // Validate host format (basic check)
-    if (typeof host !== 'string' || host.trim().length === 0) {
-        return res.status(400).json({ message: 'Host must be a valid string' });
-    }
-
-    const cleanHost = host.trim();
-    const startTime = Date.now();
-    const socket = new net.Socket();
-
-    // Increase timeout for better compatibility
-    socket.setTimeout(10000); // 10 seconds
-
-    socket.on('connect', () => {
-        const endTime = Date.now();
-        const ping = endTime - startTime;
-        socket.destroy();
-
-        // Return the ping result - remove the unrealistic ping check as it can be valid for local servers
-        res.status(200).json({ host: cleanHost, port: portNum, ping });
-    });
-
-    socket.on('error', (err) => {
-        socket.destroy();
-        // Return high ping value for failed connections
-        res.status(200).json({ 
-            host: cleanHost, 
-            port: portNum, 
+    if (!serverInfo || !serverInfo.host || !serverInfo.port) {
+        return res.status(400).json({ 
             ping: 9999, 
-            error: err.message 
+            error: 'Could not parse host/port from config' 
         });
-    });
+    }
 
-    socket.on('timeout', () => {
-        socket.destroy();
-        // Return high ping value for timeouts
-        res.status(200).json({ 
-            host: cleanHost, 
-            port: portNum, 
-            ping: 9999, 
-            error: 'Connection timeout' 
-        });
-    });
-
-    // Add connection error handling
     try {
-        socket.connect(portNum, cleanHost);
-    } catch (err) {
-        socket.destroy();
+        const latency = await getTcpPing(serverInfo.host, serverInfo.port);
+        res.status(200).json({ ping: latency });
+    } catch (error) {
         res.status(200).json({ 
-            host: cleanHost, 
-            port: portNum, 
             ping: 9999, 
-            error: `Connection failed: ${err.message}` 
+            error: error.message 
         });
     }
 }
