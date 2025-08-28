@@ -27,7 +27,7 @@ VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 
 
 # --- هدرهای ضد کش برای اطمینان از دریافت محتوای تازه
 HEADERS = {
-    'User-Agent': 'V2V-Scraper/v5.5-Enhanced',
+    'User-Agent': 'V2V-Scraper/v5.6-Final',
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Pragma': 'no-cache',
     'Expires': '0'
@@ -36,7 +36,7 @@ HEADERS = {
 # --- تنظیمات گیت‌هاب
 GITHUB_PAT = os.environ.get('GH_PAT')
 GITHUB_SEARCH_LIMIT = 75
-GITHUB_FRESHNESS_HOURS = 240  # افزایش به 10 روز
+GITHUB_FRESHNESS_HOURS = 240
 GITHUB_SEARCH_QUERIES = [
     'v2ray subscription', 'vless subscription', 'proxy subscription',
     'vmess config', 'trojan config', 'clash subscription'
@@ -45,7 +45,7 @@ GITHUB_SEARCH_QUERIES = [
 # --- تنظیمات تست سرعت و کیفیت‌سنجی
 SPEED_TEST_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy'
 MAX_CONFIGS_TO_TEST = 2500
-MAX_PING_THRESHOLD = 3000  # کاهش به 3 ثانیه
+MAX_PING_THRESHOLD = 3000
 TARGET_CONFIGS_PER_CORE = 500
 REQUEST_TIMEOUT = 15
 
@@ -57,19 +57,12 @@ if GITHUB_PAT:
 # =================================================================================
 
 def _decode_padded_b64(encoded_str: str) -> str:
-    """یک رشته Base64 را رمزگشایی می‌کند و در صورت نیاز به آن padding اضافه می‌کند."""
-    if not encoded_str:
-        return ""
-    
-    # تمیز کردن رشته از کاراکترهای غیرضروری
+    if not encoded_str: return ""
     encoded_str = encoded_str.strip().replace('\n', '').replace('\r', '').replace(' ', '')
-    
-    # اضافه کردن padding در صورت نیاز
     padded_str = encoded_str + '=' * (-len(encoded_str) % 4)
     try:
         return base64.b64decode(padded_str).decode('utf-8')
     except Exception:
-        # تلاش با encoding های مختلف
         for encoding in ['latin1', 'ascii', 'utf-16']:
             try:
                 return base64.b64decode(padded_str).decode(encoding)
@@ -78,75 +71,46 @@ def _decode_padded_b64(encoded_str: str) -> str:
         return ""
 
 def _encode_b64(text: str) -> str:
-    """یک رشته را به Base64 انکود می‌کند."""
     return base64.b64encode(text.encode('utf-8')).decode('utf-8')
 
 def _is_valid_config_format(config_str: str) -> bool:
-    """بررسی معتبر بودن فرمت کانفیگ."""
     try:
         parsed = urlparse(config_str)
-        return (
-            parsed.scheme in [p.replace('://', '') for p in VALID_PREFIXES] and
-            parsed.hostname and
-            len(config_str) > 20 and  # حداقل طول
-            '://' in config_str
-        )
+        return (parsed.scheme in [p.replace('://', '') for p in VALID_PREFIXES] and parsed.hostname and len(config_str) > 20 and '://' in config_str)
     except Exception:
         return False
 
 # =================================================================================
-# === PARSING ENGINE (موتور پردازشگر فرمت‌های مختلف) ===
+# === PARSING ENGINE (موتور پردازشگر) ===
 # =================================================================================
 
 def parse_subscription_content(content: str) -> set:
-    """پردازش محتوای subscription با تشخیص خودکار فرمت."""
     configs = set()
-    
-    # مرحله 1: تلاش برای decode کل محتوا به عنوان base64
     decoded_content = _decode_padded_b64(content)
-    if decoded_content and decoded_content != content:
-        content = decoded_content
-    
-    # مرحله 2: استخراج لینک‌های مستقیم با regex بهبود یافته
+    if decoded_content and decoded_content != content: content = decoded_content
     patterns = [
         r'(' + '|'.join(re.escape(p) for p in VALID_PREFIXES) + r')[^\s\'"<>\[\]{}()]*',
         r'(?:^|\s)(' + '|'.join(re.escape(p) for p in VALID_PREFIXES) + r')[^\s\n\r]*',
-        r'"(' + '|'.join(re.escape(p) for p in VALID_PREFIXES) + r')[^"]*"',
-        r"'(" + '|'.join(re.escape(p) for p in VALID_PREFIXES) + r")[^']*'"
     ]
-    
     for pattern in patterns:
         matches = re.findall(pattern, content, re.MULTILINE | re.IGNORECASE)
         for match in matches:
-            if isinstance(match, tuple):
-                match = match[0] if match[0] else (match[1] if len(match) > 1 else '')
-            
             clean_match = match.strip().strip('\'"')
-            if clean_match and _is_valid_config_format(clean_match):
-                configs.add(clean_match)
-    
-    # مرحله 3: جستجو در خطوط جداگانه
-    lines = content.split('\n')
-    for line in lines:
+            if _is_valid_config_format(clean_match): configs.add(clean_match)
+    for line in content.split('\n'):
         line = line.strip()
-        if any(line.startswith(prefix) for prefix in VALID_PREFIXES):
-            if _is_valid_config_format(line):
-                configs.add(line)
-    
+        if any(line.startswith(prefix) for prefix in VALID_PREFIXES) and _is_valid_config_format(line): configs.add(line)
     return configs
 
 def parse_structured_json(content: dict) -> set:
-    """پردازش فایل‌های JSON ساختاریافته با پشتیبانی گسترده‌تر."""
     configs = set()
-    
     if 'outbounds' in content and isinstance(content['outbounds'], list):
         for outbound in content['outbounds']:
             try:
                 protocol = outbound.get('protocol') or outbound.get('type')
                 if not protocol or protocol in ['direct', 'block', 'dns']: continue
                 config_str = ""
-                server = outbound.get('server')
-                port = outbound.get('server_port') or outbound.get('port')
+                server, port = outbound.get('server'), outbound.get('server_port') or outbound.get('port')
                 if not server or not port: continue
                 if protocol == 'vless':
                     uuid = outbound.get('uuid')
@@ -155,13 +119,10 @@ def parse_structured_json(content: dict) -> set:
                     params = {'type': outbound.get('transport', {}).get('type', 'tcp')}
                     tls_config = outbound.get('tls', {})
                     if tls_config.get('enabled'):
-                        params['security'] = 'tls'
-                        params['sni'] = tls_config.get('server_name', server)
+                        params['security'] = 'tls'; params['sni'] = tls_config.get('server_name', server)
                         reality_config = tls_config.get('reality', {})
                         if reality_config.get('enabled'):
-                            params['security'] = 'reality'
-                            params['pbk'] = reality_config.get('public_key', '')
-                            params['sid'] = reality_config.get('short_id', '')
+                            params['security'] = 'reality'; params['pbk'] = reality_config.get('public_key', ''); params['sid'] = reality_config.get('short_id', '')
                     query_string = urlencode({k: v for k, v in params.items() if v})
                     config_str = f"vless://{uuid}@{server}:{port}?{query_string}#{quote(name)}"
                 elif protocol == 'vmess':
@@ -171,9 +132,7 @@ def parse_structured_json(content: dict) -> set:
                     transport = outbound.get('transport', {})
                     vmess_data = {"v": "2", "ps": name, "add": server, "port": port, "id": uuid, "aid": outbound.get('alter_id', 0), "net": transport.get('type', 'tcp'), "type": "none", "host": "", "path": "", "tls": "tls" if outbound.get('tls', {}).get('enabled') else "none", "sni": outbound.get('tls', {}).get('server_name', server)}
                     if transport.get('type') == 'ws':
-                        ws_config = transport.get('websocket', {})
-                        vmess_data['path'] = ws_config.get('path', '/')
-                        vmess_data['host'] = ws_config.get('headers', {}).get('Host', server)
+                        ws_config = transport.get('websocket', {}); vmess_data['path'] = ws_config.get('path', '/'); vmess_data['host'] = ws_config.get('headers', {}).get('Host', server)
                     config_str = f"vmess://{_encode_b64(json.dumps(vmess_data, separators=(',', ':')))}"
                 elif protocol == 'trojan':
                     password = outbound.get('password')
@@ -184,23 +143,16 @@ def parse_structured_json(content: dict) -> set:
                     config_str = f"trojan://{password}@{server}:{port}?{query_string}#{quote(name)}"
                 if config_str and _is_valid_config_format(config_str): configs.add(config_str)
             except (KeyError, TypeError, AttributeError): continue
-    
-    if 'configs' in content and isinstance(content['configs'], list):
-        for config in content['configs']:
-            if isinstance(config, str) and any(config.startswith(p) for p in VALID_PREFIXES) and _is_valid_config_format(config):
-                configs.add(config)
     def deep_search(obj):
         if isinstance(obj, dict):
             for value in obj.values(): deep_search(value)
         elif isinstance(obj, list):
             for item in obj: deep_search(item)
-        elif isinstance(obj, str) and any(obj.startswith(p) for p in VALID_PREFIXES) and _is_valid_config_format(obj):
-            configs.add(obj)
+        elif isinstance(obj, str) and any(obj.startswith(p) for p in VALID_PREFIXES) and _is_valid_config_format(obj): configs.add(obj)
     deep_search(content)
     return configs
 
 def parse_structured_yaml(content: dict) -> set:
-    """پردازش فایل‌های YAML با پشتیبانی گسترده‌تر."""
     configs = set()
     if 'proxies' in content and isinstance(content['proxies'], list):
         for proxy in content['proxies']:
@@ -215,9 +167,7 @@ def parse_structured_yaml(content: dict) -> set:
                     params = {'type': proxy.get('network', 'tcp'), 'sni': proxy.get('servername', server)}
                     if proxy.get('tls'): params['security'] = 'tls'
                     if proxy.get('reality-opts'):
-                        params['security'] = 'reality'
-                        params['pbk'] = proxy['reality-opts'].get('public-key', '')
-                        params['sid'] = proxy['reality-opts'].get('short-id', '')
+                        params['security'] = 'reality'; params['pbk'] = proxy['reality-opts'].get('public-key', ''); params['sid'] = proxy['reality-opts'].get('short-id', '')
                     query_string = urlencode({k: v for k, v in params.items() if v})
                     config_str = f"vless://{uuid}@{server}:{port}?{query_string}#{quote(name)}"
                 elif protocol == 'vmess':
@@ -248,12 +198,10 @@ def parse_structured_yaml(content: dict) -> set:
     return configs
 
 def parse_html_content(content: str) -> set:
-    """استخراج لینک‌های کانفیگ از محتوای HTML با بهبود."""
-    configs = set()
     soup = BeautifulSoup(content, 'html.parser')
     for script in soup(["script", "style"]): script.decompose()
     text_content = soup.get_text(separator='\n')
-    configs.update(parse_subscription_content(text_content))
+    configs = parse_subscription_content(text_content)
     for tag in soup.find_all():
         for attr_value in tag.attrs.values():
             if isinstance(attr_value, str): configs.update(parse_subscription_content(attr_value))
@@ -263,100 +211,59 @@ def parse_html_content(content: str) -> set:
     return configs
 
 def fetch_and_parse_url(url: str) -> set:
-    """دانلود و استخراج کانفیگ از یک URL با موتور پردازشگر پیشرفته."""
     try:
-        print(f"   - در حال پردازش: {url[:60]}...")
         response = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
         content = response.text
-        configs = set()
-        content_type = response.headers.get('Content-Type', '').lower()
+        configs, content_type = set(), response.headers.get('Content-Type', '').lower()
         if 'json' in content_type or content.strip().startswith('{'):
             try:
-                json_content = json.loads(content)
-                configs.update(parse_structured_json(json_content))
-                if configs:
-                    print(f"     ✓ {len(configs)} کانفیگ از JSON استخراج شد")
-                    return configs
+                configs.update(parse_structured_json(json.loads(content)))
+                if configs: return configs
             except json.JSONDecodeError: pass
         if any(ext in url.lower() for ext in ['.yaml', '.yml']) or 'yaml' in content_type:
             try:
                 yaml_content = yaml.safe_load(content)
                 if isinstance(yaml_content, dict):
                     configs.update(parse_structured_yaml(yaml_content))
-                    if configs:
-                        print(f"     ✓ {len(configs)} کانفیگ از YAML استخراج شد")
-                        return configs
+                    if configs: return configs
             except yaml.YAMLError: pass
         if 'html' in content_type or any(tag in content.lower() for tag in ['<html', '<body', '<div']):
             configs.update(parse_html_content(content))
-            if configs:
-                print(f"     ✓ {len(configs)} کانفیگ از HTML استخراج شد")
-                return configs
+            if configs: return configs
         configs.update(parse_subscription_content(content))
-        if configs:
-            print(f"     ✓ {len(configs)} کانفیگ از subscription استخراج شد")
-        else:
-            print(f"     ✗ هیچ کانفیگی یافت نشد")
         return configs
-    except requests.RequestException as e:
-        print(f"     ✗ خطای شبکه: {str(e)[:50]}...")
-        return set()
-    except Exception as e:
-        print(f"     ✗ خطای پردازش: {str(e)[:50]}...")
-        return set()
+    except (requests.RequestException, Exception): return set()
 
 # =================================================================================
 # === CORE FUNCTIONS (توابع اصلی) ===
 # =================================================================================
 
 def get_static_sources() -> list:
-    """خواندن منابع ثابت از فایل sources.json"""
     try:
-        with open(SOURCES_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            static_sources = data.get("static", [])
-            print(f"📁 {len(static_sources)} منبع ثابت از فایل خوانده شد")
-            return static_sources
-    except FileNotFoundError:
-        print(f"⚠️ فایل {SOURCES_FILE} یافت نشد")
-        return []
-    except json.JSONDecodeError:
-        print(f"⚠️ خطا در خواندن فایل {SOURCES_FILE}")
-        return []
+        with open(SOURCES_FILE, 'r', encoding='utf-8') as f: return json.load(f).get("static", [])
+    except (FileNotFoundError, json.JSONDecodeError): return []
 
 def discover_dynamic_sources() -> list:
-    """کشف منابع پویا و تازه از GitHub"""
-    if not GITHUB_PAT:
-        print("⚠️ توکن گیت‌هاب (GH_PAT) یافت نشد. از جستجوی پویا صرف نظر می‌شود.")
-        return []
-    print("🔍 کشف منابع پویا و تازه از GitHub...")
-    auth = Auth.Token(GITHUB_PAT)
-    g = Github(auth=auth, timeout=20)
+    if not GITHUB_PAT: return []
+    g = Github(auth=Auth.Token(GITHUB_PAT), timeout=20)
     freshness_threshold = datetime.now(timezone.utc) - timedelta(hours=GITHUB_FRESHNESS_HOURS)
     dynamic_sources = set()
     for query in GITHUB_SEARCH_QUERIES:
         try:
-            print(f"   - جستجوی '{query}'...")
             repos = g.search_repositories(query=f'{query} language:text', sort='updated', order='desc')
             for repo in repos:
-                if repo.updated_at < freshness_threshold or len(dynamic_sources) >= GITHUB_SEARCH_LIMIT: break 
+                if repo.updated_at < freshness_threshold or len(dynamic_sources) >= GITHUB_SEARCH_LIMIT: break
                 try:
-                    contents = repo.get_contents("")
-                    for content_file in contents:
-                        if (content_file.type == 'file' and 
-                            content_file.name.lower().endswith(('.txt', '.md', '.yaml', '.yml', '.json'))):
+                    for content_file in repo.get_contents(""):
+                        if content_file.type == 'file' and content_file.name.lower().endswith(('.txt', '.md', '.yaml', '.yml', '.json')):
                             dynamic_sources.add(content_file.download_url)
                 except GithubException: continue
                 if len(dynamic_sources) >= GITHUB_SEARCH_LIMIT: break
-        except GithubException as e:
-            print(f"   - خطا در جستجوی گیت‌هاب برای '{query}': {e}")
-            continue
-    print(f"✅ {len(dynamic_sources)} منبع پویای تازه کشف شد.")
+        except GithubException: continue
     return list(dynamic_sources)
 
 def test_config_via_api(config_str: str) -> dict:
-    """تست پینگ یک کانفیگ از طریق API خارجی."""
     try:
         parsed = urlparse(config_str)
         host, port = parsed.hostname, parsed.port
@@ -367,21 +274,11 @@ def test_config_via_api(config_str: str) -> dict:
             except Exception: return {'config_str': config_str, 'ping': 9999}
         if not host: return {'config_str': config_str, 'ping': 9999}
         if not port: port = {'ss': 8443, 'trojan': 443, 'vless': 443, 'hysteria2': 443, 'hy2': 443, 'tuic': 443}.get(parsed.scheme, 443)
-        response = requests.post(
-            SPEED_TEST_API_ENDPOINT, 
-            json={'host': host, 'port': port}, 
-            headers={'Content-Type': 'application/json'}, 
-            timeout=REQUEST_TIMEOUT
-        )
-        if response.status_code == 200:
-            result = response.json()
-            ping = result.get('ping', 9999)
-            return {'config_str': config_str, 'ping': ping}
-        else: return {'config_str': config_str, 'ping': 9999}
+        response = requests.post(SPEED_TEST_API_ENDPOINT, json={'host': host, 'port': port}, headers={'Content-Type': 'application/json'}, timeout=REQUEST_TIMEOUT)
+        return {'config_str': config_str, 'ping': response.json().get('ping', 9999)} if response.status_code == 200 else {'config_str': config_str, 'ping': 9999}
     except Exception: return {'config_str': config_str, 'ping': 9999}
 
 def validate_and_categorize_configs(configs: set) -> dict:
-    """کانفیگ‌ها را بر اساس هسته مورد نیاز (Xray یا Sing-box) دسته‌بندی می‌کند."""
     categorized = {'xray': set(), 'singbox_only': set()}
     for cfg in configs:
         if not _is_valid_config_format(cfg): continue
@@ -395,7 +292,6 @@ def validate_and_categorize_configs(configs: set) -> dict:
     return categorized
 
 def generate_clash_subscription(configs: list) -> str | None:
-    """یک فایل اشتراک با فرمت YAML برای کلاینت‌های Clash تولید می‌کند."""
     proxies = []
     used_names = set()
     for config_str in configs:
@@ -403,8 +299,7 @@ def generate_clash_subscription(configs: list) -> str | None:
             protocol = config_str.split("://")[0]
             if protocol not in ('vless', 'vmess', 'trojan', 'ss'): continue
             url = urlparse(config_str)
-            if not url.hostname or not url.port: continue
-            if 'reality' in config_str.lower(): continue
+            if not url.hostname or not url.port or 'reality' in config_str.lower(): continue
             name = unquote(url.fragment) if url.fragment else url.hostname
             original_name, count = name[:30], 1
             while name in used_names:
@@ -437,142 +332,99 @@ def generate_clash_subscription(configs: list) -> str | None:
             proxies.append(proxy)
         except Exception: continue
     if not proxies: return None
-    clash_config = {'proxies': proxies}
-    return yaml.dump(clash_config, allow_unicode=True, sort_keys=False)
+    return yaml.dump({'proxies': proxies}, allow_unicode=True, sort_keys=False)
 
 def main():
-    print(f"🚀 V2V Scraper v5.5 - شروع فرآیند با موتور پردازشگر پیشرفته...")
+    print(f"🚀 V2V Scraper v5.6 - شروع فرآیند با منطق نهایی...")
     start_time = time.time()
     
-    print("\n🧪 تست API تست سرعت...")
     test_result = test_config_via_api("vless://test@1.1.1.1:443")
-    if test_result['ping'] == 9999:
-        print("⚠️ API تست سرعت در دسترس نیست، کانفیگ‌ها بدون تست سرعت ذخیره خواهند شد")
-        use_speed_test = False
-    else:
-        print(f"✅ API تست سرعت فعال است (تست ping: {test_result['ping']}ms)")
-        use_speed_test = True
+    use_speed_test = test_result['ping'] != 9999
+    print(f"\n🧪 تست API تست سرعت: {'✅ فعال' if use_speed_test else '⚠️ غیرفعال'}")
     
-    static_sources = get_static_sources()
-    dynamic_sources = discover_dynamic_sources()
-    all_sources = list(set(static_sources + dynamic_sources))
-    print(f"📡 مجموع منابع جمع‌آوری شده: {len(all_sources)} ({len(static_sources)} ثابت + {len(dynamic_sources)} پویا)")
-    
+    all_sources = list(set(get_static_sources() + discover_dynamic_sources()))
+    print(f"📡 مجموع منابع جمع‌آوری شده: {len(all_sources)}")
     if not all_sources:
-        print("❌ هیچ منبعی یافت نشد. لطفاً فایل sources.json را بررسی کنید.")
+        print("❌ هیچ منبعی یافت نشد.")
         with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f: json.dump({'xray': [], 'singbox': []}, f)
         return
     
     print("\n🚚 در حال دانلود و استخراج کانفیگ‌ها...")
     raw_configs = set()
-    
     with ThreadPoolExecutor(max_workers=25) as executor:
-        future_to_url = {executor.submit(fetch_and_parse_url, url): url for url in all_sources}
-        for future in as_completed(future_to_url):
-            url = future_to_url[future]
-            try:
-                result = future.result()
-                raw_configs.update(result)
-            except Exception as e:
-                print(f"   - خطا در پردازش {url[:50]}: {str(e)[:30]}")
-    
-    print(f"\n📦 {len(raw_configs)} کانفیگ خام منحصر به فرد استخراج شد.")
-
+        for result in executor.map(fetch_and_parse_url, all_sources):
+            raw_configs.update(result)
+    print(f"📦 {len(raw_configs)} کانفیگ خام منحصر به فرد استخراج شد.")
     if not raw_configs:
-        print("❌ هیچ کانفیگی یافت نشد. بررسی منابع یا فرمت‌های جدید لازم است.")
+        print("❌ هیچ کانفیگی یافت نشد.")
         with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f: json.dump({'xray': [], 'singbox': []}, f)
         return
 
     print("\n🔬 در حال اعتبارسنجی و دسته‌بندی...")
     categorized_configs = validate_and_categorize_configs(raw_configs)
     xray_compatible_set = categorized_configs['xray']
-    singbox_compatible_set = categorized_configs['singbox_only']
-    all_unique_configs = list(xray_compatible_set.union(singbox_compatible_set))
+    singbox_only_set = categorized_configs['singbox_only']
+    print(f"✅ دسته‌بندی: {len(xray_compatible_set)} کانفیگ Xray | {len(singbox_only_set)} کانفیگ فقط Sing-box")
     
-    print(f"✅ دسته‌بندی: {len(xray_compatible_set)} کانفیگ Xray | {len(singbox_compatible_set)} کانفیگ فقط Sing-box")
-    
-    configs_to_test = all_unique_configs
-    if len(all_unique_configs) > MAX_CONFIGS_TO_TEST:
-        print(f"⚠️ تعداد کل کانفیگ‌ها ({len(all_unique_configs)}) زیاد است. {MAX_CONFIGS_TO_TEST} عدد برای تست انتخاب می‌شود.")
-        configs_to_test = all_unique_configs[:MAX_CONFIGS_TO_TEST]
-
-    final_xray = []
-    final_singbox = []
+    final_xray, final_singbox = [], []
 
     if use_speed_test:
+        all_unique_configs = list(xray_compatible_set.union(singbox_only_set))
+        configs_to_test = all_unique_configs[:MAX_CONFIGS_TO_TEST]
         print(f"\n🏃‍♂️ در حال تست سرعت {len(configs_to_test)} کانفیگ...")
+        
         fast_configs_results = []
         with ThreadPoolExecutor(max_workers=20) as executor:
-            future_to_config = {executor.submit(test_config_via_api, cfg): cfg for cfg in configs_to_test}
-            completed = 0
-            for future in as_completed(future_to_config):
-                completed += 1
-                if completed % 100 == 0:
-                    print(f"   - پیشرفت: {completed}/{len(configs_to_test)} تست شد")
-                try:
-                    result = future.result()
-                    if result['ping'] < MAX_PING_THRESHOLD:
-                        fast_configs_results.append(result)
-                except Exception: continue
+            for result in executor.map(test_config_via_api, configs_to_test):
+                if result['ping'] < MAX_PING_THRESHOLD:
+                    fast_configs_results.append(result)
 
         print(f"⚡ {len(fast_configs_results)} کانفیگ سریع (زیر {MAX_PING_THRESHOLD}ms) یافت شد.")
+        fast_configs_results.sort(key=lambda x: x['ping'])
         
-        # --- منطق اصلاح شده و تفکیک شده ---
-        if not fast_configs_results:
-            print("⚠️ هیچ کانفیگ سریعی یافت نشد. از کانفیگ‌های تست نشده استفاده می‌شود.")
-            final_xray = list(xray_compatible_set)[:TARGET_CONFIGS_PER_CORE]
-            final_singbox = list(singbox_compatible_set)
-            remaining_needed = TARGET_CONFIGS_PER_CORE - len(final_singbox)
-            if remaining_needed > 0:
-                final_singbox.extend(list(xray_compatible_set)[:remaining_needed])
-            final_singbox = final_singbox[:TARGET_CONFIGS_PER_CORE]
-        else:
-            fast_configs_results.sort(key=lambda x: x['ping'])
-            fast_xray_compatible = [res['config_str'] for res in fast_configs_results if res['config_str'] in xray_compatible_set]
-            fast_singbox_only = [res['config_str'] for res in fast_configs_results if res['config_str'] in singbox_compatible_set]
-            final_xray = fast_xray_compatible[:TARGET_CONFIGS_PER_CORE]
-            final_singbox = fast_singbox_only
-            remaining_needed = TARGET_CONFIGS_PER_CORE - len(final_singbox)
-            if remaining_needed > 0:
-                final_singbox.extend(fast_xray_compatible[:remaining_needed])
-            final_singbox = final_singbox[:TARGET_CONFIGS_PER_CORE]
-    else:
-        # --- منطق اصلاح شده بدون تست سرعت ---
-        print(f"\n📝 انتخاب کانفیگ‌ها بدون تست سرعت...")
-        final_xray = list(xray_compatible_set)[:TARGET_CONFIGS_PER_CORE]
-        final_singbox = list(singbox_compatible_set)
+        fast_xray_compatible = [res['config_str'] for res in fast_configs_results if res['config_str'] in xray_compatible_set]
+        fast_singbox_only = [res['config_str'] for res in fast_configs_results if res['config_str'] in singbox_only_set]
+
+        final_xray = fast_xray_compatible[:TARGET_CONFIGS_PER_CORE]
+        
+        final_singbox = fast_singbox_only
         remaining_needed = TARGET_CONFIGS_PER_CORE - len(final_singbox)
         if remaining_needed > 0:
-            final_singbox.extend(list(xray_compatible_set)[:remaining_needed])
+            final_singbox.extend(fast_xray_compatible[len(final_xray):len(final_xray) + remaining_needed])
+        final_singbox = final_singbox[:TARGET_CONFIGS_PER_CORE]
+
+    else:
+        print(f"\n📝 انتخاب کانفیگ‌ها بدون تست سرعت...")
+        final_xray = list(xray_compatible_set)[:TARGET_CONFIGS_PER_CORE]
+        
+        final_singbox = list(singbox_only_set)
+        remaining_needed = TARGET_CONFIGS_PER_CORE - len(final_singbox)
+        if remaining_needed > 0:
+            final_singbox.extend(list(xray_compatible_set)[len(final_xray):len(final_xray) + remaining_needed])
         final_singbox = final_singbox[:TARGET_CONFIGS_PER_CORE]
 
     print("\n💾 در حال تولید فایل‌های خروجی نهایی...")
     output_for_frontend = {'xray': final_xray, 'singbox': final_singbox, 'timestamp': int(time.time()), 'total_found': len(raw_configs), 'speed_tested': use_speed_test}
-    with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
-        json.dump(output_for_frontend, f, ensure_ascii=False, indent=2)
+    with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f: json.dump(output_for_frontend, f, ensure_ascii=False, indent=2)
     print(f"✅ فایل '{OUTPUT_JSON_FILE}' با موفقیت ساخته شد.")
     
+    clash_content = None
     if final_xray:
         clash_content = generate_clash_subscription(final_xray)
-        if clash_content:
-            with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f:
-                f.write(clash_content)
-            print(f"✅ فایل '{OUTPUT_CLASH_FILE}' با موفقیت ساخته شد.")
-        else:
-            print(f"⚠️ نتوانست فایل Clash معتبری تولید کند.")
-    else:
-        print(f"⚠️ هیچ کانفیگ Xray برای تولید فایل Clash یافت نشد.")
+    if not clash_content and xray_compatible_set:
+        print("⚠️ هیچ کانفیگ سریعی برای کلش یافت نشد. تلاش با کانفیگ‌های تست نشده...")
+        clash_content = generate_clash_subscription(list(xray_compatible_set)[:50])
 
+    if clash_content:
+        with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f: f.write(clash_content)
+        print(f"✅ فایل '{OUTPUT_CLASH_FILE}' با موفقیت ساخته شد.")
+    else:
+        print(f"❌ هیچ کانفیگ سازگار با کلش یافت نشد.")
+    
     elapsed_time = time.time() - start_time
     print("\n🎉 فرآیند با موفقیت تکمیل شد!")
     print("="*50)
-    print("📊 خلاصه نتایج:")
-    print(f"   - منابع پردازش شده: {len(all_sources)}")
-    print(f"   - کانفیگ خام یافت شده: {len(raw_configs)}")
-    print(f"   - Xray کانفیگ نهایی: {len(final_xray)}")
-    print(f"   - Sing-box کانفیگ نهایی: {len(final_singbox)}")
-    print(f"   - تست سرعت: {'فعال' if use_speed_test else 'غیرفعال'}")
-    print(f"   - مدت زمان اجرا: {elapsed_time:.2f} ثانیه")
+    print(f"📊 خلاصه نتایج: | Xray: {len(final_xray)} | Sing-box: {len(final_singbox)} | زمان: {elapsed_time:.2f} ثانیه")
     print("="*50)
 
 if __name__ == "__main__":
