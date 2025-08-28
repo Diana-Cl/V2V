@@ -57,10 +57,7 @@
             gap: 10px;
         }
         .toggle-icon {
-            content: '';
-            display: inline-block;
-            width: 6px;
-            height: 6px;
+            content: ''; display: inline-block; width: 6px; height: 6px;
             border-bottom: 2px solid var(--text-color);
             border-right: 2px solid var(--text-color);
             transform: rotate(45deg);
@@ -79,7 +76,6 @@
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.8em; }
         .ping { font-weight: bold; font-size: 0.85em; }
-        .ping-api-indicator { font-size: 0.8em; opacity: 0.7; }
         .copy-button-container { display: flex; gap: 6px; }
         .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
         .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; flex-shrink: 0; }
@@ -118,7 +114,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
-        const VERCEL_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy';
         const AUTO_SELECT_COUNT = 20;
         const DATA_SOURCES = [
             'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json',
@@ -130,7 +125,6 @@
             const baseSources = DATA_SOURCES.map(url => url.substring(0, url.lastIndexOf('/')));
             for (const baseUrl of baseSources) {
                 try {
-                    console.log(`Attempting to fetch from source: ${baseUrl}`);
                     const versionResponse = await fetch(`${baseUrl}/cache_version.txt`, { cache: 'no-store' });
                     if (!versionResponse.ok) throw new Error('cache_version.txt not found.');
                     const version = (await versionResponse.text()).trim();
@@ -138,8 +132,7 @@
                     if (!isNaN(unixTimestamp)) {
                         const date = new Date(unixTimestamp * 1000);
                         const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Tehran' };
-                        const formattedDate = date.toLocaleString('fa-IR', options);
-                        document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${formattedDate}`;
+                        document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${date.toLocaleString('fa-IR', options)}`;
                     } else {
                         document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${version}`;
                     }
@@ -158,7 +151,7 @@
                 renderCore('xray', data.xray || []);
                 renderCore('singbox', data.singbox || []);
             } catch (error) {
-                const errorMsg = `<div class="alert">❌ خطا در بارگذاری فایل از تمام آینه‌ها. لطفاً بعداً دوباره تلاش کنید.</div>`;
+                const errorMsg = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره تلاش کنید.</div>`;
                 document.getElementById('status-bar').textContent = '❌ بارگذاری ناموفق';
                 document.getElementById('xray-content-wrapper').innerHTML = errorMsg;
                 document.getElementById('singbox-content-wrapper').innerHTML = errorMsg;
@@ -170,9 +163,9 @@
             container.innerHTML = '';
             const headerControls = document.createElement('div');
             if (core === 'xray') {
-                headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت از مرورگر شما</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div><div class="action-group"><h4 class="action-group-title">فایل / Clash Meta</h4><div class="action-buttons"><button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button><button class="action-button" onclick="generateClashConfig('${core}', 'download')">دانلود فایل شخصی</button></div></div>`;
+                headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت واقعی از شبکه شما</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div><div class="action-group"><h4 class="action-group-title">فایل / Clash Meta</h4><div class="action-buttons"><button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button><button class="action-button" onclick="generateClashConfig('${core}', 'download')">دانلود فایل شخصی</button></div></div>`;
             } else {
-                headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت از مرورگر شما</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div>`;
+                headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت واقعی از شبکه شما</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div>`;
             }
             container.appendChild(headerControls);
             if (configObjects.length === 0) {
@@ -183,7 +176,7 @@
                 const configStr = item;
                 const match = configStr.match(/^(\w+):\/\//);
                 if (match && match[1]) {
-                    const protocol = match[1];
+                    const protocol = match[1].toLowerCase();
                     if (!acc[protocol]) acc[protocol] = [];
                     acc[protocol].push(item);
                 }
@@ -233,7 +226,7 @@
         function toggleSelectAll(event, select, groupId) { event.stopPropagation(); document.querySelectorAll(`#${groupId} .config-checkbox`).forEach(cb => cb.checked = select); }
         function showQrCode(text) { const modal = document.getElementById('qr-code-modal'); modal.style.display = 'flex'; new QRious({ element: modal.querySelector('canvas'), value: text, size: 250, padding: 10 }); }
         function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
-        function copyToClipboard(text, msg = 'کپی شد!') {  navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی در کلیپ‌بود ناموفق بود.\n' + err));}
+        function copyToClipboard(text, msg = 'کپی شد!') {  navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی ناموفق بود.\n' + err));}
         
         async function runSpeedTest(core) {
             const testButton = document.querySelector(`#${core}-section .test-button`);
@@ -256,154 +249,61 @@
                     pingValue = parseInt(pingResult);
                     pingText = `${pingValue}ms`;
                     pingColor = 'var(--ping-good)';
-                    if (pingValue > 500) pingColor = 'var(--ping-medium)';
-                    if (pingValue > 1000) pingColor = 'var(--ping-bad)';
+                    if (pingValue > 350) pingColor = 'var(--ping-medium)';
+                    if (pingValue > 800) pingColor = 'var(--ping-bad)';
                 }
-
-                if (configStr.startsWith('ss://')) {
-                    pingText += ' <span class="ping-api-indicator">(API)</span>';
-                }
-
                 item.dataset.newPing = pingValue;
                 pingEl.innerHTML = `پینگ شما: <strong style="color:${pingColor};">${pingText}</strong>`;
             });
             
             await Promise.all(testPromises);
             sortConfigsByPing(core);
-            testButton.disabled = false; testButton.textContent = '🚀 تست مجدد از مرورگر شما';
+            testButton.disabled = false; testButton.textContent = '🚀 تست مجدد سرعت واقعی';
         }
 
-        // --- START: New Hybrid Ping Test Logic ---
+        // --- START: Smart Frontend Ping Test Engine ---
 
-        function testApiLatency(configStr) {
-            return new Promise(async (resolve) => {
-                try {
-                    let details = null;
-                    if (configStr.startsWith('vmess://')) {
-                        const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
-                        details = { host: decoded.add, port: parseInt(decoded.port) };
-                    } else {
-                        const url = new URL(configStr);
-                        if (url.hostname) {
-                           details = { host: url.hostname, port: parseInt(url.port || 443) };
-                        }
-                    }
-                    if (!details) return resolve('Error');
-
-                    const response = await fetch(VERCEL_API_ENDPOINT, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify(details)
-                    });
-                    if (!response.ok) return resolve('Error');
-                    const data = await response.json();
-                    resolve(data.ping < 9999 ? `${data.ping}` : 'Timeout');
-                } catch (e) { 
-                    resolve('Error'); 
-                }
-            });
-        }
-        
-        function testHttpLatency(url, timeout = 4000) {
-            return new Promise(resolve => {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => {
-                    controller.abort();
-                    resolve('Timeout');
-                }, timeout);
-        
-                const startTime = performance.now();
-                fetch(url, { method: 'HEAD', signal: controller.signal, mode: 'no-cors' })
-                    .then(() => {
-                        const endTime = performance.now();
-                        clearTimeout(timeoutId);
-                        resolve(Math.round(endTime - startTime));
-                    })
-                    .catch(() => {
-                        clearTimeout(timeoutId);
-                        // A fetch error (like CORS) can still mean the server is reachable.
-                        // We will try one more time with GET, as HEAD can be blocked.
-                        const startTime2 = performance.now();
-                        const controller2 = new AbortController();
-                        const timeoutId2 = setTimeout(() => { controller2.abort(); resolve('Timeout'); }, timeout);
-                        fetch(url, { signal: controller2.signal, mode: 'no-cors' })
-                           .then(() => {
-                                const endTime2 = performance.now();
-                                clearTimeout(timeoutId2);
-                                resolve(Math.round(endTime2 - startTime2));
-                           })
-                           .catch(() => {
-                                clearTimeout(timeoutId2);
-                                resolve('Error');
-                           });
-                    });
-            });
-        }
-
-        function testWebSocketLatency(url, timeout = 4000) {
+        function testWebSocketLatency(url, timeout = 3000) {
             return new Promise(resolve => {
                 const startTime = performance.now();
                 let ws;
-                try {
-                    ws = new WebSocket(url);
-                } catch (e) {
-                    return resolve('Error');
-                }
-
-                const timeoutId = setTimeout(() => {
-                    if (ws) ws.close();
-                    resolve('Timeout');
-                }, timeout);
-        
-                ws.onopen = () => {
-                    const endTime = performance.now();
-                    clearTimeout(timeoutId);
-                    ws.close();
-                    resolve(Math.round(endTime - startTime));
-                };
-        
-                ws.onerror = () => {
-                    clearTimeout(timeoutId);
-                    resolve('Error');
-                };
+                try { ws = new WebSocket(url); } catch (e) { return resolve('Error'); }
+                const timeoutId = setTimeout(() => { if (ws) ws.close(); resolve('Timeout'); }, timeout);
+                ws.onopen = () => { clearTimeout(timeoutId); ws.close(); resolve(Math.round(performance.now() - startTime)); };
+                ws.onerror = () => { clearTimeout(timeoutId); resolve('Error'); };
             });
         }
 
         function testConfigLatency(configStr) {
             try {
-                const url = new URL(configStr);
-                const params = new URLSearchParams(url.search);
-
-                if (params.get('type') === 'ws' || params.get('network') === 'ws') {
-                    const wsUrl = `wss://${url.hostname}:${url.port || 443}`;
-                    return testWebSocketLatency(wsUrl);
+                // --- WebSocket Test ---
+                if (configStr.startsWith('vmess://')) {
+                    const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
+                    if (decoded.net === 'ws') {
+                        const wsProtocol = decoded.tls === 'tls' ? 'wss' : 'ws';
+                        const wsUrl = `${wsProtocol}://${decoded.add}:${decoded.port}${decoded.path || '/'}`;
+                        return testWebSocketLatency(wsUrl);
+                    }
+                } else {
+                    const url = new URL(configStr);
+                    const params = new URLSearchParams(url.search);
+                    if (params.get('type') === 'ws' || params.get('network') === 'ws') {
+                        const wsProtocol = params.get('security') === 'tls' ? 'wss' : 'ws';
+                        const wsUrl = `${wsProtocol}://${url.hostname}:${url.port || (wsProtocol === 'wss' ? 443 : 80)}${params.get('path') || '/'}`;
+                        return testWebSocketLatency(wsUrl);
+                    }
                 }
                 
-                if (url.protocol === 'vless:' || url.protocol === 'trojan:') {
-                    const httpUrl = `https://${url.hostname}:${url.port || 443}`;
-                    return testHttpLatency(httpUrl);
-                }
-                
-                // Fallback for ss, vmess (non-ws), and others
-                return testApiLatency(configStr);
+                // --- For other protocols like SS or non-WS VLESS/Trojan, direct test is not feasible ---
+                return Promise.resolve('N/A');
 
             } catch (e) {
-                // Handle VMESS protocol which is not a valid URL
-                if (configStr.startsWith('vmess://')) {
-                    try {
-                        const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
-                        if(decoded.net === 'ws') {
-                            const wsUrl = `${decoded.tls === 'tls' ? 'wss' : 'ws'}://${decoded.add}:${decoded.port}`;
-                            return testWebSocketLatency(wsUrl);
-                        }
-                    } catch { /* fall through to API */ }
-                }
-                // Default fallback
-                return testApiLatency(configStr);
+                console.error("Ping test error:", e);
+                return Promise.resolve('Error');
             }
         }
 
-        // --- END: New Hybrid Ping Test Logic ---
+        // --- END: Smart Frontend Ping Test Engine ---
         
         function sortConfigsByPing(core) { document.querySelectorAll(`#${core}-content-wrapper .protocol-group`).forEach(group => { const list = group.querySelector('.config-list'); const items = Array.from(list.children); items.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999)); items.forEach(item => list.appendChild(item)); }); }
         
@@ -430,22 +330,17 @@
 
         function generateClashConfig(core, action) {
             let configs = getSelectedConfigs(core);
-
             if (configs.length === 0) {
                 const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
                 const testedItems = allItems.filter(item => item.dataset.newPing && parseInt(item.dataset.newPing, 10) < 9999);
-
                 if (testedItems.length === 0) {
                     alert('خطا: برای ساخت فایل خودکار، ابتدا باید حداقل یک بار تست سرعت را اجرا کنید.');
                     return;
                 }
-                
                 alert(`هیچ کانفیگی انتخاب نشده است. فایل کلش به صورت خودکار با ${Math.min(testedItems.length, AUTO_SELECT_COUNT)} کانفیگ برتر (بر اساس آخرین تست سرعت) ساخته می‌شود.`);
-                
                 testedItems.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
                 configs = testedItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
             }
-            
             const proxies = configs.map(configStr => { 
                 try { 
                     const url = new URL(configStr); 
@@ -460,15 +355,12 @@
                     return proxy; 
                 } catch { return null; } 
             }).filter(p => p); 
-            
             if (proxies.length === 0) {
-                alert('کانفیگ‌های انتخاب شده (یا برتر) با کلش سازگار نیستند یا مشکلی در پردازش آنها وجود دارد.');
+                alert('کانفیگ‌های انتخاب شده (یا برتر) با کلش سازگار نیستند.');
                 return;
             }
-            
             const clashConfig = { proxies, 'proxy-groups': [{'name': 'V2V-Personal', 'type': 'select', 'proxies': proxies.map(p => p.name)}], 'rules': ['MATCH,V2V-Personal'] }; 
             const yamlConfig = jsyaml.dump(clashConfig, { indent: 2, sortKeys: false }); 
-            
             if (action === 'download') { 
                 const blob = new Blob([yamlConfig], { type: 'text/yaml' }); 
                 const link = document.createElement('a'); 
