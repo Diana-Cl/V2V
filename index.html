@@ -83,8 +83,9 @@
         .bottom-links a { color: var(--text-color); text-decoration: none; font-size: 0.9em; }
         .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
         #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
-        .qr-code-content { background-color: var(--secondary-bg); padding: 20px; border-radius: 10px; position: relative; }
-        .close-button { position: absolute; top: 10px; right: 15px; font-size: 30px; cursor: pointer; }
+        .qr-code-content { background-color: white; padding: 20px; border-radius: 10px; position: relative; }
+        .qr-code-content #qr-code-container { padding: 10px; }
+        .close-button { color: #121212; position: absolute; top: 10px; right: 15px; font-size: 30px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -110,9 +111,14 @@
             <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank">ArvanCloud</a>
         </div>
     </div>
-    <div id="qr-code-modal"><div class="qr-code-content"><span class="close-button" onclick="closeModal()">&times;</span><canvas id="qr-code-canvas"></canvas></div></div>
+    <div id="qr-code-modal">
+        <div class="qr-code-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <div id="qr-code-container"></div>
+        </div>
+    </div>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
         const AUTO_SELECT_COUNT = 20;
@@ -227,7 +233,22 @@
         
         function toggleGroup(groupId) { document.getElementById(groupId)?.parentNode.classList.toggle('open'); }
         function toggleSelectAll(event, select, groupId) { event.stopPropagation(); document.querySelectorAll(`#${groupId} .config-checkbox`).forEach(cb => cb.checked = select); }
-        function showQrCode(text) { const modal = document.getElementById('qr-code-modal'); modal.style.display = 'flex'; new QRious({ element: modal.querySelector('canvas'), value: text, size: 250, padding: 10 }); }
+        
+        function showQrCode(text) {
+            const modal = document.getElementById('qr-code-modal');
+            const container = document.getElementById('qr-code-container');
+            container.innerHTML = ''; // Clear previous QR code
+            new QRCode(container, {
+                text: text,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            modal.style.display = 'flex';
+        }
+        
         function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
         function copyToClipboard(text, msg = 'کپی شد!') {  navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی ناموفق بود.\n' + err));}
         
