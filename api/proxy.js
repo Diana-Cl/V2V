@@ -80,23 +80,34 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Only POST requests are allowed' });
     }
 
-    const { config } = req.body;
+    const body = req.body;
+    let host, port;
 
-    if (!config || typeof config !== 'string') {
-        return res.status(400).json({ message: 'Config string is required.' });
+    // --- LOGIC TO HANDLE BOTH INPUT FORMATS ---
+    // 1. Check for Frontend format: { config: "vless://..." }
+    if (body.config && typeof body.config === 'string') {
+        const serverInfo = parseConfig(body.config);
+        if (serverInfo) {
+            host = serverInfo.host;
+            port = serverInfo.port;
+        }
+    // 2. Check for Backend format: { host: "...", port: ... }
+    } else if (body.host && typeof body.host === 'string' && body.port && typeof body.port === 'number') {
+        host = body.host;
+        port = body.port;
     }
 
-    const serverInfo = parseConfig(config);
-
-    if (!serverInfo || !serverInfo.host || !serverInfo.port) {
-        return res.status(400).json({ 
-            ping: 9999, 
-            error: 'Could not parse host/port from config' 
+    // --- VALIDATION & ERROR HANDLING ---
+    if (!host || !port) {
+        return res.status(400).json({
+            ping: 9999,
+            error: 'Invalid input. Provide either a "config" string or "host" and "port".'
         });
     }
 
+    // --- EXECUTE PING ---
     try {
-        const latency = await getTcpPing(serverInfo.host, serverInfo.port);
+        const latency = await getTcpPing(host, port);
         res.status(200).json({ ping: latency });
     } catch (error) {
         res.status(200).json({ 
