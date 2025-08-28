@@ -1,30 +1,8 @@
-```javascript
-// File: ping-api/proxy.js
 const net = require('net');
+const http = require('http');
 
-module.exports = (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-
-    if (req.method === 'OPTIONS') {
-        return res.status(204).send('');
-    }
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Only POST requests are allowed' });
-    }
-
-    const { host, port } = req.body;
-    if (!host || !port) {
-        return res.status(400).json({ message: 'Host and port are required' });
-    }
-
-    const portNum = parseInt(port, 10);
-    if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
-        return res.status(400).json({ message: 'Invalid port number' });
-    }
-
+// این تابع پینگ را انجام می‌دهد
+function checkPing(host, port, callback) {
     const startTime = Date.now();
     const socket = new net.Socket();
     socket.setTimeout(10000);
@@ -32,19 +10,61 @@ module.exports = (req, res) => {
     socket.on('connect', () => {
         const ping = Date.now() - startTime;
         socket.destroy();
-        res.status(200).json({ host, port: portNum, ping });
+        callback(null, { host, port, ping });
     });
-
     socket.on('error', (err) => {
         socket.destroy();
-        res.status(200).json({ host, port: portNum, ping: 9999, error: err.message });
+        callback(err, { host, port, ping: 9999, error: err.message });
     });
-
     socket.on('timeout', () => {
         socket.destroy();
-        res.status(200).json({ host, port: portNum, ping: 9999, error: 'Connection timeout' });
+        callback(new Error('Timeout'), { host, port, ping: 9999, error: 'Connection timeout' });
     });
+    socket.connect(port, host);
+}
 
-    socket.connect(portNum, host);
-};
-```
+// این بخش سرور را می‌سازد و به درخواست‌ها پاسخ می‌دهد
+const server = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+    if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+
+    if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', () => {
+            try {
+                const { host, port } = JSON.parse(body);
+                if (!host || !port) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ message: 'Host and port are required' }));
+                    return;
+                }
+                checkPing(host, port, (err, result) => {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify(result));
+                });
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Invalid JSON body' }));
+            }
+        });
+    } else {
+        res.writeHead(405, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Only POST requests are allowed' }));
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Ping server listening on port ${PORT}`);
+});
