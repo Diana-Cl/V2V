@@ -172,32 +172,51 @@ def generate_clash_subscription(configs: list) -> str | None:
     return yaml.dump({'proxies': proxies}, allow_unicode=True, sort_keys=False, indent=2)
 
 # =================================================================================
-# === DIRECT TCP PING TEST (تست پینگ مستقیم) ===
+# === DIRECT TCP PING TEST (تست پینگ مستقیم) [IMPROVED] ===
 # =================================================================================
 
 def test_config_direct_tcp(config_str: str) -> dict:
-    """تست پینگ یک کانفیگ با اتصال TCP مستقیم از طریق ماژول socket."""
+    """
+    تست پینگ بهبودیافته با پشتیبانی از IPv4/IPv6 و تلاش برای اتصال به اولین آدرس در دسترس.
+    این تابع پینگ یک کانفیگ را با اتصال مستقیم TCP از طریق ماژول socket اندازه‌گیری می‌کند.
+    """
+    host, port = None, None
     try:
+        # استخراج هاست و پورت از انواع کانفیگ‌ها
         parsed = urlparse(config_str)
-        host, port = parsed.hostname, parsed.port
         if parsed.scheme == 'vmess':
             decoded = json.loads(_decode_padded_b64(config_str.replace("vmess://", "")))
             host, port = decoded.get('add'), int(decoded.get('port', 443))
-        if not host: return {'config_str': config_str, 'ping': 9999}
+        else:
+            host, port = parsed.hostname, parsed.port
+
+        if not host: return {'config_str': config_str, 'ping': 9999, 'error': 'Host not found'}
         if not port: port = {'ss': 8443, 'trojan': 443, 'vless': 443}.get(parsed.scheme, 443)
+
+        # دریافت تمام آدرس‌های ممکن (IPv4 و IPv6)
+        addr_infos = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+
+        # تلاش برای اتصال به هر آدرس تا زمان موفقیت
+        for family, socktype, proto, _, sockaddr in addr_infos:
+            try:
+                with socket.socket(family, socktype, proto) as s:
+                    s.settimeout(TCP_TEST_TIMEOUT)
+                    start_time = time.monotonic()
+                    s.connect(sockaddr)
+                    end_time = time.monotonic()
+                    ping = int((end_time - start_time) * 1000)
+                    # با اولین اتصال موفق، نتیجه را برمی‌گردانیم
+                    return {'config_str': config_str, 'ping': ping}
+            except (socket.error, socket.timeout):
+                # اگر این آدرس کار نکرد، به سراغ آدرس بعدی می‌رویم
+                continue
         
-        addr_info = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
-        sock_addr = addr_info[0][4]
-        
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(TCP_TEST_TIMEOUT)
-            start_time = time.monotonic()
-            s.connect(sock_addr)
-            end_time = time.monotonic()
-            ping = int((end_time - start_time) * 1000)
-            return {'config_str': config_str, 'ping': ping}
-    except Exception:
-        return {'config_str': config_str, 'ping': 9999}
+        # اگر هیچ‌کدام از آدرس‌ها موفقیت‌آمیز نبودند
+        return {'config_str': config_str, 'ping': 9999, 'error': 'All connection attempts failed'}
+
+    except Exception as e:
+        return {'config_str': config_str, 'ping': 9999, 'error': str(e)}
+
 
 # =================================================================================
 # === MAIN EXECUTION (اجرای اصلی) ===
@@ -233,8 +252,9 @@ def main():
     
     fast_configs_results = []
     with ThreadPoolExecutor(max_workers=50) as executor:
+        # تغییر اینجا: به جای test_config_direct_tcp از تابع بهبودیافته استفاده می‌شود
         for result in executor.map(test_config_direct_tcp, configs_to_test):
-            if result['ping'] < MAX_PING_THRESHOLD:
+            if result.get('ping', 9999) < MAX_PING_THRESHOLD:
                 fast_configs_results.append(result)
 
     print(f"⚡ {len(fast_configs_results)} کانفیگ سریع (زیر {MAX_PING_THRESHOLD}ms) یافت شد.")
@@ -306,4 +326,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
