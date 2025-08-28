@@ -51,6 +51,24 @@
         .action-button { background-color: #333; border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; flex-grow: 1; color: var(--text-color); }
         .protocol-group { border-top: 1px solid var(--border-color); }
         .protocol-header { background-color: transparent; padding: 10px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .protocol-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toggle-icon {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-bottom: 2px solid var(--text-color);
+            border-right: 2px solid var(--text-color);
+            transform: rotate(45deg);
+            transition: transform 0.3s ease-in-out;
+        }
+        .protocol-group.open .toggle-icon {
+            transform: rotate(-135deg);
+        }
         .protocol-controls { display: flex; align-items: center; gap: 8px; }
         .select-all-btn { background-color: #444; border: 1px solid #666; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 0.75em; color: var(--text-color); }
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.3s ease-out; overflow: hidden; }
@@ -61,6 +79,7 @@
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.8em; }
         .ping { font-weight: bold; font-size: 0.85em; }
+        .ping-api-indicator { font-size: 0.8em; opacity: 0.7; }
         .copy-button-container { display: flex; gap: 6px; }
         .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
         .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; flex-shrink: 0; }
@@ -69,28 +88,6 @@
         #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
         .qr-code-content { background-color: var(--secondary-bg); padding: 20px; border-radius: 10px; position: relative; }
         .close-button { position: absolute; top: 10px; right: 15px; font-size: 30px; cursor: pointer; }
-
-        /* --- استایل‌های جدید برای آیکون باز/بسته شدن --- */
-        .protocol-title-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px; /* فاصله بین عنوان و آیکون */
-        }
-        .toggle-icon {
-            content: '';
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-bottom: 2px solid var(--text-color);
-            border-right: 2px solid var(--text-color);
-            transform: rotate(45deg); /* فلش رو به پایین */
-            transition: transform 0.3s ease-in-out;
-        }
-        .protocol-group.open .toggle-icon {
-            transform: rotate(-135deg); /* فلش رو به بالا */
-        }
-        /* --- پایان استایل‌های جدید --- */
-
     </style>
 </head>
 <body>
@@ -122,7 +119,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
         const VERCEL_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy';
-        const AUTO_SELECT_COUNT = 20; // تعداد کانفیگ برای انتخاب خودکار در فایل کلش
+        const AUTO_SELECT_COUNT = 20;
         const DATA_SOURCES = [
             'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json',
             'https://smbcryp.github.io/V2V/all_live_configs.json',
@@ -131,37 +128,26 @@
         
         async function fetchDataWithCacheBusting() {
             const baseSources = DATA_SOURCES.map(url => url.substring(0, url.lastIndexOf('/')));
-
             for (const baseUrl of baseSources) {
                 try {
                     console.log(`Attempting to fetch from source: ${baseUrl}`);
-                    
                     const versionResponse = await fetch(`${baseUrl}/cache_version.txt`, { cache: 'no-store' });
                     if (!versionResponse.ok) throw new Error('cache_version.txt not found.');
                     const version = (await versionResponse.text()).trim();
-                    
                     const unixTimestamp = parseInt(version, 10);
                     if (!isNaN(unixTimestamp)) {
                         const date = new Date(unixTimestamp * 1000);
-                        const options = {
-                            year: 'numeric', month: 'long', day: 'numeric',
-                            hour: '2-digit', minute: '2-digit', hour12: false,
-                            timeZone: 'Asia/Tehran'
-                        };
+                        const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Tehran' };
                         const formattedDate = date.toLocaleString('fa-IR', options);
                         document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${formattedDate}`;
                     } else {
                         document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${version}`;
                     }
-                    
                     const uniqueUrl = `${baseUrl}/all_live_configs.json?v=${version}`;
                     const dataResponse = await fetch(uniqueUrl, { cache: 'no-store' });
                     if (!dataResponse.ok) throw new Error('Main config file not found.');
-                    
                     return await dataResponse.json();
-                } catch (error) { 
-                    console.error(`Failed to fetch from source ${baseUrl}:`, error);
-                }
+                } catch (error) { console.error(`Failed to fetch from source ${baseUrl}:`, error); }
             }
             throw new Error('All data sources failed.');
         }
@@ -182,7 +168,6 @@
         function renderCore(core, configObjects) {
             const container = document.getElementById(`${core}-content-wrapper`);
             container.innerHTML = '';
-            
             const headerControls = document.createElement('div');
             if (core === 'xray') {
                 headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت از مرورگر شما</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div><div class="action-group"><h4 class="action-group-title">فایل / Clash Meta</h4><div class="action-buttons"><button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button><button class="action-button" onclick="generateClashConfig('${core}', 'download')">دانلود فایل شخصی</button></div></div>`;
@@ -190,15 +175,10 @@
                 headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت از مرورگر شما</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div>`;
             }
             container.appendChild(headerControls);
-
             if (configObjects.length === 0) {
-                container.appendChild(Object.assign(document.createElement('div'), {
-                    className: 'alert',
-                    innerHTML: '❌ هیچ کانفیگ سالمی در این دسته یافت نشد. منتظر آپدیت بعدی منابع بمانید.'
-                }));
+                container.appendChild(Object.assign(document.createElement('div'), { className: 'alert', innerHTML: '❌ هیچ کانفیگ سالمی در این دسته یافت نشد. منتظر آپدیت بعدی منابع بمانید.' }));
                 return;
             }
-            
             const groupedByProtocol = configObjects.reduce((acc, item) => {
                 const configStr = item;
                 const match = configStr.match(/^(\w+):\/\//);
@@ -209,13 +189,10 @@
                 }
                 return acc;
             }, {});
-
             for (const protocol in groupedByProtocol) {
                 const protocolGroupId = `${protocol}-${core}`;
                 const protocolGroup = document.createElement('div');
                 protocolGroup.className = 'protocol-group';
-                
-                // --- ویرایش برای اضافه کردن آیکون ---
                 protocolGroup.innerHTML = `
                     <div class="protocol-header" onclick="toggleGroup('${protocolGroupId}')">
                         <div class="protocol-title-wrapper">
@@ -228,16 +205,13 @@
                         </div>
                     </div>
                     <ul class="config-list" id="${protocolGroupId}"></ul>`;
-                
                 const configList = protocolGroup.querySelector('.config-list');
                 groupedByProtocol[protocol].forEach(configStr => {
                     const li = document.createElement('li');
                     li.className = 'config-item';
                     li.dataset.config = configStr;
-                    
                     try {
                         const serverName = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : new URL(configStr).hostname;
-                        
                         li.innerHTML = `
                             <input type="checkbox" class="config-checkbox">
                             <div class="config-details">
@@ -249,9 +223,7 @@
                                 <button class="copy-btn" onclick="showQrCode('${configStr}')">QR</button>
                             </div>`;
                         configList.appendChild(li);
-                    } catch(e) {
-                        console.error("Skipping malformed config:", configStr, e);
-                    }
+                    } catch(e) { console.error("Skipping malformed config:", configStr, e); }
                 });
                 container.appendChild(protocolGroup);
             }
@@ -272,10 +244,11 @@
             const testPromises = Array.from(items).map(async item => {
                 const pingEl = item.querySelector('.ping');
                 pingEl.textContent = 'درحال تست...';
-                const pingResult = await testConfigLatency(item.dataset.config);
+                const configStr = item.dataset.config;
+                const pingResult = await testConfigLatency(configStr);
                 
                 let pingValue, pingText, pingColor;
-                if (pingResult === 'Timeout' || pingResult === 'Error') {
+                if (pingResult === 'Timeout' || pingResult === 'Error' || pingResult === 'N/A') {
                     pingValue = 9999;
                     pingText = pingResult;
                     pingColor = 'var(--ping-bad)';
@@ -287,6 +260,10 @@
                     if (pingValue > 1000) pingColor = 'var(--ping-bad)';
                 }
 
+                if (configStr.startsWith('ss://')) {
+                    pingText += ' <span class="ping-api-indicator">(API)</span>';
+                }
+
                 item.dataset.newPing = pingValue;
                 pingEl.innerHTML = `پینگ شما: <strong style="color:${pingColor};">${pingText}</strong>`;
             });
@@ -296,10 +273,10 @@
             testButton.disabled = false; testButton.textContent = '🚀 تست مجدد از مرورگر شما';
         }
 
-        function testConfigLatency(configStr) {
-            return new Promise(async resolve => {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => { controller.abort(); resolve('Timeout'); }, 5000);
+        // --- START: New Hybrid Ping Test Logic ---
+
+        function testApiLatency(configStr) {
+            return new Promise(async (resolve) => {
                 try {
                     let details = null;
                     if (configStr.startsWith('vmess://')) {
@@ -312,17 +289,121 @@
                         }
                     }
                     if (!details) return resolve('Error');
-                    const response = await fetch(VERCEL_API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(details), signal: controller.signal });
+
+                    const response = await fetch(VERCEL_API_ENDPOINT, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify(details)
+                    });
                     if (!response.ok) return resolve('Error');
                     const data = await response.json();
-                    clearTimeout(timeoutId);
                     resolve(data.ping < 9999 ? `${data.ping}` : 'Timeout');
                 } catch (e) { 
-                    clearTimeout(timeoutId);
                     resolve('Error'); 
                 }
             });
         }
+        
+        function testHttpLatency(url, timeout = 4000) {
+            return new Promise(resolve => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    controller.abort();
+                    resolve('Timeout');
+                }, timeout);
+        
+                const startTime = performance.now();
+                fetch(url, { method: 'HEAD', signal: controller.signal, mode: 'no-cors' })
+                    .then(() => {
+                        const endTime = performance.now();
+                        clearTimeout(timeoutId);
+                        resolve(Math.round(endTime - startTime));
+                    })
+                    .catch(() => {
+                        clearTimeout(timeoutId);
+                        // A fetch error (like CORS) can still mean the server is reachable.
+                        // We will try one more time with GET, as HEAD can be blocked.
+                        const startTime2 = performance.now();
+                        const controller2 = new AbortController();
+                        const timeoutId2 = setTimeout(() => { controller2.abort(); resolve('Timeout'); }, timeout);
+                        fetch(url, { signal: controller2.signal, mode: 'no-cors' })
+                           .then(() => {
+                                const endTime2 = performance.now();
+                                clearTimeout(timeoutId2);
+                                resolve(Math.round(endTime2 - startTime2));
+                           })
+                           .catch(() => {
+                                clearTimeout(timeoutId2);
+                                resolve('Error');
+                           });
+                    });
+            });
+        }
+
+        function testWebSocketLatency(url, timeout = 4000) {
+            return new Promise(resolve => {
+                const startTime = performance.now();
+                let ws;
+                try {
+                    ws = new WebSocket(url);
+                } catch (e) {
+                    return resolve('Error');
+                }
+
+                const timeoutId = setTimeout(() => {
+                    if (ws) ws.close();
+                    resolve('Timeout');
+                }, timeout);
+        
+                ws.onopen = () => {
+                    const endTime = performance.now();
+                    clearTimeout(timeoutId);
+                    ws.close();
+                    resolve(Math.round(endTime - startTime));
+                };
+        
+                ws.onerror = () => {
+                    clearTimeout(timeoutId);
+                    resolve('Error');
+                };
+            });
+        }
+
+        function testConfigLatency(configStr) {
+            try {
+                const url = new URL(configStr);
+                const params = new URLSearchParams(url.search);
+
+                if (params.get('type') === 'ws' || params.get('network') === 'ws') {
+                    const wsUrl = `wss://${url.hostname}:${url.port || 443}`;
+                    return testWebSocketLatency(wsUrl);
+                }
+                
+                if (url.protocol === 'vless:' || url.protocol === 'trojan:') {
+                    const httpUrl = `https://${url.hostname}:${url.port || 443}`;
+                    return testHttpLatency(httpUrl);
+                }
+                
+                // Fallback for ss, vmess (non-ws), and others
+                return testApiLatency(configStr);
+
+            } catch (e) {
+                // Handle VMESS protocol which is not a valid URL
+                if (configStr.startsWith('vmess://')) {
+                    try {
+                        const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
+                        if(decoded.net === 'ws') {
+                            const wsUrl = `${decoded.tls === 'tls' ? 'wss' : 'ws'}://${decoded.add}:${decoded.port}`;
+                            return testWebSocketLatency(wsUrl);
+                        }
+                    } catch { /* fall through to API */ }
+                }
+                // Default fallback
+                return testApiLatency(configStr);
+            }
+        }
+
+        // --- END: New Hybrid Ping Test Logic ---
         
         function sortConfigsByPing(core) { document.querySelectorAll(`#${core}-content-wrapper .protocol-group`).forEach(group => { const list = group.querySelector('.config-list'); const items = Array.from(list.children); items.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999)); items.forEach(item => list.appendChild(item)); }); }
         
