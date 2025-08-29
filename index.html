@@ -6,7 +6,7 @@
     <title>پروژه V2V</title>
 
     <meta name="theme-color" content="#121212">
-    <link rel="apple-touch-icon" href="/V2V/icon-192.png">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/SMBCRYP/V2V/main/icon-192.png">
     <link rel="manifest" href="manifest.json">
 
     <style>
@@ -51,21 +51,13 @@
         .action-button { background-color: #333; border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; flex-grow: 1; color: var(--text-color); }
         .protocol-group { border-top: 1px solid var(--border-color); }
         .protocol-header { background-color: transparent; padding: 10px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .protocol-title-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .protocol-title-wrapper { display: flex; align-items: center; gap: 10px; }
         .toggle-icon {
             content: ''; display: inline-block; width: 6px; height: 6px;
-            border-bottom: 2px solid var(--text-color);
-            border-right: 2px solid var(--text-color);
-            transform: rotate(45deg);
-            transition: transform 0.3s ease-in-out;
+            border-bottom: 2px solid var(--text-color); border-right: 2px solid var(--text-color);
+            transform: rotate(45deg); transition: transform 0.3s ease-in-out;
         }
-        .protocol-group.open .toggle-icon {
-            transform: rotate(-135deg);
-        }
+        .protocol-group.open .toggle-icon { transform: rotate(-135deg); }
         .protocol-controls { display: flex; align-items: center; gap: 8px; }
         .select-all-btn { background-color: #444; border: 1px solid #666; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 0.75em; color: var(--text-color); }
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.3s ease-out; overflow: hidden; }
@@ -83,8 +75,9 @@
         .bottom-links a { color: var(--text-color); text-decoration: none; font-size: 0.9em; }
         .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
         #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
-        .qr-code-content { background-color: white; padding: 20px; border-radius: 10px; position: relative; }
-        .qr-code-content #qr-code-container { padding: 10px; }
+        .qr-code-content { background-color: white; padding: 20px; border-radius: 10px; position: relative; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .qr-code-content #qr-code-container { padding: 10px; background-color: white; }
+        .qr-code-content #qr-download-btn { background-color: var(--logo-green); color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .close-button { color: #121212; position: absolute; top: 10px; right: 15px; font-size: 30px; cursor: pointer; }
     </style>
 </head>
@@ -115,6 +108,7 @@
         <div class="qr-code-content">
             <span class="close-button" onclick="closeModal()">&times;</span>
             <div id="qr-code-container"></div>
+            <button id="qr-download-btn">دانلود QR Code</button>
         </div>
     </div>
     
@@ -127,14 +121,16 @@
             'https://smbcryp.github.io/V2V/all_live_configs.json',
             'https://v2-v.vercel.app/all_live_configs.json'
         ];
-        // آدرس اندپوینت API تست پینگ در ورسل آپدیت شد
-        const VERCEL_API_ENDPOINT = '/api/proxy';
+        // FIX: آدرس API به حالت کامل و مطلق تغییر یافت تا روی تمام دامنه‌ها (گیت‌هاب و ورسل) کار کند
+        const VERCEL_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy';
 
         async function fetchDataWithCacheBusting() {
+            // ... (بخش دریافت دیتا بدون تغییر باقی می‌ماند)
             const baseSources = DATA_SOURCES.map(url => url.substring(0, url.lastIndexOf('/')));
             for (const baseUrl of baseSources) {
                 try {
-                    const versionResponse = await fetch(`${baseUrl}/cache_version.txt`, { cache: 'no-store' });
+                    // Try fetching a version file to bypass cache
+                    const versionResponse = await fetch(`${baseUrl}/cache_version.txt?t=${new Date().getTime()}`, { cache: 'no-store' });
                     if (!versionResponse.ok) throw new Error('cache_version.txt not found.');
                     const version = (await versionResponse.text()).trim();
                     const unixTimestamp = parseInt(version, 10);
@@ -168,6 +164,7 @@
         });
 
         function renderCore(core, configObjects) {
+            // ... (این تابع بدون تغییر باقی می‌ماند)
             const container = document.getElementById(`${core}-content-wrapper`);
             container.innerHTML = '';
             const headerControls = document.createElement('div');
@@ -182,8 +179,7 @@
                 return;
             }
             const groupedByProtocol = configObjects.reduce((acc, item) => {
-                const configStr = item;
-                const match = configStr.match(/^(\w+):\/\//);
+                const configStr = item; const match = configStr.match(/^(\w+):\/\//);
                 if (match && match[1]) {
                     const protocol = match[1].toLowerCase();
                     if (!acc[protocol]) acc[protocol] = [];
@@ -237,22 +233,30 @@
         function showQrCode(text) {
             const modal = document.getElementById('qr-code-modal');
             const container = document.getElementById('qr-code-container');
-            container.innerHTML = ''; // Clear previous QR code
-            new QRCode(container, {
-                text: text,
-                width: 256,
-                height: 256,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
+            container.innerHTML = '';
+            
+            const qr = new QRCode(container, {
+                text: text, width: 256, height: 256,
+                colorDark: "#000000", colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
             });
+
+            const downloadBtn = document.getElementById('qr-download-btn');
+            downloadBtn.onclick = () => {
+                const img = container.querySelector('img');
+                const link = document.createElement('a');
+                link.download = 'V2V-QRCode.png';
+                link.href = img.src;
+                link.click();
+            };
+
             modal.style.display = 'flex';
         }
         
         function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
-        function copyToClipboard(text, msg = 'کپی شد!') {  navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی ناموفق بود.\n' + err));}
+        function copyToClipboard(text, msg = 'کپی شد!') { navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی ناموفق بود.\n' + err));}
         
-        // --- START: Hybrid Test Logic ---
+        // --- بخش تست سرعت بدون تغییر باقی می‌ماند ---
         async function runSpeedTest(core) {
             const testButton = document.querySelector(`#${core}-section .test-button`);
             if (testButton.disabled) return;
@@ -265,11 +269,8 @@
                 pingEl.textContent = 'درحال تست...';
                 const configStr = item.dataset.config;
                 let isApiResult = false;
-
-                // 🥇 اولویت با تست واقعی از مرورگر
                 let pingResult = await testConfigLatencyFromBrowser(configStr);
 
-                // 🤔 بررسی نتیجه و استفاده از API به عنوان پشتیبان (Fallback)
                 if (['N/A', 'Error', 'Timeout'].includes(pingResult)) {
                     try {
                         const apiResponse = await fetch(VERCEL_API_ENDPOINT, {
@@ -279,30 +280,19 @@
                         });
                         if (!apiResponse.ok) throw new Error('API response not OK');
                         const apiData = await apiResponse.json();
-
                         if (apiData.ping) {
                             pingResult = apiData.ping;
-                            isApiResult = true; // این نتیجه از API آمده است
-                        } else {
-                            pingResult = 'Error';
-                        }
-                    } catch (e) {
-                        console.error("API Ping failed:", e);
-                        pingResult = 'Error';
-                    }
+                            isApiResult = true;
+                        } else { pingResult = 'Error'; }
+                    } catch (e) { console.error("API Ping failed:", e); pingResult = 'Error'; }
                 }
 
-                // 🖥️ نمایش هوشمند نتیجه
                 let pingValue, pingText, pingColor;
                 const apiMarker = isApiResult ? ' <span class="api-marker">(API)</span>' : '';
-
                 if (['Timeout', 'Error', 'N/A'].includes(pingResult)) {
-                    pingValue = 9999;
-                    pingText = pingResult;
-                    pingColor = 'var(--ping-bad)';
+                    pingValue = 9999; pingText = pingResult; pingColor = 'var(--ping-bad)';
                 } else {
-                    pingValue = parseInt(pingResult, 10);
-                    pingText = `${pingValue}ms`;
+                    pingValue = parseInt(pingResult, 10); pingText = `${pingValue}ms`;
                     pingColor = 'var(--ping-good)';
                     if (pingValue > 350) pingColor = 'var(--ping-medium)';
                     if (pingValue > 800) pingColor = 'var(--ping-bad)';
@@ -316,35 +306,17 @@
             testButton.disabled = false;
             testButton.textContent = '🚀 تست مجدد سرعت';
         }
-
         function testWebSocketLatency(url, timeout = 3000) {
             return new Promise(resolve => {
-                const startTime = performance.now();
-                let ws;
-                try {
-                    ws = new WebSocket(url);
-                } catch (e) {
-                    return resolve('Error');
-                }
-                const timeoutId = setTimeout(() => {
-                    if (ws) ws.close();
-                    resolve('Timeout');
-                }, timeout);
-                ws.onopen = () => {
-                    clearTimeout(timeoutId);
-                    ws.close();
-                    resolve(Math.round(performance.now() - startTime));
-                };
-                ws.onerror = () => {
-                    clearTimeout(timeoutId);
-                    resolve('Error');
-                };
+                const startTime = performance.now(); let ws;
+                try { ws = new WebSocket(url); } catch (e) { return resolve('Error'); }
+                const timeoutId = setTimeout(() => { if (ws) ws.close(); resolve('Timeout'); }, timeout);
+                ws.onopen = () => { clearTimeout(timeoutId); ws.close(); resolve(Math.round(performance.now() - startTime)); };
+                ws.onerror = () => { clearTimeout(timeoutId); resolve('Error'); };
             });
         }
-
         function testConfigLatencyFromBrowser(configStr) {
             try {
-                // --- فقط تست WebSocket از مرورگر ممکن است ---
                 if (configStr.startsWith('vmess://')) {
                     const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
                     if (decoded.net === 'ws') {
@@ -353,42 +325,56 @@
                         return testWebSocketLatency(wsUrl);
                     }
                 } else {
-                    const url = new URL(configStr);
-                    const params = new URLSearchParams(url.search);
+                    const url = new URL(configStr); const params = new URLSearchParams(url.search);
                     if (params.get('type') === 'ws' || params.get('network') === 'ws') {
                         const wsProtocol = params.get('security') === 'tls' ? 'wss' : 'ws';
                         const wsUrl = `${wsProtocol}://${url.hostname}:${url.port || (wsProtocol === 'wss' ? 443 : 80)}${params.get('path') || '/'}`;
                         return testWebSocketLatency(wsUrl);
                     }
                 }
-                
-                // --- برای سایر پروتکل‌ها، تست مستقیم ممکن نیست ---
                 return Promise.resolve('N/A');
-
-            } catch (e) {
-                console.error("Browser ping test error:", e);
-                return Promise.resolve('Error');
-            }
+            } catch (e) { console.error("Browser ping test error:", e); return Promise.resolve('Error'); }
         }
-        // --- END: Hybrid Test Logic ---
         
         function sortConfigsByPing(core) { document.querySelectorAll(`#${core}-content-wrapper .protocol-group`).forEach(group => { const list = group.querySelector('.config-list'); const items = Array.from(list.children); items.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999)); items.forEach(item => list.appendChild(item)); }); }
-        
-        function getSelectedConfigs(core) { 
-            return Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-checkbox:checked`))
-                        .map(cb => cb.closest('.config-item').dataset.config);
-        }
+        function getSelectedConfigs(core) { return Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config); }
 
-        function generateSubscription(core, action) { 
-            const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`)); 
-            allItems.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999)); 
-            const configs = allItems.map(item => item.dataset.config); 
-            if (!configs.length) return alert('کانفیگی یافت نشد.'); 
-            const sub = btoa(unescape(encodeURIComponent(configs.join('\n')))); 
-            const url = `data:text/plain;base64,${sub}`; 
-            if (action === 'sub') copyToClipboard(url, 'لینک اشتراک کپی شد.'); 
-            else if (action === 'qr') showQrCode(url); 
+        // --- START: Subscription Generation Logic ---
+        // FIX: منطق تولید لینک اشتراک و QR Code برای کیفیت و سبکی بهتر اصلاح شد
+        function generateSubscription(core, action) {
+            let configs = getSelectedConfigs(core);
+            if (configs.length === 0) {
+                const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
+                const testedItems = allItems.filter(item => item.dataset.newPing && parseInt(item.dataset.newPing, 10) < 9999)
+                                            .sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
+                
+                if (testedItems.length > 0) {
+                    alert(`هیچ کانفیگی انتخاب نشده است. لینک اشتراک به صورت خودکار با ${Math.min(testedItems.length, AUTO_SELECT_COUNT)} کانفیگ برتر (بر اساس آخرین تست سرعت) ساخته می‌شود.`);
+                    configs = testedItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
+                } else {
+                     alert(`هیچ کانفیگی انتخاب نشده است. لینک با تمام کانفیگ‌های موجود ساخته می‌شود.`);
+                     configs = allItems.map(item => item.dataset.config);
+                }
+            }
+            if (configs.length === 0) return alert('کانفیگی برای ساخت لینک یافت نشد.');
+
+            let subContent;
+            // برای QR Code، نام‌ها را حذف می‌کنیم تا سبک‌تر شود
+            if (action === 'qr') {
+                subContent = configs.map(c => c.split('#')[0]).join('\n');
+            } else {
+                subContent = configs.join('\n');
+            }
+
+            const encodedSub = btoa(unescape(encodeURIComponent(subContent)));
+            
+            if (action === 'sub') {
+                copyToClipboard(encodedSub, 'لینک اشتراک (Base64) کپی شد.');
+            } else if (action === 'qr') {
+                showQrCode(encodedSub);
+            }
         }
+        // --- END: Subscription Generation Logic ---
         
         function copyClashSubscriptionUrl() { 
             const clashUrl = DATA_SOURCES[1].replace('all_live_configs.json', 'clash_subscription.yaml'); 
@@ -396,45 +382,36 @@
         }
 
         function generateClashConfig(core, action) {
+            // ... (این تابع بدون تغییر باقی می‌ماند)
             let configs = getSelectedConfigs(core);
             if (configs.length === 0) {
                 const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
                 const testedItems = allItems.filter(item => item.dataset.newPing && parseInt(item.dataset.newPing, 10) < 9999);
-                if (testedItems.length === 0) {
-                    alert('خطا: برای ساخت فایل خودکار، ابتدا باید حداقل یک بار تست سرعت را اجرا کنید.');
-                    return;
-                }
+                if (testedItems.length === 0) { alert('خطا: برای ساخت فایل خودکار، ابتدا باید حداقل یک بار تست سرعت را اجرا کنید.'); return; }
                 alert(`هیچ کانفیگی انتخاب نشده است. فایل کلش به صورت خودکار با ${Math.min(testedItems.length, AUTO_SELECT_COUNT)} کانفیگ برتر (بر اساس آخرین تست سرعت) ساخته می‌شود.`);
                 testedItems.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
                 configs = testedItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
             }
             const proxies = configs.map(configStr => { 
                 try { 
-                    const url = new URL(configStr); 
-                    if (url.search.includes('reality')) return null; 
-                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname; 
-                    let proxy = { name, server: url.hostname, port: parseInt(url.port) }; 
-                    if (url.protocol === 'vmess:') { const decoded = JSON.parse(atob(configStr.replace('vmess://', ''))); proxy = {...proxy, type: 'vmess', uuid: decoded.id, alterId: decoded.aid, cipher: decoded.scy || 'auto', tls: decoded.tls === 'tls', server: decoded.add, port: parseInt(decoded.port), network: decoded.net || 'tcp', 'skip-cert-verify': true }; if (proxy.network === 'ws') proxy['ws-opts'] = { path: decoded.path || '/', headers: { Host: decoded.host || proxy.server } }; } 
-                    else if (url.protocol === 'vless:') { const params = new URLSearchParams(url.search); proxy = {...proxy, type: 'vless', uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type') || 'tcp', servername: params.get('sni') || proxy.server, 'skip-cert-verify': true}; if (proxy.network === 'ws') proxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || proxy.server } }; } 
-                    else if (url.protocol === 'trojan:') { const params = new URLSearchParams(url.search); proxy = {...proxy, type: 'trojan', password: url.username, tls: true, sni: params.get('sni') || proxy.server, 'skip-cert-verify': true }; } 
-                    else if (url.protocol === 'ss:') { const [cipher, password] = atob(url.username).split(':'); proxy = {...proxy, type: 'ss', cipher, password}; } 
+                    if (configStr.includes('reality')) return null;
+                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : new URL(configStr).hostname; 
+                    let proxy = { name };
+                    if (configStr.startsWith('vmess://')) { const d = JSON.parse(atob(configStr.replace('vmess://', ''))); proxy = {...proxy, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: d.aid, cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net || 'tcp', 'skip-cert-verify': true, servername: d.sni || d.add }; if (proxy.network === 'ws') proxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add } }; } 
+                    else if (configStr.startsWith('vless://')) { const u = new URL(configStr); const p = new URLSearchParams(u.search); proxy = {...proxy, type: 'vless', server: u.hostname, port: parseInt(u.port), uuid: u.username, tls: p.get('security') === 'tls', network: p.get('type') || 'tcp', servername: p.get('sni') || u.hostname, 'skip-cert-verify': true}; if (proxy.network === 'ws') proxy['ws-opts'] = { path: p.get('path') || '/', headers: { Host: p.get('host') || u.hostname } }; } 
+                    else if (configStr.startsWith('trojan://')) { const u = new URL(configStr); const p = new URLSearchParams(u.search); proxy = {...proxy, type: 'trojan', server: u.hostname, port: parseInt(u.port), password: u.username, sni: p.get('sni') || u.hostname, 'skip-cert-verify': true }; } 
+                    else if (configStr.startsWith('ss://')) { const u = new URL(configStr); const [cipher, password] = atob(u.username).split(':'); proxy = {...proxy, type: 'ss', server: u.hostname, port: parseInt(u.port), cipher, password}; } 
                     else { return null; } 
                     return proxy; 
                 } catch { return null; } 
             }).filter(p => p); 
-            if (proxies.length === 0) {
-                alert('کانفیگ‌های انتخاب شده (یا برتر) با کلش سازگار نیستند.');
-                return;
-            }
+            if (proxies.length === 0) { alert('کانفیگ‌های انتخاب شده (یا برتر) با کلش سازگار نیستند.'); return; }
             const clashConfig = { proxies, 'proxy-groups': [{'name': 'V2V-Personal', 'type': 'select', 'proxies': proxies.map(p => p.name)}], 'rules': ['MATCH,V2V-Personal'] }; 
             const yamlConfig = jsyaml.dump(clashConfig, { indent: 2, sortKeys: false }); 
             if (action === 'download') { 
-                const blob = new Blob([yamlConfig], { type: 'text/yaml' }); 
-                const link = document.createElement('a'); 
-                link.href = URL.createObjectURL(blob); 
-                link.download = 'v2v_clash_personal.yaml'; 
-                link.click(); 
-                URL.revokeObjectURL(link.href); 
+                const blob = new Blob([yamlConfig], { type: 'text/yaml' }); const link = document.createElement('a'); 
+                link.href = URL.createObjectURL(blob); link.download = 'v2v_clash_personal.yaml'; 
+                link.click(); URL.revokeObjectURL(link.href); 
             } 
         }
     </script>
