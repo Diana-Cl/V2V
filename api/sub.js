@@ -1,46 +1,53 @@
 // File: /api/sub.js
 
-import { promises as fs } from 'fs';
-import path from 'path';
-
 /**
- * Handles subscription requests by serving the content of a specified file.
+ * این تابع به عنوان یک پروکسی هوشمند عمل می‌کند.
+ * به جای خواندن یک فایل محلی قدیمی، این تابع درخواست را مستقیماً به
+ * Cloudflare Worker شما ارسال کرده و همیشه جدیدترین نسخه از کانفیگ‌ها را
+ * به کاربر تحویل می‌دهد.
  */
+
+// آدرس کامل و نهایی ورکر کلادفلر شما
+const CLOUDFLARE_WORKER_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev/all_live_configs.json';
+
 export default async function handler(req, res) {
-    // Set CORS headers to allow access from any origin
+    // تنظیم هدرهای لازم برای دسترسی از دامنه‌های مختلف (CORS)
     res.setHeader('Access-Control-Allow-Origin', '*');
-    // Set Cache-Control to ensure clients always get the latest version
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
-    // Subscription links should only be accessible via GET
+    // پاسخ به درخواست‌های pre-flight از طرف مرورگر
+    if (req.method === 'OPTIONS') {
+        return res.status(204).send('');
+    }
+
+    // این اندپوینت فقط به درخواست‌های GET پاسخ می‌دهد
     if (req.method !== 'GET') {
         res.setHeader('Allow', ['GET']);
         return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
     }
 
     try {
-        // Construct the full path to the source file located in the project's root
-        const filePath = path.resolve(process.cwd(), 'all_live_configs.json');
-        
-        // Asynchronously read the file's content
-        const fileContent = await fs.readFile(filePath, 'utf8');
+        // ۱. دریافت محتوای زنده از Cloudflare Worker
+        const originResponse = await fetch(CLOUDFLARE_WORKER_URL);
 
-        // Set the correct Content-Type header so clients recognize it as a subscription
+        // ۲. بررسی موفقیت‌آمیز بودن پاسخ از Worker
+        if (!originResponse.ok) {
+            // اگر Worker خطا بدهد، همان خطا را به کاربر منتقل می‌کنیم
+            return res.status(originResponse.status).json({
+                message: `Could not fetch from origin worker. Status: ${originResponse.status}`
+            });
+        }
+
+        // ۳. ارسال محتوای دریافت شده به کاربر
+        const fileContent = await originResponse.text();
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        
-        // Send the file content with a 200 OK status
         res.status(200).send(fileContent);
 
     } catch (error) {
-        // Log the error for debugging purposes on the server side
-        console.error('Error reading or serving subscription file:', error);
-        
-        // If the file doesn't exist, return a 404 Not Found
-        if (error.code === 'ENOENT') {
-            return res.status(404).json({ message: 'Subscription source file not found.' });
-        }
-        
-        // For any other errors, return a 500 Internal Server Error
-        return res.status(500).json({ message: 'Internal Server Error while processing subscription.' });
+        console.error('Error proxying subscription request:', error);
+        // در صورت بروز خطای شبکه در ارتباط با Worker
+        res.status(502).json({ message: 'Bad Gateway: The origin worker is unreachable.' });
     }
 }
