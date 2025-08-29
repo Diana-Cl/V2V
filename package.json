@@ -2,28 +2,16 @@
   "name": "v2v-project",
   "version": "1.0.0",
   "description": "V2V Proxy Ping Service",
-  "main": "api/proxy.js",
-  "type": "module",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": "18.x"
   },
   "scripts": {
-    "dev": "vercel dev",
-    "build": "echo 'No build step required'",
-    "start": "node api/proxy.js"
+    "build": "echo 'No build step required'"
   },
   "dependencies": {},
-  "devDependencies": {
-    "@vercel/node": "^3.0.0"
-  },
-  "keywords": [
-    "proxy",
-    "ping",
-    "v2ray",
-    "vercel",
-    "serverless"
-  ],
+  "devDependencies": {},
+  "keywords": ["proxy", "ping", "v2ray"],
   "author": "",
   "license": "MIT"
 }
