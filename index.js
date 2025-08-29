@@ -40,7 +40,6 @@ export default {
         const pathname = url.pathname;
         const cache = caches.default;
 
-        // اگر فایل در لیست مجاز نبود، آن را 처리 نمی‌کنیم
         if (!ALLOWED_PATHS.includes(pathname)) {
             return new Response('File not handled by this worker.', {
                 status: 404
@@ -53,7 +52,6 @@ export default {
         let response = await cache.match(cacheKey);
         if (response) {
             console.log(`Cache HIT for: ${pathname}`);
-            // افزودن هدرهای لازم به پاسخ کش شده
             const newHeaders = new Headers(response.headers);
             newHeaders.set('Access-Control-Allow-Origin', '*');
             newHeaders.set('X-V2V-Cache-Status', 'HIT');
@@ -66,7 +64,6 @@ export default {
 
         // ۲. اگر در کش نبود، تلاش برای دریافت از منابع اصلی با سیستم پشتیبان
         try {
-            // تلاش برای دریافت از منبع اصلی (آروان)
             console.log(`Fetching from PRIMARY origin: ${pathname}`);
             response = await fetch(`${PRIMARY_ORIGIN}${pathname}`);
             if (!response.ok) {
@@ -74,7 +71,6 @@ export default {
             }
         } catch (error) {
             console.error(`Primary origin fetch failed: ${error.message}. Trying secondary...`);
-            // در صورت شکست، تلاش برای دریافت از منبع پشتیبان (گیت‌هاب)
             response = await fetch(`${SECONDARY_ORIGIN}${pathname}`);
         }
 
@@ -85,13 +81,11 @@ export default {
             newHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
             newHeaders.set('X-V2V-Cache-Status', 'MISS');
 
-            // پاسخ را کلون می‌کنیم چون بدنه آن فقط یک بار قابل خواندن است
             const responseToCache = new Response(response.clone().body, {
                 status: response.status,
                 headers: newHeaders,
             });
             
-            // ذخیره در کش را به صورت غیربلاک انجام می‌دهیم تا پاسخ سریع‌تر به کاربر برسد
             ctx.waitUntil(cache.put(cacheKey, responseToCache));
 
             return new Response(response.body, {
