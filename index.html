@@ -114,38 +114,52 @@
     
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
     <script>
         const AUTO_SELECT_COUNT = 20;
+
+        // --- UPGRADE: افزودن Cloudflare Worker به عنوان منبع اصلی و پرسرعت ---
+        // لطفاً آدرس صحیح Worker خود را در اینجا جایگزین کنید
+        const CLOUDFLARE_WORKER_URL = 'https://rapid-scene-1da6.[YOUR_SUBDOMAIN].workers.dev';
+
         const DATA_SOURCES = [
+            `${CLOUDFLARE_WORKER_URL}/all_live_configs.json`, // اولویت اول: کلادفلر
             'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json',
             'https://smbcryp.github.io/V2V/all_live_configs.json',
             'https://v2-v.vercel.app/all_live_configs.json'
         ];
-        // FIX: آدرس API به حالت کامل و مطلق تغییر یافت تا روی تمام دامنه‌ها (گیت‌هاب و ورسل) کار کند
+        
         const VERCEL_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy';
 
         async function fetchDataWithCacheBusting() {
-            // ... (بخش دریافت دیتا بدون تغییر باقی می‌ماند)
-            const baseSources = DATA_SOURCES.map(url => url.substring(0, url.lastIndexOf('/')));
-            for (const baseUrl of baseSources) {
+            // ... (منطق دریافت تاریخ بروزرسانی بدون تغییر)
+            let lastVersion = null;
+            try {
+                const versionResponse = await fetch(`${CLOUDFLARE_WORKER_URL}/cache_version.txt?t=${new Date().getTime()}`, { cache: 'no-store' });
+                if (versionResponse.ok) lastVersion = (await versionResponse.text()).trim();
+            } catch (e) { /* ignore */ }
+            
+            if (lastVersion) {
+                 const unixTimestamp = parseInt(lastVersion, 10);
+                 if (!isNaN(unixTimestamp)) {
+                    const date = new Date(unixTimestamp * 1000);
+                    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Tehran' };
+                    document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${date.toLocaleString('fa-IR', options)}`;
+                 }
+            }
+            
+            // تلاش برای دریافت فایل اصلی از منابع مختلف به ترتیب اولویت
+            for (const sourceUrl of DATA_SOURCES) {
                 try {
-                    // Try fetching a version file to bypass cache
-                    const versionResponse = await fetch(`${baseUrl}/cache_version.txt?t=${new Date().getTime()}`, { cache: 'no-store' });
-                    if (!versionResponse.ok) throw new Error('cache_version.txt not found.');
-                    const version = (await versionResponse.text()).trim();
-                    const unixTimestamp = parseInt(version, 10);
-                    if (!isNaN(unixTimestamp)) {
-                        const date = new Date(unixTimestamp * 1000);
-                        const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Tehran' };
-                        document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${date.toLocaleString('fa-IR', options)}`;
-                    } else {
-                        document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${version}`;
-                    }
-                    const uniqueUrl = `${baseUrl}/all_live_configs.json?v=${version}`;
+                    const uniqueUrl = `${sourceUrl}?v=${lastVersion || new Date().getTime()}`;
                     const dataResponse = await fetch(uniqueUrl, { cache: 'no-store' });
-                    if (!dataResponse.ok) throw new Error('Main config file not found.');
+                    if (!dataResponse.ok) throw new Error(`Failed with status: ${dataResponse.status}`);
+                    console.log(`Successfully fetched from: ${sourceUrl}`);
                     return await dataResponse.json();
-                } catch (error) { console.error(`Failed to fetch from source ${baseUrl}:`, error); }
+                } catch (error) {
+                    console.error(`Failed to fetch from source ${sourceUrl}:`, error);
+                }
             }
             throw new Error('All data sources failed.');
         }
@@ -263,14 +277,12 @@
             testButton.disabled = true;
             testButton.textContent = 'در حال تست...';
             const items = document.querySelectorAll(`#${core}-content-wrapper .config-item`);
-
             const testPromises = Array.from(items).map(async (item) => {
                 const pingEl = item.querySelector('.ping');
                 pingEl.textContent = 'درحال تست...';
                 const configStr = item.dataset.config;
                 let isApiResult = false;
                 let pingResult = await testConfigLatencyFromBrowser(configStr);
-
                 if (['N/A', 'Error', 'Timeout'].includes(pingResult)) {
                     try {
                         const apiResponse = await fetch(VERCEL_API_ENDPOINT, {
@@ -286,7 +298,6 @@
                         } else { pingResult = 'Error'; }
                     } catch (e) { console.error("API Ping failed:", e); pingResult = 'Error'; }
                 }
-
                 let pingValue, pingText, pingColor;
                 const apiMarker = isApiResult ? ' <span class="api-marker">(API)</span>' : '';
                 if (['Timeout', 'Error', 'N/A'].includes(pingResult)) {
@@ -300,13 +311,13 @@
                 item.dataset.newPing = pingValue;
                 pingEl.innerHTML = `پینگ: <strong style="color:${pingColor};">${pingText}</strong>${apiMarker}`;
             });
-
             await Promise.all(testPromises);
             sortConfigsByPing(core);
             testButton.disabled = false;
             testButton.textContent = '🚀 تست مجدد سرعت';
         }
         function testWebSocketLatency(url, timeout = 3000) {
+            // ... (بدون تغییر)
             return new Promise(resolve => {
                 const startTime = performance.now(); let ws;
                 try { ws = new WebSocket(url); } catch (e) { return resolve('Error'); }
@@ -316,6 +327,7 @@
             });
         }
         function testConfigLatencyFromBrowser(configStr) {
+            // ... (بدون تغییر)
             try {
                 if (configStr.startsWith('vmess://')) {
                     const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
@@ -339,8 +351,7 @@
         function sortConfigsByPing(core) { document.querySelectorAll(`#${core}-content-wrapper .protocol-group`).forEach(group => { const list = group.querySelector('.config-list'); const items = Array.from(list.children); items.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999)); items.forEach(item => list.appendChild(item)); }); }
         function getSelectedConfigs(core) { return Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config); }
 
-        // --- START: Subscription Generation Logic ---
-        // FIX: منطق تولید لینک اشتراک و QR Code برای کیفیت و سبکی بهتر اصلاح شد
+        // --- UPGRADE: منطق تولید لینک اشتراک با فشرده‌سازی برای QR Code ---
         function generateSubscription(core, action) {
             let configs = getSelectedConfigs(core);
             if (configs.length === 0) {
@@ -349,7 +360,7 @@
                                             .sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
                 
                 if (testedItems.length > 0) {
-                    alert(`هیچ کانفیگی انتخاب نشده است. لینک اشتراک به صورت خودکار با ${Math.min(testedItems.length, AUTO_SELECT_COUNT)} کانفیگ برتر (بر اساس آخرین تست سرعت) ساخته می‌شود.`);
+                    alert(`هیچ کانفیگی انتخاب نشده است. لینک اشتراک با ${Math.min(testedItems.length, AUTO_SELECT_COUNT)} کانفیگ برتر (بر اساس تست سرعت) ساخته می‌شود.`);
                     configs = testedItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
                 } else {
                      alert(`هیچ کانفیگی انتخاب نشده است. لینک با تمام کانفیگ‌های موجود ساخته می‌شود.`);
@@ -358,27 +369,32 @@
             }
             if (configs.length === 0) return alert('کانفیگی برای ساخت لینک یافت نشد.');
 
-            let subContent;
-            // برای QR Code، نام‌ها را حذف می‌کنیم تا سبک‌تر شود
-            if (action === 'qr') {
-                subContent = configs.map(c => c.split('#')[0]).join('\n');
-            } else {
-                subContent = configs.join('\n');
-            }
+            let subContent = configs.join('\n');
+            let finalUrl;
 
-            const encodedSub = btoa(unescape(encodeURIComponent(subContent)));
-            
-            if (action === 'sub') {
-                copyToClipboard(encodedSub, 'لینک اشتراک (Base64) کپی شد.');
-            } else if (action === 'qr') {
-                showQrCode(encodedSub);
+            if (action === 'qr') {
+                // برای QR Code، نام‌ها را حذف و سپس محتوا را فشرده می‌کنیم تا QR Code سبک و باکیفیت شود
+                const namelessContent = configs.map(c => c.split('#')[0]).join('\n');
+                // فشرده‌سازی با Gzip
+                const compressed = pako.deflate(namelessContent, { to: 'string' });
+                // تبدیل داده فشرده به Base64
+                const encodedSub = btoa(compressed);
+                // ساخت یک URL سفارشی که نشان‌دهنده محتوای فشرده است
+                // نکته: این لینک توسط کلاینت‌های استاندارد قابل استفاده نیست و به یک پردازشگر نیاز دارد
+                finalUrl = `v2v://compressed/gzip;base64,${encodedSub}`;
+                showQrCode(finalUrl);
+
+            } else { // 'sub' action
+                // برای کپی لینک، از فرمت استاندارد Base64 بدون فشرده‌سازی استفاده می‌کنیم
+                const encodedSub = btoa(unescape(encodeURIComponent(subContent)));
+                finalUrl = `data:text/plain;base64,${encodedSub}`;
+                copyToClipboard(finalUrl, 'لینک اشتراک استاندارد کپی شد.');
             }
         }
-        // --- END: Subscription Generation Logic ---
         
         function copyClashSubscriptionUrl() { 
-            const clashUrl = DATA_SOURCES[1].replace('all_live_configs.json', 'clash_subscription.yaml'); 
-            copyToClipboard(clashUrl, 'URL اشتراک کلش از گیت‌هاب کپی شد!'); 
+            const clashUrl = `${CLOUDFLARE_WORKER_URL}/clash_subscription.yaml`;
+            copyToClipboard(clashUrl, 'URL اشتراک کلش از کلادفلر کپی شد!'); 
         }
 
         function generateClashConfig(core, action) {
