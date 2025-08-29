@@ -2,14 +2,22 @@ name: Scheduled Scrape and Build
 
 on:
   schedule:
+    # هر ۴ ساعت یک‌بار اجرا می‌شود
     - cron: "0 */4 * * *"
+  # امکان اجرای دستی را فراهم می‌کند
   workflow_dispatch:
+
+# FIX 1: افزودن کنترل همزمانی برای جلوگیری کامل از تداخل (Merge Conflict)
+# این بخش تضمین می‌کند که همیشه فقط یک نمونه از این workflow برای شاخه اصلی اجرا شود
+# و در صورت شروع یک اجرای جدید، اجرای قبلی به صورت خودکار لغو گردد.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-commit:
     permissions:
-      contents: write
-      actions: read
+      contents: write # اجازه دسترسی برای نوشتن (commit & push) در ریپازیتوری
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -17,7 +25,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_PAT || github.token }}
+          # استفاده از PAT برای اطمینان از داشتن دسترسی کامل برای push
+          token: ${{ secrets.GH_PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,58 +35,37 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo ">>> DEBUG: Installing dependencies..."
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install requests PyYAML PyGithub awscli beautifulsoup4
-          echo ">>> DEBUG: Dependencies installed."
-
-      - name: Check if scraper script exists
-        run: |
-          if [ ! -f "scraper.py" ]; then
-            echo "ERROR: scraper.py not found!"
-            exit 1
-          fi
-          echo ">>> DEBUG: scraper.py exists."
 
       - name: Preserve previous clash subscription if it exists
         run: |
-          echo ">>> DEBUG: Checking for existing clash file to back up..."
           if [ -f "clash_subscription.yaml" ]; then
             cp clash_subscription.yaml clash_subscription.yaml.bak
-            echo ">>> DEBUG: Backed up clash_subscription.yaml"
+            echo "Backed up existing clash_subscription.yaml"
           fi
 
       - name: Run scraper script
-        run: |
-          echo ">>> DEBUG: RUNNING SCRAPER SCRIPT (This is the longest step)..."
-          python scraper.py
-          echo ">>> DEBUG: SCRAPER SCRIPT FINISHED."
+        run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         timeout-minutes: 40
 
       - name: Check scraper output
         run: |
-          echo ">>> DEBUG: Checking scraper output files..."
+          echo "--- Scraper output files ---"
           ls -la
-          if [ -f "all_live_configs.json" ]; then
-            echo "✓ all_live_configs.json created"
-          else
-            echo "✗ all_live_configs.json missing"
-          fi
-          if [ -f "clash_subscription.yaml" ]; then
-            echo "✓ clash_subscription.yaml created"
-          else
-            echo "✗ clash_subscription.yaml missing"
+          if [ ! -f "all_live_configs.json" ]; then
+            echo "::error::File all_live_configs.json was not created by the scraper."
           fi
 
       - name: Restore previous clash subscription if scraper failed
+        # این مرحله فقط در صورتی اجرا می‌شود که مرحله قبلی (اجرای اسکریپت) با خطا مواجه شود
         if: failure()
         run: |
-          echo ">>> DEBUG: Scraper failed, checking if clash file needs to be restored..."
           if [ ! -f "clash_subscription.yaml" ] && [ -f "clash_subscription.yaml.bak" ]; then
             mv clash_subscription.yaml.bak clash_subscription.yaml
-            echo ">>> DEBUG: Restored clash file from backup."
+            echo "Scraper failed. Restored clash_subscription.yaml from backup."
           fi
 
       - name: Upload files to ArvanCloud
@@ -86,93 +74,47 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_KEY_SECRET }}
         run: |
-          echo ">>> DEBUG: Uploading files to ArvanCloud..."
-          
-          # Check if AWS credentials are available
           if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
-            echo "WARNING: AWS credentials not found, skipping upload"
+            echo "::warning::ArvanCloud secrets not found, skipping upload."
             exit 0
           fi
           
-          ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.ir"
+          # FIX 2: استفاده از آدرس پایدارتر برای فضای ابری آروان
+          ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.com"
           BUCKET_NAME="s3://v2v-data"
           
-          if [ -f "all_live_configs.json" ]; then
-            echo "Uploading all_live_configs.json..."
-            aws s3 cp all_live_configs.json "$BUCKET_NAME/all_live_configs.json" \
-              --endpoint-url "$ENDPOINT_URL" \
-              --acl public-read \
-              --cache-control "max-age=300" || echo "Failed to upload all_live_configs.json"
-          fi
+          # آپلود فایل‌های اصلی با دسترسی عمومی و کنترل کش
+          aws s3 cp all_live_configs.json "$BUCKET_NAME/all_live_configs.json" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
+          aws s3 cp clash_subscription.yaml "$BUCKET_NAME/clash_subscription.yaml" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
           
-          if [ -f "clash_subscription.yaml" ]; then
-            echo "Uploading clash_subscription.yaml..."
-            aws s3 cp clash_subscription.yaml "$BUCKET_NAME/clash_subscription.yaml" \
-              --endpoint-url "$ENDPOINT_URL" \
-              --acl public-read \
-              --cache-control "max-age=300" || echo "Failed to upload clash_subscription.yaml"
-          fi
-          
+          # آپلود فایل ایندکس برای داشتن یک نسخه میرور کامل
           if [ -f "index.html" ]; then
-            echo "Uploading index.html..."
-            aws s3 cp index.html "$BUCKET_NAME/index.html" \
-              --endpoint-url "$ENDPOINT_URL" \
-              --acl public-read \
-              --content-type "text/html" \
-              --cache-control "max-age=300" || echo "Failed to upload index.html"
+            aws s3 cp index.html "$BUCKET_NAME/index.html" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/html" --cache-control "max-age=300"
           fi
-          
-          echo ">>> DEBUG: Upload to ArvanCloud finished."
 
       - name: Generate Cache Buster Version
         run: |
-          echo ">>> DEBUG: Generating cache buster file..."
+          # این فایل یک timestamp ساده است تا مرورگرها نسخه جدید فایل جیسون را دریافت کنند
           echo "$(date +%s)" > cache_version.txt
-          echo ">>> DEBUG: Cache buster generated: $(cat cache_version.txt)"
 
       - name: Commit and Push final files to GitHub
         run: |
-          echo ">>> DEBUG: Starting commit and push process..."
-          
-          # Configure git
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # Check current status
-          git status
+          git add all_live_configs.json clash_subscription.yaml cache_version.txt
           
-          echo "--- Adding files to git..."
-          if [ -f "all_live_configs.json" ]; then 
-            git add all_live_configs.json
-            echo "Added all_live_configs.json"
-          fi
-          if [ -f "clash_subscription.yaml" ]; then 
-            git add clash_subscription.yaml
-            echo "Added clash_subscription.yaml"
-          fi
-          if [ -f "cache_version.txt" ]; then 
-            git add cache_version.txt
-            echo "Added cache_version.txt"
-          fi
+          # حذف فایل پشتیبان قبل از کامیت نهایی
+          rm -f clash_subscription.yaml.bak
           
-          # Clean up backup files
-          if [ -f "clash_subscription.yaml.bak" ]; then
-            rm clash_subscription.yaml.bak
-            echo "Cleaned up backup file"
-          fi
-          
-          # Check if there are changes to commit
+          # فقط در صورتی کامیت کن که تغییری وجود داشته باشد
           if git diff --staged --quiet; then
-            echo ">>> DEBUG: No new changes to commit."
+            echo "No new changes to commit."
           else
-            echo "--- Committing changes..."
             git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
             
-            echo "--- Pushing to remote..."
-            git push || {
-              echo "Push failed, trying to pull and push again..."
-              git pull --rebase
-              git push
-            }
-            echo ">>> DEBUG: Push successful."
+            # FIX 3: ساده‌سازی منطق push
+            # با وجود 'concurrency'، دیگر نیازی به pull کردن قبل از push نیست
+            # این روش بسیار امن‌تر و تمیزتر است
+            git push
           fi
