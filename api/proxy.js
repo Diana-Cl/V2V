@@ -33,7 +33,7 @@ function parseConfig(configStr) {
  * @param {number} timeout Timeout in milliseconds.
  * @returns {Promise<number>} The latency in milliseconds.
  */
-function getTcpPing(host, port, timeout) { // Timeout is now passed directly
+function getTcpPing(host, port, timeout) {
     return new Promise((resolve, reject) => {
         const startTime = process.hrtime.bigint();
         const socket = new net.Socket();
@@ -61,7 +61,6 @@ function getTcpPing(host, port, timeout) { // Timeout is now passed directly
     });
 }
 
-// --- UPGRADE: تابع جدید برای مدیریت تلاش‌های مجدد ---
 /**
  * Tries to get a TCP ping multiple times for reliability.
  * @param {string} host The server address.
@@ -75,17 +74,14 @@ async function pingWithRetries(host, port) {
 
     for (let i = 0; i < retries; i++) {
         try {
-            // اگر موفقیت‌آمیز بود، نتیجه را برمی‌گرداند و از حلقه خارج می‌شود
             const latency = await getTcpPing(host, port, timeout);
-            return latency;
+            return latency; // Success
         } catch (error) {
             console.log(`Attempt ${i + 1} failed for ${host}:${port}. Error: ${error.message}`);
-            // اگر این آخرین تلاش بود، خطا را به بیرون پرتاب می‌کند
             if (i === retries - 1) {
-                throw error;
+                throw error; // Rethrow the last error
             }
-            // قبل از تلاش بعدی، کمی صبر می‌کند
-            await new Promise(res => setTimeout(res, interval));
+            await new Promise(res => setTimeout(res, interval)); // Wait before retrying
         }
     }
 }
@@ -127,7 +123,6 @@ export default async function handler(req, res) {
     }
 
     try {
-        // --- UPGRADE: استفاده از تابع جدید با قابلیت تلاش مجدد ---
         const latency = await pingWithRetries(host, port);
         res.status(200).json({ ping: latency });
     } catch (error) {
@@ -137,4 +132,3 @@ export default async function handler(req, res) {
         });
     }
 }
-
