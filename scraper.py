@@ -24,7 +24,7 @@ OUTPUT_JSON_FILE = "all_live_configs.json"
 OUTPUT_CLASH_FILE = "clash_subscription.yaml"
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
 HEADERS = {
-    'User-Agent': 'V2V-Scraper/v6.0-Balanced',
+    'User-Agent': 'V2V-Scraper/v6.1-Refined',
     'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0'
 }
 
@@ -37,10 +37,11 @@ GITHUB_SEARCH_QUERIES = [
 ]
 
 MAX_CONFIGS_TO_TEST = 3000
-MAX_PING_THRESHOLD = 2000  # سخت‌گیرانه‌تر شد
+MAX_PING_THRESHOLD = 2000
 TARGET_CONFIGS_PER_CORE = 500
 REQUEST_TIMEOUT = 10
 TCP_TEST_TIMEOUT = 5
+MAX_NAME_LENGTH = 40  # حداکثر طول مجاز برای نام کانفیگ
 
 # --- سیستم سهمیه‌بندی برای تضمین تنوع پروتکل ---
 PROTOCOL_QUOTAS = {
@@ -74,6 +75,44 @@ def _is_valid_config_format(config_str: str) -> bool:
         parsed = urlparse(config_str)
         return (parsed.scheme in [p.replace('://', '') for p in VALID_PREFIXES] and parsed.hostname and len(config_str) > 20 and '://' in config_str)
     except Exception: return False
+
+def shorten_config_name(config_str: str) -> str:
+    """
+    نام کانفیگ را در URI کوتاه می‌کند تا در کلاینت‌ها بهتر نمایش داده شود.
+    """
+    try:
+        # --- رسیدگی به VMess ---
+        if config_str.startswith('vmess://'):
+            encoded_part = config_str[8:]
+            try:
+                decoded_json_str = _decode_padded_b64(encoded_part)
+                vmess_data = json.loads(decoded_json_str)
+                name = vmess_data.get('ps', '')
+                if len(name) > MAX_NAME_LENGTH:
+                    vmess_data['ps'] = name[:MAX_NAME_LENGTH-3] + '...'
+                    new_json_str = json.dumps(vmess_data, separators=(',', ':'))
+                    new_encoded_part = base64.b64encode(new_json_str.encode('utf-8')).decode('utf-8').replace('=', '')
+                    return 'vmess://' + new_encoded_part
+                return config_str
+            except Exception:
+                return config_str
+
+        # --- رسیدگی به سایر پروتکل‌های مبتنی بر URI ---
+        else:
+            if '#' not in config_str:
+                return config_str
+            
+            base_part, name_part = config_str.split('#', 1)
+            decoded_name = unquote(name_part)
+            
+            if len(decoded_name) > MAX_NAME_LENGTH:
+                shortened_name = decoded_name[:MAX_NAME_LENGTH-3] + '...'
+                return base_part + '#' + quote(shortened_name)
+            
+            return config_str
+
+    except Exception:
+        return config_str # در صورت بروز خطا، کانفیگ اصلی را برمی‌گرداند تا از کار نیفتد
 
 def parse_subscription_content(content: str) -> set:
     configs = set()
@@ -176,13 +215,8 @@ def generate_clash_subscription(configs: list) -> str | None:
 # =================================================================================
 
 def test_config_direct_tcp(config_str: str) -> dict:
-    """
-    تست پینگ بهبودیافته با پشتیبانی از IPv4/IPv6 و تلاش برای اتصال به اولین آدرس در دسترس.
-    این تابع پینگ یک کانفیگ را با اتصال مستقیم TCP از طریق ماژول socket اندازه‌گیری می‌کند.
-    """
     host, port = None, None
     try:
-        # استخراج هاست و پورت از انواع کانفیگ‌ها
         parsed = urlparse(config_str)
         if parsed.scheme == 'vmess':
             decoded = json.loads(_decode_padded_b64(config_str.replace("vmess://", "")))
@@ -193,10 +227,7 @@ def test_config_direct_tcp(config_str: str) -> dict:
         if not host: return {'config_str': config_str, 'ping': 9999, 'error': 'Host not found'}
         if not port: port = {'ss': 8443, 'trojan': 443, 'vless': 443}.get(parsed.scheme, 443)
 
-        # دریافت تمام آدرس‌های ممکن (IPv4 و IPv6)
         addr_infos = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
-
-        # تلاش برای اتصال به هر آدرس تا زمان موفقیت
         for family, socktype, proto, _, sockaddr in addr_infos:
             try:
                 with socket.socket(family, socktype, proto) as s:
@@ -205,25 +236,19 @@ def test_config_direct_tcp(config_str: str) -> dict:
                     s.connect(sockaddr)
                     end_time = time.monotonic()
                     ping = int((end_time - start_time) * 1000)
-                    # با اولین اتصال موفق، نتیجه را برمی‌گردانیم
                     return {'config_str': config_str, 'ping': ping}
             except (socket.error, socket.timeout):
-                # اگر این آدرس کار نکرد، به سراغ آدرس بعدی می‌رویم
                 continue
-        
-        # اگر هیچ‌کدام از آدرس‌ها موفقیت‌آمیز نبودند
         return {'config_str': config_str, 'ping': 9999, 'error': 'All connection attempts failed'}
-
     except Exception as e:
         return {'config_str': config_str, 'ping': 9999, 'error': str(e)}
-
 
 # =================================================================================
 # === MAIN EXECUTION (اجرای اصلی) ===
 # =================================================================================
 
 def main():
-    print(f"🚀 V2V Scraper v6.0 - شروع فرآیند با تست مستقیم و توازن پروتکل...")
+    print(f"🚀 V2V Scraper v6.1 - شروع فرآیند با تست مستقیم و توازن پروتکل...")
     start_time = time.time()
     
     all_sources = list(set(get_static_sources() + discover_dynamic_sources()))
@@ -252,7 +277,6 @@ def main():
     
     fast_configs_results = []
     with ThreadPoolExecutor(max_workers=50) as executor:
-        # تغییر اینجا: به جای test_config_direct_tcp از تابع بهبودیافته استفاده می‌شود
         for result in executor.map(test_config_direct_tcp, configs_to_test):
             if result.get('ping', 9999) < MAX_PING_THRESHOLD:
                 fast_configs_results.append(result)
@@ -260,27 +284,21 @@ def main():
     print(f"⚡ {len(fast_configs_results)} کانفیگ سریع (زیر {MAX_PING_THRESHOLD}ms) یافت شد.")
     fast_configs_results.sort(key=lambda x: x['ping'])
     
-    # --- منطق جدید برای توازن و تنوع پروتکل‌ها ---
     print("\n⚖️ در حال ایجاد توازن بین پروتکل‌ها برای لیست نهایی...")
-    
     fast_xray_compatible = [res for res in fast_configs_results if res['config_str'] in xray_compatible_set]
     fast_singbox_only = [res['config_str'] for res in fast_configs_results if res['config_str'] in singbox_only_set]
     
-    # گروه‌بندی کانفیگ‌های Xray بر اساس پروتکل
     grouped_xray_fast = defaultdict(list)
     for res in fast_xray_compatible:
         proto = res['config_str'].split("://")[0]
         grouped_xray_fast[proto].append(res['config_str'])
 
-    # ساخت لیست متوازن برای Xray
     balanced_xray_list = []
     for proto, quota_percent in PROTOCOL_QUOTAS.items():
         quota_size = int(TARGET_CONFIGS_PER_CORE * quota_percent)
         balanced_xray_list.extend(grouped_xray_fast.get(proto, [])[:quota_size])
     
-    # پر کردن ظرفیت باقی‌مانده با سریع‌ترین‌های موجود
     if len(balanced_xray_list) < TARGET_CONFIGS_PER_CORE:
-        remaining_needed = TARGET_CONFIGS_PER_CORE - len(balanced_xray_list)
         all_fast_xray_uris = [res['config_str'] for res in fast_xray_compatible]
         for cfg in all_fast_xray_uris:
             if len(balanced_xray_list) >= TARGET_CONFIGS_PER_CORE: break
@@ -289,28 +307,32 @@ def main():
 
     final_xray = balanced_xray_list[:TARGET_CONFIGS_PER_CORE]
     
-    # ساخت لیست متنوع برای Sing-box
     final_singbox = fast_singbox_only
     remaining_needed = TARGET_CONFIGS_PER_CORE - len(final_singbox)
     if remaining_needed > 0:
-        # استفاده از کانفیگ‌هایی که در لیست نهایی Xray نیستند برای حداکثر تنوع
         xray_configs_for_singbox = [cfg for cfg in [res['config_str'] for res in fast_xray_compatible] if cfg not in final_xray]
         final_singbox.extend(xray_configs_for_singbox[:remaining_needed])
     final_singbox = final_singbox[:TARGET_CONFIGS_PER_CORE]
 
-    # تولید فایل‌های خروجی
+    # <<<--- START: بخش جدید برای کوتاه کردن نام کانفیگ‌ها --->>>
+    print("\n📝 در حال کوتاه کردن نام کانفیگ‌ها برای نمایش بهتر...")
+    final_xray_shortened = [shorten_config_name(cfg) for cfg in final_xray]
+    final_singbox_shortened = [shorten_config_name(cfg) for cfg in final_singbox]
+    # <<<--- END: بخش جدید برای کوتاه کردن نام کانفیگ‌ها --->>>
+
     print("\n💾 در حال تولید فایل‌های خروجی نهایی...")
-    output_for_frontend = {'xray': final_xray, 'singbox': final_singbox, 'timestamp': int(time.time())}
+    output_for_frontend = {'xray': final_xray_shortened, 'singbox': final_singbox_shortened, 'timestamp': int(time.time())}
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f: json.dump(output_for_frontend, f, ensure_ascii=False, indent=2)
     print(f"✅ فایل '{OUTPUT_JSON_FILE}' با موفقیت ساخته شد.")
     
-    # --- منطق مقاوم‌سازی برای فایل Clash ---
     clash_content = None
-    if final_xray:
-        clash_content = generate_clash_subscription(final_xray)
+    if final_xray_shortened: # استفاده از لیست با نام‌های کوتاه شده
+        clash_content = generate_clash_subscription(final_xray_shortened)
     if not clash_content and xray_compatible_set:
         print("⚠️ هیچ کانفیگ سریعی برای کلش یافت نشد. تلاش با کانفیگ‌های تست نشده...")
-        clash_content = generate_clash_subscription(list(xray_compatible_set)[:100])
+        # کوتاه کردن نام‌ها برای حالت جایگزین نیز اعمال می‌شود
+        untested_clash_configs = [shorten_config_name(cfg) for cfg in list(xray_compatible_set)[:100]]
+        clash_content = generate_clash_subscription(untested_clash_configs)
 
     if clash_content:
         with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f: f.write(clash_content)
@@ -321,7 +343,7 @@ def main():
     elapsed_time = time.time() - start_time
     print("\n🎉 فرآیند با موفقیت تکمیل شد!")
     print("="*50)
-    print(f"📊 خلاصه نتایج: | Xray: {len(final_xray)} | Sing-box: {len(final_singbox)} | زمان: {elapsed_time:.2f} ثانیه")
+    print(f"📊 خلاصه نتایج: | Xray: {len(final_xray_shortened)} | Sing-box: {len(final_singbox_shortened)} | زمان: {elapsed_time:.2f} ثانیه")
     print("="*50)
 
 if __name__ == "__main__":
