@@ -4,28 +4,20 @@
  * This script acts as a smart, fast, and reliable reverse proxy for your config files.
  *
  * Main Features:
- * 1.  Intelligent Caching: It caches your main config files on Cloudflare's edge network,
- * making them load almost instantly for users worldwide.
- * 2.  Automatic Fallback: If the primary data source (ArvanCloud) is down or slow,
- * it automatically fetches from the secondary source (GitHub), ensuring your
- * service is always online.
- * 3.  CORS Handling: It adds the necessary headers so that your website can securely
- * access the files from any domain.
+ * 1.  Intelligent Caching: It caches your main config files on Cloudflare's edge network.
+ * 2.  Automatic Fallback: If the primary data source is down, it fetches from the secondary source.
+ * 3.  CORS Handling: It adds the necessary headers for secure access.
+ * 4.  Ping Endpoint: Provides a fast endpoint for client-side latency tests.
  *
- * - @version 1.0.0
+ * - @version 2.0.0
  * - @author V2V Project with Gemini
  */
 
 // --- CONFIGURATION ---
-// آدرس منابع اصلی شما برای دریافت فایل‌ها
 const PRIMARY_ORIGIN = 'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.com';
 const SECONDARY_ORIGIN = 'https://raw.githubusercontent.com/SMBCRYP/V2V/main';
+const CACHE_TTL = 300; // 5 دقیقه
 
-// مدت زمانی که فایل‌ها در کش کلادفلر باقی می‌مانند (به ثانیه)
-// 300 ثانیه = 5 دقیقه
-const CACHE_TTL = 300;
-
-// لیست فایل‌هایی که توسط این Worker مدیریت می‌شوند
 const ALLOWED_PATHS = [
     '/all_live_configs.json',
     '/clash_subscription.yaml',
@@ -40,63 +32,67 @@ export default {
         const pathname = url.pathname;
         const cache = caches.default;
 
-        if (!ALLOWED_PATHS.includes(pathname)) {
-            return new Response('File not handled by this worker.', {
-                status: 404
+        // --- START: بخش جدید برای تست پینگ ---
+        // این بخش درخواست‌های ارسال شده به آدرس /ping را مدیریت می‌کند
+        if (pathname === '/ping') {
+            // برای تست پینگ، فقط یک پاسخ سریع و خالی با وضعیت OK برمی‌گردانیم
+            // این همان "زنگ در" است که مرورگر کاربر زمان پاسخ آن را اندازه می‌گیرد
+            return new Response('OK', {
+                status: 200,
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Cache-Control': 'no-store', // پاسخ پینگ هرگز نباید کش شود
+                },
             });
         }
+        // --- END: بخش جدید برای تست پینگ ---
 
-        const cacheKey = new Request(url.toString(), request);
+        // اگر درخواست برای فایل‌های مجاز بود، منطق قبلی را اجرا کن
+        if (ALLOWED_PATHS.includes(pathname)) {
+            const cacheKey = new Request(url.toString(), request);
 
-        // ۱. تلاش برای خواندن از کش
-        let response = await cache.match(cacheKey);
-        if (response) {
-            console.log(`Cache HIT for: ${pathname}`);
-            const newHeaders = new Headers(response.headers);
-            newHeaders.set('Access-Control-Allow-Origin', '*');
-            newHeaders.set('X-V2V-Cache-Status', 'HIT');
-            return new Response(response.body, {
-                status: response.status,
-                headers: newHeaders,
-            });
-        }
-        console.log(`Cache MISS for: ${pathname}`);
-
-        // ۲. اگر در کش نبود، تلاش برای دریافت از منابع اصلی با سیستم پشتیبان
-        try {
-            console.log(`Fetching from PRIMARY origin: ${pathname}`);
-            response = await fetch(`${PRIMARY_ORIGIN}${pathname}`);
-            if (!response.ok) {
-                throw new Error(`Primary origin failed with status: ${response.status}`);
+            // ۱. تلاش برای خواندن از کش
+            let response = await cache.match(cacheKey);
+            if (response) {
+                const newHeaders = new Headers(response.headers);
+                newHeaders.set('Access-Control-Allow-Origin', '*');
+                newHeaders.set('X-V2V-Cache-Status', 'HIT');
+                return new Response(response.body, {
+                    status: response.status,
+                    headers: newHeaders,
+                });
             }
-        } catch (error) {
-            console.error(`Primary origin fetch failed: ${error.message}. Trying secondary...`);
-            response = await fetch(`${SECONDARY_ORIGIN}${pathname}`);
+
+            // ۲. اگر در کش نبود، تلاش برای دریافت از منابع اصلی
+            try {
+                response = await fetch(`${PRIMARY_ORIGIN}${pathname}`);
+                if (!response.ok) throw new Error('Primary origin failed');
+            } catch (error) {
+                response = await fetch(`${SECONDARY_ORIGIN}${pathname}`);
+            }
+
+            // ۳. پردازش پاسخ و ذخیره در کش
+            if (response && response.ok) {
+                const newHeaders = new Headers(response.headers);
+                newHeaders.set('Access-Control-Allow-Origin', '*');
+                newHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
+                newHeaders.set('X-V2V-Cache-Status', 'MISS');
+                const responseToCache = new Response(response.clone().body, {
+                    status: response.status,
+                    headers: newHeaders,
+                });
+                ctx.waitUntil(cache.put(cacheKey, responseToCache));
+                return new Response(response.body, {
+                    status: response.status,
+                    headers: newHeaders
+                });
+            }
         }
 
-        // ۳. پردازش پاسخ و ذخیره در کش برای دفعات بعدی
-        if (response && response.ok) {
-            const newHeaders = new Headers(response.headers);
-            newHeaders.set('Access-Control-Allow-Origin', '*');
-            newHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
-            newHeaders.set('X-V2V-Cache-Status', 'MISS');
-
-            const responseToCache = new Response(response.clone().body, {
-                status: response.status,
-                headers: newHeaders,
-            });
-            
-            ctx.waitUntil(cache.put(cacheKey, responseToCache));
-
-            return new Response(response.body, {
-                status: response.status,
-                headers: newHeaders
-            });
-        }
-
-        // اگر هیچ‌کدام از منابع پاسخگو نبودند
-        return new Response('Could not fetch content from any origin.', {
-            status: 502
+        // اگر درخواست برای هیچکدام از مسیرهای مجاز نبود
+        return new Response('File not handled by this worker.', {
+            status: 404,
+            headers: { 'Access-Control-Allow-Origin': '*' },
         });
     }
 };
