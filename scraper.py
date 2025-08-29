@@ -8,6 +8,7 @@ import re
 import time
 import yaml
 import socket
+import ssl # ماژول جدید برای تست پیشرفته TLS/SNI
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qsl, unquote, urlencode, quote
@@ -24,7 +25,7 @@ OUTPUT_JSON_FILE = "all_live_configs.json"
 OUTPUT_CLASH_FILE = "clash_subscription.yaml"
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
 HEADERS = {
-    'User-Agent': 'V2V-Scraper/v6.1-Refined',
+    'User-Agent': 'V2V-Scraper/v7.0-Phase1', # آپدیت ورژن
     'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0'
 }
 
@@ -40,15 +41,12 @@ MAX_CONFIGS_TO_TEST = 3000
 MAX_PING_THRESHOLD = 2000
 TARGET_CONFIGS_PER_CORE = 500
 REQUEST_TIMEOUT = 10
-TCP_TEST_TIMEOUT = 5
-MAX_NAME_LENGTH = 40  # حداکثر طول مجاز برای نام کانفیگ
+TCP_TEST_TIMEOUT = 5 # این تایم‌اوت اکنون برای هر مرحله تست (TCP و TLS) اعمال می‌شود
+MAX_NAME_LENGTH = 40
 
-# --- سیستم سهمیه‌بندی برای تضمین تنوع پروتکل ---
 PROTOCOL_QUOTAS = {
-    'vless': 0.45,  # 45% of target
-    'vmess': 0.45,  # 45% of target
-    'trojan': 0.05, # 5% of target
-    'ss': 0.05      # 5% of target
+    'vless': 0.45, 'vmess': 0.45,
+    'trojan': 0.05, 'ss': 0.05
 }
 
 if GITHUB_PAT:
@@ -57,6 +55,8 @@ if GITHUB_PAT:
 # =================================================================================
 # === HELPER & PARSING FUNCTIONS (توابع کمکی و پردازشگر) ===
 # =================================================================================
+
+# ... (توابع کمکی این بخش بدون تغییر باقی مانده‌اند) ...
 
 def _decode_padded_b64(encoded_str: str) -> str:
     if not encoded_str: return ""
@@ -77,11 +77,7 @@ def _is_valid_config_format(config_str: str) -> bool:
     except Exception: return False
 
 def shorten_config_name(config_str: str) -> str:
-    """
-    نام کانفیگ را در URI کوتاه می‌کند تا در کلاینت‌ها بهتر نمایش داده شود.
-    """
     try:
-        # --- رسیدگی به VMess ---
         if config_str.startswith('vmess://'):
             encoded_part = config_str[8:]
             try:
@@ -96,23 +92,17 @@ def shorten_config_name(config_str: str) -> str:
                 return config_str
             except Exception:
                 return config_str
-
-        # --- رسیدگی به سایر پروتکل‌های مبتنی بر URI ---
         else:
             if '#' not in config_str:
                 return config_str
-            
             base_part, name_part = config_str.split('#', 1)
             decoded_name = unquote(name_part)
-            
             if len(decoded_name) > MAX_NAME_LENGTH:
                 shortened_name = decoded_name[:MAX_NAME_LENGTH-3] + '...'
                 return base_part + '#' + quote(shortened_name)
-            
             return config_str
-
     except Exception:
-        return config_str # در صورت بروز خطا، کانفیگ اصلی را برمی‌گرداند تا از کار نیفتد
+        return config_str
 
 def parse_subscription_content(content: str) -> set:
     configs = set()
@@ -120,7 +110,6 @@ def parse_subscription_content(content: str) -> set:
         decoded_content = _decode_padded_b64(content)
         if decoded_content and decoded_content.count("://") > content.count("://"): content = decoded_content
     except Exception: pass
-    
     pattern = r'(' + '|'.join(re.escape(p) for p in VALID_PREFIXES) + r')[^\s\'"<>\[\]{}()]*'
     matches = re.findall(pattern, content, re.MULTILINE | re.IGNORECASE)
     for match in matches:
@@ -141,6 +130,7 @@ def get_static_sources() -> list:
     except (FileNotFoundError, json.JSONDecodeError): return []
 
 def discover_dynamic_sources() -> list:
+    # ... (بدون تغییر) ...
     if not GITHUB_PAT: return []
     g = Github(auth=Auth.Token(GITHUB_PAT), timeout=20)
     freshness_threshold = datetime.now(timezone.utc) - timedelta(hours=GITHUB_FRESHNESS_HOURS)
@@ -160,6 +150,7 @@ def discover_dynamic_sources() -> list:
     return list(dynamic_sources)
 
 def validate_and_categorize_configs(configs: set) -> dict:
+    # ... (بدون تغییر) ...
     categorized = {'xray': set(), 'singbox_only': set()}
     for cfg in configs:
         if not _is_valid_config_format(cfg): continue
@@ -173,6 +164,7 @@ def validate_and_categorize_configs(configs: set) -> dict:
     return categorized
 
 def generate_clash_subscription(configs: list) -> str | None:
+    # ... (بدون تغییر) ...
     proxies = []
     used_names = set()
     for config_str in configs:
@@ -211,44 +203,84 @@ def generate_clash_subscription(configs: list) -> str | None:
     return yaml.dump({'proxies': proxies}, allow_unicode=True, sort_keys=False, indent=2)
 
 # =================================================================================
-# === DIRECT TCP PING TEST (تست پینگ مستقیم) [IMPROVED] ===
+# === ADVANCED CONNECTION TEST (تست اتصال پیشرفته) [PHASE 1 UPGRADE] ===
 # =================================================================================
 
-def test_config_direct_tcp(config_str: str) -> dict:
-    host, port = None, None
+def test_config_advanced(config_str: str) -> dict:
+    """
+    تست پیشرفته و چندمرحله‌ای کانفیگ برای دقت بالاتر.
+    1. استخراج اطلاعات: پارس کردن کانفیگ برای به دست آوردن هاست، پورت، وضعیت TLS و SNI.
+    2. تست DNS: بررسی اینکه آیا هاست به IP آدرس تبدیل می‌شود یا خیر.
+    3. تست اتصال:
+        - برای کانفیگ‌های غیر TLS، یک اتصال ساده TCP برقرار می‌شود.
+        - برای کانفیگ‌های TLS، یک Handshake کامل TLS با ارسال SNI صحیح انجام می‌شود.
+    این روش کانفیگ‌هایی که سرورشان فعال است اما به درستی کانفیگ نشده‌اند را شناسایی می‌کند.
+    """
     try:
-        parsed = urlparse(config_str)
-        if parsed.scheme == 'vmess':
-            decoded = json.loads(_decode_padded_b64(config_str.replace("vmess://", "")))
-            host, port = decoded.get('add'), int(decoded.get('port', 443))
+        host, port, sni, is_tls = None, None, None, False
+        parsed_url = urlparse(config_str)
+
+        if parsed_url.scheme == 'vmess':
+            vmess_data = json.loads(_decode_padded_b64(config_str.replace("vmess://", "")))
+            host = vmess_data.get('add')
+            port = int(vmess_data.get('port', 443))
+            is_tls = vmess_data.get('tls') == 'tls'
+            sni = vmess_data.get('sni', host)
         else:
-            host, port = parsed.hostname, parsed.port
+            host = parsed_url.hostname
+            port = parsed_url.port
+            params = dict(parse_qsl(parsed_url.query))
+            is_tls = params.get('security') == 'tls' or parsed_url.scheme == 'trojan'
+            sni = params.get('sni', host)
+        
+        if not host or not port:
+            return {'config_str': config_str, 'ping': 9999, 'error': 'Invalid Host/Port'}
 
-        if not host: return {'config_str': config_str, 'ping': 9999, 'error': 'Host not found'}
-        if not port: port = {'ss': 8443, 'trojan': 443, 'vless': 443}.get(parsed.scheme, 443)
-
+        # مرحله ۱: تست DNS (ادغام شده در getaddrinfo)
         addr_infos = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+        
+        # مرحله ۲ و ۳: تست اتصال TCP و TLS/SNI
         for family, socktype, proto, _, sockaddr in addr_infos:
+            sock = None
             try:
-                with socket.socket(family, socktype, proto) as s:
-                    s.settimeout(TCP_TEST_TIMEOUT)
-                    start_time = time.monotonic()
-                    s.connect(sockaddr)
-                    end_time = time.monotonic()
-                    ping = int((end_time - start_time) * 1000)
-                    return {'config_str': config_str, 'ping': ping}
-            except (socket.error, socket.timeout):
-                continue
-        return {'config_str': config_str, 'ping': 9999, 'error': 'All connection attempts failed'}
-    except Exception as e:
-        return {'config_str': config_str, 'ping': 9999, 'error': str(e)}
+                sock = socket.socket(family, socktype, proto)
+                sock.settimeout(TCP_TEST_TIMEOUT)
+                start_time = time.monotonic()
+                
+                if is_tls:
+                    # برای TLS، یک Handshake کامل با SNI انجام می‌دهیم
+                    context = ssl.create_default_context()
+                    # server_hostname مهمترین بخش برای ارسال صحیح SNI است
+                    with context.wrap_socket(sock, server_hostname=sni) as ssock:
+                        ssock.connect(sockaddr)
+                else:
+                    # برای غیر TLS، فقط اتصال TCP کافیست
+                    sock.connect(sockaddr)
+                
+                end_time = time.monotonic()
+                ping = int((end_time - start_time) * 1000)
+                return {'config_str': config_str, 'ping': ping} # اولین اتصال موفق کافیست
+
+            except (socket.timeout, socket.error, ssl.SSLError, ConnectionRefusedError):
+                continue # اگر این آدرس (مثلا IPv6) کار نکرد، به سراغ آدرس بعدی (مثلا IPv4) می‌رویم
+            finally:
+                if sock: sock.close()
+        
+        return {'config_str': config_str, 'ping': 9999, 'error': 'Connection Failed'}
+
+    except socket.gaierror:
+        return {'config_str': config_str, 'ping': 9999, 'error': 'DNS Error'}
+    except Exception:
+        # خطاهای کلی مانند JSONDecodeError یا پارس نشدن URL
+        return {'config_str': config_str, 'ping': 9999, 'error': 'Parse Error'}
+
 
 # =================================================================================
 # === MAIN EXECUTION (اجرای اصلی) ===
 # =================================================================================
 
 def main():
-    print(f"🚀 V2V Scraper v6.1 - شروع فرآیند با تست مستقیم و توازن پروتکل...")
+    print(f"🚀 V2V Scraper v7.0 - شروع فرآیند با تست پیشرفته و توازن پروتکل...")
     start_time = time.time()
     
     all_sources = list(set(get_static_sources() + discover_dynamic_sources()))
@@ -273,11 +305,13 @@ def main():
     
     all_unique_configs = list(xray_compatible_set.union(singbox_only_set))
     configs_to_test = all_unique_configs[:MAX_CONFIGS_TO_TEST]
-    print(f"\n🏃‍♂️ در حال تست سرعت {len(configs_to_test)} کانفیگ با اتصال مستقیم TCP...")
+    
+    # --- UPGRADE: استفاده از تابع تست پیشرفته جدید ---
+    print(f"\n🏃‍♂️ در حال تست پیشرفته {len(configs_to_test)} کانفیگ (DNS -> TCP -> SNI/TLS)...")
     
     fast_configs_results = []
     with ThreadPoolExecutor(max_workers=50) as executor:
-        for result in executor.map(test_config_direct_tcp, configs_to_test):
+        for result in executor.map(test_config_advanced, configs_to_test):
             if result.get('ping', 9999) < MAX_PING_THRESHOLD:
                 fast_configs_results.append(result)
 
@@ -314,11 +348,9 @@ def main():
         final_singbox.extend(xray_configs_for_singbox[:remaining_needed])
     final_singbox = final_singbox[:TARGET_CONFIGS_PER_CORE]
 
-    # <<<--- START: بخش جدید برای کوتاه کردن نام کانفیگ‌ها --->>>
     print("\n📝 در حال کوتاه کردن نام کانفیگ‌ها برای نمایش بهتر...")
     final_xray_shortened = [shorten_config_name(cfg) for cfg in final_xray]
     final_singbox_shortened = [shorten_config_name(cfg) for cfg in final_singbox]
-    # <<<--- END: بخش جدید برای کوتاه کردن نام کانفیگ‌ها --->>>
 
     print("\n💾 در حال تولید فایل‌های خروجی نهایی...")
     output_for_frontend = {'xray': final_xray_shortened, 'singbox': final_singbox_shortened, 'timestamp': int(time.time())}
@@ -326,11 +358,10 @@ def main():
     print(f"✅ فایل '{OUTPUT_JSON_FILE}' با موفقیت ساخته شد.")
     
     clash_content = None
-    if final_xray_shortened: # استفاده از لیست با نام‌های کوتاه شده
+    if final_xray_shortened:
         clash_content = generate_clash_subscription(final_xray_shortened)
     if not clash_content and xray_compatible_set:
         print("⚠️ هیچ کانفیگ سریعی برای کلش یافت نشد. تلاش با کانفیگ‌های تست نشده...")
-        # کوتاه کردن نام‌ها برای حالت جایگزین نیز اعمال می‌شود
         untested_clash_configs = [shorten_config_name(cfg) for cfg in list(xray_compatible_set)[:100]]
         clash_content = generate_clash_subscription(untested_clash_configs)
 
