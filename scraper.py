@@ -25,7 +25,7 @@ OUTPUT_JSON_FILE = "all_live_configs.json"
 OUTPUT_CLASH_FILE = "clash_subscription.yaml"
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
 HEADERS = {
-    'User-Agent': 'V2V-Scraper/v7.0-Phase1', # آپدیت ورژن
+    'User-Agent': 'V2V-Scraper/v7.0-Phase1',
     'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0'
 }
 
@@ -41,7 +41,7 @@ MAX_CONFIGS_TO_TEST = 3000
 MAX_PING_THRESHOLD = 2000
 TARGET_CONFIGS_PER_CORE = 500
 REQUEST_TIMEOUT = 10
-TCP_TEST_TIMEOUT = 5 # این تایم‌اوت اکنون برای هر مرحله تست (TCP و TLS) اعمال می‌شود
+TCP_TEST_TIMEOUT = 5
 MAX_NAME_LENGTH = 40
 
 PROTOCOL_QUOTAS = {
@@ -55,8 +55,6 @@ if GITHUB_PAT:
 # =================================================================================
 # === HELPER & PARSING FUNCTIONS (توابع کمکی و پردازشگر) ===
 # =================================================================================
-
-# ... (توابع کمکی این بخش بدون تغییر باقی مانده‌اند) ...
 
 def _decode_padded_b64(encoded_str: str) -> str:
     if not encoded_str: return ""
@@ -130,7 +128,6 @@ def get_static_sources() -> list:
     except (FileNotFoundError, json.JSONDecodeError): return []
 
 def discover_dynamic_sources() -> list:
-    # ... (بدون تغییر) ...
     if not GITHUB_PAT: return []
     g = Github(auth=Auth.Token(GITHUB_PAT), timeout=20)
     freshness_threshold = datetime.now(timezone.utc) - timedelta(hours=GITHUB_FRESHNESS_HOURS)
@@ -150,7 +147,6 @@ def discover_dynamic_sources() -> list:
     return list(dynamic_sources)
 
 def validate_and_categorize_configs(configs: set) -> dict:
-    # ... (بدون تغییر) ...
     categorized = {'xray': set(), 'singbox_only': set()}
     for cfg in configs:
         if not _is_valid_config_format(cfg): continue
@@ -164,7 +160,6 @@ def validate_and_categorize_configs(configs: set) -> dict:
     return categorized
 
 def generate_clash_subscription(configs: list) -> str | None:
-    # ... (بدون تغییر) ...
     proxies = []
     used_names = set()
     for config_str in configs:
