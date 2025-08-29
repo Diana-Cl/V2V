@@ -1,6 +1,5 @@
-// File: /api/proxy.js
-
-import net from 'net';
+// api/proxy.js
+const net = require('net');
 
 /**
  * Parses various config URI formats to extract host and port.
@@ -118,8 +117,8 @@ function isValidHostPort(host, port) {
     return true;
 }
 
-// Main serverless function handler
-export default async function handler(req, res) {
+// Main serverless function handler - CommonJS export
+module.exports = async function handler(req, res) {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -199,4 +198,4 @@ export default async function handler(req, res) {
             timestamp: new Date().toISOString()
         });
     }
-}
+};
