@@ -100,7 +100,7 @@
         </div>
         <div class="bottom-links">
             <a href="https://smbcryp.github.io/V2V/" target="_blank">GitHub</a>
-            <a href="https://v2-v.vercel.app/" target="_blank">Vercel</a>
+            <a href="https://v2v-final.vercel.app/" target="_blank">Vercel</a>
             <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.com" target="_blank">ArvanCloud</a>
         </div>
     </div>
@@ -120,13 +120,15 @@
         const AUTO_SELECT_COUNT = 20;
 
         const DATA_SOURCES = [
-            `${CLOUDFLARE_BASE_URL}/all_live_configs.json`, // اولویت اول: کلادفلر
+            `${CLOUDFLARE_BASE_URL}/all_live_configs.json`,
             'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.com/all_live_configs.json',
             'https://raw.githubusercontent.com/SMBCRYP/V2V/main/all_live_configs.json',
-            'https://v2-v.vercel.app/all_live_configs.json'
+            'https://v2v-final.vercel.app/all_live_configs.json' // Updated this fallback
         ];
         
-        const VERCEL_API_ENDPOINT = 'https://v2-v.vercel.app/api/proxy';
+        // --- FINAL FIX: Using a relative path for the API endpoint ---
+        // This is more robust and works even if the project name changes.
+        const VERCEL_API_ENDPOINT = '/api/proxy';
 
         async function fetchDataWithCacheBusting() {
             let lastVersion = null;
@@ -360,11 +362,9 @@
             if (configs.length === 0) return alert('کانفیگی برای ساخت لینک یافت نشد.');
 
             let subContent;
-            // برای QR Code، نام کانفیگ‌ها حذف می‌شود تا سبک‌تر و قابل اسکن‌تر باشد
             if (action === 'qr') {
                 subContent = configs.map(c => c.split('#')[0]).join('\n');
-            } else { // 'sub' action
-                // برای کپی لینک، نام‌ها حفظ می‌شوند
+            } else {
                 subContent = configs.join('\n');
             }
 
