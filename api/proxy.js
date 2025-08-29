@@ -1,11 +1,5 @@
-// api/proxy.js
 const net = require('net');
 
-/**
- * Parses various config URI formats to extract host and port.
- * @param {string} configStr The configuration string (vless://, vmess://, etc.)
- * @returns {{host: string, port: number} | null}
- */
 function parseConfig(configStr) {
     try {
         if (configStr.startsWith('vmess://')) {
@@ -21,7 +15,6 @@ function parseConfig(configStr) {
             }
         }
         
-        // Handle simple host:port format
         if (configStr.includes(':') && !configStr.startsWith('http')) {
             const [host, port] = configStr.split(':');
             if (host && port && !isNaN(port)) {
@@ -31,18 +24,11 @@ function parseConfig(configStr) {
         
         return null;
     } catch (e) {
-        console.error(`Failed to parse config: ${configStr.substring(0, 30)}...`, e.message);
+        console.error(`Failed to parse config: ${configStr.substring(0, 30)}...`);
         return null;
     }
 }
 
-/**
- * Measures the latency of a TCP connection.
- * @param {string} host The server address.
- * @param {number} port The server port.
- * @param {number} timeout Timeout in milliseconds.
- * @returns {Promise<number>} The latency in milliseconds.
- */
 function getTcpPing(host, port, timeout) {
     return new Promise((resolve, reject) => {
         const startTime = process.hrtime.bigint();
@@ -59,29 +45,18 @@ function getTcpPing(host, port, timeout) {
 
         socket.on('error', (err) => {
             socket.destroy();
-            reject(new Error(`Connection error: ${err.message}`));
+            reject(err);
         });
 
         socket.on('timeout', () => {
             socket.destroy();
-            reject(new Error(`Connection timed out after ${timeout}ms`));
+            reject(new Error(`Timeout after ${timeout}ms`));
         });
 
-        try {
-            socket.connect(port, host);
-        } catch (err) {
-            socket.destroy();
-            reject(new Error(`Invalid host or port: ${err.message}`));
-        }
+        socket.connect(port, host);
     });
 }
 
-/**
- * Tries to get a TCP ping multiple times for reliability.
- * @param {string} host The server address.
- * @param {number} port The server port.
- * @returns {Promise<number>} The latency in milliseconds.
- */
 async function pingWithRetries(host, port) {
     const retries = 3;
     const timeout = 8000;
@@ -92,7 +67,6 @@ async function pingWithRetries(host, port) {
             const latency = await getTcpPing(host, port, timeout);
             return latency;
         } catch (error) {
-            console.log(`Attempt ${i + 1}/${retries} failed for ${host}:${port}. Error: ${error.message}`);
             if (i === retries - 1) {
                 throw error;
             }
@@ -101,12 +75,6 @@ async function pingWithRetries(host, port) {
     }
 }
 
-/**
- * Validates if host and port are valid
- * @param {string} host 
- * @param {number} port 
- * @returns {boolean}
- */
 function isValidHostPort(host, port) {
     if (!host || typeof host !== 'string' || host.trim() === '') {
         return false;
@@ -117,13 +85,10 @@ function isValidHostPort(host, port) {
     return true;
 }
 
-// Main serverless function handler - CommonJS export
-module.exports = async function handler(req, res) {
-    // CORS headers
+module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
         return res.status(204).end();
@@ -132,70 +97,62 @@ module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ 
             success: false,
-            message: 'Only POST requests are allowed',
+            message: 'Only POST requests allowed',
             ping: 9999 
         });
     }
 
     let body;
     try {
-        body = req.body;
+        body = req.body || {};
         if (typeof body === 'string') {
             body = JSON.parse(body);
         }
     } catch (e) {
         return res.status(400).json({
             success: false,
-            message: 'Invalid JSON in request body',
+            message: 'Invalid JSON',
             ping: 9999
         });
     }
 
     let host, port;
 
-    // Parse from config string
     if (body.config && typeof body.config === 'string') {
         const serverInfo = parseConfig(body.config);
         if (serverInfo) {
             host = serverInfo.host;
             port = serverInfo.port;
         }
-    }
-    // Parse from direct host/port
-    else if (body.host && body.port) {
+    } else if (body.host && body.port) {
         host = body.host;
         port = parseInt(body.port, 10);
     }
 
-    // Validate input
     if (!isValidHostPort(host, port)) {
         return res.status(400).json({
             success: false,
             ping: 9999,
-            message: 'Invalid input. Provide either a valid "config" string or valid "host" and "port" (1-65535).'
+            message: 'Invalid host or port'
         });
     }
 
     try {
-        console.log(`Testing connection to ${host}:${port}`);
         const latency = await pingWithRetries(host, port);
         
         res.status(200).json({ 
             success: true,
             ping: latency,
             host: host,
-            port: port,
-            timestamp: new Date().toISOString()
+            port: port
         });
     } catch (error) {
-        console.error(`Ping failed for ${host}:${port}:`, error.message);
         res.status(200).json({ 
             success: false,
             ping: 9999, 
             host: host,
             port: port,
-            error: error.message,
-            timestamp: new Date().toISOString()
+            error: error.message
         });
     }
 };
