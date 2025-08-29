@@ -2,7 +2,7 @@
   "functions": {
     "api/proxy.js": {
       "maxDuration": 30,
-      "regions": ["iad1"]
+      "runtime": "nodejs20.x"
     }
   }
 }
