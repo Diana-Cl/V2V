@@ -7,9 +7,7 @@ on:
   # امکان اجرای دستی را فراهم می‌کند
   workflow_dispatch:
 
-# FIX 1: افزودن کنترل همزمانی برای جلوگیری کامل از تداخل (Merge Conflict)
-# این بخش تضمین می‌کند که همیشه فقط یک نمونه از این workflow برای شاخه اصلی اجرا شود
-# و در صورت شروع یک اجرای جدید، اجرای قبلی به صورت خودکار لغو گردد.
+# کنترل همزمانی برای جلوگیری کامل از تداخل (Merge Conflict)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -60,7 +58,6 @@ jobs:
           fi
 
       - name: Restore previous clash subscription if scraper failed
-        # این مرحله فقط در صورتی اجرا می‌شود که مرحله قبلی (اجرای اسکریپت) با خطا مواجه شود
         if: failure()
         run: |
           if [ ! -f "clash_subscription.yaml" ] && [ -f "clash_subscription.yaml.bak" ]; then
@@ -79,17 +76,21 @@ jobs:
             exit 0
           fi
           
-          # FIX 2: استفاده از آدرس پایدارتر برای فضای ابری آروان
           ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.com"
           BUCKET_NAME="s3://v2v-data"
           
-          # آپلود فایل‌های اصلی با دسترسی عمومی و کنترل کش
+          # آپلود فایل‌های اصلی
           aws s3 cp all_live_configs.json "$BUCKET_NAME/all_live_configs.json" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
           aws s3 cp clash_subscription.yaml "$BUCKET_NAME/clash_subscription.yaml" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
           
-          # آپلود فایل ایندکس برای داشتن یک نسخه میرور کامل
+          # آپلود فایل ایندکس
           if [ -f "index.html" ]; then
             aws s3 cp index.html "$BUCKET_NAME/index.html" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/html" --cache-control "max-age=300"
+          fi
+
+          # آپلود فایل ورژن برای هماهنگی با ایندکس (اصلاح نهایی)
+          if [ -f "cache_version.txt" ]; then
+            aws s3 cp cache_version.txt "$BUCKET_NAME/cache_version.txt" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/plain" --cache-control "max-age=300"
           fi
 
       - name: Generate Cache Buster Version
@@ -113,7 +114,6 @@ jobs:
           else
             git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
             
-            # FIX 3: ساده‌سازی منطق push
             # با وجود 'concurrency'، دیگر نیازی به pull کردن قبل از push نیست
             # این روش بسیار امن‌تر و تمیزتر است
             git push
