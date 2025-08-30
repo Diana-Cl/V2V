@@ -68,7 +68,8 @@
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.8em; }
         .ping { font-weight: bold; font-size: 0.85em; }
-        .ping .api-marker { font-size: 0.7em; color: #aaa; font-weight: normal; }
+        .ping strong { margin: 0 3px; }
+        .ping .ping-bad { color: var(--ping-bad); }
         .copy-button-container { display: flex; gap: 6px; }
         .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
         .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; flex-shrink: 0; }
@@ -101,8 +102,7 @@
         <div class="bottom-links">
             <a href="https://smbcryp.github.io/V2V/" target="_blank">GitHub</a>
             <a href="https://v2v-final.vercel.app/" target="_blank">Vercel</a>
-            <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.com" target="_blank">ArvanCloud</a>
-        </div>
+            </div>
     </div>
     <div id="qr-code-modal">
         <div class="qr-code-content">
@@ -114,155 +114,120 @@
     
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-
     <script>
         const CLOUDFLARE_BASE_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
         const AUTO_SELECT_COUNT = 20;
 
-        const DATA_SOURCES = [
-            `${CLOUDFLARE_BASE_URL}/all_live_configs.json`,
-            'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.com/all_live_configs.json',
-            'https://raw.githubusercontent.com/SMBCRYP/V2V/main/all_live_configs.json',
-            'https://v2v-final.vercel.app/all_live_configs.json'
-        ];
+        // --- START: بخش جدید تست سرعت پیشرفته ---
         
-        const VERCEL_API_ENDPOINT = '/api/proxy';
+        async function getNetworkMetrics(timeout = 3000) {
+            const PING_COUNT = 5;
+            let latencies = [];
+            
+            for (let i = 0; i < PING_COUNT; i++) {
+                const startTime = performance.now();
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), timeout);
+                    await fetch(`${CLOUDFLARE_BASE_URL}/ping?t=${Date.now()}-${i}`, { signal: controller.signal, cache: 'no-store' });
+                    clearTimeout(timeoutId);
+                    latencies.push(performance.now() - startTime);
+                } catch (error) {
+                    console.error('Ping request failed:', error);
+                    latencies.push(timeout); 
+                }
+            }
 
-        // --- START: بخش جدید تست سرعت هوشمند ---
-        
-        /**
-         * تست پینگ سریع به نزدیکترین سرور کلادفلر برای سنجش کیفیت اتصال کاربر.
-         */
-        async function getCloudflarePing(timeout = 4000) {
+            if (latencies.every(l => l >= timeout)) return { ping: 'Error', jitter: 'Error' };
+
+            const avgPing = Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length);
+            const jitter = Math.round(Math.sqrt(latencies.map(l => Math.pow(l - avgPing, 2)).reduce((a, b) => a + b, 0) / latencies.length));
+            
+            return { ping: avgPing, jitter };
+        }
+
+        async function getDownloadSpeed(timeout = 5000) {
             const startTime = performance.now();
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), timeout);
+                const response = await fetch(`${CLOUDFLARE_BASE_URL}/dl-test.bin?t=${Date.now()}`, { signal: controller.signal, cache: 'no-store' });
                 
-                // از یک پارامتر تصادفی برای جلوگیری از کش شدن توسط مرورگر استفاده می‌کنیم
-                await fetch(`${CLOUDFLARE_BASE_URL}/ping?t=${new Date().getTime()}`, {
-                    method: 'GET',
-                    signal: controller.signal,
-                    cache: 'no-store'
-                });
+                if (!response.ok) return 'Error';
 
+                const blob = await response.blob();
+                const duration = (performance.now() - startTime) / 1000;
                 clearTimeout(timeoutId);
-                return Math.round(performance.now() - startTime);
+                
+                const speedMbps = (blob.size * 8) / (duration * 1000 * 1000);
+                return `${speedMbps.toFixed(2)} Mbps`;
+
             } catch (error) {
-                console.error('Cloudflare ping failed:', error);
+                console.error('Download speed test failed:', error);
                 return 'Error';
             }
         }
-
-        /**
-         * تست پشتیبان با استفاده از API ورسل برای کانفیگ‌های خاص.
-         */
-        async function getVercelApiPing(configStr) {
-            try {
-                const apiResponse = await fetch(VERCEL_API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ config: configStr })
-                });
-                if (!apiResponse.ok) throw new Error('API response not OK');
-                const apiData = await apiResponse.json();
-                return apiData.ping ? apiData.ping : 'Error';
-            } catch (e) {
-                console.error("Vercel API Ping failed:", e);
-                return 'Error';
-            }
-        }
-
-        /**
-         * اجرای تست سرعت هوشمند و ضد-فیلتر.
-         */
+        
         async function runSpeedTest(core) {
             const testButton = document.querySelector(`#${core}-section .test-button`);
-            if (testButton.disabled) return;
             testButton.disabled = true;
-            testButton.textContent = 'در حال تست...';
+            testButton.textContent = 'در حال تست جامع...';
 
-            // ابتدا پینگ کلی کاربر تا کلادفلر را می‌سنجیم
-            const userPingToCloudflare = await getCloudflarePing();
-            
+            const metrics = await getNetworkMetrics();
+            const downloadSpeed = await getDownloadSpeed();
+
             const items = document.querySelectorAll(`#${core}-content-wrapper .config-item`);
-
-            // سپس برای هر کانفیگ، نتیجه را نمایش می‌دهیم
-            const testPromises = Array.from(items).map(async (item) => {
+            items.forEach(item => {
                 const pingEl = item.querySelector('.ping');
-                const configStr = item.dataset.config;
-                let finalPing, isApiResult = false, apiMarker = '';
+                let pingText = '';
                 
-                // تلاش اول: استفاده از پینگ کلادفلر
-                if (typeof userPingToCloudflare === 'number') {
-                    finalPing = userPingToCloudflare;
+                if (metrics.ping !== 'Error') {
+                    pingText += `P:<strong>${metrics.ping}</strong>ms J:<strong>${metrics.jitter}</strong>ms`;
                 } else {
-                    // تلاش دوم (Fallback): اگر کلادفلر فیلتر بود، از API ورسل استفاده کن
-                    finalPing = await getVercelApiPing(configStr);
-                    isApiResult = true;
+                    pingText += `P: <strong class="ping-bad">Error</strong>`;
                 }
                 
-                // نمایش نتیجه در UI
-                let pingValue, pingText, pingColor;
-                if (isApiResult) apiMarker = ' <span class="api-marker">(API)</span>';
-
-                if (typeof finalPing !== 'number' || finalPing >= 9999) {
-                    pingValue = 9999;
-                    pingText = 'Error';
-                    pingColor = 'var(--ping-bad)';
-                } else {
-                    pingValue = finalPing;
-                    pingText = `${pingValue}ms`;
-                    pingColor = 'var(--ping-good)';
-                    if (pingValue > 350) pingColor = 'var(--ping-medium)';
-                    if (pingValue > 800) pingColor = 'var(--ping-bad)';
+                if (downloadSpeed !== 'Error') {
+                    pingText += ` | D: <strong>${downloadSpeed}</strong>`;
                 }
-                item.dataset.newPing = pingValue;
-                pingEl.innerHTML = `پینگ: <strong style="color:${pingColor};">${pingText}</strong>${apiMarker}`;
+                
+                item.dataset.newPing = (typeof metrics.ping === 'number') ? metrics.ping : 9999;
+                pingEl.innerHTML = pingText;
             });
-
-            await Promise.all(testPromises);
+            
             sortConfigsByPing(core);
             testButton.disabled = false;
             testButton.textContent = '🚀 تست مجدد سرعت';
         }
-        
-        // --- END: بخش جدید تست سرعت هوشمند ---
+        // --- END: بخش جدید تست سرعت پیشرفته ---
 
-
-        async function fetchDataWithCacheBusting() {
-            let lastVersion = null;
+        // --- START: دریافت فایل‌های زمان‌دار ---
+        async function fetchData() {
             try {
-                const versionUrl = `${CLOUDFLARE_BASE_URL}/cache_version.txt?t=${new Date().getTime()}`;
-                const versionResponse = await fetch(versionUrl, { cache: 'no-store' });
-                if (versionResponse.ok) lastVersion = (await versionResponse.text()).trim();
-            } catch (e) { console.warn("Could not fetch version from Cloudflare, will try other sources."); }
-            
-            if (lastVersion) {
-                 const unixTimestamp = parseInt(lastVersion, 10);
-                 if (!isNaN(unixTimestamp)) {
-                    const date = new Date(unixTimestamp * 1000);
+                const versionResponse = await fetch(`${CLOUDFLARE_BASE_URL}/cache_version.txt?t=${Date.now()}`, { cache: 'no-store' });
+                if (!versionResponse.ok) throw new Error('Version file not found');
+                const timestamp = (await versionResponse.text()).trim();
+                
+                if (timestamp) {
+                    const date = new Date(parseInt(timestamp, 10) * 1000);
                     const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Tehran' };
-                    document.getElementById('status-bar').textContent = `تاریخ آخرین بروزرسانی: ${date.toLocaleString('fa-IR', options)}`;
-                 }
-            }
-            
-            for (const sourceUrl of DATA_SOURCES) {
-                try {
-                    const uniqueUrl = `${sourceUrl}?v=${lastVersion || new Date().getTime()}`;
-                    const dataResponse = await fetch(uniqueUrl, { cache: 'no-store' });
-                    if (!dataResponse.ok) throw new Error(`Failed with status: ${dataResponse.status}`);
-                    return await dataResponse.json();
-                } catch (error) {
-                    console.error(`Failed to fetch from source ${sourceUrl}:`, error);
+                    document.getElementById('status-bar').textContent = `آخرین بروزرسانی: ${date.toLocaleString('fa-IR', options)}`;
                 }
-            }
-            throw new Error('All data sources failed.');
-        }
+                
+                const dataUrl = `${CLOUDFLARE_BASE_URL}/all_live_configs_${timestamp}.json`;
+                const dataResponse = await fetch(dataUrl, { cache: 'no-store' });
+                if (!dataResponse.ok) throw new Error(`Data file not found for timestamp: ${timestamp}`);
+                return await dataResponse.json();
 
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+                throw error;
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const data = await fetchDataWithCacheBusting();
+                const data = await fetchData();
                 renderCore('xray', data.xray || []);
                 renderCore('singbox', data.singbox || []);
             } catch (error) {
@@ -272,13 +237,13 @@
                 document.getElementById('singbox-content-wrapper').innerHTML = errorMsg;
             }
         });
-
+        // --- END: دریافت فایل‌های زمان‌دار ---
+        
         function renderCore(core, configObjects) {
             const container = document.getElementById(`${core}-content-wrapper`);
             container.innerHTML = '';
             const headerControls = document.createElement('div');
-            // آپدیت متن دکمه تست سرعت
-            headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت هوشمند</button>`;
+            headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت پیشرفته</button>`;
             
             if (core === 'xray') {
                 headerControls.innerHTML += `<div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div><div class="action-group"><h4 class="action-group-title">فایل / Clash Meta</h4><div class="action-buttons"><button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button><button class="action-button" onclick="generateClashConfig('${core}', 'download')">دانلود فایل شخصی</button></div></div>`;
