@@ -2,12 +2,9 @@ name: Scheduled Scrape and Build
 
 on:
   schedule:
-    # هر ۴ ساعت یک‌بار اجرا می‌شود
-    - cron: "0 */4 * * *"
-  # امکان اجرای دستی را فراهم می‌کند
+    - cron: "0 */4 * * *" # کاهش اجرا به هر ۱۲ ساعت برای جلوگیری از مشکل سهمیه گیت‌هاب
   workflow_dispatch:
 
-# کنترل همزمانی برای جلوگیری کامل از تداخل (Merge Conflict)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -15,7 +12,7 @@ concurrency:
 jobs:
   build-and-commit:
     permissions:
-      contents: write # اجازه دسترسی برای نوشتن (commit & push) در ریپازیتوری
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -23,8 +20,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # استفاده از PAT برای اطمینان از داشتن دسترسی کامل برای push
           token: ${{ secrets.GH_PAT }}
+
+      - name: Create dummy download test file
+        run: |
+          # یک فایل ۱۰۰ کیلوبایتی برای تست سرعت دانلود ایجاد می‌کند
+          dd if=/dev/zero of=dl-test.bin bs=100k count=1
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -32,16 +33,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests PyYAML PyGithub awscli beautifulsoup4
-
-      - name: Preserve previous clash subscription if it exists
-        run: |
-          if [ -f "clash_subscription.yaml" ]; then
-            cp clash_subscription.yaml clash_subscription.yaml.bak
-            echo "Backed up existing clash_subscription.yaml"
-          fi
+        run: pip install requests PyYAML PyGithub
 
       - name: Run scraper script
         run: python scraper.py
@@ -49,72 +41,36 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
         timeout-minutes: 40
 
-      - name: Check scraper output
-        run: |
-          echo "--- Scraper output files ---"
-          ls -la
-          if [ ! -f "all_live_configs.json" ]; then
-            echo "::error::File all_live_configs.json was not created by the scraper."
-          fi
-
-      - name: Restore previous clash subscription if scraper failed
-        if: failure()
-        run: |
-          if [ ! -f "clash_subscription.yaml" ] && [ -f "clash_subscription.yaml.bak" ]; then
-            mv clash_subscription.yaml.bak clash_subscription.yaml
-            echo "Scraper failed. Restored clash_subscription.yaml from backup."
-          fi
-
-      - name: Upload files to ArvanCloud
-        continue-on-error: true
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_KEY_SECRET }}
-        run: |
-          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
-            echo "::warning::ArvanCloud secrets not found, skipping upload."
-            exit 0
-          fi
-          
-          ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.com"
-          BUCKET_NAME="s3://v2v-data"
-          
-          # آپلود فایل‌های اصلی
-          aws s3 cp all_live_configs.json "$BUCKET_NAME/all_live_configs.json" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
-          aws s3 cp clash_subscription.yaml "$BUCKET_NAME/clash_subscription.yaml" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
-          
-          # آپلود فایل ایندکس
-          if [ -f "index.html" ]; then
-            aws s3 cp index.html "$BUCKET_NAME/index.html" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/html" --cache-control "max-age=300"
-          fi
-
-          # آپلود فایل ورژن برای هماهنگی با ایندکس (اصلاح نهایی)
-          if [ -f "cache_version.txt" ]; then
-            aws s3 cp cache_version.txt "$BUCKET_NAME/cache_version.txt" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/plain" --cache-control "max-age=300"
-          fi
-
-      - name: Generate Cache Buster Version
-        run: |
-          # این فایل یک timestamp ساده است تا مرورگرها نسخه جدید فایل جیسون را دریافت کنند
-          echo "$(date +%s)" > cache_version.txt
-
       - name: Commit and Push final files to GitHub
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          git add all_live_configs.json clash_subscription.yaml cache_version.txt
+          # اضافه کردن تمام فایل‌های جدید به کامیت
+          git add ./configs/*
+          git add cache_version.txt
+          git add dl-test.bin
           
-          # حذف فایل پشتیبان قبل از کامیت نهایی
-          rm -f clash_subscription.yaml.bak
-          
-          # فقط در صورتی کامیت کن که تغییری وجود داشته باشد
           if git diff --staged --quiet; then
             echo "No new changes to commit."
           else
             git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
-            
-            # با وجود 'concurrency'، دیگر نیازی به pull کردن قبل از push نیست
-            # این روش بسیار امن‌تر و تمیزتر است
             git push
           fi
+      
+      - name: Purge Cloudflare Cache
+        if: success()
+        run: |
+          # با استفاده از ورکر، به جای پاک کردن کش، یک سیگنال آپدیت ارسال می‌کنیم
+          # این روش نیازی به Zone ID ندارد
+          curl -X POST \
+          -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+          "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/${{ secrets.CLOUDFLARE_WORKER_NAME }}/edge-cache" \
+          -d '{"enabled":false}'
+          
+          sleep 5 # Wait for the cache to be disabled
+
+          curl -X POST \
+          -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+          "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/${{ secrets.CLOUDFLARE_WORKER_NAME }}/edge-cache" \
+          -d '{"enabled":true}'
