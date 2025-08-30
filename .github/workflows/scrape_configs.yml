@@ -2,7 +2,8 @@ name: Scheduled Scrape and Build
 
 on:
   schedule:
-    - cron: "0 */4 * * *" # کاهش اجرا به هر ۱۲ ساعت برای جلوگیری از مشکل سهمیه گیت‌هاب
+    # اجرا هر ۴ ساعت یک‌بار
+    - cron: "0 */4 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -23,9 +24,7 @@ jobs:
           token: ${{ secrets.GH_PAT }}
 
       - name: Create dummy download test file
-        run: |
-          # یک فایل ۱۰۰ کیلوبایتی برای تست سرعت دانلود ایجاد می‌کند
-          dd if=/dev/zero of=dl-test.bin bs=100k count=1
+        run: dd if=/dev/zero of=dl-test.bin bs=100k count=1
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -33,7 +32,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install requests PyYAML PyGithub
+        run: pip install requests PyYAML PyGithub beautifulsoup4 awscli
 
       - name: Run scraper script
         run: python scraper.py
@@ -41,36 +40,41 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
         timeout-minutes: 40
 
+      - name: Upload files to ArvanCloud
+        if: success() # فقط در صورت موفقیت اسکریپر اجرا شود
+        continue-on-error: true # اگر آپلود ناموفق بود، ادامه بده
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_KEY_SECRET }}
+        run: |
+          if [ -z "$AWS_ACCESS_KEY_ID" ]; then
+            echo "::warning::ArvanCloud secrets not found, skipping upload."
+            exit 0
+          fi
+          ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.com"
+          BUCKET_NAME="s3://v2v-data"
+          
+          # آپلود محتویات پوشه configs به ریشه bucket
+          if [ -d "./configs" ]; then
+            aws s3 sync ./configs "$BUCKET_NAME/" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
+          fi
+          
+          # آپلود فایل‌های ریشه
+          if [ -f "cache_version.txt" ]; then
+            aws s3 cp cache_version.txt "$BUCKET_NAME/cache_version.txt" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/plain" --cache-control "max-age=300"
+          fi
+          if [ -f "dl-test.bin" ]; then
+            aws s3 cp dl-test.bin "$BUCKET_NAME/dl-test.bin" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=3600"
+          fi
+
       - name: Commit and Push final files to GitHub
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
-          # اضافه کردن تمام فایل‌های جدید به کامیت
-          git add ./configs/*
-          git add cache_version.txt
-          git add dl-test.bin
-          
+          git add ./configs/ cache_version.txt dl-test.bin
           if git diff --staged --quiet; then
             echo "No new changes to commit."
           else
             git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
             git push
           fi
-      
-      - name: Purge Cloudflare Cache
-        if: success()
-        run: |
-          # با استفاده از ورکر، به جای پاک کردن کش، یک سیگنال آپدیت ارسال می‌کنیم
-          # این روش نیازی به Zone ID ندارد
-          curl -X POST \
-          -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
-          "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/${{ secrets.CLOUDFLARE_WORKER_NAME }}/edge-cache" \
-          -d '{"enabled":false}'
-          
-          sleep 5 # Wait for the cache to be disabled
-
-          curl -X POST \
-          -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
-          "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/${{ secrets.CLOUDFLARE_WORKER_NAME }}/edge-cache" \
-          -d '{"enabled":true}'
