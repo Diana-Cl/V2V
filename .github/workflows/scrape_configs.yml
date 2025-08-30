@@ -2,8 +2,8 @@ name: Scheduled Scrape and Build
 
 on:
   schedule:
-    # اجرا هر ۴ ساعت یک‌بار
-    - cron: "0 */4 * * *"
+    # اجرا هر ۸ ساعت یک‌بار
+    - cron: "0 */8 * * *"
   workflow_dispatch:
 
 concurrency:
