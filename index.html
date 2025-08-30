@@ -123,12 +123,112 @@
             `${CLOUDFLARE_BASE_URL}/all_live_configs.json`,
             'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.com/all_live_configs.json',
             'https://raw.githubusercontent.com/SMBCRYP/V2V/main/all_live_configs.json',
-            'https://v2v-final.vercel.app/all_live_configs.json' // Updated this fallback
+            'https://v2v-final.vercel.app/all_live_configs.json'
         ];
         
-        // --- FINAL FIX: Using a relative path for the API endpoint ---
-        // This is more robust and works even if the project name changes.
         const VERCEL_API_ENDPOINT = '/api/proxy';
+
+        // --- START: بخش جدید تست سرعت هوشمند ---
+        
+        /**
+         * تست پینگ سریع به نزدیکترین سرور کلادفلر برای سنجش کیفیت اتصال کاربر.
+         */
+        async function getCloudflarePing(timeout = 4000) {
+            const startTime = performance.now();
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                
+                // از یک پارامتر تصادفی برای جلوگیری از کش شدن توسط مرورگر استفاده می‌کنیم
+                await fetch(`${CLOUDFLARE_BASE_URL}/ping?t=${new Date().getTime()}`, {
+                    method: 'GET',
+                    signal: controller.signal,
+                    cache: 'no-store'
+                });
+
+                clearTimeout(timeoutId);
+                return Math.round(performance.now() - startTime);
+            } catch (error) {
+                console.error('Cloudflare ping failed:', error);
+                return 'Error';
+            }
+        }
+
+        /**
+         * تست پشتیبان با استفاده از API ورسل برای کانفیگ‌های خاص.
+         */
+        async function getVercelApiPing(configStr) {
+            try {
+                const apiResponse = await fetch(VERCEL_API_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ config: configStr })
+                });
+                if (!apiResponse.ok) throw new Error('API response not OK');
+                const apiData = await apiResponse.json();
+                return apiData.ping ? apiData.ping : 'Error';
+            } catch (e) {
+                console.error("Vercel API Ping failed:", e);
+                return 'Error';
+            }
+        }
+
+        /**
+         * اجرای تست سرعت هوشمند و ضد-فیلتر.
+         */
+        async function runSpeedTest(core) {
+            const testButton = document.querySelector(`#${core}-section .test-button`);
+            if (testButton.disabled) return;
+            testButton.disabled = true;
+            testButton.textContent = 'در حال تست...';
+
+            // ابتدا پینگ کلی کاربر تا کلادفلر را می‌سنجیم
+            const userPingToCloudflare = await getCloudflarePing();
+            
+            const items = document.querySelectorAll(`#${core}-content-wrapper .config-item`);
+
+            // سپس برای هر کانفیگ، نتیجه را نمایش می‌دهیم
+            const testPromises = Array.from(items).map(async (item) => {
+                const pingEl = item.querySelector('.ping');
+                const configStr = item.dataset.config;
+                let finalPing, isApiResult = false, apiMarker = '';
+                
+                // تلاش اول: استفاده از پینگ کلادفلر
+                if (typeof userPingToCloudflare === 'number') {
+                    finalPing = userPingToCloudflare;
+                } else {
+                    // تلاش دوم (Fallback): اگر کلادفلر فیلتر بود، از API ورسل استفاده کن
+                    finalPing = await getVercelApiPing(configStr);
+                    isApiResult = true;
+                }
+                
+                // نمایش نتیجه در UI
+                let pingValue, pingText, pingColor;
+                if (isApiResult) apiMarker = ' <span class="api-marker">(API)</span>';
+
+                if (typeof finalPing !== 'number' || finalPing >= 9999) {
+                    pingValue = 9999;
+                    pingText = 'Error';
+                    pingColor = 'var(--ping-bad)';
+                } else {
+                    pingValue = finalPing;
+                    pingText = `${pingValue}ms`;
+                    pingColor = 'var(--ping-good)';
+                    if (pingValue > 350) pingColor = 'var(--ping-medium)';
+                    if (pingValue > 800) pingColor = 'var(--ping-bad)';
+                }
+                item.dataset.newPing = pingValue;
+                pingEl.innerHTML = `پینگ: <strong style="color:${pingColor};">${pingText}</strong>${apiMarker}`;
+            });
+
+            await Promise.all(testPromises);
+            sortConfigsByPing(core);
+            testButton.disabled = false;
+            testButton.textContent = '🚀 تست مجدد سرعت';
+        }
+        
+        // --- END: بخش جدید تست سرعت هوشمند ---
+
 
         async function fetchDataWithCacheBusting() {
             let lastVersion = null;
@@ -152,7 +252,6 @@
                     const uniqueUrl = `${sourceUrl}?v=${lastVersion || new Date().getTime()}`;
                     const dataResponse = await fetch(uniqueUrl, { cache: 'no-store' });
                     if (!dataResponse.ok) throw new Error(`Failed with status: ${dataResponse.status}`);
-                    console.log(`Successfully fetched from: ${sourceUrl}`);
                     return await dataResponse.json();
                 } catch (error) {
                     console.error(`Failed to fetch from source ${sourceUrl}:`, error);
@@ -178,14 +277,17 @@
             const container = document.getElementById(`${core}-content-wrapper`);
             container.innerHTML = '';
             const headerControls = document.createElement('div');
+            // آپدیت متن دکمه تست سرعت
+            headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت هوشمند</button>`;
+            
             if (core === 'xray') {
-                headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت (منطق ترکیبی)</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div><div class="action-group"><h4 class="action-group-title">فایل / Clash Meta</h4><div class="action-buttons"><button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button><button class="action-button" onclick="generateClashConfig('${core}', 'download')">دانلود فایل شخصی</button></div></div>`;
+                headerControls.innerHTML += `<div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div><div class="action-group"><h4 class="action-group-title">فایل / Clash Meta</h4><div class="action-buttons"><button class="action-button" onclick="copyClashSubscriptionUrl()">کپی URL اشتراک</button><button class="action-button" onclick="generateClashConfig('${core}', 'download')">دانلود فایل شخصی</button></div></div>`;
             } else {
-                headerControls.innerHTML = `<button class="test-button" onclick="runSpeedTest('${core}')">🚀 تست سرعت (منطق ترکیبی)</button><div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div>`;
+                headerControls.innerHTML += `<div class="action-group"><h4 class="action-group-title">لینک اشتراک / Subscription</h4><div class="action-buttons"><button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button><button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button></div></div>`;
             }
             container.appendChild(headerControls);
             if (configObjects.length === 0) {
-                container.appendChild(Object.assign(document.createElement('div'), { className: 'alert', innerHTML: '❌ هیچ کانفیگ سالمی در این دسته یافت نشد. منتظر آپدیت بعدی منابع بمانید.' }));
+                container.appendChild(Object.assign(document.createElement('div'), { className: 'alert', innerHTML: '❌ هیچ کانفیگ سالمی در این دسته یافت نشد.' }));
                 return;
             }
             const groupedByProtocol = configObjects.reduce((acc, item) => {
@@ -244,13 +346,11 @@
             const modal = document.getElementById('qr-code-modal');
             const container = document.getElementById('qr-code-container');
             container.innerHTML = '';
-            
             const qr = new QRCode(container, {
                 text: text, width: 256, height: 256,
                 colorDark: "#000000", colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
             });
-
             const downloadBtn = document.getElementById('qr-download-btn');
             downloadBtn.onclick = () => {
                 const img = container.querySelector('img');
@@ -259,87 +359,11 @@
                 link.href = img.src;
                 link.click();
             };
-
             modal.style.display = 'flex';
         }
         
         function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
         function copyToClipboard(text, msg = 'کپی شد!') { navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی ناموفق بود.\n' + err));}
-        
-        async function runSpeedTest(core) {
-            const testButton = document.querySelector(`#${core}-section .test-button`);
-            if (testButton.disabled) return;
-            testButton.disabled = true;
-            testButton.textContent = 'در حال تست...';
-            const items = document.querySelectorAll(`#${core}-content-wrapper .config-item`);
-            const testPromises = Array.from(items).map(async (item) => {
-                const pingEl = item.querySelector('.ping');
-                pingEl.textContent = 'درحال تست...';
-                const configStr = item.dataset.config;
-                let isApiResult = false;
-                let pingResult = await testConfigLatencyFromBrowser(configStr);
-                if (['N/A', 'Error', 'Timeout'].includes(pingResult)) {
-                    try {
-                        const apiResponse = await fetch(VERCEL_API_ENDPOINT, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ config: configStr })
-                        });
-                        if (!apiResponse.ok) throw new Error('API response not OK');
-                        const apiData = await apiResponse.json();
-                        if (apiData.ping) {
-                            pingResult = apiData.ping;
-                            isApiResult = true;
-                        } else { pingResult = 'Error'; }
-                    } catch (e) { console.error("API Ping failed:", e); pingResult = 'Error'; }
-                }
-                let pingValue, pingText, pingColor;
-                const apiMarker = isApiResult ? ' <span class="api-marker">(API)</span>' : '';
-                if (['Timeout', 'Error', 'N/A'].includes(pingResult)) {
-                    pingValue = 9999; pingText = pingResult; pingColor = 'var(--ping-bad)';
-                } else {
-                    pingValue = parseInt(pingResult, 10); pingText = `${pingValue}ms`;
-                    pingColor = 'var(--ping-good)';
-                    if (pingValue > 350) pingColor = 'var(--ping-medium)';
-                    if (pingValue > 800) pingColor = 'var(--ping-bad)';
-                }
-                item.dataset.newPing = pingValue;
-                pingEl.innerHTML = `پینگ: <strong style="color:${pingColor};">${pingText}</strong>${apiMarker}`;
-            });
-            await Promise.all(testPromises);
-            sortConfigsByPing(core);
-            testButton.disabled = false;
-            testButton.textContent = '🚀 تست مجدد سرعت';
-        }
-        function testWebSocketLatency(url, timeout = 3000) {
-            return new Promise(resolve => {
-                const startTime = performance.now(); let ws;
-                try { ws = new WebSocket(url); } catch (e) { return resolve('Error'); }
-                const timeoutId = setTimeout(() => { if (ws) ws.close(); resolve('Timeout'); }, timeout);
-                ws.onopen = () => { clearTimeout(timeoutId); ws.close(); resolve(Math.round(performance.now() - startTime)); };
-                ws.onerror = () => { clearTimeout(timeoutId); resolve('Error'); };
-            });
-        }
-        function testConfigLatencyFromBrowser(configStr) {
-            try {
-                if (configStr.startsWith('vmess://')) {
-                    const decoded = JSON.parse(atob(configStr.replace('vmess://', '')));
-                    if (decoded.net === 'ws') {
-                        const wsProtocol = decoded.tls === 'tls' ? 'wss' : 'ws';
-                        const wsUrl = `${wsProtocol}://${decoded.add}:${decoded.port}${decoded.path || '/'}`;
-                        return testWebSocketLatency(wsUrl);
-                    }
-                } else {
-                    const url = new URL(configStr); const params = new URLSearchParams(url.search);
-                    if (params.get('type') === 'ws' || params.get('network') === 'ws') {
-                        const wsProtocol = params.get('security') === 'tls' ? 'wss' : 'ws';
-                        const wsUrl = `${wsProtocol}://${url.hostname}:${url.port || (wsProtocol === 'wss' ? 443 : 80)}${params.get('path') || '/'}`;
-                        return testWebSocketLatency(wsUrl);
-                    }
-                }
-                return Promise.resolve('N/A');
-            } catch (e) { console.error("Browser ping test error:", e); return Promise.resolve('Error'); }
-        }
         
         function sortConfigsByPing(core) { document.querySelectorAll(`#${core}-content-wrapper .protocol-group`).forEach(group => { const list = group.querySelector('.config-list'); const items = Array.from(list.children); items.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999)); items.forEach(item => list.appendChild(item)); }); }
         function getSelectedConfigs(core) { return Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config); }
@@ -350,7 +374,6 @@
                 const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
                 const testedItems = allItems.filter(item => item.dataset.newPing && parseInt(item.dataset.newPing, 10) < 9999)
                                             .sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
-                
                 if (testedItems.length > 0) {
                     alert(`هیچ کانفیگی انتخاب نشده است. لینک با ${Math.min(testedItems.length, AUTO_SELECT_COUNT)} کانفیگ برتر ساخته می‌شود.`);
                     configs = testedItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
@@ -367,10 +390,8 @@
             } else {
                 subContent = configs.join('\n');
             }
-
             const encodedSub = btoa(unescape(encodeURIComponent(subContent)));
             const finalUrl = `data:text/plain;base64,${encodedSub}`;
-
             if (action === 'qr') {
                 showQrCode(finalUrl);
             } else {
