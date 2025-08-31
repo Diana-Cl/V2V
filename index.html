@@ -13,7 +13,9 @@
         :root {
             --primary-bg: #121212; --secondary-bg: #1a1a1a; --text-color: #d1d1d1;
             --logo-red: #D32F2F; --logo-green: #388E3C; --border-color: #333;
-            --ping-good: #388E3C; --ping-medium: #FBC02D; --ping-bad: #D32F2F;
+            --ping-excellent: #4CAF50; --ping-good: #8BC34A; --ping-medium: #FFC107; 
+            --ping-bad: #FF5722; --ping-terrible: #D32F2F;
+            --jitter-color: #2196F3; --download-color: #9C27B0;
         }
         html { height: 100%; box-sizing: border-box; }
         *, *:before, *:after { box-sizing: inherit; }
@@ -41,19 +43,21 @@
         }
         #xray-header { background-color: var(--logo-red); }
         #singbox-header { background-color: var(--logo-green); }
-        .global-test-container { margin-bottom: 20px; } /* [CHANGE] New container for the global test button */
+        .global-test-container { margin-bottom: 20px; }
         .test-button {
-            background-color: var(--logo-green); color: white; border: none; padding: 10px 20px;
-            border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1em;
-            display: inline-flex; align-items: center; gap: 8px;
+            background-color: var(--logo-green); color: white; border: none; padding: 12px 24px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em;
+            display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s ease;
         }
-        .test-button:disabled { background-color: #555; cursor: not-allowed; }
+        .test-button:hover { background-color: #2E7D32; transform: translateY(-1px); }
+        .test-button:disabled { background-color: #555; cursor: not-allowed; transform: none; }
         .loader { width: 16px; height: 16px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
         .action-group-title { margin: 0 0 10px 0; font-size: 1.05em; text-align: right; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
         .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-        .action-button { background-color: #333; border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; flex-grow: 1; color: var(--text-color); }
+        .action-button { background-color: #333; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 0.85em; flex-grow: 1; color: var(--text-color); transition: background-color 0.2s ease; }
+        .action-button:hover { background-color: #444; }
         .protocol-group { border-top: 1px solid var(--border-color); }
         .protocol-header { background-color: transparent; padding: 10px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .protocol-title-wrapper { display: flex; align-items: center; gap: 10px; }
@@ -64,21 +68,32 @@
         }
         .protocol-group.open .toggle-icon { transform: rotate(-135deg); }
         .protocol-controls { display: flex; align-items: center; gap: 8px; }
-        .select-all-btn { background-color: #444; border: 1px solid #666; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 0.75em; color: var(--text-color); }
+        .select-all-btn { background-color: #444; border: 1px solid #666; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 0.75em; color: var(--text-color); transition: background-color 0.2s ease; }
+        .select-all-btn:hover { background-color: #555; }
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.3s ease-out; overflow: hidden; }
-        .protocol-group.open .config-list { max-height: 2000px; }
-        .config-item { padding: 10px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
+        .protocol-group.open .config-list { max-height: 3000px; }
+        .config-item { padding: 12px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; transition: background-color 0.2s ease; }
+        .config-item:hover { background-color: rgba(255, 255, 255, 0.05); }
         .config-item:last-child { border-bottom: none; }
         .config-checkbox { flex-shrink: 0; transform: scale(1.2); margin-left: 8px; accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
-        .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.8em; }
-        .ping { font-weight: bold; font-size: 0.85em; }
-        .ping strong { margin: 0 3px; }
-        .ping .ping-bad { color: var(--ping-bad); }
-        .copy-button-container { display: flex; gap: 6px; }
-        .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
+        .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.85em; color: #fff; margin-bottom: 4px; }
+        .ping { font-size: 0.75em; margin-top: 4px; }
+        .ping-value { font-weight: bold; padding: 2px 4px; border-radius: 3px; margin: 0 2px; }
+        .ping-excellent { background-color: var(--ping-excellent); color: white; }
+        .ping-good { background-color: var(--ping-good); color: white; }
+        .ping-medium { background-color: var(--ping-medium); color: black; }
+        .ping-bad { background-color: var(--ping-bad); color: white; }
+        .ping-terrible { background-color: var(--ping-terrible); color: white; }
+        .jitter-value { background-color: var(--jitter-color); color: white; font-weight: bold; padding: 2px 4px; border-radius: 3px; margin: 0 2px; }
+        .download-value { background-color: var(--download-color); color: white; font-weight: bold; padding: 2px 4px; border-radius: 3px; margin: 0 2px; }
+        .ping-testing { color: #FFC107; font-style: italic; }
+        .copy-button-container { display: flex; gap: 6px; flex-shrink: 0; }
+        .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.8em; transition: background-color 0.2s ease; }
+        .copy-btn:hover { background-color: #444; }
         .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; flex-shrink: 0; }
-        .bottom-links a { color: var(--text-color); text-decoration: none; font-size: 0.9em; }
+        .bottom-links a { color: var(--text-color); text-decoration: none; font-size: 0.9em; transition: color 0.2s ease; }
+        .bottom-links a:hover { color: #fff; }
         .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
         #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
         .qr-code-content { background-color: white; padding: 20px; border-radius: 10px; position: relative; display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -96,9 +111,9 @@
         <div class="status-bar" id="status-bar"></div>
 
         <div class="global-test-container">
-            <button class="test-button" id="global-test-button" onclick="runGlobalSpeedTest()">
-                <span id="test-button-icon">🚀</span>
-                <span id="test-button-text">تست جامع سرعت اتصال</span>
+            <button class="test-button" id="global-test-button" onclick="runRealPingTest()">
+                <span id="test-button-icon">🎯</span>
+                <span id="test-button-text">تست پینگ واقعی کانفیگ‌ها</span>
             </button>
         </div>
 
@@ -127,101 +142,150 @@
     
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+
     <script>
         const CLOUDFLARE_BASE_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
         const AUTO_SELECT_COUNT = 20;
 
-        // --- START: بخش تست سرعت پیشرفته (اصلاح شده) ---
+        // UUIDs ثابت برای sub paths
+        const SUBSCRIPTION_UUIDS = {
+            'xray_top20': 'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7',
+            'xray_all': 'f7e8d9c0-b1a2-4567-8901-234567890abc',
+            'singbox_top20': '9876543a-bcde-4f01-2345-6789abcdef01',
+            'singbox_all': '12345678-9abc-4def-0123-456789abcdef'
+        };
+
+        // --- START: استخراج اطلاعات کانفیگ ---
         
-        async function getNetworkMetrics(timeout = 3000) {
-            const PING_COUNT = 5;
-            let latencies = [];
-            
-            for (let i = 0; i < PING_COUNT; i++) {
-                const startTime = performance.now();
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), timeout);
-                    await fetch(`${CLOUDFLARE_BASE_URL}/ping?t=${Date.now()}-${i}`, { signal: controller.signal, cache: 'no-store' });
-                    clearTimeout(timeoutId);
-                    latencies.push(performance.now() - startTime);
-                } catch (error) {
-                    console.warn('Ping request failed:', error);
-                    latencies.push(timeout); 
+        function extractConfigInfo(configStr) {
+            try {
+                if (configStr.startsWith('vmess://')) {
+                    const vmessData = JSON.parse(atob(configStr.replace('vmess://', '')));
+                    return {
+                        name: vmessData.ps || vmessData.add || 'Unknown',
+                        host: vmessData.add,
+                        port: parseInt(vmessData.port)
+                    };
+                } else if (configStr.startsWith('vless://') || configStr.startsWith('trojan://')) {
+                    const url = new URL(configStr);
+                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname;
+                    return {
+                        name: name,
+                        host: url.hostname,
+                        port: parseInt(url.port)
+                    };
+                } else if (configStr.startsWith('ss://')) {
+                    const url = new URL(configStr);
+                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname;
+                    return {
+                        name: name,
+                        host: url.hostname,
+                        port: parseInt(url.port)
+                    };
                 }
+            } catch (e) {
+                console.error('Failed to parse config:', e);
             }
-
-            if (latencies.every(l => l >= timeout)) return { ping: 'Error', jitter: 'Error' };
-
-            const validLatencies = latencies.filter(l => l < timeout);
-            const avgPing = Math.round(validLatencies.reduce((a, b) => a + b, 0) / validLatencies.length);
-            const jitter = Math.round(Math.sqrt(validLatencies.map(l => Math.pow(l - avgPing, 2)).reduce((a, b) => a + b, 0) / validLatencies.length));
-            
-            return { ping: avgPing, jitter };
+            return { name: 'Invalid Config', host: null, port: null };
         }
 
-        async function getDownloadSpeed(timeout = 5000) {
-            const startTime = performance.now();
+        function getPingColorClass(ping) {
+            if (ping === 'Error' || ping >= 1000) return 'ping-terrible';
+            if (ping < 50) return 'ping-excellent';
+            if (ping < 150) return 'ping-good';
+            if (ping < 300) return 'ping-medium';
+            return 'ping-bad';
+        }
+
+        // --- START: تست پینگ واقعی کانفیگ‌ها ---
+
+        async function testConfigPing(configStr) {
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), timeout);
-                const response = await fetch(`${CLOUDFLARE_BASE_URL}/dl-test.bin?t=${Date.now()}`, { signal: controller.signal, cache: 'no-store' });
+                const response = await fetch(`${CLOUDFLARE_BASE_URL}/test-config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ config: configStr })
+                });
                 
-                if (!response.ok) return 'Error';
-
-                const blob = await response.blob();
-                const duration = (performance.now() - startTime) / 1000;
-                clearTimeout(timeoutId);
-                
-                const speedMbps = (blob.size * 8) / (duration * 1000 * 1000);
-                return `${speedMbps.toFixed(2)} Mbps`;
-
+                if (!response.ok) throw new Error('Test failed');
+                const result = await response.json();
+                return result.ping || 'Error';
             } catch (error) {
-                console.warn('Download speed test failed:', error);
+                console.warn('Config ping test failed:', error);
                 return 'Error';
             }
         }
-        
-        // [CHANGE] Speed test is now global and applies to all configs.
-        async function runGlobalSpeedTest() {
+
+        async function runRealPingTest() {
             const testButton = document.getElementById('global-test-button');
             const buttonIcon = document.getElementById('test-button-icon');
             const buttonText = document.getElementById('test-button-text');
             
             testButton.disabled = true;
             buttonIcon.innerHTML = '<span class="loader"></span>';
-            buttonText.textContent = 'در حال تست جامع...';
+            buttonText.textContent = 'در حال تست پینگ واقعی...';
 
-            const metrics = await getNetworkMetrics();
-            const downloadSpeed = await getDownloadSpeed();
+            const allConfigItems = document.querySelectorAll('.config-item');
+            let completedTests = 0;
+            const totalTests = allConfigItems.length;
 
-            const items = document.querySelectorAll('.config-item');
-            items.forEach(item => {
-                const pingEl = item.querySelector('.ping');
-                let pingText = '';
-                
-                if (metrics.ping !== 'Error') {
-                    pingText += `P:<strong>${metrics.ping}</strong>ms J:<strong>${metrics.jitter}</strong>ms`;
-                } else {
-                    pingText += `P: <strong class="ping-bad">Error</strong>`;
-                }
-                
-                if (downloadSpeed !== 'Error') {
-                    pingText += ` | D: <strong>${downloadSpeed}</strong>`;
-                }
-                
-                item.dataset.newPing = (typeof metrics.ping === 'number') ? metrics.ping : 9999;
-                pingEl.innerHTML = pingText;
-            });
+            // تست همزمان با محدودیت
+            const CONCURRENT_TESTS = 10;
+            const configQueue = Array.from(allConfigItems);
             
-            sortConfigsByPing('xray');
-            sortConfigsByPing('singbox');
+            async function processConfig(configItem) {
+                const configStr = configItem.dataset.config;
+                const pingEl = configItem.querySelector('.ping');
+                
+                pingEl.innerHTML = '<span class="ping-testing">در حال تست...</span>';
+                
+                const ping = await testConfigPing(configStr);
+                completedTests++;
+                
+                // بروزرسانی نمایش پینگ با رنگ‌بندی
+                const pingClass = getPingColorClass(ping);
+                const pingValue = ping === 'Error' ? 'خطا' : `${ping}ms`;
+                pingEl.innerHTML = `P: <span class="ping-value ${pingClass}">${pingValue}</span>`;
+                
+                // ذخیره برای sorting
+                configItem.dataset.realPing = ping === 'Error' ? 9999 : ping;
+                
+                // بروزرسانی progress
+                buttonText.textContent = `تست شده: ${completedTests}/${totalTests}`;
+            }
+
+            // اجرای تست‌ها به صورت batch
+            const promises = [];
+            for (let i = 0; i < configQueue.length; i += CONCURRENT_TESTS) {
+                const batch = configQueue.slice(i, i + CONCURRENT_TESTS);
+                for (const configItem of batch) {
+                    promises.push(processConfig(configItem));
+                }
+                // منتظر تکمیل این batch قبل از شروع بعدی
+                await Promise.all(promises.splice(0, batch.length));
+            }
+
+            // مرتب‌سازی بر اساس پینگ واقعی
+            sortConfigsByRealPing('xray');
+            sortConfigsByRealPing('singbox');
 
             testButton.disabled = false;
-            buttonIcon.innerHTML = '🚀';
-            buttonText.textContent = 'تست مجدد سرعت اتصال';
+            buttonIcon.innerHTML = '🎯';
+            buttonText.textContent = 'تست مجدد پینگ واقعی';
         }
-        // --- END: بخش تست سرعت پیشرفته (اصلاح شده) ---
+
+        function sortConfigsByRealPing(core) {
+            document.querySelectorAll(`#${core}-content-wrapper .protocol-group`).forEach(group => {
+                const list = group.querySelector('.config-list');
+                const items = Array.from(list.children);
+                items.sort((a, b) => {
+                    const pingA = parseInt(a.dataset.realPing) || 9999;
+                    const pingB = parseInt(b.dataset.realPing) || 9999;
+                    return pingA - pingB;
+                });
+                items.forEach(item => list.appendChild(item));
+            });
+        }
 
         // --- START: دریافت فایل‌های زمان‌دار ---
         async function fetchData() {
@@ -259,20 +323,20 @@
                 document.getElementById('singbox-content-wrapper').innerHTML = errorMsg;
             }
         });
-        // --- END: دریافت فایل‌های زمان‌دار ---
-        
+
         function renderCore(core, configObjects) {
             const container = document.getElementById(`${core}-content-wrapper`);
             container.innerHTML = '';
             const headerControls = document.createElement('div');
             
-            // [CHANGE] Removed the per-core test button from here
             let actionButtonsHtml = `
                 <div class="action-group">
                     <h4 class="action-group-title">لینک اشتراک / Subscription</h4>
                     <div class="action-buttons">
-                        <button class="action-button" onclick="generateSubscription('${core}', 'sub')">کپی لینک</button>
-                        <button class="action-button" onclick="generateSubscription('${core}', 'qr')">QR کد</button>
+                        <button class="action-button" onclick="generateSubscription('${core}', 'sub', 'top20')">کپی لینک (20 برتر)</button>
+                        <button class="action-button" onclick="generateSubscription('${core}', 'sub', 'all')">کپی لینک (همه)</button>
+                        <button class="action-button" onclick="generateSubscription('${core}', 'qr', 'top20')">QR (20 برتر)</button>
+                        <button class="action-button" onclick="generateSubscription('${core}', 'qr', 'all')">QR (همه)</button>
                     </div>
                 </div>`;
             
@@ -325,27 +389,34 @@
                     const li = document.createElement('li');
                     li.className = 'config-item';
                     li.dataset.config = configStr;
-                    try {
-                        const serverName = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : new URL(configStr).hostname;
-                        li.innerHTML = `
-                            <input type="checkbox" class="config-checkbox">
-                            <div class="config-details">
-                                <span class="server">${serverName}</span>
-                                <span class="ping"></span>
-                            </div>
-                            <div class="copy-button-container">
-                                <button class="copy-btn" onclick="copyToClipboard('${configStr}')">کپی</button>
-                                <button class="copy-btn" onclick="showQrCode('${configStr}')">QR</button>
-                            </div>`;
-                        configList.appendChild(li);
-                    } catch(e) { console.error("Skipping malformed config:", configStr, e); }
+                    
+                    const configInfo = extractConfigInfo(configStr);
+                    
+                    li.innerHTML = `
+                        <input type="checkbox" class="config-checkbox">
+                        <div class="config-details">
+                            <div class="server">${configInfo.name}</div>
+                            <div class="ping">در انتظار تست...</div>
+                        </div>
+                        <div class="copy-button-container">
+                            <button class="copy-btn" onclick="copyToClipboard(\`${configStr.replace(/`/g, '\\`')}\`)">کپی</button>
+                            <button class="copy-btn" onclick="showQrCode(\`${configStr.replace(/`/g, '\\`')}\`)">QR</button>
+                        </div>`;
+                    configList.appendChild(li);
                 });
                 container.appendChild(protocolGroup);
             }
         }
         
-        function toggleGroup(groupId) { document.getElementById(groupId)?.parentNode.classList.toggle('open'); }
-        function toggleSelectAll(event, select, groupId) { event.stopPropagation(); document.querySelectorAll(`#${groupId} .config-checkbox`).forEach(cb => cb.checked = select); }
+        function toggleGroup(groupId) { 
+            const group = document.getElementById(groupId);
+            if (group) group.parentNode.classList.toggle('open'); 
+        }
+        
+        function toggleSelectAll(event, select, groupId) { 
+            event.stopPropagation(); 
+            document.querySelectorAll(`#${groupId} .config-checkbox`).forEach(cb => cb.checked = select); 
+        }
         
         function showQrCode(text) {
             const modal = document.getElementById('qr-code-modal');
@@ -368,72 +439,101 @@
         }
         
         function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
-        function copyToClipboard(text, msg = 'کپی شد!') { navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی ناموفق بود.\n' + err));}
         
-        function sortConfigsByPing(core) { document.querySelectorAll(`#${core}-content-wrapper .protocol-group`).forEach(group => { const list = group.querySelector('.config-list'); const items = Array.from(list.children); items.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999)); items.forEach(item => list.appendChild(item)); }); }
-        function getSelectedConfigs(core) { return Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config); }
+        function copyToClipboard(text, msg = 'کپی شد!') { 
+            navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی ناموفق بود.\n' + err));
+        }
+        
+        function getSelectedConfigs(core) { 
+            return Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config); 
+        }
 
-        function generateSubscription(core, action) {
+        function generateSubscription(core, action, scope) {
             let configs = getSelectedConfigs(core);
-            if (configs.length === 0) {
+            let useCustomSelection = configs.length > 0;
+            let finalSubUrl = '';
+            
+            if (!useCustomSelection) {
                 const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
-                const testedItems = allItems.filter(item => item.dataset.newPing && parseInt(item.dataset.newPing, 10) < 9999)
-                                            .sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
+                const testedItems = allItems.filter(item => item.dataset.realPing && parseInt(item.dataset.realPing, 10) < 9999)
+                                            .sort((a, b) => (parseInt(a.dataset.realPing) || 9999) - (parseInt(b.dataset.realPing) || 9999));
                 
-                let selectedItemsForSub;
-                if (testedItems.length > 0) {
-                    selectedItemsForSub = testedItems.slice(0, AUTO_SELECT_COUNT);
-                    alert(`هیچ کانفیگی انتخاب نشده است. لینک با ${selectedItemsForSub.length} کانفیگ برتر (که تست شده‌اند) ساخته می‌شود.`);
-                } else {
-                     selectedItemsForSub = allItems;
-                     alert(`هیچ کانفیگی انتخاب نشده و تستی انجام نشده است. لینک با تمام ${selectedItemsForSub.length} کانفیگ موجود ساخته می‌شود.`);
+                if (scope === 'top20') {
+                    configs = testedItems.length > 0 ? testedItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config) 
+                                                     : allItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
+                    const uuidKey = `${core}_top20`;
+                    finalSubUrl = `${CLOUDFLARE_BASE_URL}/sub/${SUBSCRIPTION_UUIDS[uuidKey]}`;
+                } else { // scope === 'all'
+                    configs = testedItems.length > 0 ? testedItems.map(item => item.dataset.config) 
+                                                     : allItems.map(item => item.dataset.config);
+                    const uuidKey = `${core}_all`;
+                    finalSubUrl = `${CLOUDFLARE_BASE_URL}/sub/${SUBSCRIPTION_UUIDS[uuidKey]}`;
                 }
-                configs = selectedItemsForSub.map(item => item.dataset.config);
+                
+                if (configs.length === 0) {
+                    alert('کانفیگی برای ساخت لینک یافت نشد.');
+                    return;
+                }
+            } else {
+                // اگر کاربر دستی انتخاب کرده، لینک data استفاده کن
+                const subContent = configs.join('\n');
+                const encodedSub = btoa(unescape(encodeURIComponent(subContent)));
+                finalSubUrl = `data:text/plain;base64,${encodedSub}`;
             }
-            if (configs.length === 0) return alert('کانفیگی برای ساخت لینک یافت نشد.');
-
-            // [BUGFIX] Both QR and direct subscription should use the full config URI with name.
-            const subContent = configs.join('\n');
-            const encodedSub = btoa(unescape(encodeURIComponent(subContent)));
-            const finalUrl = `data:text/plain;base64,${encodedSub}`;
 
             if (action === 'qr') {
-                showQrCode(finalUrl);
+                showQrCode(finalSubUrl);
             } else {
-                copyToClipboard(finalUrl, 'لینک اشتراک استاندارد کپی شد.');
+                const message = useCustomSelection ? 'لینک اشتراک انتخابی کپی شد.' 
+                                                  : `لینک اشتراک ${scope === 'top20' ? '20 برتر' : 'همه'} کپی شد.`;
+                copyToClipboard(finalSubUrl, message);
             }
         }
         
         function copyClashSubscriptionUrl() { 
             const clashUrl = `${CLOUDFLARE_BASE_URL}/clash_subscription.yaml`;
-            copyToClipboard(clashUrl, 'URL اشتراک کلش از کلادفلر کپی شد!'); 
+            copyToClipboard(clashUrl, 'URL اشتراک کلش کپی شد!'); 
         }
 
-        // [CHANGE] Refactored for better readability
         function parseConfigForClash(configStr) {
             try {
                 if (configStr.includes('reality')) return null;
 
-                const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : new URL(configStr).hostname;
-                let proxy = { name, 'skip-cert-verify': true };
+                const configInfo = extractConfigInfo(configStr);
+                let proxy = { name: configInfo.name.substring(0, 50), 'skip-cert-verify': true };
 
                 if (configStr.startsWith('vmess://')) {
                     const d = JSON.parse(atob(configStr.replace('vmess://', '')));
-                    Object.assign(proxy, { type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: d.aid, cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net || 'tcp', servername: d.sni || d.add });
+                    Object.assign(proxy, { 
+                        type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, 
+                        alterId: parseInt(d.aid) || 0, cipher: d.scy || 'auto', 
+                        tls: d.tls === 'tls', network: d.net || 'tcp'
+                    });
+                    if (d.tls === 'tls') proxy.servername = d.sni || d.add;
                     if (proxy.network === 'ws') proxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add } };
                 } else if (configStr.startsWith('vless://')) {
                     const u = new URL(configStr);
                     const p = new URLSearchParams(u.search);
-                    Object.assign(proxy, { type: 'vless', server: u.hostname, port: parseInt(u.port), uuid: u.username, tls: p.get('security') === 'tls', network: p.get('type') || 'tcp', servername: p.get('sni') || u.hostname });
+                    Object.assign(proxy, { 
+                        type: 'vless', server: u.hostname, port: parseInt(u.port), uuid: u.username, 
+                        tls: p.get('security') === 'tls', network: p.get('type') || 'tcp'
+                    });
+                    if (proxy.tls) proxy.servername = p.get('sni') || u.hostname;
                     if (proxy.network === 'ws') proxy['ws-opts'] = { path: p.get('path') || '/', headers: { Host: p.get('host') || u.hostname } };
                 } else if (configStr.startsWith('trojan://')) {
                     const u = new URL(configStr);
                     const p = new URLSearchParams(u.search);
-                    Object.assign(proxy, { type: 'trojan', server: u.hostname, port: parseInt(u.port), password: u.username, sni: p.get('sni') || u.hostname });
+                    Object.assign(proxy, { 
+                        type: 'trojan', server: u.hostname, port: parseInt(u.port), password: u.username
+                    });
+                    if (p.get('sni')) proxy.sni = p.get('sni');
                 } else if (configStr.startsWith('ss://')) {
                     const u = new URL(configStr);
-                    const [cipher, password] = atob(u.username).split(':');
-                    Object.assign(proxy, { type: 'ss', server: u.hostname, port: parseInt(u.port), cipher, password });
+                    try {
+                        const decoded = atob(u.username);
+                        const [cipher, password] = decoded.includes(':') ? decoded.split(':', 2) : ['aes-256-gcm', decoded];
+                        Object.assign(proxy, { type: 'ss', server: u.hostname, port: parseInt(u.port), cipher, password });
+                    } catch { return null; }
                 } else {
                     return null;
                 }
@@ -447,32 +547,88 @@
             let configs = getSelectedConfigs(core);
             if (configs.length === 0) {
                 const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
-                const testedItems = allItems.filter(item => item.dataset.newPing && parseInt(item.dataset.newPing, 10) < 9999);
-                if (testedItems.length === 0) { alert('خطا: برای ساخت فایل خودکار، ابتدا باید تست سرعت را اجرا کنید تا کانفیگ‌های برتر مشخص شوند.'); return; }
-                testedItems.sort((a, b) => (a.dataset.newPing || 9999) - (b.dataset.newPing || 9999));
-                configs = testedItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
-                alert(`هیچ کانفیگی انتخاب نشده است. فایل کلش با ${configs.length} کانفیگ برتر (که تست شده‌اند) ساخته می‌شود.`);
+                const testedItems = allItems.filter(item => item.dataset.realPing && parseInt(item.dataset.realPing, 10) < 9999);
+                if (testedItems.length === 0) { 
+                    configs = allItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
+                } else {
+                    testedItems.sort((a, b) => (parseInt(a.dataset.realPing) || 9999) - (parseInt(b.dataset.realPing) || 9999));
+                    configs = testedItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
+                }
             }
 
-            const proxies = configs.map(parseConfigForClash).filter(p => p);
-            if (proxies.length === 0) { alert('کانفیگ‌های انتخاب شده (یا برتر) با کلش سازگار نیستند (مثلاً Reality).'); return; }
+            const proxies = configs.map(parseConfigForClash).filter(p => p !== null);
+            if (proxies.length === 0) { 
+                alert('متأسفانه هیچ کانفیگ سازگار با کلش یافت نشد.');
+                return;
+            }
+
+            // حذف کامل duplicates بر اساس server + port
+            const uniqueProxies = [];
+            const seen = new Set();
+            for (const proxy of proxies) {
+                const key = `${proxy.server}:${proxy.port}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    // اطمینان از منحصر به فرد بودن نام
+                    let finalName = proxy.name;
+                    let counter = 1;
+                    while (uniqueProxies.some(p => p.name === finalName)) {
+                        finalName = `${proxy.name}_${counter}`;
+                        counter++;
+                    }
+                    proxy.name = finalName;
+                    uniqueProxies.push(proxy);
+                }
+            }
             
-            const clashConfig = { 
-                'proxies': proxies, 
-                'proxy-groups': [{'name': 'V2V-Personal', 'type': 'select', 'proxies': proxies.map(p => p.name)}], 
-                'rules': ['MATCH,V2V-Personal'] 
-            }; 
+            const clashConfig = {
+                'port': 7890,
+                'socks-port': 7891,
+                'allow-lan': true,
+                'mode': 'rule',
+                'log-level': 'info',
+                'external-controller': '127.0.0.1:9090',
+                'proxies': uniqueProxies,
+                'proxy-groups': [
+                    {
+                        'name': 'PROXY',
+                        'type': 'select',
+                        'proxies': ['AUTO'] + uniqueProxies.map(p => p.name)
+                    },
+                    {
+                        'name': 'AUTO',
+                        'type': 'url-test',
+                        'proxies': uniqueProxies.map(p => p.name),
+                        'url': 'http://www.gstatic.com/generate_204',
+                        'interval': 300
+                    }
+                ],
+                'rules': [
+                    'DOMAIN-SUFFIX,local,DIRECT',
+                    'IP-CIDR,127.0.0.0/8,DIRECT',
+                    'IP-CIDR,172.16.0.0/12,DIRECT', 
+                    'IP-CIDR,192.168.0.0/16,DIRECT',
+                    'IP-CIDR,10.0.0.0/8,DIRECT',
+                    'MATCH,PROXY'
+                ]
+            };
             
-            const yamlConfig = jsyaml.dump(clashConfig, { indent: 2, sortKeys: false }); 
-            
-            if (action === 'download') { 
-                const blob = new Blob([yamlConfig], { type: 'text/yaml' }); 
-                const link = document.createElement('a'); 
-                link.href = URL.createObjectURL(blob); 
-                link.download = 'v2v_clash_personal.yaml'; 
-                link.click(); 
-                URL.revokeObjectURL(link.href); 
-            } 
+            try {
+                const yamlConfig = jsyaml.dump(clashConfig, { indent: 2, sortKeys: false });
+                
+                if (action === 'download') {
+                    const blob = new Blob([yamlConfig], { type: 'text/yaml;charset=utf-8' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `v2v_clash_${uniqueProxies.length}_configs.yaml`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    alert(`فایل کلش با ${uniqueProxies.length} کانفیگ بدون تکرار دانلود شد.`);
+                }
+            } catch (error) {
+                console.error('Clash config error:', error);
+                alert('خطا در ساخت فایل کلش.');
+            }
         }
     </script>
 </body>
