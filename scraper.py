@@ -96,15 +96,96 @@ def shorten_config_name(config_str):
 
 def parse_subscription_content(content):
     configs = set()
+    original_content = content.strip()
+    
+    # لیست تمام محتوای احتمالی برای بررسی
+    content_variants = [original_content]
+    
+    # 1. تلاش برای decode base64 (چندین روش)
+    for encoding_attempt in [original_content, original_content.replace('\n', ''), original_content.replace(' ', '')]:
+        try:
+            decoded = _decode_padded_b64(encoding_attempt)
+            if decoded and len(decoded) > 10 and decoded != encoding_attempt:
+                content_variants.append(decoded)
+        except Exception:
+            continue
+    
+    # 2. تلاش برای parse JSON arrays
     try:
-        decoded_content = _decode_padded_b64(content)
-        if decoded_content and decoded_content.count("://") > content.count("://"): content = decoded_content
-    except Exception: pass
-    pattern = r'(' + '|'.join(re.escape(p) for p in VALID_PREFIXES) + r')[^\s\'"<>\[\]{}()]*'
-    matches = re.findall(pattern, content, re.MULTILINE | re.IGNORECASE)
-    for match in matches:
-        clean_match = match.strip().strip('\'"')
-        if _is_valid_config_format(clean_match): configs.add(clean_match)
+        json_data = json.loads(original_content)
+        if isinstance(json_data, list):
+            content_variants.append('\n'.join(str(item) for item in json_data))
+        elif isinstance(json_data, dict):
+            # استخراج از object های JSON
+            for key, value in json_data.items():
+                if isinstance(value, list):
+                    content_variants.append('\n'.join(str(item) for item in value))
+                elif isinstance(value, str) and '://' in value:
+                    content_variants.append(value)
+    except (json.JSONDecodeError, TypeError):
+        pass
+    
+    # 3. تلاش برای parse YAML
+    try:
+        yaml_data = yaml.safe_load(original_content)
+        if isinstance(yaml_data, dict):
+            # استخراج از Clash configs
+            if 'proxies' in yaml_data:
+                for proxy in yaml_data['proxies']:
+                    if isinstance(proxy, dict) and proxy.get('server'):
+                        # تبدیل proxy dict به URI (ساده‌سازی شده)
+                        continue
+            # استخراج از سایر فرمت‌های YAML
+            for key, value in yaml_data.items():
+                if isinstance(value, list):
+                    content_variants.append('\n'.join(str(item) for item in value))
+                elif isinstance(value, str) and '://' in value:
+                    content_variants.append(value)
+    except (yaml.YAMLError, TypeError):
+        pass
+    
+    # 4. پاک‌سازی HTML tags اگر وجود دارد
+    if '<' in original_content and '>' in original_content:
+        try:
+            import re
+            # حذف HTML tags ساده
+            html_cleaned = re.sub(r'<[^>]+>', '', original_content)
+            # حذف HTML entities
+            html_cleaned = html_cleaned.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
+            content_variants.append(html_cleaned)
+        except Exception:
+            pass
+    
+    # 5. تلاش برای decode URL encoding
+    try:
+        from urllib.parse import unquote
+        url_decoded = unquote(original_content)
+        if url_decoded != original_content:
+            content_variants.append(url_decoded)
+    except Exception:
+        pass
+    
+    # 6. جستجو در تمام variant ها
+    for variant in content_variants:
+        if not variant:
+            continue
+            
+        # Pattern اصلی برای پیدا کردن کانفیگ‌ها
+        pattern = r'(' + '|'.join(re.escape(p) for p in VALID_PREFIXES) + r')[^\s\'"<>\[\]{}()]*'
+        matches = re.findall(pattern, str(variant), re.MULTILINE | re.IGNORECASE)
+        
+        for match in matches:
+            clean_match = match.strip().strip('\'"').rstrip(',').rstrip(';')
+            if _is_valid_config_format(clean_match):
+                configs.add(clean_match)
+        
+        # جستجوی خط به خط برای فرمت‌های خاص
+        for line in str(variant).split('\n'):
+            line = line.strip()
+            if any(line.startswith(prefix) for prefix in VALID_PREFIXES):
+                if _is_valid_config_format(line):
+                    configs.add(line)
+    
     return configs
 
 def fetch_and_parse_url(source):
