@@ -1,4 +1,4 @@
-name: Scheduled Scrape and Build
+Name: Scheduled Scrape and Build
 
 on:
   schedule:
@@ -32,7 +32,8 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install requests PyYAML PyGithub beautifulsoup4 awscli
+        # بهینه‌سازی: حذف beautifulsoup4 چون در اسکریپت استفاده نمی‌شود
+        run: pip install requests PyYAML PyGithub awscli
 
       - name: Run scraper script
         run: python scraper.py
