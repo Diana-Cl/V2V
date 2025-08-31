@@ -20,7 +20,7 @@ from github import Github, Auth, GithubException
 # =================================================================================
 
 SOURCES_FILE = "sources.json"
-OUTPUT_DIR = "configs" # پوشه جدید برای خروجی‌ها
+OUTPUT_DIR = "." # تغییر شده: فایل‌ها در ریشه پروژه قرار می‌گیرند
 CACHE_VERSION_FILE = "cache_version.txt"
 OUTPUT_CLASH_FILE_NAME = "clash_subscription.yaml"
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
@@ -179,6 +179,161 @@ def test_config_advanced(config_str):
     return None
 
 # =================================================================================
+# === CLASH CONFIG GENERATION ===
+# =================================================================================
+
+def create_clash_yaml(configs, filename):
+    """تولید فایل YAML کلش از لیست کانفیگ‌ها"""
+    proxies = []
+    
+    for config_str in configs:
+        proxy = parse_config_for_clash(config_str)
+        if proxy:
+            proxies.append(proxy)
+    
+    if not proxies:
+        print("⚠️  هیچ کانفیگ سازگار با کلش یافت نشد.")
+        return
+    
+    clash_config = {
+        'port': 7890,
+        'socks-port': 7891,
+        'allow-lan': True,
+        'mode': 'rule',
+        'log-level': 'info',
+        'external-controller': '127.0.0.1:9090',
+        'proxies': proxies,
+        'proxy-groups': [
+            {
+                'name': 'PROXY',
+                'type': 'select',
+                'proxies': ['AUTO'] + [p['name'] for p in proxies]
+            },
+            {
+                'name': 'AUTO',
+                'type': 'url-test',
+                'proxies': [p['name'] for p in proxies],
+                'url': 'http://www.gstatic.com/generate_204',
+                'interval': 300
+            }
+        ],
+        'rules': [
+            'DOMAIN-SUFFIX,local,DIRECT',
+            'IP-CIDR,127.0.0.0/8,DIRECT',
+            'IP-CIDR,172.16.0.0/12,DIRECT',
+            'IP-CIDR,192.168.0.0/16,DIRECT',
+            'IP-CIDR,10.0.0.0/8,DIRECT',
+            'MATCH,PROXY'
+        ]
+    }
+    
+    output_path = os.path.join(OUTPUT_DIR, filename)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        yaml.dump(clash_config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+    print(f"✅ فایل کلش ساخته شد: {output_path}")
+
+def parse_config_for_clash(config_str):
+    """تبدیل کانفیگ V2Ray به فرمت کلش"""
+    try:
+        if 'reality' in config_str.lower():
+            return None  # کلش از Reality پشتیبانی نمی‌کند
+        
+        # استخراج نام سرور
+        if '#' in config_str:
+            name = unquote(config_str.split('#')[1])
+        else:
+            name = urlparse(config_str).hostname
+        
+        name = name[:MAX_NAME_LENGTH] if len(name) > MAX_NAME_LENGTH else name
+        
+        proxy = {
+            'name': name,
+            'skip-cert-verify': True
+        }
+        
+        if config_str.startswith('vmess://'):
+            vmess_data = json.loads(_decode_padded_b64(config_str.replace('vmess://', '')))
+            proxy.update({
+                'type': 'vmess',
+                'server': vmess_data['add'],
+                'port': int(vmess_data['port']),
+                'uuid': vmess_data['id'],
+                'alterId': int(vmess_data.get('aid', 0)),
+                'cipher': vmess_data.get('scy', 'auto'),
+                'tls': vmess_data.get('tls') == 'tls'
+            })
+            
+            if vmess_data.get('net') == 'ws':
+                proxy['network'] = 'ws'
+                proxy['ws-opts'] = {
+                    'path': vmess_data.get('path', '/'),
+                    'headers': {'Host': vmess_data.get('host', vmess_data['add'])}
+                }
+            
+            if proxy['tls'] and vmess_data.get('sni'):
+                proxy['servername'] = vmess_data['sni']
+                
+        elif config_str.startswith('vless://'):
+            parsed = urlparse(config_str)
+            params = dict(parse_qsl(parsed.query))
+            proxy.update({
+                'type': 'vless',
+                'server': parsed.hostname,
+                'port': parsed.port,
+                'uuid': parsed.username,
+                'tls': params.get('security') == 'tls'
+            })
+            
+            if params.get('type') == 'ws':
+                proxy['network'] = 'ws'
+                proxy['ws-opts'] = {
+                    'path': params.get('path', '/'),
+                    'headers': {'Host': params.get('host', parsed.hostname)}
+                }
+            
+            if proxy['tls'] and params.get('sni'):
+                proxy['servername'] = params['sni']
+                
+        elif config_str.startswith('trojan://'):
+            parsed = urlparse(config_str)
+            params = dict(parse_qsl(parsed.query))
+            proxy.update({
+                'type': 'trojan',
+                'server': parsed.hostname,
+                'port': parsed.port,
+                'password': parsed.username
+            })
+            
+            if params.get('sni'):
+                proxy['sni'] = params['sni']
+                
+        elif config_str.startswith('ss://'):
+            parsed = urlparse(config_str)
+            try:
+                decoded = _decode_padded_b64(parsed.username)
+                if ':' in decoded:
+                    cipher, password = decoded.split(':', 1)
+                else:
+                    cipher, password = 'aes-256-gcm', decoded
+                
+                proxy.update({
+                    'type': 'ss',
+                    'server': parsed.hostname,
+                    'port': parsed.port,
+                    'cipher': cipher,
+                    'password': password
+                })
+            except Exception:
+                return None
+        else:
+            return None
+            
+        return proxy
+        
+    except Exception:
+        return None
+
+# =================================================================================
 # === MAIN EXECUTION ===
 # =================================================================================
 
@@ -243,9 +398,8 @@ def main():
         xray_fillers = [cfg for cfg in final_xray if cfg not in final_singbox]
         final_singbox.extend(xray_fillers[:needed])
 
-    # ۴. تولید فایل‌های خروجی زمان‌دار
+    # ۴. تولید فایل‌های خروجی زمان‌دار (حالا در ریشه)
     timestamp = int(time.time())
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
     
     output_json_file_name = f"all_live_configs_{timestamp}.json"
     output_json_path = os.path.join(OUTPUT_DIR, output_json_file_name)
@@ -258,7 +412,8 @@ def main():
         f.write(str(timestamp))
     print(f"✅ فایل ورژن ساخته شد: {CACHE_VERSION_FILE}")
 
-    # Generate Clash config... (omitted for brevity, no major changes)
+    # ۵. تولید فایل کلش
+    create_clash_yaml(final_xray, OUTPUT_CLASH_FILE_NAME)
     
     elapsed_time = time.time() - start_time
     print(f"\n🎉 فرآیند با موفقیت تکمیل شد در {elapsed_time:.2f} ثانیه.")
