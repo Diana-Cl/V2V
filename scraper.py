@@ -37,13 +37,14 @@ GITHUB_SEARCH_QUERIES = [
 ]
 
 MAX_CONFIGS_TO_TEST = 3000
-MAX_PING_THRESHOLD = 2000
+MAX_PING_THRESHOLD = 5000 # آپدیت شد
 TARGET_CONFIGS_PER_CORE = 500
 REQUEST_TIMEOUT = 10
-TCP_TEST_TIMEOUT = 5
+TCP_TEST_TIMEOUT = 8 # آپدیت شد
 MAX_NAME_LENGTH = 40
 
-PROTOCOL_QUOTAS = { 'vless': 0.45, 'vmess': 0.45, 'trojan': 0.05, 'ss': 0.05 }
+# آپدیت شد
+PROTOCOL_QUOTAS = { 'vless': 0.35, 'vmess': 0.35, 'trojan': 0.15, 'ss': 0.15 }
 
 if GITHUB_PAT:
     HEADERS['Authorization'] = f'token {GITHUB_PAT}'
@@ -233,8 +234,15 @@ def main():
                 balanced_xray_list.append(cfg)
     
     final_xray = [shorten_config_name(cfg) for cfg in balanced_xray_list[:TARGET_CONFIGS_PER_CORE]]
-    final_singbox = [shorten_config_name(cfg) for cfg in categorized_healthy['singbox_only'][:TARGET_CONFIGS_PER_CORE]]
     
+    # منطق جدید برای ساخت لیست Sing-Box
+    final_singbox = [shorten_config_name(cfg) for cfg in categorized_healthy['singbox_only'][:TARGET_CONFIGS_PER_CORE]]
+    if len(final_singbox) < TARGET_CONFIGS_PER_CORE:
+        print(f"⚠️  لیست Sing-Box به حد نصاب نرسید ({len(final_singbox)}/{TARGET_CONFIGS_PER_CORE}). در حال تکمیل با کانفیگ‌های XRay...")
+        needed = TARGET_CONFIGS_PER_CORE - len(final_singbox)
+        xray_fillers = [cfg for cfg in final_xray if cfg not in final_singbox]
+        final_singbox.extend(xray_fillers[:needed])
+
     # ۴. تولید فایل‌های خروجی زمان‌دار
     timestamp = int(time.time())
     os.makedirs(OUTPUT_DIR, exist_ok=True)
