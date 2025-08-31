@@ -38,7 +38,7 @@ export default {
              return response;
         }
 
-        // منطق اصلی برای ارائه فایل‌های کانفیگ (از پوشه /configs)
+        // منطق اصلی برای ارائه فایل‌های کانفیگ (حالا از ریشه)
         const cacheKey = new Request(url.toString(), request);
         let response = await cache.match(cacheKey);
         if (response) {
@@ -47,10 +47,10 @@ export default {
             return new Response(response.body, { status: response.status, headers: newHeaders });
         }
 
-        // فایل‌های کانفیگ و ورژن اکنون در پوشه configs قرار دارند
-        if (pathname.startsWith('/all_live_configs_') || pathname === '/cache_version.txt') {
-            pathname = `/configs${pathname}`;
-        }
+        // حذف شد: فایل‌های کانفیگ و ورژن حالا مستقیماً در ریشه قرار دارند
+        // if (pathname.startsWith('/all_live_configs_') || pathname === '/cache_version.txt') {
+        //     pathname = `/configs${pathname}`;
+        // }
         
         response = await fetch(`${PRIMARY_ORIGIN}${pathname}`);
 
