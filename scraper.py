@@ -20,13 +20,21 @@ from github import Github, Auth, GithubException
 # =================================================================================
 
 SOURCES_FILE = "sources.json"
-OUTPUT_DIR = "." # تغییر شده: فایل‌ها در ریشه پروژه قرار می‌گیرند
+OUTPUT_DIR = "." # فایل‌ها در ریشه پروژه قرار می‌گیرند
 CACHE_VERSION_FILE = "cache_version.txt"
 OUTPUT_CLASH_FILE_NAME = "clash_subscription.yaml"
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
 HEADERS = {
     'User-Agent': 'V2V-Scraper/v8.0-Timestamped',
     'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0'
+}
+
+# UUIDs ثابت برای sub paths (همان‌طور که در frontend تعریف شده)
+SUBSCRIPTION_UUIDS = {
+    'xray_top20': 'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7',
+    'xray_all': 'f7e8d9c0-b1a2-4567-8901-234567890abc',
+    'singbox_top20': '9876543a-bcde-4f01-2345-6789abcdef01',
+    'singbox_all': '12345678-9abc-4def-0123-456789abcdef'
 }
 
 GITHUB_PAT = os.environ.get('GH_PAT')
@@ -37,13 +45,12 @@ GITHUB_SEARCH_QUERIES = [
 ]
 
 MAX_CONFIGS_TO_TEST = 3000
-MAX_PING_THRESHOLD = 5000 # آپدیت شد
+MAX_PING_THRESHOLD = 5000
 TARGET_CONFIGS_PER_CORE = 500
 REQUEST_TIMEOUT = 10
-TCP_TEST_TIMEOUT = 8 # آپدیت شد
+TCP_TEST_TIMEOUT = 8
 MAX_NAME_LENGTH = 40
 
-# آپدیت شد
 PROTOCOL_QUOTAS = { 'vless': 0.35, 'vmess': 0.35, 'trojan': 0.15, 'ss': 0.15 }
 
 if GITHUB_PAT:
@@ -116,7 +123,6 @@ def parse_subscription_content(content):
         if isinstance(json_data, list):
             content_variants.append('\n'.join(str(item) for item in json_data))
         elif isinstance(json_data, dict):
-            # استخراج از object های JSON
             for key, value in json_data.items():
                 if isinstance(value, list):
                     content_variants.append('\n'.join(str(item) for item in value))
@@ -129,13 +135,10 @@ def parse_subscription_content(content):
     try:
         yaml_data = yaml.safe_load(original_content)
         if isinstance(yaml_data, dict):
-            # استخراج از Clash configs
             if 'proxies' in yaml_data:
                 for proxy in yaml_data['proxies']:
                     if isinstance(proxy, dict) and proxy.get('server'):
-                        # تبدیل proxy dict به URI (ساده‌سازی شده)
                         continue
-            # استخراج از سایر فرمت‌های YAML
             for key, value in yaml_data.items():
                 if isinstance(value, list):
                     content_variants.append('\n'.join(str(item) for item in value))
@@ -144,21 +147,17 @@ def parse_subscription_content(content):
     except (yaml.YAMLError, TypeError):
         pass
     
-    # 4. پاک‌سازی HTML tags اگر وجود دارد
+    # 4. پاک‌سازی HTML tags
     if '<' in original_content and '>' in original_content:
         try:
-            import re
-            # حذف HTML tags ساده
             html_cleaned = re.sub(r'<[^>]+>', '', original_content)
-            # حذف HTML entities
             html_cleaned = html_cleaned.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
             content_variants.append(html_cleaned)
         except Exception:
             pass
     
-    # 5. تلاش برای decode URL encoding
+    # 5. URL decode
     try:
-        from urllib.parse import unquote
         url_decoded = unquote(original_content)
         if url_decoded != original_content:
             content_variants.append(url_decoded)
@@ -170,7 +169,6 @@ def parse_subscription_content(content):
         if not variant:
             continue
             
-        # Pattern اصلی برای پیدا کردن کانفیگ‌ها
         pattern = r'(' + '|'.join(re.escape(p) for p in VALID_PREFIXES) + r')[^\s\'"<>\[\]{}()]*'
         matches = re.findall(pattern, str(variant), re.MULTILINE | re.IGNORECASE)
         
@@ -179,7 +177,6 @@ def parse_subscription_content(content):
             if _is_valid_config_format(clean_match):
                 configs.add(clean_match)
         
-        # جستجوی خط به خط برای فرمت‌های خاص
         for line in str(variant).split('\n'):
             line = line.strip()
             if any(line.startswith(prefix) for prefix in VALID_PREFIXES):
@@ -193,15 +190,16 @@ def fetch_and_parse_url(source):
         response = requests.get(source['url'], timeout=REQUEST_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
         return parse_subscription_content(response.text)
-    except (requests.RequestException, Exception): return set()
+    except (requests.RequestException, Exception): 
+        return set()
 
 def get_static_sources():
     try:
         with open(SOURCES_FILE, 'r', encoding='utf-8') as f:
             urls = json.load(f).get("static", [])
-            # Add a very old timestamp to static sources so they are processed last
             return [{'url': url, 'updated_at': datetime(2000, 1, 1, tzinfo=timezone.utc)} for url in urls]
-    except (FileNotFoundError, json.JSONDecodeError): return []
+    except (FileNotFoundError, json.JSONDecodeError): 
+        return []
 
 def discover_dynamic_sources():
     if not GITHUB_PAT: return []
@@ -212,14 +210,18 @@ def discover_dynamic_sources():
         try:
             repos = g.search_repositories(query=f'{query} language:text', sort='updated', order='desc')
             for repo in repos:
-                if repo.updated_at < freshness_threshold or len(dynamic_sources) >= GITHUB_SEARCH_LIMIT: break
+                if repo.updated_at < freshness_threshold or len(dynamic_sources) >= GITHUB_SEARCH_LIMIT: 
+                    break
                 try:
                     for content_file in repo.get_contents(""):
                         if content_file.type == 'file' and content_file.name.lower().endswith(('.txt', '.md')):
                             dynamic_sources.append({'url': content_file.download_url, 'updated_at': repo.updated_at})
-                except GithubException: continue
-                if len(dynamic_sources) >= GITHUB_SEARCH_LIMIT: break
-        except GithubException: continue
+                except GithubException: 
+                    continue
+                if len(dynamic_sources) >= GITHUB_SEARCH_LIMIT: 
+                    break
+        except GithubException: 
+            continue
     return dynamic_sources
 
 def test_config_advanced(config_str):
@@ -253,77 +255,29 @@ def test_config_advanced(config_str):
                     sock.connect(sockaddr)
                 end_time = time.monotonic()
                 return {'config_str': config_str, 'ping': int((end_time - start_time) * 1000)}
-            except (socket.timeout, socket.error, ssl.SSLError, ConnectionRefusedError): continue
+            except (socket.timeout, socket.error, ssl.SSLError, ConnectionRefusedError): 
+                continue
             finally:
                 if sock: sock.close()
-    except Exception: pass
+    except Exception: 
+        pass
     return None
 
 # =================================================================================
 # === CLASH CONFIG GENERATION ===
 # =================================================================================
 
-def create_clash_yaml(configs, filename):
-    """تولید فایل YAML کلش از لیست کانفیگ‌ها"""
-    proxies = []
-    
-    for config_str in configs:
-        proxy = parse_config_for_clash(config_str)
-        if proxy:
-            proxies.append(proxy)
-    
-    if not proxies:
-        print("⚠️  هیچ کانفیگ سازگار با کلش یافت نشد.")
-        return
-    
-    clash_config = {
-        'port': 7890,
-        'socks-port': 7891,
-        'allow-lan': True,
-        'mode': 'rule',
-        'log-level': 'info',
-        'external-controller': '127.0.0.1:9090',
-        'proxies': proxies,
-        'proxy-groups': [
-            {
-                'name': 'PROXY',
-                'type': 'select',
-                'proxies': ['AUTO'] + [p['name'] for p in proxies]
-            },
-            {
-                'name': 'AUTO',
-                'type': 'url-test',
-                'proxies': [p['name'] for p in proxies],
-                'url': 'http://www.gstatic.com/generate_204',
-                'interval': 300
-            }
-        ],
-        'rules': [
-            'DOMAIN-SUFFIX,local,DIRECT',
-            'IP-CIDR,127.0.0.0/8,DIRECT',
-            'IP-CIDR,172.16.0.0/12,DIRECT',
-            'IP-CIDR,192.168.0.0/16,DIRECT',
-            'IP-CIDR,10.0.0.0/8,DIRECT',
-            'MATCH,PROXY'
-        ]
-    }
-    
-    output_path = os.path.join(OUTPUT_DIR, filename)
-    with open(output_path, 'w', encoding='utf-8') as f:
-        yaml.dump(clash_config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
-    print(f"✅ فایل کلش ساخته شد: {output_path}")
-
 def parse_config_for_clash(config_str):
-    """تبدیل کانفیگ V2Ray به فرمت کلش"""
+    """تبدیل کانفیگ V2Ray به فرمت کلش - بدون خطا و duplicate"""
     try:
         if 'reality' in config_str.lower():
-            return None  # کلش از Reality پشتیبانی نمی‌کند
+            return None
         
-        # استخراج نام سرور
+        # استخراج نام
         if '#' in config_str:
             name = unquote(config_str.split('#')[1])
         else:
-            name = urlparse(config_str).hostname
+            name = urlparse(config_str).hostname or 'Unknown'
         
         name = name[:MAX_NAME_LENGTH] if len(name) > MAX_NAME_LENGTH else name
         
@@ -375,7 +329,7 @@ def parse_config_for_clash(config_str):
             if proxy['tls'] and params.get('sni'):
                 proxy['servername'] = params['sni']
                 
-        elif config_str.startswith('trojan://'):
+        elif config_str.startsWith('trojan://'):
             parsed = urlparse(config_str)
             params = dict(parse_qsl(parsed.query))
             proxy.update({
@@ -414,6 +368,118 @@ def parse_config_for_clash(config_str):
     except Exception:
         return None
 
+def create_clash_yaml(configs, filename):
+    """تولید فایل YAML کلش کاملاً استاندارد و بدون duplicate"""
+    if not configs:
+        print("⚠️  هیچ کانفیگی برای ساخت کلش یافت نشد.")
+        return
+        
+    proxies = []
+    seen_servers = set()  # حذف duplicate بر اساس server:port
+    
+    for config_str in configs:
+        proxy = parse_config_for_clash(config_str)
+        if proxy:
+            server_key = f"{proxy['server']}:{proxy['port']}"
+            if server_key not in seen_servers:
+                seen_servers.add(server_key)
+                
+                # اطمینان از منحصر به فرد بودن نام
+                original_name = proxy['name']
+                counter = 1
+                while any(p['name'] == proxy['name'] for p in proxies):
+                    proxy['name'] = f"{original_name}_{counter}"
+                    counter += 1
+                
+                proxies.append(proxy)
+    
+    if not proxies:
+        print("⚠️  هیچ کانفیگ سازگار با کلش یافت نشد.")
+        return
+    
+    clash_config = {
+        'port': 7890,
+        'socks-port': 7891,
+        'allow-lan': True,
+        'mode': 'rule',
+        'log-level': 'info',
+        'external-controller': '127.0.0.1:9090',
+        'proxies': proxies,
+        'proxy-groups': [
+            {
+                'name': 'PROXY',
+                'type': 'select',
+                'proxies': ['AUTO'] + [p['name'] for p in proxies]
+            },
+            {
+                'name': 'AUTO',
+                'type': 'url-test',
+                'proxies': [p['name'] for p in proxies],
+                'url': 'http://www.gstatic.com/generate_204',
+                'interval': 300
+            }
+        ],
+        'rules': [
+            'DOMAIN-SUFFIX,local,DIRECT',
+            'IP-CIDR,127.0.0.0/8,DIRECT',
+            'IP-CIDR,172.16.0.0/12,DIRECT',
+            'IP-CIDR,192.168.0.0/16,DIRECT',
+            'IP-CIDR,10.0.0.0/8,DIRECT',
+            'MATCH,PROXY'
+        ]
+    }
+    
+    try:
+        output_path = os.path.join(OUTPUT_DIR, filename)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            yaml.dump(clash_config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        print(f"✅ فایل کلش با {len(proxies)} پروکسی بدون تکرار ساخته شد: {output_path}")
+    except Exception as e:
+        print(f"❌ خطا در ساخت فایل کلش: {e}")
+
+# =================================================================================
+# === SUB FILES GENERATION ===
+# =================================================================================
+
+def create_subscription_files(final_xray, final_singbox):
+    """ساخت فایل‌های subscription با UUIDs ثابت"""
+    
+    # تولید فایل‌های sub برای xray
+    xray_top20 = final_xray[:20]
+    
+    # فایل xray top 20
+    xray_top20_content = '\n'.join(xray_top20)
+    xray_top20_encoded = base64.b64encode(xray_top20_content.encode('utf-8')).decode('utf-8')
+    with open(f"sub_{SUBSCRIPTION_UUIDS['xray_top20']}.txt", 'w', encoding='utf-8') as f:
+        f.write(xray_top20_encoded)
+    
+    # فایل xray all
+    xray_all_content = '\n'.join(final_xray)
+    xray_all_encoded = base64.b64encode(xray_all_content.encode('utf-8')).decode('utf-8')
+    with open(f"sub_{SUBSCRIPTION_UUIDS['xray_all']}.txt", 'w', encoding='utf-8') as f:
+        f.write(xray_all_encoded)
+    
+    # تولید فایل‌های sub برای singbox
+    singbox_top20 = final_singbox[:20]
+    
+    # فایل singbox top 20
+    singbox_top20_content = '\n'.join(singbox_top20)
+    singbox_top20_encoded = base64.b64encode(singbox_top20_content.encode('utf-8')).decode('utf-8')
+    with open(f"sub_{SUBSCRIPTION_UUIDS['singbox_top20']}.txt", 'w', encoding='utf-8') as f:
+        f.write(singbox_top20_encoded)
+    
+    # فایل singbox all
+    singbox_all_content = '\n'.join(final_singbox)
+    singbox_all_encoded = base64.b64encode(singbox_all_content.encode('utf-8')).decode('utf-8')
+    with open(f"sub_{SUBSCRIPTION_UUIDS['singbox_all']}.txt", 'w', encoding='utf-8') as f:
+        f.write(singbox_all_encoded)
+    
+    print(f"✅ فایل‌های subscription با UUIDs ثابت ساخته شدند:")
+    print(f"   - Xray Top 20: sub_{SUBSCRIPTION_UUIDS['xray_top20']}.txt")
+    print(f"   - Xray All: sub_{SUBSCRIPTION_UUIDS['xray_all']}.txt")
+    print(f"   - Singbox Top 20: sub_{SUBSCRIPTION_UUIDS['singbox_top20']}.txt")
+    print(f"   - Singbox All: sub_{SUBSCRIPTION_UUIDS['singbox_all']}.txt")
+
 # =================================================================================
 # === MAIN EXECUTION ===
 # =================================================================================
@@ -421,12 +487,12 @@ def parse_config_for_clash(config_str):
 def main():
     start_time = time.time()
     
-    # ۱. جمع‌آوری هوشمند و اولویت‌بندی شده
+    # ۱. جمع‌آوری هوشمند
     all_sources = get_static_sources() + discover_dynamic_sources()
-    all_sources.sort(key=lambda x: x['updated_at'], reverse=True) # جدیدترین‌ها در ابتدا
+    all_sources.sort(key=lambda x: x['updated_at'], reverse=True)
     print(f"📡 {len(all_sources)} منبع پیدا شد (با اولویت تازگی).")
     
-    # ۲. استخراج و تست سلامت
+    # ۲. استخراج و تست
     raw_configs = set()
     with ThreadPoolExecutor(max_workers=30) as executor:
         for result in executor.map(fetch_and_parse_url, all_sources):
@@ -443,7 +509,7 @@ def main():
     print(f"⚡ {len(fast_configs_results)} کانفیگ سالم یافت شد.")
     fast_configs_results.sort(key=lambda x: x['ping'])
     
-    # ۳. دسته‌بندی و انتخاب نهایی
+    # ۳. دسته‌بندی
     categorized_healthy = defaultdict(list)
     for res in fast_configs_results:
         cfg = res['config_str']
@@ -457,6 +523,7 @@ def main():
         except Exception:
             categorized_healthy['unknown'].append(cfg)
 
+    # ساخت لیست Xray متعادل
     balanced_xray_list = []
     for proto, quota_percent in PROTOCOL_QUOTAS.items():
         quota_size = int(TARGET_CONFIGS_PER_CORE * quota_percent)
@@ -471,7 +538,7 @@ def main():
     
     final_xray = [shorten_config_name(cfg) for cfg in balanced_xray_list[:TARGET_CONFIGS_PER_CORE]]
     
-    # منطق جدید برای ساخت لیست Sing-Box
+    # ساخت لیست Sing-Box
     final_singbox = [shorten_config_name(cfg) for cfg in categorized_healthy['singbox_only'][:TARGET_CONFIGS_PER_CORE]]
     if len(final_singbox) < TARGET_CONFIGS_PER_CORE:
         print(f"⚠️  لیست Sing-Box به حد نصاب نرسید ({len(final_singbox)}/{TARGET_CONFIGS_PER_CORE}). در حال تکمیل با کانفیگ‌های XRay...")
@@ -479,9 +546,10 @@ def main():
         xray_fillers = [cfg for cfg in final_xray if cfg not in final_singbox]
         final_singbox.extend(xray_fillers[:needed])
 
-    # ۴. تولید فایل‌های خروجی زمان‌دار (حالا در ریشه)
+    # ۴. تولید فایل‌های خروجی
     timestamp = int(time.time())
     
+    # فایل JSON اصلی
     output_json_file_name = f"all_live_configs_{timestamp}.json"
     output_json_path = os.path.join(OUTPUT_DIR, output_json_file_name)
     output_for_frontend = {'xray': final_xray, 'singbox': final_singbox}
@@ -489,11 +557,15 @@ def main():
         json.dump(output_for_frontend, f, ensure_ascii=False)
     print(f"✅ فایل JSON ساخته شد: {output_json_path}")
     
+    # فایل cache version
     with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f:
         f.write(str(timestamp))
     print(f"✅ فایل ورژن ساخته شد: {CACHE_VERSION_FILE}")
 
-    # ۵. تولید فایل کلش
+    # ۵. تولید فایل‌های subscription با UUIDs ثابت
+    create_subscription_files(final_xray, final_singbox)
+
+    # ۶. تولید فایل کلش استاندارد
     create_clash_yaml(final_xray, OUTPUT_CLASH_FILE_NAME)
     
     elapsed_time = time.time() - start_time
