@@ -218,7 +218,7 @@ export default {
                 
                 if (response) {
                     const newHeaders = new Headers(response.headers);
-                    newHeaders.set('Access-Control-Allow-Origin': '*');
+                    newHeaders.set('Access-Control-Allow-Origin', '*');
                     return new Response(response.body, { status: response.status, headers: newHeaders });
                 }
             }
@@ -244,7 +244,7 @@ export default {
              let response = await cache.match(cacheKey);
              if (response) {
                  const newHeaders = new Headers(response.headers);
-                 newHeaders.set('Access-Control-Allow-Origin': '*');
+                 newHeaders.set('Access-Control-Allow-Origin', '*');
                  return new Response(response.body, { status: response.status, headers: newHeaders });
              }
 
@@ -252,7 +252,7 @@ export default {
                  response = await fetch(`${PRIMARY_ORIGIN}${DOWNLOAD_TEST_FILE}`);
                  if (response.ok) {
                      const newHeaders = new Headers(response.headers);
-                     newHeaders.set('Access-Control-Allow-Origin': '*');
+                     newHeaders.set('Access-Control-Allow-Origin', '*');
                      const resClone = new Response(response.clone().body, { status: response.status, headers: newHeaders });
                      ctx.waitUntil(cache.put(cacheKey, resClone));
                      return resClone;
@@ -283,7 +283,7 @@ export default {
             let mainResponse = await cache.match(mainCacheKey);
             if (mainResponse) {
                 const newHeaders = new Headers(mainResponse.headers);
-                newHeaders.set('Access-Control-Allow-Origin': '*');
+                newHeaders.set('Access-Control-Allow-Origin', '*');
                 return new Response(mainResponse.body, { status: mainResponse.status, headers: newHeaders });
             }
             
@@ -291,7 +291,7 @@ export default {
             
             if (mainResponse && mainResponse.ok) {
                 const newHeaders = new Headers(mainResponse.headers);
-                newHeaders.set('Access-Control-Allow-Origin': '*');
+                newHeaders.set('Access-Control-Allow-Origin', '*');
                 newHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
                 const resClone = new Response(mainResponse.clone().body, { status: mainResponse.status, headers: newHeaders });
                 ctx.waitUntil(cache.put(mainCacheKey, resClone));
