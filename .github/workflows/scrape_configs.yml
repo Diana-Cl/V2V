@@ -5,7 +5,6 @@ on:
     # اجرا هر ۸ ساعت یک‌بار
     - cron: "0 */8 * * *"
   workflow_dispatch:
-  # اضافه: امکان trigger از push روی main اگر نیاز به تست سریع باشه، اما غیرفعال نگه داشتم
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,9 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
-        # اضافه: اطمینان از کلون عمیق برای handle کردن فایل‌های بزرگ
-        with:
-          fetch-depth: 0
+          fetch-depth: 0  # اضافه: اطمینان از کلون عمیق برای handle کردن فایل‌های بزرگ
 
       - name: Validate Secrets
         run: |
