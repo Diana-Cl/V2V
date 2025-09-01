@@ -20,7 +20,7 @@ from github import Github, Auth, GithubException
 # =================================================================================
 
 SOURCES_FILE = "sources.json"
-OUTPUT_DIR = "." # فایل‌ها در ریشه پروژه قرار می‌گیرند
+OUTPUT_DIR = "configs" # تغییر شده: فایل‌ها در پوشه configs قرار می‌گیرند
 CACHE_VERSION_FILE = "cache_version.txt"
 OUTPUT_CLASH_FILE_NAME = "clash_subscription.yaml"
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
@@ -55,7 +55,6 @@ PROTOCOL_QUOTAS = { 'vless': 0.35, 'vmess': 0.35, 'trojan': 0.15, 'ss': 0.15 }
 
 if GITHUB_PAT:
     HEADERS['Authorization'] = f'token {GITHUB_PAT}'
-
 # =================================================================================
 # === HELPER & PARSING FUNCTIONS ===
 # =================================================================================
@@ -329,7 +328,7 @@ def parse_config_for_clash(config_str):
             if proxy['tls'] and params.get('sni'):
                 proxy['servername'] = params['sni']
                 
-        elif config_str.startsWith('trojan://'):
+        elif config_str.startswith('trojan://'):
             parsed = urlparse(config_str)
             params = dict(parse_qsl(parsed.query))
             proxy.update({
@@ -442,7 +441,10 @@ def create_clash_yaml(configs, filename):
 # =================================================================================
 
 def create_subscription_files(final_xray, final_singbox):
-    """ساخت فایل‌های subscription با UUIDs ثابت"""
+    """ساخت فایل‌های subscription با UUIDs ثابت در configs"""
+    
+    # اطمینان از وجود پوشه configs
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     
     # تولید فایل‌های sub برای xray
     xray_top20 = final_xray[:20]
@@ -450,13 +452,13 @@ def create_subscription_files(final_xray, final_singbox):
     # فایل xray top 20
     xray_top20_content = '\n'.join(xray_top20)
     xray_top20_encoded = base64.b64encode(xray_top20_content.encode('utf-8')).decode('utf-8')
-    with open(f"sub_{SUBSCRIPTION_UUIDS['xray_top20']}.txt", 'w', encoding='utf-8') as f:
+    with open(os.path.join(OUTPUT_DIR, f"sub_{SUBSCRIPTION_UUIDS['xray_top20']}.txt"), 'w', encoding='utf-8') as f:
         f.write(xray_top20_encoded)
     
     # فایل xray all
     xray_all_content = '\n'.join(final_xray)
     xray_all_encoded = base64.b64encode(xray_all_content.encode('utf-8')).decode('utf-8')
-    with open(f"sub_{SUBSCRIPTION_UUIDS['xray_all']}.txt", 'w', encoding='utf-8') as f:
+    with open(os.path.join(OUTPUT_DIR, f"sub_{SUBSCRIPTION_UUIDS['xray_all']}.txt"), 'w', encoding='utf-8') as f:
         f.write(xray_all_encoded)
     
     # تولید فایل‌های sub برای singbox
@@ -465,20 +467,20 @@ def create_subscription_files(final_xray, final_singbox):
     # فایل singbox top 20
     singbox_top20_content = '\n'.join(singbox_top20)
     singbox_top20_encoded = base64.b64encode(singbox_top20_content.encode('utf-8')).decode('utf-8')
-    with open(f"sub_{SUBSCRIPTION_UUIDS['singbox_top20']}.txt", 'w', encoding='utf-8') as f:
+    with open(os.path.join(OUTPUT_DIR, f"sub_{SUBSCRIPTION_UUIDS['singbox_top20']}.txt"), 'w', encoding='utf-8') as f:
         f.write(singbox_top20_encoded)
     
     # فایل singbox all
     singbox_all_content = '\n'.join(final_singbox)
     singbox_all_encoded = base64.b64encode(singbox_all_content.encode('utf-8')).decode('utf-8')
-    with open(f"sub_{SUBSCRIPTION_UUIDS['singbox_all']}.txt", 'w', encoding='utf-8') as f:
+    with open(os.path.join(OUTPUT_DIR, f"sub_{SUBSCRIPTION_UUIDS['singbox_all']}.txt"), 'w', encoding='utf-8') as f:
         f.write(singbox_all_encoded)
     
     print(f"✅ فایل‌های subscription با UUIDs ثابت ساخته شدند:")
-    print(f"   - Xray Top 20: sub_{SUBSCRIPTION_UUIDS['xray_top20']}.txt")
-    print(f"   - Xray All: sub_{SUBSCRIPTION_UUIDS['xray_all']}.txt")
-    print(f"   - Singbox Top 20: sub_{SUBSCRIPTION_UUIDS['singbox_top20']}.txt")
-    print(f"   - Singbox All: sub_{SUBSCRIPTION_UUIDS['singbox_all']}.txt")
+    print(f"   - Xray Top 20: {OUTPUT_DIR}/sub_{SUBSCRIPTION_UUIDS['xray_top20']}.txt")
+    print(f"   - Xray All: {OUTPUT_DIR}/sub_{SUBSCRIPTION_UUIDS['xray_all']}.txt")
+    print(f"   - Singbox Top 20: {OUTPUT_DIR}/sub_{SUBSCRIPTION_UUIDS['singbox_top20']}.txt")
+    print(f"   - Singbox All: {OUTPUT_DIR}/sub_{SUBSCRIPTION_UUIDS['singbox_all']}.txt")
 
 # =================================================================================
 # === MAIN EXECUTION ===
@@ -549,6 +551,9 @@ def main():
     # ۴. تولید فایل‌های خروجی
     timestamp = int(time.time())
     
+    # اطمینان از وجود پوشه configs
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
     # فایل JSON اصلی
     output_json_file_name = f"all_live_configs_{timestamp}.json"
     output_json_path = os.path.join(OUTPUT_DIR, output_json_file_name)
@@ -557,7 +562,7 @@ def main():
         json.dump(output_for_frontend, f, ensure_ascii=False)
     print(f"✅ فایل JSON ساخته شد: {output_json_path}")
     
-    # فایل cache version
+    # فایل cache version در ریشه
     with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f:
         f.write(str(timestamp))
     print(f"✅ فایل ورژن ساخته شد: {CACHE_VERSION_FILE}")
