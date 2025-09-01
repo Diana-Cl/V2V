@@ -1,0 +1,4486 @@
+port: 7890
+socks-port: 7891
+allow-lan: true
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+proxies:
+- name: 🇩🇪 | @Evay_vpn
+  skip-cert-verify: true
+  type: vless
+  server: evay_vpn.fast.hosting-ip.com
+  port: 80
+  uuid: 1f8626cd-5c2e-4887-b906-75396cde1423
+  tls: false
+- name: 🇺🇸 US | 🔓 VLESS | @lombo_channel [1]
+  skip-cert-verify: true
+  type: vless
+  server: biography.com
+  port: 80
+  uuid: f5931ddd-a7cc-4057-8e62-73c9e1f54e49
+  tls: false
+  network: ws
+  ws-opts:
+    path: /networkfi?ed=1024
+    headers:
+      Host: salamdelavaran1404.org
+- name: 🇩🇪 | XpnTeam - Telegrams-r596p9c2
+  skip-cert-verify: true
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 1dc37b8f-49a9-478f-91e1-147f0a1249f8
+  tls: false
+- name: 🇺🇸 US | 🔓 VLESS | @v2ray_youtube [3]
+  skip-cert-verify: true
+  type: vless
+  server: svnteam.fast.hosting-ip.com
+  port: 80
+  uuid: 987b346f-113c-49e8-9622-f5d41b6de779
+  tls: false
+  network: ws
+  ws-opts:
+    path: /@SvnProBot?ed=2560
+    headers:
+      Host: Aeza.net
+- name: سرور رایگان @HAJIMAMADVPN-8
+  skip-cert-verify: true
+  type: vless
+  server: speedtest.net
+  port: 80
+  uuid: 2dac3536-244a-4558-9ab9-ab9ae34638c1
+  tls: false
+- name: 🇺🇸 US | 🔓 VLESS | @connectshu [14]
+  skip-cert-verify: true
+  type: vless
+  server: hajlab.ucdavis.edu
+  port: 80
+  uuid: a5c6d1da-cac5-4f56-acfa-dd7b5a8925fa
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Telegram-ipV2Ry-Telegram-ipV2Ry-Telegram-ipV2Ry?ed=2048
+    headers:
+      Host: blackseeseeeeee.ir
+- name: 🇺🇸 US | 🔓 VLESS | @mpproxy [14]
+  skip-cert-verify: true
+  type: vless
+  server: 151.101.128.223
+  port: 80
+  uuid: a2514b27-7d60-44b3-b440-e8a9579510fa
+  tls: false
+  network: ws
+  ws-opts:
+    path: /@UnlimitedDev----@UnlimitedDev-----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev?ed=2480
+    headers:
+      Host: JOIN.unlimiteddev.4.4.4.4.wWw.CloudFlare.cOm.wWw.SpeedTeSt.cOm.Home.iRan.0.0.0.0.Hide.my.IP.xXx.333.22.1.CDN.Free.unlimiteddev.DDNS1-IP.nEt
+- name: 🇺🇸 US | 🔓 VLESS | @ghotb_scarf [6]
+  skip-cert-verify: true
+  type: vless
+  server: ips.rainoteam.store
+  port: 80
+  uuid: 6a45de8b-46e5-4da4-b242-3e18f3228087
+  tls: false
+- name: 🇺🇸 US | 🔓 VLESS | @filterk0sh [18]
+  skip-cert-verify: true
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: telegram-id-ArV2ray
+  tls: false
+- name: 🇺🇸 US | 🔓 VLESS | @server_nekobox [3]
+  skip-cert-verify: true
+  type: vless
+  server: mstr.fastly80.hosting-ip.com
+  port: 80
+  uuid: 86750164-55e7-46a7-a7e6-c0eb9a2f7239
+  tls: false
+  network: ws
+  ws-opts:
+    path: /admin
+    headers:
+      Host: Gn8656.io
+- name: '@Vip_Security join us - 383'
+  skip-cert-verify: true
+  type: vless
+  server: fastly.vipfast7.top
+  port: 80
+  uuid: 2e7101ba-2cf5-ed93-826f-e0d9ae5ce373
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2048
+    headers:
+      Host: donghi.com
+- name: 6xzx-@Fr33C0nfig / کانفیگ رایگان 🔗
+  skip-cert-verify: true
+  type: vless
+  server: viop.fast.hosting-ip.com
+  port: 80
+  uuid: 7fa08b3d-86d8-4b14-92b3-4c56a83f027d
+  tls: false
+- name: 🇺🇸 US | 🔓 VLESS | @megavpn_link [3]
+  skip-cert-verify: true
+  type: vless
+  server: shard3fobon.maniyadg7shard.ir
+  port: 80
+  uuid: 739e822a-a8d3-4bc2-ba0e-2a948a269ec0
+  tls: false
+  network: ws
+  ws-opts:
+    path: /shard9promax?ed=2048
+    headers:
+      Host: shardcompanygold2.com
+- name: 🇺🇸 US | 🔓 VLESS | @mpproxy [11]
+  skip-cert-verify: true
+  type: vless
+  server: 151.101.0.223
+  port: 80
+  uuid: a2514b27-7d60-44b3-b440-e8a9579510fa
+  tls: false
+  network: ws
+  ws-opts:
+    path: /@UnlimitedDev----@UnlimitedDev-----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev----@UnlimitedDev?ed=2480
+    headers:
+      Host: JOIN.unlimiteddev.4.4.4.4.wWw.CloudFlare.cOm.wWw.SpeedTeSt.cOm.Home.iRan.0.0.0.0.Hide.my.IP.xXx.333.22.1.CDN.Free.unlimiteddev.DDNS1-IP.nEt
+- name: 🇺🇸 US | 🔓 VLESS | @lranonline_new [7]
+  skip-cert-verify: true
+  type: vless
+  server: 63.141.128.13
+  port: 80
+  uuid: fdf5ef4d-bf23-4bd1-b04e-39c80ba0c577
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: c.jOin.zEdMoDeOn.oNl.
+- name: '@v2ray313 کانالمون 🫁'
+  skip-cert-verify: true
+  type: vless
+  server: 172.67.188.18
+  port: 80
+  uuid: 2cf5523e-c4e2-4e97-be1f-b9b7d356c140
+  tls: false
+  network: ws
+  ws-opts:
+    path: /aioproxybot/8.215.59.6-443
+    headers:
+      Host: aio.loophole.Biz.iD
+- name: IRAN 593 (@Outline_Vpn) free
+  skip-cert-verify: true
+  type: vless
+  server: 104.21.112.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: 🚩 CF | 🔓 VLESS | @vmessorg [12]
+  skip-cert-verify: true
+  type: vless
+  server: www.speedtest.net
+  port: 2052
+  uuid: ec906c46-8a02-4148-f560-364d5579a0cf
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: Vmessorg.paradoxone.ir
+- name: 🇰🇷@vpn_ioss ♻️ عضو شو
+  skip-cert-verify: true
+  type: vless
+  server: 104.16.14.1
+  port: 8880
+  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
+  tls: false
+  network: ws
+  ws-opts:
+    path: /G8ZDmBYwOAz3ahmR?ed=2560
+    headers:
+      Host: vngsupply.ip-ddns.com
+- name: 🚩 CF | 🔓 VLESS | @expressvpn_420 [33]
+  skip-cert-verify: true
+  type: vless
+  server: www.speedtest.net
+  port: 2082
+  uuid: cb93debf-77f5-4a26-af9e-f6b67c0d294d
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420?ed=2080
+    headers:
+      Host: s6.inFo.laLezaRanegomaNandish.suB420-mohaMad.OnlinE.
+- name: 🅼🅴🅷🅳🅸
+  skip-cert-verify: true
+  type: vless
+  server: 25.25.25.188
+  port: 8880
+  uuid: 583ceab3-4022-4553-9158-9bedc625ad4e
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ip.langmanshanxi.top
+- name: 🇦🇽@SimChin_iR عضو بشید
+  skip-cert-verify: true
+  type: vless
+  server: 185.146.173.39
+  port: 2052
+  uuid: 2d14c894-aca5-4854-bcdb-75d4505486c2
+  tls: false
+  network: ws
+  ws-opts:
+    path: /wsmmad
+    headers:
+      Host: michalde.lemoex.ir
+- name: 🚩 CF | 🔓 VLESS | @realvpnmaster [7]
+  skip-cert-verify: true
+  type: vless
+  server: zula.ir
+  port: 80
+  uuid: 19f935c2-4c92-4b8a-b024-3e378f396255
+  tls: false
+  network: ws
+  ws-opts:
+    path: /@custom_config?ed=2048
+    headers:
+      Host: 336125422.ir.www.zula.ir.xn--4all.king4usd.shop.
+- name: 🚩 CF | 🔓 VLESS | @mester_v2ray [12]
+  skip-cert-verify: true
+  type: vless
+  server: 162.159.153.2
+  port: 80
+  uuid: dfc1a9ab-6241-4b73-92f7-b299fc6b7751
+  tls: false
+  network: ws
+  ws-opts:
+    path: /xmlrpc.php?ed=1080&id=dfc1a9ab-6241-4b73-92f7-b299fc6b7751
+    headers:
+      Host: csgo.mozilla.5.0.xn--2b5baaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.127.0.0.1.offlinespeedtest.netdown.user.xn--2b5baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.0.2.1.xn--j9h1028mqmaoytii00aha21hfjrd.xn--m39h.tor.rubika.cloudns.ch.
+- name: 🇸🇪 SE | 🔓 VLESS | @realvpnmaster [8]
+  skip-cert-verify: true
+  type: vless
+  server: 185.146.173.185
+  port: 2095
+  uuid: 5c7d90fe-f7d5-40bf-bfca-7726d5e44786
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: V2ray-_-_-_-_-_-ShhProxy.TelegramChannelJoinBede.com.
+- name: 🚩 CF | 🔓 VLESS | @filterk0sh [6]
+  skip-cert-verify: true
+  type: vless
+  server: www.speedtest.net
+  port: 80
+  uuid: 67007ba4-fadb-48c6-bf2f-125d18279d1b
+  tls: false
+  network: ws
+  ws-opts:
+    path: /---VPNCUSTOMIZE---VPNCUSTOMIZE---www.speedtest.net?ed=2080
+    headers:
+      Host: s1.vpncustomize.ip-ddns.com.
+- name: 🚩 CF | 🔓 VLESS | @nofilter_v2rayng [5]
+  skip-cert-verify: true
+  type: vless
+  server: gleeful-error.seotoolsforyou.co.uk
+  port: 80
+  uuid: 9a37131b-2b68-427f-a2fc-cc7381c2d575
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: gleeful-error.seotoolsforyou.co.uk
+- name: '@bored_vpn'
+  skip-cert-verify: true
+  type: vless
+  server: 172.66.40.99
+  port: 80
+  uuid: 21e6d7f3-08bd-4dbc-abf5-8012d9838af5
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2?ed=2560
+    headers:
+      Host: dfgopee-workers.dev.
+- name: 'Telegram : @Alfa_v2ray_ng 🔥'
+  skip-cert-verify: true
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Join---PlanB_proxy=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: برای اتصال دائمی جوین شو🍦@Outline_ir
+  skip-cert-verify: true
+  type: vless
+  server: 104.18.14.19
+  port: 2082
+  uuid: 2e90c15f-3703-4426-acef-1f59a3990289
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: 0301.nooyfig.workers.dev
+- name: 🇸🇪 SE | 🔓 VLESS | @parsashonam [14]
+  skip-cert-verify: true
+  type: vless
+  server: 185.146.173.39
+  port: 8880
+  uuid: Parsashonam-304
+  tls: false
+- name: 'Telegram : @Alfa_v2ray_ng 🔥_1'
+  skip-cert-verify: true
+  type: vless
+  server: tgju.org
+  port: 80
+  uuid: 2b277eea-66b2-4f3a-b934-46225c1f5e6f
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed
+    headers:
+      Host: NoDE28.VtNEt.InFO
+- name: Binextify⭐-3d97pmxm2
+  skip-cert-verify: true
+  type: vless
+  server: zula.ir
+  port: 8880
+  uuid: 20be4816-7cf2-491e-f094-5e0542796b8f
+  tls: false
+  network: ws
+  ws-opts:
+    path: /telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY?ed=2560
+    headers:
+      Host: ww.irAnsheep.Web.tr.
+- name: 💎 @AblNet7 💎
+  skip-cert-verify: true
+  type: vless
+  server: dedicated-development.seotoolsforyou.co.uk
+  port: 80
+  uuid: 2054405e-70ff-40a2-ae27-16b63d72390a
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: dedicated-development.seotoolsforyou.co.uk
+- name: 💎کانفیگ های بیشتر در چنل تلگرام💎 Conf...
+  skip-cert-verify: true
+  type: vless
+  server: 91.206.71.162
+  port: 8880
+  uuid: 26bc13af-e442-4956-afd4-b8f85744d26f
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Barayeiranmahsang/----@-?ed=2560
+    headers:
+      Host: barayeiran-mahsang.gerald81.dpdns.org
+- name: 🚩 CF | 🔓 VLESS | @configms [5]
+  skip-cert-verify: true
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: e5a91065-6515-4b1d-8fb0-55f80975d464
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Telegram_configMs_Telegram_configMs_Telegram_configMs?ed=2048
+    headers:
+      Host: K.mangoap.org
+- name: 32 | @ConfigFast 🇮🇷💔 عضو بشید تلگرام ...
+  skip-cert-verify: true
+  type: vless
+  server: iza5.lalash.ir
+  port: 80
+  uuid: 30678ab8-5d17-464e-8820-fc1b1dfe5f7b
+  tls: false
+- name: 🚩 CF | 🔓 VLESS | @flyv2ray [9]
+  skip-cert-verify: true
+  type: vless
+  server: 104.16.53.11
+  port: 8080
+  uuid: 4ca604af-1cfb-40d5-807a-083bf97432ba
+  tls: false
+- name: IRAN 556 (@Outline_Vpn) free
+  skip-cert-verify: true
+  type: vless
+  server: wild-bird.seotoolsforyou.co.uk
+  port: 80
+  uuid: 1d0dfde1-9f18-4557-9af8-4f3124ee5dcd
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: wild-bird.seotoolsforyou.co.uk
+- name: WS-@ELiV2RaY
+  skip-cert-verify: true
+  type: vless
+  server: 188.114.98.112
+  port: 80
+  uuid: 21e6d7f3-08bd-4dbc-abf5-8012d9838af5
+  tls: false
+  network: ws
+  ws-opts:
+    path: /ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY----ELiV2-RAY?ed=2560
+    headers:
+      Host: ELENA.ddNS-ip.net.
+- name: '🇩🇪 جوین بده کانکت بمونی: @STAPersiaNews'
+  skip-cert-verify: true
+  type: vless
+  server: 104.16.69.64
+  port: 8880
+  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
+  tls: false
+  network: ws
+  ws-opts:
+    path: /7YVyoVNnbaVzgl6D?ed=2560
+    headers:
+      Host: vghavi32.ip-ddns.com
+- name: '@CaV2ray ⚡️'
+  skip-cert-verify: true
+  type: vless
+  server: 104.17.147.22
+  port: 80
+  uuid: 1f5056ca-fb4c-4b51-a31e-891083588351
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Telegram@V2ray_Alpha/?ed=2560
+    headers:
+      Host: pamchall.com.
+- name: 🚩 CF | 🔓 VLESS | @connectshu [10]
+  skip-cert-verify: true
+  type: vless
+  server: www.speedtest.net
+  port: 8080
+  uuid: aa28dc63-1a56-41f9-bac7-70b9f0d743b7
+  tls: false
+- name: '@bored_vpn_1'
+  skip-cert-verify: true
+  type: vless
+  server: zula.ir
+  port: 8080
+  uuid: 02151ca0-a1d5-437c-d818-ffa739176fab
+  tls: false
+  network: ws
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: Unlimiteddev-join.paradoxone.ir
+- name: 🚩 CF | 🔓 VLESS | @customizev2ray [20]
+  skip-cert-verify: true
+  type: vless
+  server: 188.114.98.224
+  port: 2095
+  uuid: 18840c4a-9849-4481-8fb4-a4191fe5e9e1
+  tls: false
+  network: ws
+  ws-opts:
+    path: /V2rayCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE-VPNCUSTOMIZE?ed=1024
+    headers:
+      Host: V2ray-_-_-_-_-_-VPNCUSTOMIZE.keLLekcoLLection.com.
+- name: 🚩 CF | 🔓 VLESS | @lockey_vpn [14]
+  skip-cert-verify: true
+  type: vless
+  server: www.speedtest.net
+  port: 8880
+  uuid: 6dd948ea-2dce-4cf3-df46-0a72af7c846a
+  tls: false
+- name: 🚩 CF | 🔓 VLESS | @bored_vpn [4]
+  skip-cert-verify: true
+  type: vless
+  server: 172.67.72.39
+  port: 8080
+  uuid: dc947c58-c4d7-445%61-f%65d%65-6642%61bfd3%6530
+  tls: false
+  network: ws
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: bia-to-unlimiteddev.unlimiteddev-service.ir
+- name: 🚩 CF | 🔓 VLESS | @goldenshiinevpn [10]
+  skip-cert-verify: true
+  type: vless
+  server: cdnjs.com
+  port: 8880
+  uuid: e0f52d31-566b-437d-9961-1865e38d10fb
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: up.sourceforge.sbs
+- name: 🇩🇪@FreakConfig
+  skip-cert-verify: true
+  type: vless
+  server: sweet-combination.seotoolsforyou.co.uk
+  port: 80
+  uuid: 05020a61-3c0c-4ead-b256-7851ff905a75
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: sweet-combination.seotoolsforyou.co.uk
+- name: '@Mrconfig_Channel 🩵'
+  skip-cert-verify: true
+  type: vless
+  server: 104.21.114.48
+  port: 80
+  uuid: 1f431db3-1918-4e7b-a855-c93485e11694
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: pari.parinazz.dpdns.org
+- name: 🇩🇪 All Operator 2 @MaSTeRSeRVeR1
+  skip-cert-verify: true
+  type: vless
+  server: 198.41.216.98
+  port: 8080
+  uuid: 206b6081-24e9-4516-aa1c-90fc57614f9a
+  tls: false
+- name: Telegram:@config_proxy 🔥
+  skip-cert-verify: true
+  type: vless
+  server: 104.18.126.133
+  port: 80
+  uuid: 113dd109-540e-4497-9d47-eed30315260f
+  tls: false
+  network: ws
+  ws-opts:
+    path: /proxyIP=proxyip.us.fxxk.dedyn.iofp=chrome
+    headers:
+      Host: edgetunnel.2424014450.workers.dev
+- name: CF中转_0813046185&security=tls&alpn=h3&...
+  skip-cert-verify: true
+  type: vless
+  server: 172.67.178.14
+  port: 443
+  uuid: 252df5e8-0428-4345-b236-a6dae7b3457d
+  tls: false
+- name: 🚩 CF | 🔓 VLESS | @diamondproxytm [1]
+  skip-cert-verify: true
+  type: vless
+  server: tabrizm138.lll.l0l.lll.workers.dev
+  port: 2086
+  uuid: c6812323-833b-454d-80c0-e1ccc22e9fc5
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?TM_@AZARBAYJAB1 @AZARBAYJAB1 t.me/AZARBAYJAB1?=?2048
+    headers:
+      Host: app----23.dl2nextflix-inbound3html-dldl1direct2d-1.com
+- name: 🇺🇸 US | 🔓 VLESS | @falcunargo [7]
+  skip-cert-verify: true
+  type: vless
+  server: speedtestcustom.com
+  port: 80
+  uuid: f0dc048a-1fd1-4ccc-9615-ee62fce4389f
+  tls: false
+- name: 🚩 CF | 🔓 VLESS | @pydriclub [2]
+  skip-cert-verify: true
+  type: vless
+  server: www.speedtest.net
+  port: 8443
+  uuid: f1958033-d138-4ce7-a418-4dd87559e8e3
+  tls: false
+- name: 🚩 CF | 🔓 VLESS | @frev2rayng [17]
+  skip-cert-verify: true
+  type: vless
+  server: www.speedtest.net
+  port: 2086
+  uuid: c142dd91-b36b-430b-b0d7-8c9c2a073a1e
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Telegram:@NUFiLTER-Telegram:@NUFiLTER-Telegram:@NUFiLTER-Telegram:@NUFiLTER-Telegram:@NUFiLTER-Telegram:@NUFiLTER-Telegram:@NUFiLTER-Telegram:@NUFiLTER-Telegram:@NUFiLTER-Telegram:@NUFiLTER-Telegram:@NUFiLTER
+    headers:
+      Host: uusaa.列列男事的事列上赛男78.shop
+- name: 🇧🇷@vpn_ioss ♻️ عضو شو
+  skip-cert-verify: true
+  type: vless
+  server: 45.85.119.151
+  port: 8880
+  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
+  tls: false
+  network: ws
+  ws-opts:
+    path: /6TvG8D6HimXKgdp2?ed=2560
+    headers:
+      Host: vngsupply.ip-ddns.com
+- name: TELEGRAM-MARAMBASHI_MARAMBASHI_MARAMB...
+  skip-cert-verify: true
+  type: vless
+  server: 104.20.35.28
+  port: 443
+  uuid: 0fbf4f81-2598-4b6a-a623-0ead4cb9efa8
+  tls: false
+- name: '@V2rayNGVPN <= کانفیگ رایگان'
+  skip-cert-verify: true
+  type: vless
+  server: obedient-detail.seotoolsforyou.co.uk
+  port: 80
+  uuid: 1dd49fb8-6570-4a2a-a236-f410b63159cf
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: obedient-detail.seotoolsforyou.co.uk
+- name: 🚩 CF | 🔓 VLESS | @renetvpn [10]
+  skip-cert-verify: true
+  type: vless
+  server: 104.21.70.11
+  port: 8080
+  uuid: 6e569c43-f7e6-4ab7-b3a7-f616a39ff6a1
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2048
+    headers:
+      Host: dw.huondadalioshop.ir
+- name: ⚡︎ 🇫🇮 𓏺 𝗝𝗼𝗶𝗻 ➠ @PlanB_Proxy | کانال ما 🆔
+  skip-cert-verify: true
+  type: vless
+  server: 104.16.1.106
+  port: 2082
+  uuid: 18b16fac-5984-44c0-80fc-c346dd14900e
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2052
+    headers:
+      Host: www.svnmobile.com
+- name: 🇸🇪 SE | 🔓 VLESS | @meli_v2rayng [25]
+  skip-cert-verify: true
+  type: vless
+  server: 185.146.173.37
+  port: 2095
+  uuid: 2f264012-6b8c-4b79-b8c9-a6b7b4b7fc43
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: V2ray-_-_-_-_-_-_-_-_-ShhProxy.TelegramChannelJoinBede.com.
+- name: 🅼🅴🅷🅳🅸_1
+  skip-cert-verify: true
+  type: vless
+  server: bewildered-poem.seotoolsforyou.co.uk
+  port: 80
+  uuid: 0f4865d9-9405-4703-a282-46e326e6d9e7
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: bewildered-poem.seotoolsforyou.co.uk
+- name: 🇦🇲 AM | 🔓 VLESS | @ai_duet [6]
+  skip-cert-verify: true
+  type: vless
+  server: 5.10.215.208
+  port: 8880
+  uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
+  tls: false
+  network: ws
+  ws-opts:
+    path: /TelegramU0001F1E8U0001F1F3
+    headers:
+      Host: reedfree8mahsang2.redorg.ir
+- name: 🚩 CF | 🔓 VLESS | @mahdivpn2 [3]
+  skip-cert-verify: true
+  type: vless
+  server: discord.gg
+  port: 80
+  uuid: '---DIGiV2RAY---'
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Digiv2ray-
+    headers:
+      Host: ædígí.RadioTeHran.oRG.
+- name: 🇳🇱 ProxyCloud Netherlands 👑
+  skip-cert-verify: true
+  type: vless
+  server: famous-danger.oneeat.co
+  port: 80
+  uuid: ddc27bd6-6efa-47cf-8bfc-acaf973ba6b3
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: famous-danger.oneeat.co
+- name: 🚩 CF | 🔓 VLESS | @iranvipnet [2]
+  skip-cert-verify: true
+  type: vless
+  server: visa.org
+  port: 2052
+  uuid: dfc1a9ab-6241-4b73-92f7-b299fc6b7751
+  tls: false
+  network: ws
+  ws-opts:
+    path: /VPNCUSTOMIZE,VPNCUSTOMIZE?ed=1080
+    headers:
+      Host: aparat.com.bing.com.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.trepaspeedtest.netrag.com.px.com.s95017.ir.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.h99.ddns-ip.net.
+- name: '🦆Ch: @pPal03🦆جوین بدید عزیزانم🦆'
+  skip-cert-verify: true
+  type: vless
+  server: 104.24.184.113
+  port: 80
+  uuid: 03c9f240-0bad-4f71-93f2-f5d272dada97
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: sparkling-limit-ppal03.yibijow194.workers.dev
+- name: 🇸🇪 SE | 🔓 VLESS | @expressvpn_420 [32]
+  skip-cert-verify: true
+  type: vless
+  server: 185.146.173.39
+  port: 8080
+  uuid: Parsashonam-Bot-17
+  tls: false
+- name: '@V2rayNG3'
+  skip-cert-verify: true
+  type: vless
+  server: 151.101.2.133
+  port: 80
+  uuid: 275d87d1-221a-4e47-96b1-9a6f76a7daba
+  tls: false
+- name: 🇺🇸 US | 🔓 VLESS | @icv2ray [15]
+  skip-cert-verify: true
+  type: vless
+  server: 63.141.128.15
+  port: 80
+  uuid: 3f61f942-a48a-43a5-8f50-72ddf5828779
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Join-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-bia-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON
+    headers:
+      Host: d.jOin.zEdMoDeOn.oNl.
+- name: 🚩 CF | 🔓 VLESS | @novinology [11]
+  skip-cert-verify: true
+  type: vless
+  server: mediafire.com
+  port: 2095
+  uuid: 9b97bb00-48b8-46dd-a9f2-ecd2e16fc41c
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2048
+    headers:
+      Host: it1.vlessx.xyz
+- name: 🚩 CF | 🔓 VLESS | @outlinev2rayng [4]
+  skip-cert-verify: true
+  type: vless
+  server: creative-computer.oneeat.co
+  port: 80
+  uuid: f1fe4963-66f7-4f71-a038-9e07ea6cf20f
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: creative-computer.oneeat.co
+- name: 𝗝𝗼𝗶𝗻 ➠ @configfree20255 | کانال ما 🆔
+  skip-cert-verify: true
+  type: vless
+  server: 104.17.147.22
+  port: 2052
+  uuid: 06a69ade-0ebf-44dc-8f06-69dda39be844
+  tls: false
+  network: ws
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: Vmessorg.paradoxone.ir
+- name: '@CaV2ray ⚡️_1'
+  skip-cert-verify: true
+  type: vless
+  server: 104.16.181.110
+  port: 80
+  uuid: 1f431db3-1918-4e7b-a855-c93485e11694
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2580
+    headers:
+      Host: pari.parinazz.dpdns.org
+- name: 🚩 CF | 🔓 VLESS | @iranbfilter [3]
+  skip-cert-verify: true
+  type: vless
+  server: bdok.ir
+  port: 8080
+  uuid: 698bdf81-9333-41cc-9cc1-81a2fc43bc19
+  tls: false
+  network: ws
+  ws-opts:
+    path: /telegramm-@Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,telegram-Naji-vpn,Mmdv2rayng-V2rayngmmd-telegram-meh95-v2ray?ed=2056
+    headers:
+      Host: cloudmehranmmdv1ray.v3rayng6.6.6.6.ir.Com.Site.xn--fhq0la447aac5504dea701axr1g.MahDi3Mm.onliNe.
+- name: کانال+ما+در+تلگرام+@Asak_Vpn+🏆
+  skip-cert-verify: true
+  type: vless
+  server: 167.82.1.141
+  port: 80
+  uuid: 253ef561-9e57-4336-befd-878ddd30df01
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2048
+    headers:
+      Host: teleirani.ir
+- name: 🚩 CF | 🔓 VLESS | @expressvpn_420 [29]
+  skip-cert-verify: true
+  type: vless
+  server: 172.66.40.99
+  port: 8880
+  uuid: d447f445-8ac8-46ad-8f93-474a8c57c738
+  tls: false
+  network: ws
+  ws-opts:
+    path: /@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420?ed=2048
+    headers:
+      Host: s6.inFo.laLezaRanegomaNandish.suB420-mohaMad.online.
+- name: 🚩 CF | 🔓 VLESS | @vmessorg [10]
+  skip-cert-verify: true
+  type: vless
+  server: cumhuriyet.com.tr
+  port: 80
+  uuid: 2c102887-2209-42c3-ffb1-35a5ddd831a9
+  tls: false
+  network: ws
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: joinbdebe.vmessorg.ir
+- name: 🚩 CF | 🔓 VLESS | @melov2ray [43]
+  skip-cert-verify: true
+  type: vless
+  server: chat.openai.com
+  port: 8080
+  uuid: 0518ca46-4313-45ce-df4d-5268c1b30cf2
+  tls: false
+  network: ws
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: shad.ir.fin.test.digicyber.click.
+- name: 🚩 CF | 🔓 VLESS | @mtproxy22_v2ray [3]
+  skip-cert-verify: true
+  type: vless
+  server: grumpy-building.seotoolsforyou.co.uk
+  port: 80
+  uuid: 935c990a-9bcc-484b-86a2-2a402f9ad1d4
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: grumpy-building.seotoolsforyou.co.uk
+- name: 🚩 CF | 🔓 VLESS | @lockey_vpn [2]
+  skip-cert-verify: true
+  type: vless
+  server: 104.17.148.22
+  port: 8880
+  uuid: 2e56a2e4-d8ac-4990-843c-d813e889fcbd
+  tls: false
+- name: 🚩 CF | 🔓 VLESS | @torang_vpn [6]
+  skip-cert-verify: true
+  type: vless
+  server: www.parsvds.ir
+  port: 8080
+  uuid: --VPNCUSTOMIZE--
+  tls: false
+  network: ws
+  ws-opts:
+    path: VPNCUSTOMIZE?ed=8080
+    headers:
+      Host: VPNcustomize-vpnCUSTOMIZE-VPNcustomize.CUSTOMIZEspeedtest.net.
+- name: US_speednode_0052
+  skip-cert-verify: true
+  type: vless
+  server: 63.141.128.23
+  port: 80
+  uuid: d59d49d3-a392-403a-8480-59934008431d
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: b.jOin.zEdMoDeOn.oNl.
+- name: '@Vip_Security join us - 376'
+  skip-cert-verify: true
+  type: vless
+  server: 162.120.94.251
+  port: 8880
+  uuid: 0132166f-e702-48ed-a9e7-b07af768faf8
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Telegram
+    headers:
+      Host: cf.d3z.net
+- name: '@bored_vpn_2'
+  skip-cert-verify: true
+  type: vless
+  server: 63.141.128.16
+  port: 80
+  uuid: 15f2b73d-9790-4092-bb4b-e38a4feb1b56
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: e.jOin.zEdMoDeOn.oNl.
+- name: 🚩 CF | 🔓 VLESS | @fastshovpn [8]
+  skip-cert-verify: true
+  type: vless
+  server: fastshovpntelegram2.vinamarketcenter.ir
+  port: 80
+  uuid: 68e69d22-ab75-43cc-8bf1-4af0fb1f61ef
+  tls: false
+  network: ws
+  ws-opts:
+    path: /FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM?ed=2048
+    headers:
+      Host: eng.vinamarketcenter.ir
+- name: 🚩 CF | 🔓 VLESS | @vmessorg [16]
+  skip-cert-verify: true
+  type: vless
+  server: numberland.ir
+  port: 2052
+  uuid: 3a3137a9-ab97-4e0f-ed77-f62576a8c8c8
+  tls: false
+  network: ws
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: Vmessorg.paradoxone.ir
+- name: ewogicagimfkzci6icixmdqumzeumtyumjyilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.26
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumjm3lje3niis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.237.176
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumja3ljiwosis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.207.209
+  port: 2082
+  uuid: 082122a2-8479-4089-82f0-f32ba5fc5426
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /bb
+    headers:
+      Host: hao.huaqian.icu
+- name: ewogicagimfkzci6icixotauotmumjq3lje4ncis
+  skip-cert-verify: true
+  type: vmess
+  server: 190.93.247.184
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumjiyljq2iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.222.46
+  port: 80
+  uuid: 6fea1649-425b-4092-bf53-29792152c925
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: 172.67.222.46
+- name: ewogicagimfkzci6icixoduumjuxljgyljixmiis
+  skip-cert-verify: true
+  type: vmess
+  server: 185.251.82.212
+  port: 8880
+  uuid: b209dfbf-6bb0-30b2-a77a-286e230466b5
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icixmdqumtkunduumtailaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.45.10
+  port: 2095
+  uuid: 7a737f41-b792-4260-94ff-3d864da67b80
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: onea.flha.ru
+- name: ewogicagimfkzci6icixotgundeumjiylje5osis
+  skip-cert-verify: true
+  type: vmess
+  server: 198.41.222.199
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixotgundeumtkzljexmcis
+  skip-cert-verify: true
+  type: vmess
+  server: 198.41.193.110
+  port: 2082
+  uuid: 0afb8b2c-149a-49a8-e90f-d77884ac922f
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumzeumtyundqilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.44
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icj3d3cua2vybmvscy5iawqi
+  skip-cert-verify: true
+  type: vmess
+  server: www.kernels.bid
+  port: 80
+  uuid: 25ec39f7-7cdd-4c3c-bc3c-60e9a8927b4a
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: /ws
+- name: ewogicagimfkzci6icixmdqumzeumtyundeilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.41
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixntquotiuos4xmjeilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.121
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumzeumtyumziilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.32
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnjiumtu5ljezoc40niis
+  skip-cert-verify: true
+  type: vmess
+  server: 162.159.138.46
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmzcumtc1ljeync4xnjci
+  skip-cert-verify: true
+  type: vmess
+  server: 137.175.124.167
+  port: 20086
+  uuid: b4bce500-11fe-4f8f-a344-01ac247af9bd
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixntquotiuos41ocisciag
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.58
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkundcumjiziiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.47.223
+  port: 8080
+  uuid: b551aa22-22af-11ee-b8d8-f23c932eb68d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: oiictw.yydsii.com
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggvvpnvo7l
+  skip-cert-verify: true
+  type: vmess
+  server: 104.18.14.54
+  port: 80
+  uuid: bd8f4c3a-b55a-4a55-a4be-d2ead4a4c66a
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /index.html?ed=2048
+    headers:
+      Host: 845296302850992025082820102725073.s15.chibaba.filegear-sg.me
+- name: eyj2ijoimiisinbzijoixhvkodnjxhvkzgzhxhvk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.17.176.171
+  port: 8080
+  uuid: 6cbc9c78-1cb1-57d4-a999-e2f4e34c1e03
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /nasnet/cdn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjyumy4ymteilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 172.66.3.211
+  port: 80
+  uuid: bd8f4c3a-b55a-4a55-a4be-d2ead4a4c66a
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /index.html?ed=2048
+    headers:
+      Host: 331612932360382025082820102757744.s15.chibaba.filegear-sg.me
+- name: ewogicagimfkzci6icixmdqumtkunduumtyilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.45.16
+  port: 2095
+  uuid: 7a737f41-b792-4260-94ff-3d864da67b80
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: onea.flha.ru
+- name: ewogicagimfkzci6icixmdqumzeumtyuntiilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.52
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixoduumtq4ljewns4ymjmi
+  skip-cert-verify: true
+  type: vmess
+  server: 185.148.105.223
+  port: 8880
+  uuid: 761310d9-538d-3b2a-8874-1cc47a23498e
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icixnziunjcumtg5ljgilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.189.8
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnjiumtu5lji0ns4xmjii
+  skip-cert-verify: true
+  type: vmess
+  server: 162.159.245.122
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumzeumtyumjgilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.28
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: eyj2ijoimiisinbzijoixhvkodnjxhvkzgywxhvk
+  skip-cert-verify: true
+  type: vmess
+  server: time.is
+  port: 80
+  uuid: 66ddd790-10ed-4a16-b334-0b7e3577b5b7
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: time.is
+- name: ewogicagimfkzci6icixodgumte0ljk5lje4iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 188.114.99.18
+  port: 80
+  uuid: d2866d01-d76d-4a08-8bae-04fb3c502588
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixntquotiuos45ncisciag
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.94
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjqumji5ljiymyis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.64.229.223
+  port: 8880
+  uuid: 4b5e4565-322f-4223-a891-78a84f189726
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /RpT6kZjkw45EenmTcDYWs
+    headers:
+      Host: ''
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.45.11
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6ici2mi43mi4xnjyumjiziiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 62.72.166.223
+  port: 8880
+  uuid: 2e4d9d7e-71e8-377b-a373-24b0dda38a04
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icjiyw90ys5tzsisciagicai
+  skip-cert-verify: true
+  type: vmess
+  server: baota.me
+  port: 80
+  uuid: 2f38f848-a899-4c87-9807-207a41615e3c
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /rongseven?ed=2048
+    headers:
+      Host: us.freeyyds.dpdns.org
+- name: ewogicagimfkzci6icixntquotiuos42iiwkicag
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.6
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumzeumtyumzeilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.31
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_1
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.32.46
+  port: 2086
+  uuid: 29eebb60-b27b-4a9d-bba5-947763d9205e
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtyunjgumzgilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.16.68.38
+  port: 2052
+  uuid: fe5edf04-c2af-4ac5-84ee-16d43024decb
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: lu.wx.alue.link
+- name: ewogicagimfkzci6icixmdqumtkundaumjm3iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.40.237
+  port: 8880
+  uuid: 57e0cb4d-eae5-48ec-8091-149dc2b309e0
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /d/65dd503.TG.WangCai2.WangCai_8:107690
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumjexljqziiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.211.43
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icj3d3cucgfyc3zkcy5pciis
+  skip-cert-verify: true
+  type: vmess
+  server: www.parsvds.ir
+  port: 80
+  uuid: 62aa5f80-0328-4004-a375-7f5a59df4022
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /T,E,L,E,G,R,A,M,X,V,2,R,A,Y
+    headers:
+      Host: rubika.ir.google.com.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.apaspeedtest.netrat.com.eu.com.shw101.ir.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.xn--g28h.dns-dynamic.net.
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_2
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.45.15
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icjpt29pt09vb09wljiymjc2
+  skip-cert-verify: true
+  type: vmess
+  server: OOoOOOooOp.222769.XYZ
+  port: 80
+  uuid: ce921385-2b31-45fe-84c5-1843e8ae845b
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /VaaSEfNLHdW3I98dxLkez
+    headers:
+      Host: OOoOOOooOp.222769.XYZ
+- name: ewogicagimfkzci6icixnziunjqumtuwlju3iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.64.150.57
+  port: 2082
+  uuid: e3fa5050-67f5-4625-a778-5d9283f4334f
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /m3
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnjiumtu5lji0mc4xmzai
+  skip-cert-verify: true
+  type: vmess
+  server: 162.159.240.130
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_3
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.46.27
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icjzzxjpzxmtdjeuc2ftyw5l
+  skip-cert-verify: true
+  type: vmess
+  server: series-v1.samanehha.co
+  port: 80
+  uuid: 0b65bb06-6b28-487a-8e3c-820dda51e977
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dT9s3HqgZeD3eApzDAfhOHq
+    headers:
+      Host: series-v1.samanehha.co
+- name: ewogicagimfkzci6icixnjiumtu5lji0mi4xntui
+  skip-cert-verify: true
+  type: vmess
+  server: 162.159.242.155
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumje2ljk3iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.216.97
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixndeumtkzljixmy4ymcis
+  skip-cert-verify: true
+  type: vmess
+  server: 141.193.213.20
+  port: 80
+  uuid: a55b7d77-d251-4e31-a76e-22d09ac69eb0
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /vpnneo
+    headers:
+      Host: sanggoro6.nextvpn.cc
+- name: ewogicagimfkzci6icixntquotiuos4ymtiilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.212
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixodgumte0ljk4lje4iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 188.114.98.18
+  port: 80
+  uuid: d2866d01-d76d-4a08-8bae-04fb3c502588
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixntquotiuos4xntailaog
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.150
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixntquotiuos42osisciag
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.69
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: eyj2ijoimiisinbzijoixhvkodnjxhvkzgzhxhvk_1
+  skip-cert-verify: true
+  type: vmess
+  server: 104.17.223.175
+  port: 8080
+  uuid: 6cbc9c78-1cb1-57d4-a999-e2f4e34c1e03
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /nasnet/cdn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnzmumjq1lju4ljqziiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 173.245.58.43
+  port: 2082
+  uuid: 0afb8b2c-149a-49a8-e90f-d77884ac922f
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icjhy2nlc3muem9vbwluzm8u
+  skip-cert-verify: true
+  type: vmess
+  server: access.zoominfo.com
+  port: 80
+  uuid: a55b7d77-d251-4e31-a76e-22d09ac69eb0
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /vpnneo
+    headers:
+      Host: sanggoro6.nextvpn.cc
+- name: ewogicagimfkzci6icixmdqumzeumtyundiilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.42
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixywyxmzeuzmy0ogzhzguu
+  skip-cert-verify: true
+  type: vmess
+  server: 1af131.ff48fade.shop
+  port: 80
+  uuid: 53598401-31e1-4ce3-bb2e-6c00a8fc3e01
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: us02s.ff48fade.shop
+- name: ewogicagimfkzci6icixmdqumtkundcumtc4iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.47.178
+  port: 8080
+  uuid: b551aa22-22af-11ee-b8d8-f23c932eb68d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2048&Telegram🇨🇳 @WangCai2
+    headers:
+      Host: oiictw.yydsii.com
+- name: ewogicagimfkzci6icj3d3cuz2nvlmdvdi5xysis
+  skip-cert-verify: true
+  type: vmess
+  server: www.gco.gov.qa
+  port: 80
+  uuid: be9cf152-7cf1-46f9-88ed-a55b343c927b
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: luodi.5468936.xyz
+- name: ewogicagimfkzci6icixntquotiuos4xnzcilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.177
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixntquotiuos4xotcilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.197
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_4
+  skip-cert-verify: true
+  type: vmess
+  server: 104.20.17.186
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumtkylje5msis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.192.191
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: eyjhzgqioij3d3cud24wmy5jyyisimfpzci6mcwi
+  skip-cert-verify: true
+  type: vmess
+  server: www.wn03.cc
+  port: 80
+  uuid: 2f38f848-a899-4c87-9807-207a41615e3c
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /rongseven?ed=2048
+    headers:
+      Host: us.freeyyds.dpdns.org
+- name: ewogicagimfkzci6icixnziunjcumtkxlje2nyis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.191.167
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumjewljk4iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.210.98
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtyunjeuocisciag
+  skip-cert-verify: true
+  type: vmess
+  server: 104.16.61.8
+  port: 2052
+  uuid: 5f726fe3-d82e-4da5-a711-8af0cbb2b682
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: square-snowflake-486a.beshir-beisel.workers.dev
+- name: ewogicagimfkzci6icixmdqumtkundcumjcilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.47.27
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixotqumzyuntuumji0iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 194.36.55.224
+  port: 8880
+  uuid: 7a61cb1c-e5ea-31ef-b885-0018390eec5e
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icjnzxqudgvjacisciagicai
+  skip-cert-verify: true
+  type: vmess
+  server: get.tech
+  port: 80
+  uuid: 8763e625-929a-43da-b7bf-7e7bc2e57615
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /shared
+    headers:
+      Host: lv.awsbest.com
+- name: ewogicagimfkzci6icixmdqumtgumjaylji1mcis
+  skip-cert-verify: true
+  type: vmess
+  server: 104.18.202.250
+  port: 2052
+  uuid: 6c168fcc-2231-4f3b-8c1e-f6391692df4a
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: erfannewfreenodes.vdmmswyzmzigonvnjk443.workers.dev
+- name: ewogicagimfkzci6icixnziunjcumtazljg2iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.103.86
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnjiumtu5ljeyos4xnyis
+  skip-cert-verify: true
+  type: vmess
+  server: 162.159.129.17
+  port: 2052
+  uuid: 62aa5f80-0328-4004-a375-7f5a59df4022
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /T,E,L,E,G,R,A,M,X,V,2,R,A,Y
+    headers:
+      Host: rubika.ir.google.com.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.apaspeedtest.netrat.com.eu.com.shw100.ir.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.xn--g28h.dns-dynamic.net.
+- name: ewogicagimfkzci6ici3mi4xnjcumjuumjeyiiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 72.167.25.212
+  port: 8880
+  uuid: b209dfbf-6bb0-30b2-a77a-286e230466b5
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: eyjhzgqioiixndeumtkzljixmy4ymjmilcjhawqi
+  skip-cert-verify: true
+  type: vmess
+  server: 141.193.213.223
+  port: 2086
+  uuid: dab5bf7d-9320-4527-8bc8-dbfbdc55b6dd
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /5atdxvyfjn60ggx/jp1
+    headers:
+      Host: bpjp1.jptimecsgo.xyz
+- name: ewogicagimfkzci6icixntquotiuos4xnzyilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.176
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6ici5mi41my4xoteumja5iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 92.53.191.209
+  port: 8880
+  uuid: 6f96494c-bdaf-3091-bf7b-29cfe92882b6
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icixnjiumtu5lji0my4xmjei
+  skip-cert-verify: true
+  type: vmess
+  server: 162.159.243.121
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjquodgumta5iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.64.88.109
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcuodeundkilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.81.49
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumzeumtyundcilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.47
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjqumtuwlju3iiwk_1
+  skip-cert-verify: true
+  type: vmess
+  server: 172.64.150.57
+  port: 8080
+  uuid: e3fa5050-67f5-4625-a778-5d9283f4334f
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /m3
+    headers:
+      Host: ''
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_5
+  skip-cert-verify: true
+  type: vmess
+  server: russia.com
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: russia.com
+- name: ewogicagimfkzci6icixmdqumtgumjuuotiilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.18.25.92
+  port: 2052
+  uuid: f584de15-2034-4170-a723-f48c2bae5e0f
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: mysan2.jaquay22.workers.dev
+- name: ewogicagimfkzci6icixmdqumtgumjgumje0iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.18.28.214
+  port: 80
+  uuid: 0ba4a240-1586-4a54-929c-26389c8a4111
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: sg01s.57de-78fc4c715615.cfd
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_6
+  skip-cert-verify: true
+  type: vmess
+  server: 104.26.9.156
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnjyunjiumte1ljixnsis
+  skip-cert-verify: true
+  type: vmess
+  server: 166.62.115.215
+  port: 8880
+  uuid: 0b67f537-9bdd-3c10-baa3-0554249bd788
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icixmdqumtyuos45nsisciag
+  skip-cert-verify: true
+  type: vmess
+  server: 104.16.9.95
+  port: 2052
+  uuid: af0bfcce-8730-4133-bdaa-f6b1da70fc1c
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /video/BgpiHrui/
+    headers:
+      Host: us2FchmwQky.inivtrak.xyz
+- name: ewogicagimfkzci6icixnjiumtu5ljezns4yntei
+  skip-cert-verify: true
+  type: vmess
+  server: 162.159.135.251
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkundcumji2iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.47.226
+  port: 8080
+  uuid: b551aa22-22af-11ee-b8d8-f23c932eb68d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: oiictw.yydsii.com
+- name: ewogicagimfkzci6icixmdqumtkundcumtgilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.47.18
+  port: 8080
+  uuid: b551aa22-22af-11ee-b8d8-f23c932eb68d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2048
+    headers:
+      Host: oiictw.yydsii.com
+- name: ewogicagimfkzci6icixmdqumtyumje5ljewocis
+  skip-cert-verify: true
+  type: vmess
+  server: 104.16.219.108
+  port: 80
+  uuid: 441da342-ce90-441e-bff9-d2ceb55e68ca
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /Telegram/XV2ray
+    headers:
+      Host: rubika.ir.google.com.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aparat.com.V2ray.com.shf2.ir.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.xn--g28h.dns-dynamic.net.
+- name: ewogicagimfkzci6icixmdqumtkunduuocisciag
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.45.8
+  port: 2095
+  uuid: 7a737f41-b792-4260-94ff-3d864da67b80
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: onea.flha.ru
+- name: ewogicagimfkzci6icixmdqumzeumtyumzcilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.37
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtyunjcumzgilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.16.67.38
+  port: 2052
+  uuid: a1655f51-1e20-4a92-8a11-b7ca30a7a353
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: 7hss-butterfly-d4c3.fijetem432.workers.dev
+- name: ewogicagimfkzci6icj0zxn0my5mbghhlnj1iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: test3.flha.ru
+  port: 80
+  uuid: 9a81340d-f81b-4c76-8abb-f4d305c535c0
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /9a81340d-f81b-4c76-8abb-f4d305c535c0-vmess
+    headers:
+      Host: test3.flha.ru
+- name: ewogicagimfkzci6icixnziunjqumji5ljexniis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.64.229.116
+  port: 8880
+  uuid: 4b5e4565-322f-4223-a891-78a84f189726
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /GdtYWlsLmNvbSJ9LCJjb3V
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkunduumiisciag
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.45.2
+  port: 2095
+  uuid: 7a737f41-b792-4260-94ff-3d864da67b80
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: onea.flha.ru
+- name: ewogicagimfkzci6icixntquotiuos44mcisciag
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.80
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumjeyljeyocis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.212.128
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggvvpnvo7l_1
+  skip-cert-verify: true
+  type: vmess
+  server: gggggggggggggg.222769.xyz
+  port: 80
+  uuid: 2e65577e-8fdb-4bb1-a495-96f3122099a7
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /f6taOMcOSZb9TPR
+    headers:
+      Host: gggggggggggggg.222769.xyz
+- name: ewogicagimfkzci6icixmdqumtkundcunzkilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.47.79
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixotkumzqumji4ljixncis
+  skip-cert-verify: true
+  type: vmess
+  server: 199.34.228.214
+  port: 8880
+  uuid: d1b75cc3-e618-37c4-9c55-ff11b4ed493b
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icixnziunjquodiumje1iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.64.82.215
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjqumtu4ljewncis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.64.158.104
+  port: 2052
+  uuid: af0bfcce-8730-4133-bdaa-f6b1da70fc1c
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /video/BgpiHrui/
+    headers:
+      Host: us2FchmwQky.inivtrak.xyz
+- name: ewogicagimfkzci6icixnziunjcumjeyljy4iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.212.68
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkunduumtmilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.45.13
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkundcunduilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.47.45
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: github.com/Alvin9999
+    headers:
+      Host: ip14.freegradely.xyz
+- name: ewogicagimfkzci6icixmdqumtkuntkuodkilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.59.89
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumtuzljexosis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.153.119
+  port: 80
+  uuid: 4bf074f4-7e9c-4e4b-a10d-156e26199729
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: us03s.5d8ecf82.cfd
+- name: ewogicagimfkzci6icixmdqumtkundauodqilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.40.84
+  port: 8880
+  uuid: 57e0cb4d-eae5-48ec-8091-149dc2b309e0
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /d/65dd503.TG.WangCai2.WangCai_8:107690
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkundauotkilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.40.99
+  port: 8880
+  uuid: 57e0cb4d-eae5-48ec-8091-149dc2b309e0
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /d/65dd503.TG.WangCai2.WangCai_8:107690
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumjeunzuumjq2iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.21.75.246
+  port: 80
+  uuid: d1fb628c-206e-42a7-837b-4147255fbaeb
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: eyjhzgqioiixnziunjcunzeumtq1iiwiywlkijoi
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.71.145
+  port: 80
+  uuid: for-MahsaNG-vpn-00141
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: Q4.19kala.cO
+- name: ewogicagimfkzci6icixmdqumtkumziumje2iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.32.216
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_7
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.21.71
+  port: 2086
+  uuid: e9e3cc13-db48-4cc1-8c24-7626439a5339
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumtkxlji0mcis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.191.240
+  port: 80
+  uuid: 92eb32af-ec3c-40d4-ab83-c3df80af64af
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6ici0ns4xmi4zms4ymjqilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 45.12.31.224
+  port: 8880
+  uuid: 7a61cb1c-e5ea-31ef-b885-0018390eec5e
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icjjzg4ubmfydxrvcy50b3ai
+  skip-cert-verify: true
+  type: vmess
+  server: cdn.narutos.top
+  port: 8880
+  uuid: 4b5e4565-322f-4223-a891-78a84f189726
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /RpT6kZjkw45EenmTcDYWs
+    headers:
+      Host: cdn.narutos.top
+- name: ewogicagimfkzci6icixotgunzeumjmyljixmsis
+  skip-cert-verify: true
+  type: vmess
+  server: 198.71.232.211
+  port: 8880
+  uuid: 7a384b65-fcc9-32b1-bff4-d2494705b7b1
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icixmdqumtcumty0ljy4iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.17.164.68
+  port: 8880
+  uuid: 4b5e4565-322f-4223-a891-78a84f189726
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /GdtYWlsLmNvbSJ9LCJjb3V
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icjpy29vay5oayisciagicai
+  skip-cert-verify: true
+  type: vmess
+  server: icook.hk
+  port: 80
+  uuid: 3eb05cb6-d2e1-4a31-9f82-514cfa98fe15
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /ray?ed=2048
+    headers:
+      Host: icook.hk
+- name: ewogicagimfkzci6icjzag9wawz5lmnvbsisciag
+  skip-cert-verify: true
+  type: vmess
+  server: shopify.com
+  port: 80
+  uuid: 4397d066-f753-4300-e7ed-44797ddfcd24
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /aries
+    headers:
+      Host: linode.cloudflare.quest
+- name: ewogicagimfkzci6icixnziunjcuodyuodcilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.86.87
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkundaumjexiiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.40.211
+  port: 8880
+  uuid: 57e0cb4d-eae5-48ec-8091-149dc2b309e0
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /d/65dd503.TG.WangCai2.WangCai_8:107690
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnjiumtu5lji0oc4zmcis
+  skip-cert-verify: true
+  type: vmess
+  server: 162.159.248.30
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkunduumtuilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.45.15
+  port: 2082
+  uuid: 5f3f09ad-89cb-4e94-a7ad-aa8239913555
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: github.com/Alvin9999
+    headers:
+      Host: ip3.6929198.xyz
+- name: ewogicagimfkzci6icixnziunjqumji5ljeyncis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.64.229.124
+  port: 8880
+  uuid: 4b5e4565-322f-4223-a891-78a84f189726
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /RpT6kZjkw45EenmTcDYWs
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkundcumja3iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.47.207
+  port: 8080
+  uuid: b551aa22-22af-11ee-b8d8-f23c932eb68d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2048&Telegram🇨🇳 @WangCai2
+    headers:
+      Host: oiictw.yydsii.com
+- name: ewogicagimfkzci6icixnziunjquoduumtg5iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.64.85.189
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkundcuntailaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.47.50
+  port: 8080
+  uuid: b551aa22-22af-11ee-b8d8-f23c932eb68d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2048&Telegram🇨🇳 @WangCai2
+    headers:
+      Host: oiictw.yydsii.com
+- name: ewogicagimfkzci6icixnziunjcumtmxlji0nsis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.131.245
+  port: 80
+  uuid: 0b65bb06-6b28-487a-8e3c-820dda51e977
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dT9s3HqgZeD3eApzDAfhOHq
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumjm3ljcziiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.237.73
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: eyj2ijoimiisinbzijoi8j+huvcfh7ggvvpnvo7l_2
+  skip-cert-verify: true
+  type: vmess
+  server: bBbbbbbBb.222769.XYZ
+  port: 80
+  uuid: 2e65577e-8fdb-4bb1-a495-96f3122099a7
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /f6taOMcOSZb9TPR
+    headers:
+      Host: bbbbbbbbb.222769.xyz
+- name: ewogicagimfkzci6icixnziunjcumjeyljq0iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.212.44
+  port: 80
+  uuid: 4a47e680-d860-4e63-9fa6-813857fb0f42
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: 4a47e680
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumtk3lju3iiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.197.57
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icjsqunltkvsrc5dt00ilaog
+  skip-cert-verify: true
+  type: vmess
+  server: RACKNERD.COM
+  port: 2086
+  uuid: c2a55def-e91e-4132-c504-0f276c4c3a1e
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /aries
+    headers:
+      Host: RACKNERD.COM
+- name: ewogicagimfkzci6icixoduumtyyljiyoc4ymtui
+  skip-cert-verify: true
+  type: vmess
+  server: 185.162.228.215
+  port: 8880
+  uuid: 0b67f537-9bdd-3c10-baa3-0554249bd788
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icixnziunjcumtg4ljexmcis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.188.110
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixndeumtaxljexnc4xmtqi
+  skip-cert-verify: true
+  type: vmess
+  server: 141.101.114.114
+  port: 80
+  uuid: 4bf074f4-7e9c-4e4b-a10d-156e26199729
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: us03s.5d8ecf82.cfd
+- name: ewogicagimfkzci6icixnjiumtu5lje5nc4xmzui
+  skip-cert-verify: true
+  type: vmess
+  server: 162.159.194.135
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnjiumtu5lji0oc4zmsis
+  skip-cert-verify: true
+  type: vmess
+  server: 162.159.248.31
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icjkzs12lnnzag1hec54exoi
+  skip-cert-verify: true
+  type: vmess
+  server: de-v.sshmax.xyz
+  port: 80
+  uuid: 5668ff97-631f-4602-a13f-b56552c67abe
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /vmess
+    headers:
+      Host: de-v.sshmax.xyz
+- name: ewogicagimfkzci6icixodgumty0lji0oc4ymjqi
+  skip-cert-verify: true
+  type: vmess
+  server: 188.164.248.224
+  port: 8880
+  uuid: 64076cae-b5ba-32c8-a316-fa782f0a553b
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /dabai&Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: TG.WangCai2.s4.db-link02.top
+- name: ewogicagimfkzci6icixnziunjcumtmwlje0mcis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.130.140
+  port: 2082
+  uuid: 112ac36f-3f53-4e26-8371-d25c028e1b9a
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ''
+- name: eyjhzgqioijucg1qcy5jb20ilcjhawqioiiwiiwi
+  skip-cert-verify: true
+  type: vmess
+  server: npmjs.com
+  port: 8080
+  uuid: nasnet
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /NASNET/cdn
+    headers:
+      Host: nasnet-12814011223.khastehnabashi.com
+- name: ewogicagimfkzci6icixntquotiuos4xntyilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.156
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixndeumtaxljeymc4yndmi
+  skip-cert-verify: true
+  type: vmess
+  server: 141.101.120.243
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtyumta4ljewmcis
+  skip-cert-verify: true
+  type: vmess
+  server: 104.16.108.100
+  port: 8880
+  uuid: 4b5e4565-322f-4223-a891-78a84f189726
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /RpT6kZjkw45EenmTcDYWs
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixntquotiuos4xmzmilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 154.92.9.133
+  port: 80
+  uuid: dd41b5cb-b72e-4a8c-c75a-3ecc928d6eb3
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /blue
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdawaxauewfuz21pzs5v
+  skip-cert-verify: true
+  type: vmess
+  server: 1000ip.yangmie.online
+  port: 8080
+  uuid: e9123cce-e4bd-46cf-8466-708b363a9807
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: gyde.aifjj.asia
+- name: ewogicagimfkzci6icixmdqumjeuodaumtgwiiwk
+  skip-cert-verify: true
+  type: vmess
+  server: 104.21.80.180
+  port: 80
+  uuid: 219eb7ea-8f9a-4af8-857b-4b4b564224ef
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: jp02.knt6y4bjx.buzz
+- name: ewogicagimfkzci6icixmdqumtkunduuodailaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.45.80
+  port: 2095
+  uuid: 7a737f41-b792-4260-94ff-3d864da67b80
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: onea.flha.ru
+- name: ewogicagimfkzci6icixmdqumzeumtyuntqilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.31.16.54
+  port: 80
+  uuid: 8abe9496-5e24-4e49-b566-dcf86116017d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /i99LgvSaslbsPLLQQ7j6Z
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixnziunjcumtu4lje0nyis
+  skip-cert-verify: true
+  type: vmess
+  server: 172.67.158.147
+  port: 2095
+  uuid: 417d27fb-cb93-3bd8-9bf7-71cd91319821
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /hgcefomn
+    headers:
+      Host: ''
+- name: ewogicagimfkzci6icixmdqumtkundcumtyilaog
+  skip-cert-verify: true
+  type: vmess
+  server: 104.19.47.16
+  port: 8080
+  uuid: b551aa22-22af-11ee-b8d8-f23c932eb68d
+  alterId: 0
+  cipher: auto
+  tls: false
+  network: ws
+  ws-opts:
+    path: /?ed=2048&Telegram🇨🇳 @WangCai2
+    headers:
+      Host: oiictw.yydsii.com
+- name: 🏁RELAY-185.207.198.195-0667
+  skip-cert-verify: true
+  type: trojan
+  server: 185.207.198.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-190.93.246.195-0650
+  skip-cert-verify: true
+  type: trojan
+  server: 190.93.246.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-188.42.89.195-0658
+  skip-cert-verify: true
+  type: trojan
+  server: 188.42.89.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.193.30.195-0671
+  skip-cert-verify: true
+  type: trojan
+  server: 185.193.30.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-195.85.23.195-0624
+  skip-cert-verify: true
+  type: trojan
+  server: 195.85.23.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.207.196.195-0669
+  skip-cert-verify: true
+  type: trojan
+  server: 185.207.196.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸US-43.162.125.204-4909
+  skip-cert-verify: true
+  type: trojan
+  server: myvps.lol
+  port: 443
+  password: oIwjHDXpKePvYIg8
+  sni: myvps.lol
+- name: 🏁RELAY-190.93.247.195-0649
+  skip-cert-verify: true
+  type: trojan
+  server: 190.93.247.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇩🇪@FreakConfig_1
+  skip-cert-verify: true
+  type: trojan
+  server: 66.225.252.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+- name: 🏁RELAY-185.251.82.195-0661
+  skip-cert-verify: true
+  type: trojan
+  server: 185.251.82.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-195.13.45.195-0628
+  skip-cert-verify: true
+  type: trojan
+  server: 195.13.45.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸US-198.71.191.195-0615
+  skip-cert-verify: true
+  type: trojan
+  server: 198.71.191.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸US-198.62.62.195-0619
+  skip-cert-verify: true
+  type: trojan
+  server: 198.62.62.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-190.93.244.195-0652
+  skip-cert-verify: true
+  type: trojan
+  server: 190.93.244.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.221.160.195-0665
+  skip-cert-verify: true
+  type: trojan
+  server: 185.221.160.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.148.106.195-0687
+  skip-cert-verify: true
+  type: trojan
+  server: 185.148.106.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.158.133.195-0683
+  skip-cert-verify: true
+  type: trojan
+  server: 185.158.133.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-194.152.44.195-0630
+  skip-cert-verify: true
+  type: trojan
+  server: 194.152.44.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸US-198.71.190.195-0616
+  skip-cert-verify: true
+  type: trojan
+  server: 198.71.190.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.162.229.195-0680
+  skip-cert-verify: true
+  type: trojan
+  server: 185.162.229.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.193.29.195-0672
+  skip-cert-verify: true
+  type: trojan
+  server: 185.193.29.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: '🇩🇪 جوین بده کانکت بمونی: @STAPersiaNews_1'
+  skip-cert-verify: true
+  type: trojan
+  server: 172.66.45.9
+  port: 443
+  password: ''
+  sni: fk31LnDm4W8uj0yP1dRwLTDTdKo6Y-cu.pAGES.dEv
+- name: 🇺🇸US-198.71.188.195-0618
+  skip-cert-verify: true
+  type: trojan
+  server: 198.71.188.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇲@FreakConfig
+  skip-cert-verify: true
+  type: trojan
+  server: 5.10.247.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+- name: 🏁RELAY-185.18.250.195-0693
+  skip-cert-verify: true
+  type: trojan
+  server: 185.18.250.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-195.13.55.195-0626
+  skip-cert-verify: true
+  type: trojan
+  server: 195.13.55.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸US-199.68.156.195-0606
+  skip-cert-verify: true
+  type: trojan
+  server: 199.68.156.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-193.124.18.195-0639
+  skip-cert-verify: true
+  type: trojan
+  server: 193.124.18.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-205.233.181.195-0603
+  skip-cert-verify: true
+  type: trojan
+  server: 205.233.181.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸US-198.12.145.195-0620
+  skip-cert-verify: true
+  type: trojan
+  server: 198.12.145.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.156.19.195-0684
+  skip-cert-verify: true
+  type: trojan
+  server: 185.156.19.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸US-216.24.57.195-0596
+  skip-cert-verify: true
+  type: trojan
+  server: 216.24.57.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.162.230.195-0679
+  skip-cert-verify: true
+  type: trojan
+  server: 185.162.230.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-195.13.54.195-0627
+  skip-cert-verify: true
+  type: trojan
+  server: 195.13.54.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-213.182.199.195-0599
+  skip-cert-verify: true
+  type: trojan
+  server: 213.182.199.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇰🇿KZ-194.76.18.195-0631
+  skip-cert-verify: true
+  type: trojan
+  server: 194.76.18.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-190.93.245.195-0651
+  skip-cert-verify: true
+  type: trojan
+  server: 190.93.245.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-199.181.197.195-0605
+  skip-cert-verify: true
+  type: trojan
+  server: 199.181.197.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-204.93.210.195-0604
+  skip-cert-verify: true
+  type: trojan
+  server: 204.93.210.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.149.135.195-0685
+  skip-cert-verify: true
+  type: trojan
+  server: 185.149.135.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: '@Hope_Net-join-us-on-Telegram'
+  skip-cert-verify: true
+  type: trojan
+  server: 172.66.47.100
+  port: 2053
+  password: bpb-trojan
+  sni: bPB-worker-PANeL1-e4p.paGes.DeV
+- name: 🇺🇸US-192.169.223.195-0642
+  skip-cert-verify: true
+  type: trojan
+  server: 192.169.223.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: '@Daily_Configs'
+  skip-cert-verify: true
+  type: trojan
+  server: 45.131.4.216
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+- name: 🏁RELAY-185.251.81.195-0662
+  skip-cert-verify: true
+  type: trojan
+  server: 185.251.81.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸 US美国(mibei77.com 米贝节点分享)
+  skip-cert-verify: true
+  type: trojan
+  server: 172.67.181.173
+  port: 443
+  password: f282b878-8711-45a1-8c69-5564172123c1
+  sni: vpn.stupidworld.web.id
+- name: 🏁RELAY-195.13.44.195-0629
+  skip-cert-verify: true
+  type: trojan
+  server: 195.13.44.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.148.105.195-0688
+  skip-cert-verify: true
+  type: trojan
+  server: 185.148.105.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🚩 CF | 🔒 TROJAN | @teamvpnpro [4]
+  skip-cert-verify: true
+  type: trojan
+  server: chatbuzzteambhm.chatbuzzt7150.workers.dev
+  port: 443
+  password: c7f9b8f0-bfdb-11ee-a15c-1239d0255272
+  sni: de1.test3.net
+- name: '@Daily_Configs_1'
+  skip-cert-verify: true
+  type: trojan
+  server: 45.159.217.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+- name: 🏁RELAY-195.26.229.195-0625
+  skip-cert-verify: true
+  type: trojan
+  server: 195.26.229.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-198.202.211.195-0610
+  skip-cert-verify: true
+  type: trojan
+  server: 198.202.211.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-216.205.52.195-0595
+  skip-cert-verify: true
+  type: trojan
+  server: 216.205.52.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.193.28.195-0673
+  skip-cert-verify: true
+  type: trojan
+  server: 185.193.28.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.238.228.195-0664
+  skip-cert-verify: true
+  type: trojan
+  server: 185.238.228.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸 US | 🔒 TROJAN | @v2aryng_vpn [2]
+  skip-cert-verify: true
+  type: trojan
+  server: 72.167.243.194
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+- name: 🏁RELAY-188.42.145.195-0657
+  skip-cert-verify: true
+  type: trojan
+  server: 188.42.145.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-185.176.24.195-0675
+  skip-cert-verify: true
+  type: trojan
+  server: 185.176.24.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸 美国 V2CROSS.COM
+  skip-cert-verify: true
+  type: trojan
+  server: 209.94.90.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🏁RELAY-194.53.53.195-0633
+  skip-cert-verify: true
+  type: trojan
+  server: 194.53.53.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇧🇷BR-185.133.35.195-0691
+  skip-cert-verify: true
+  type: trojan
+  server: 185.133.35.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+- name: 🇺🇸US-23.251.121.242-0304
+  skip-cert-verify: true
+  type: ss
+  server: 23.251.121.242
+  port: 8080
+  cipher: rc4-md5
+  password: 14fFPrbezE3HDZzsMOr6
+- name: 🇺🇸 US-107.155.57.51:8080
+  skip-cert-verify: true
+  type: ss
+  server: 107.155.57.51
+  port: 8080
+  cipher: rc4-md5
+  password: 14fFPrbezE3HDZzsMOr6
+- name: 🇺🇸US-199.59.243.228-7906
+  skip-cert-verify: true
+  type: ss
+  server: fr01.proxysocks.xyz
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: N2Y5Y
+- name: 🇺🇸 US-107.155.57.11:8080
+  skip-cert-verify: true
+  type: ss
+  server: 107.155.57.11
+  port: 8080
+  cipher: rc4-md5
+  password: 14fFPrbezE3HDZzsMOr6
+- name: 🇺🇸 US | 🔒 SS | @argo_vpn1 [3]
+  skip-cert-verify: true
+  type: ss
+  server: 138.68.6.88
+  port: 443
+  cipher: chacha20-ietf-poly1305
+  password: WStKA4n7KqAFCJxzw8cuM0
+- name: 🇺🇸US-38.60.163.87-0530
+  skip-cert-verify: true
+  type: ss
+  server: usa022.tmdns-sing.top
+  port: 13892
+  cipher: aes-128-gcm
+  password: 6b1e5475-7661-4921-aa26-d11758b2f3f1
+- name: 🇺🇸US-23.157.40.101-0348
+  skip-cert-verify: true
+  type: ss
+  server: 23.157.40.101
+  port: 8009
+  cipher: aes-256-gcm
+  password: XKFKl2rULjIp74
+- name: 🇺🇸US-104.192.226.106-0289
+  skip-cert-verify: true
+  type: ss
+  server: 104.192.226.106
+  port: 989
+  cipher: aes-256-cfb
+  password: f8f7aCzcPKbsF8p3
+- name: 🇺🇸US-107.151.182.253-0202
+  skip-cert-verify: true
+  type: ss
+  server: 107.151.182.253
+  port: 8080
+  cipher: rc4-md5
+  password: 14fFPrbezE3HDZzsMOr6
+- name: 🇺🇸 همراه اول 2
+  skip-cert-verify: true
+  type: ss
+  server: 104.192.226.106
+  port: 990
+  cipher: chacha20-ietf-poly1305
+  password: f8f7aCzcPKbsF8p3
+- name: 🇺🇸US-38.75.137.9-6375
+  skip-cert-verify: true
+  type: ss
+  server: 38.75.137.9
+  port: 8080
+  cipher: aes-256-gcm
+  password: KixLvKzwjekG00rm
+- name: '[Shadowsocks] astrovpn_official-🇺🇸'
+  skip-cert-verify: true
+  type: ss
+  server: us-4.stunnel.cc
+  port: 8444
+  cipher: chacha20-ietf-poly1305
+  password: tunnel-astrovpn_official-us
+- name: 🇺🇸US-38.114.114.67-6493
+  skip-cert-verify: true
+  type: ss
+  server: 38.114.114.67
+  port: 443
+  cipher: aes-256-gcm
+  password: pKEW8JPByTVTLtM
+- name: 🇺🇸US-89.213.184.104-0203
+  skip-cert-verify: true
+  type: ss
+  server: usa20250815010624020199.tmdns-sing.top
+  port: 13874
+  cipher: aes-128-gcm
+  password: 6b1e5475-7661-4921-aa26-d11758b2f3f1
+- name: 4Nika-974
+  skip-cert-verify: true
+  type: ss
+  server: 2.58.87.221
+  port: 16899
+  cipher: aes-128-gcm
+  password: Yc2CtrIz8L
+- name: 🇺🇸US-38.114.114.19-6182
+  skip-cert-verify: true
+  type: ss
+  server: 38.114.114.19
+  port: 3389
+  cipher: aes-256-gcm
+  password: Y6R9pAtvxxzmGC
+- name: 🇺🇸US-38.114.114.19-6023
+  skip-cert-verify: true
+  type: ss
+  server: 38.114.114.19
+  port: 6679
+  cipher: aes-256-gcm
+  password: TEzjfAYq2IjtuoS
+- name: 🇺🇸US-38.114.114.19-6219
+  skip-cert-verify: true
+  type: ss
+  server: 38.114.114.19
+  port: 7306
+  cipher: aes-256-gcm
+  password: FoOiGlkAA9yPEGP
+- name: 🇺🇸US-212.102.47.132-0218
+  skip-cert-verify: true
+  type: ss
+  server: 212.102.47.132
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+- name: 🇺🇸US-212.102.47.130-0194
+  skip-cert-verify: true
+  type: ss
+  server: 212.102.47.130
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+- name: 🇺🇸US-38.114.114.19-5861
+  skip-cert-verify: true
+  type: ss
+  server: 38.114.114.19
+  port: 6697
+  cipher: aes-256-gcm
+  password: TEzjfAYq2IjtuoS
+- name: '@shadmanegi_vpn👈 سرورهای بیشتر'
+  skip-cert-verify: true
+  type: ss
+  server: 149.28.212.97
+  port: 808
+  cipher: chacha20-ietf-poly1305
+  password: tvX1v#NSFP_LG_bJ
+- name: United+States
+  skip-cert-verify: true
+  type: ss
+  server: 144.126.146.38
+  port: 30100
+  cipher: chacha20-ietf-poly1305
+  password: 741ddced-e6ee-4175-9c1a-e524009f9045
+- name: 🇺🇸 US | 🔒 SS | @outlinereleasedkey [16]
+  skip-cert-verify: true
+  type: ss
+  server: 144.126.146.38
+  port: 30789
+  cipher: chacha20-ietf-poly1305
+  password: 8d73e088-dc5a-4dfe-8927-56351ee80407
+- name: 🇺🇸US-38.114.114.19-0416
+  skip-cert-verify: true
+  type: ss
+  server: 38.114.114.19
+  port: 443
+  cipher: aes-256-gcm
+  password: pKEW8JPByTVTLtM
+- name: 🇺🇸US-212.102.47.131-0193
+  skip-cert-verify: true
+  type: ss
+  server: 212.102.47.131
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+- name: 🇺🇸US-38.114.114.19-6119
+  skip-cert-verify: true
+  type: ss
+  server: 38.114.114.19
+  port: 7307
+  cipher: aes-256-gcm
+  password: FoOiGlkAA9yPEGP
+proxy-groups:
+- name: PROXY
+  type: select
+  proxies:
+  - AUTO
+  - 🇩🇪 | @Evay_vpn
+  - 🇺🇸 US | 🔓 VLESS | @lombo_channel [1]
+  - 🇩🇪 | XpnTeam - Telegrams-r596p9c2
+  - 🇺🇸 US | 🔓 VLESS | @v2ray_youtube [3]
+  - سرور رایگان @HAJIMAMADVPN-8
+  - 🇺🇸 US | 🔓 VLESS | @connectshu [14]
+  - 🇺🇸 US | 🔓 VLESS | @mpproxy [14]
+  - 🇺🇸 US | 🔓 VLESS | @ghotb_scarf [6]
+  - 🇺🇸 US | 🔓 VLESS | @filterk0sh [18]
+  - 🇺🇸 US | 🔓 VLESS | @server_nekobox [3]
+  - '@Vip_Security join us - 383'
+  - 6xzx-@Fr33C0nfig / کانفیگ رایگان 🔗
+  - 🇺🇸 US | 🔓 VLESS | @megavpn_link [3]
+  - 🇺🇸 US | 🔓 VLESS | @mpproxy [11]
+  - 🇺🇸 US | 🔓 VLESS | @lranonline_new [7]
+  - '@v2ray313 کانالمون 🫁'
+  - IRAN 593 (@Outline_Vpn) free
+  - 🚩 CF | 🔓 VLESS | @vmessorg [12]
+  - 🇰🇷@vpn_ioss ♻️ عضو شو
+  - 🚩 CF | 🔓 VLESS | @expressvpn_420 [33]
+  - 🅼🅴🅷🅳🅸
+  - 🇦🇽@SimChin_iR عضو بشید
+  - 🚩 CF | 🔓 VLESS | @realvpnmaster [7]
+  - 🚩 CF | 🔓 VLESS | @mester_v2ray [12]
+  - 🇸🇪 SE | 🔓 VLESS | @realvpnmaster [8]
+  - 🚩 CF | 🔓 VLESS | @filterk0sh [6]
+  - 🚩 CF | 🔓 VLESS | @nofilter_v2rayng [5]
+  - '@bored_vpn'
+  - 'Telegram : @Alfa_v2ray_ng 🔥'
+  - برای اتصال دائمی جوین شو🍦@Outline_ir
+  - 🇸🇪 SE | 🔓 VLESS | @parsashonam [14]
+  - 'Telegram : @Alfa_v2ray_ng 🔥_1'
+  - Binextify⭐-3d97pmxm2
+  - 💎 @AblNet7 💎
+  - 💎کانفیگ های بیشتر در چنل تلگرام💎 Conf...
+  - 🚩 CF | 🔓 VLESS | @configms [5]
+  - 32 | @ConfigFast 🇮🇷💔 عضو بشید تلگرام ...
+  - 🚩 CF | 🔓 VLESS | @flyv2ray [9]
+  - IRAN 556 (@Outline_Vpn) free
+  - WS-@ELiV2RaY
+  - '🇩🇪 جوین بده کانکت بمونی: @STAPersiaNews'
+  - '@CaV2ray ⚡️'
+  - 🚩 CF | 🔓 VLESS | @connectshu [10]
+  - '@bored_vpn_1'
+  - 🚩 CF | 🔓 VLESS | @customizev2ray [20]
+  - 🚩 CF | 🔓 VLESS | @lockey_vpn [14]
+  - 🚩 CF | 🔓 VLESS | @bored_vpn [4]
+  - 🚩 CF | 🔓 VLESS | @goldenshiinevpn [10]
+  - 🇩🇪@FreakConfig
+  - '@Mrconfig_Channel 🩵'
+  - 🇩🇪 All Operator 2 @MaSTeRSeRVeR1
+  - Telegram:@config_proxy 🔥
+  - CF中转_0813046185&security=tls&alpn=h3&...
+  - 🚩 CF | 🔓 VLESS | @diamondproxytm [1]
+  - 🇺🇸 US | 🔓 VLESS | @falcunargo [7]
+  - 🚩 CF | 🔓 VLESS | @pydriclub [2]
+  - 🚩 CF | 🔓 VLESS | @frev2rayng [17]
+  - 🇧🇷@vpn_ioss ♻️ عضو شو
+  - TELEGRAM-MARAMBASHI_MARAMBASHI_MARAMB...
+  - '@V2rayNGVPN <= کانفیگ رایگان'
+  - 🚩 CF | 🔓 VLESS | @renetvpn [10]
+  - ⚡︎ 🇫🇮 𓏺 𝗝𝗼𝗶𝗻 ➠ @PlanB_Proxy | کانال ما 🆔
+  - 🇸🇪 SE | 🔓 VLESS | @meli_v2rayng [25]
+  - 🅼🅴🅷🅳🅸_1
+  - 🇦🇲 AM | 🔓 VLESS | @ai_duet [6]
+  - 🚩 CF | 🔓 VLESS | @mahdivpn2 [3]
+  - 🇳🇱 ProxyCloud Netherlands 👑
+  - 🚩 CF | 🔓 VLESS | @iranvipnet [2]
+  - '🦆Ch: @pPal03🦆جوین بدید عزیزانم🦆'
+  - 🇸🇪 SE | 🔓 VLESS | @expressvpn_420 [32]
+  - '@V2rayNG3'
+  - 🇺🇸 US | 🔓 VLESS | @icv2ray [15]
+  - 🚩 CF | 🔓 VLESS | @novinology [11]
+  - 🚩 CF | 🔓 VLESS | @outlinev2rayng [4]
+  - 𝗝𝗼𝗶𝗻 ➠ @configfree20255 | کانال ما 🆔
+  - '@CaV2ray ⚡️_1'
+  - 🚩 CF | 🔓 VLESS | @iranbfilter [3]
+  - کانال+ما+در+تلگرام+@Asak_Vpn+🏆
+  - 🚩 CF | 🔓 VLESS | @expressvpn_420 [29]
+  - 🚩 CF | 🔓 VLESS | @vmessorg [10]
+  - 🚩 CF | 🔓 VLESS | @melov2ray [43]
+  - 🚩 CF | 🔓 VLESS | @mtproxy22_v2ray [3]
+  - 🚩 CF | 🔓 VLESS | @lockey_vpn [2]
+  - 🚩 CF | 🔓 VLESS | @torang_vpn [6]
+  - US_speednode_0052
+  - '@Vip_Security join us - 376'
+  - '@bored_vpn_2'
+  - 🚩 CF | 🔓 VLESS | @fastshovpn [8]
+  - 🚩 CF | 🔓 VLESS | @vmessorg [16]
+  - ewogicagimfkzci6icixmdqumzeumtyumjyilaog
+  - ewogicagimfkzci6icixnziunjcumjm3lje3niis
+  - ewogicagimfkzci6icixnziunjcumja3ljiwosis
+  - ewogicagimfkzci6icixotauotmumjq3lje4ncis
+  - ewogicagimfkzci6icixnziunjcumjiyljq2iiwk
+  - ewogicagimfkzci6icixoduumjuxljgyljixmiis
+  - ewogicagimfkzci6icixmdqumtkunduumtailaog
+  - ewogicagimfkzci6icixotgundeumjiylje5osis
+  - ewogicagimfkzci6icixotgundeumtkzljexmcis
+  - ewogicagimfkzci6icixmdqumzeumtyundqilaog
+  - ewogicagimfkzci6icj3d3cua2vybmvscy5iawqi
+  - ewogicagimfkzci6icixmdqumzeumtyundeilaog
+  - ewogicagimfkzci6icixntquotiuos4xmjeilaog
+  - ewogicagimfkzci6icixmdqumzeumtyumziilaog
+  - ewogicagimfkzci6icixnjiumtu5ljezoc40niis
+  - ewogicagimfkzci6icixmzcumtc1ljeync4xnjci
+  - ewogicagimfkzci6icixntquotiuos41ocisciag
+  - ewogicagimfkzci6icixmdqumtkundcumjiziiwk
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggvvpnvo7l
+  - eyj2ijoimiisinbzijoixhvkodnjxhvkzgzhxhvk
+  - ewogicagimfkzci6icixnziunjyumy4ymteilaog
+  - ewogicagimfkzci6icixmdqumtkunduumtyilaog
+  - ewogicagimfkzci6icixmdqumzeumtyuntiilaog
+  - ewogicagimfkzci6icixoduumtq4ljewns4ymjmi
+  - ewogicagimfkzci6icixnziunjcumtg5ljgilaog
+  - ewogicagimfkzci6icixnjiumtu5lji0ns4xmjii
+  - ewogicagimfkzci6icixmdqumzeumtyumjgilaog
+  - eyj2ijoimiisinbzijoixhvkodnjxhvkzgywxhvk
+  - ewogicagimfkzci6icixodgumte0ljk5lje4iiwk
+  - ewogicagimfkzci6icixntquotiuos45ncisciag
+  - ewogicagimfkzci6icixnziunjqumji5ljiymyis
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+
+  - ewogicagimfkzci6ici2mi43mi4xnjyumjiziiwk
+  - ewogicagimfkzci6icjiyw90ys5tzsisciagicai
+  - ewogicagimfkzci6icixntquotiuos42iiwkicag
+  - ewogicagimfkzci6icixmdqumzeumtyumzeilaog
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_1
+  - ewogicagimfkzci6icixmdqumtyunjgumzgilaog
+  - ewogicagimfkzci6icixmdqumtkundaumjm3iiwk
+  - ewogicagimfkzci6icixnziunjcumjexljqziiwk
+  - ewogicagimfkzci6icj3d3cucgfyc3zkcy5pciis
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_2
+  - ewogicagimfkzci6icjpt29pt09vb09wljiymjc2
+  - ewogicagimfkzci6icixnziunjqumtuwlju3iiwk
+  - ewogicagimfkzci6icixnjiumtu5lji0mc4xmzai
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_3
+  - ewogicagimfkzci6icjzzxjpzxmtdjeuc2ftyw5l
+  - ewogicagimfkzci6icixnjiumtu5lji0mi4xntui
+  - ewogicagimfkzci6icixnziunjcumje2ljk3iiwk
+  - ewogicagimfkzci6icixndeumtkzljixmy4ymcis
+  - ewogicagimfkzci6icixntquotiuos4ymtiilaog
+  - ewogicagimfkzci6icixodgumte0ljk4lje4iiwk
+  - ewogicagimfkzci6icixntquotiuos4xntailaog
+  - ewogicagimfkzci6icixntquotiuos42osisciag
+  - eyj2ijoimiisinbzijoixhvkodnjxhvkzgzhxhvk_1
+  - ewogicagimfkzci6icixnzmumjq1lju4ljqziiwk
+  - ewogicagimfkzci6icjhy2nlc3muem9vbwluzm8u
+  - ewogicagimfkzci6icixmdqumzeumtyundiilaog
+  - ewogicagimfkzci6icixywyxmzeuzmy0ogzhzguu
+  - ewogicagimfkzci6icixmdqumtkundcumtc4iiwk
+  - ewogicagimfkzci6icj3d3cuz2nvlmdvdi5xysis
+  - ewogicagimfkzci6icixntquotiuos4xnzcilaog
+  - ewogicagimfkzci6icixntquotiuos4xotcilaog
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_4
+  - ewogicagimfkzci6icixnziunjcumtkylje5msis
+  - eyjhzgqioij3d3cud24wmy5jyyisimfpzci6mcwi
+  - ewogicagimfkzci6icixnziunjcumtkxlje2nyis
+  - ewogicagimfkzci6icixnziunjcumjewljk4iiwk
+  - ewogicagimfkzci6icixmdqumtyunjeuocisciag
+  - ewogicagimfkzci6icixmdqumtkundcumjcilaog
+  - ewogicagimfkzci6icixotqumzyuntuumji0iiwk
+  - ewogicagimfkzci6icjnzxqudgvjacisciagicai
+  - ewogicagimfkzci6icixmdqumtgumjaylji1mcis
+  - ewogicagimfkzci6icixnziunjcumtazljg2iiwk
+  - ewogicagimfkzci6icixnjiumtu5ljeyos4xnyis
+  - ewogicagimfkzci6ici3mi4xnjcumjuumjeyiiwk
+  - eyjhzgqioiixndeumtkzljixmy4ymjmilcjhawqi
+  - ewogicagimfkzci6icixntquotiuos4xnzyilaog
+  - ewogicagimfkzci6ici5mi41my4xoteumja5iiwk
+  - ewogicagimfkzci6icixnjiumtu5lji0my4xmjei
+  - ewogicagimfkzci6icixnziunjquodgumta5iiwk
+  - ewogicagimfkzci6icixnziunjcuodeundkilaog
+  - ewogicagimfkzci6icixmdqumzeumtyundcilaog
+  - ewogicagimfkzci6icixnziunjqumtuwlju3iiwk_1
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_5
+  - ewogicagimfkzci6icixmdqumtgumjuuotiilaog
+  - ewogicagimfkzci6icixmdqumtgumjgumje0iiwk
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_6
+  - ewogicagimfkzci6icixnjyunjiumte1ljixnsis
+  - ewogicagimfkzci6icixmdqumtyuos45nsisciag
+  - ewogicagimfkzci6icixnjiumtu5ljezns4yntei
+  - ewogicagimfkzci6icixmdqumtkundcumji2iiwk
+  - ewogicagimfkzci6icixmdqumtkundcumtgilaog
+  - ewogicagimfkzci6icixmdqumtyumje5ljewocis
+  - ewogicagimfkzci6icixmdqumtkunduuocisciag
+  - ewogicagimfkzci6icixmdqumzeumtyumzcilaog
+  - ewogicagimfkzci6icixmdqumtyunjcumzgilaog
+  - ewogicagimfkzci6icj0zxn0my5mbghhlnj1iiwk
+  - ewogicagimfkzci6icixnziunjqumji5ljexniis
+  - ewogicagimfkzci6icixmdqumtkunduumiisciag
+  - ewogicagimfkzci6icixntquotiuos44mcisciag
+  - ewogicagimfkzci6icixnziunjcumjeyljeyocis
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggvvpnvo7l_1
+  - ewogicagimfkzci6icixmdqumtkundcunzkilaog
+  - ewogicagimfkzci6icixotkumzqumji4ljixncis
+  - ewogicagimfkzci6icixnziunjquodiumje1iiwk
+  - ewogicagimfkzci6icixnziunjqumtu4ljewncis
+  - ewogicagimfkzci6icixnziunjcumjeyljy4iiwk
+  - ewogicagimfkzci6icixmdqumtkunduumtmilaog
+  - ewogicagimfkzci6icixmdqumtkundcunduilaog
+  - ewogicagimfkzci6icixmdqumtkuntkuodkilaog
+  - ewogicagimfkzci6icixnziunjcumtuzljexosis
+  - ewogicagimfkzci6icixmdqumtkundauodqilaog
+  - ewogicagimfkzci6icixmdqumtkundauotkilaog
+  - ewogicagimfkzci6icixmdqumjeunzuumjq2iiwk
+  - eyjhzgqioiixnziunjcunzeumtq1iiwiywlkijoi
+  - ewogicagimfkzci6icixmdqumtkumziumje2iiwk
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_7
+  - ewogicagimfkzci6icixnziunjcumtkxlji0mcis
+  - ewogicagimfkzci6ici0ns4xmi4zms4ymjqilaog
+  - ewogicagimfkzci6icjjzg4ubmfydxrvcy50b3ai
+  - ewogicagimfkzci6icixotgunzeumjmyljixmsis
+  - ewogicagimfkzci6icixmdqumtcumty0ljy4iiwk
+  - ewogicagimfkzci6icjpy29vay5oayisciagicai
+  - ewogicagimfkzci6icjzag9wawz5lmnvbsisciag
+  - ewogicagimfkzci6icixnziunjcuodyuodcilaog
+  - ewogicagimfkzci6icixmdqumtkundaumjexiiwk
+  - ewogicagimfkzci6icixnjiumtu5lji0oc4zmcis
+  - ewogicagimfkzci6icixmdqumtkunduumtuilaog
+  - ewogicagimfkzci6icixnziunjqumji5ljeyncis
+  - ewogicagimfkzci6icixmdqumtkundcumja3iiwk
+  - ewogicagimfkzci6icixnziunjquoduumtg5iiwk
+  - ewogicagimfkzci6icixmdqumtkundcuntailaog
+  - ewogicagimfkzci6icixnziunjcumtmxlji0nsis
+  - ewogicagimfkzci6icixnziunjcumjm3ljcziiwk
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggvvpnvo7l_2
+  - ewogicagimfkzci6icixnziunjcumjeyljq0iiwk
+  - ewogicagimfkzci6icixnziunjcumtk3lju3iiwk
+  - ewogicagimfkzci6icjsqunltkvsrc5dt00ilaog
+  - ewogicagimfkzci6icixoduumtyyljiyoc4ymtui
+  - ewogicagimfkzci6icixnziunjcumtg4ljexmcis
+  - ewogicagimfkzci6icixndeumtaxljexnc4xmtqi
+  - ewogicagimfkzci6icixnjiumtu5lje5nc4xmzui
+  - ewogicagimfkzci6icixnjiumtu5lji0oc4zmsis
+  - ewogicagimfkzci6icjkzs12lnnzag1hec54exoi
+  - ewogicagimfkzci6icixodgumty0lji0oc4ymjqi
+  - ewogicagimfkzci6icixnziunjcumtmwlje0mcis
+  - eyjhzgqioijucg1qcy5jb20ilcjhawqioiiwiiwi
+  - ewogicagimfkzci6icixntquotiuos4xntyilaog
+  - ewogicagimfkzci6icixndeumtaxljeymc4yndmi
+  - ewogicagimfkzci6icixmdqumtyumta4ljewmcis
+  - ewogicagimfkzci6icixntquotiuos4xmzmilaog
+  - ewogicagimfkzci6icixmdawaxauewfuz21pzs5v
+  - ewogicagimfkzci6icixmdqumjeuodaumtgwiiwk
+  - ewogicagimfkzci6icixmdqumtkunduuodailaog
+  - ewogicagimfkzci6icixmdqumzeumtyuntqilaog
+  - ewogicagimfkzci6icixnziunjcumtu4lje0nyis
+  - ewogicagimfkzci6icixmdqumtkundcumtyilaog
+  - 🏁RELAY-185.207.198.195-0667
+  - 🏁RELAY-190.93.246.195-0650
+  - 🏁RELAY-188.42.89.195-0658
+  - 🏁RELAY-185.193.30.195-0671
+  - 🏁RELAY-195.85.23.195-0624
+  - 🏁RELAY-185.207.196.195-0669
+  - 🇺🇸US-43.162.125.204-4909
+  - 🏁RELAY-190.93.247.195-0649
+  - 🇩🇪@FreakConfig_1
+  - 🏁RELAY-185.251.82.195-0661
+  - 🏁RELAY-195.13.45.195-0628
+  - 🇺🇸US-198.71.191.195-0615
+  - 🇺🇸US-198.62.62.195-0619
+  - 🏁RELAY-190.93.244.195-0652
+  - 🏁RELAY-185.221.160.195-0665
+  - 🏁RELAY-185.148.106.195-0687
+  - 🏁RELAY-185.158.133.195-0683
+  - 🏁RELAY-194.152.44.195-0630
+  - 🇺🇸US-198.71.190.195-0616
+  - 🏁RELAY-185.162.229.195-0680
+  - 🏁RELAY-185.193.29.195-0672
+  - '🇩🇪 جوین بده کانکت بمونی: @STAPersiaNews_1'
+  - 🇺🇸US-198.71.188.195-0618
+  - 🇺🇲@FreakConfig
+  - 🏁RELAY-185.18.250.195-0693
+  - 🏁RELAY-195.13.55.195-0626
+  - 🇺🇸US-199.68.156.195-0606
+  - 🏁RELAY-193.124.18.195-0639
+  - 🏁RELAY-205.233.181.195-0603
+  - 🇺🇸US-198.12.145.195-0620
+  - 🏁RELAY-185.156.19.195-0684
+  - 🇺🇸US-216.24.57.195-0596
+  - 🏁RELAY-185.162.230.195-0679
+  - 🏁RELAY-195.13.54.195-0627
+  - 🏁RELAY-213.182.199.195-0599
+  - 🇰🇿KZ-194.76.18.195-0631
+  - 🏁RELAY-190.93.245.195-0651
+  - 🏁RELAY-199.181.197.195-0605
+  - 🏁RELAY-204.93.210.195-0604
+  - 🏁RELAY-185.149.135.195-0685
+  - '@Hope_Net-join-us-on-Telegram'
+  - 🇺🇸US-192.169.223.195-0642
+  - '@Daily_Configs'
+  - 🏁RELAY-185.251.81.195-0662
+  - 🇺🇸 US美国(mibei77.com 米贝节点分享)
+  - 🏁RELAY-195.13.44.195-0629
+  - 🏁RELAY-185.148.105.195-0688
+  - 🚩 CF | 🔒 TROJAN | @teamvpnpro [4]
+  - '@Daily_Configs_1'
+  - 🏁RELAY-195.26.229.195-0625
+  - 🏁RELAY-198.202.211.195-0610
+  - 🏁RELAY-216.205.52.195-0595
+  - 🏁RELAY-185.193.28.195-0673
+  - 🏁RELAY-185.238.228.195-0664
+  - 🇺🇸 US | 🔒 TROJAN | @v2aryng_vpn [2]
+  - 🏁RELAY-188.42.145.195-0657
+  - 🏁RELAY-185.176.24.195-0675
+  - 🇺🇸 美国 V2CROSS.COM
+  - 🏁RELAY-194.53.53.195-0633
+  - 🇧🇷BR-185.133.35.195-0691
+  - 🇺🇸US-23.251.121.242-0304
+  - 🇺🇸 US-107.155.57.51:8080
+  - 🇺🇸US-199.59.243.228-7906
+  - 🇺🇸 US-107.155.57.11:8080
+  - 🇺🇸 US | 🔒 SS | @argo_vpn1 [3]
+  - 🇺🇸US-38.60.163.87-0530
+  - 🇺🇸US-23.157.40.101-0348
+  - 🇺🇸US-104.192.226.106-0289
+  - 🇺🇸US-107.151.182.253-0202
+  - 🇺🇸 همراه اول 2
+  - 🇺🇸US-38.75.137.9-6375
+  - '[Shadowsocks] astrovpn_official-🇺🇸'
+  - 🇺🇸US-38.114.114.67-6493
+  - 🇺🇸US-89.213.184.104-0203
+  - 4Nika-974
+  - 🇺🇸US-38.114.114.19-6182
+  - 🇺🇸US-38.114.114.19-6023
+  - 🇺🇸US-38.114.114.19-6219
+  - 🇺🇸US-212.102.47.132-0218
+  - 🇺🇸US-212.102.47.130-0194
+  - 🇺🇸US-38.114.114.19-5861
+  - '@shadmanegi_vpn👈 سرورهای بیشتر'
+  - United+States
+  - 🇺🇸 US | 🔒 SS | @outlinereleasedkey [16]
+  - 🇺🇸US-38.114.114.19-0416
+  - 🇺🇸US-212.102.47.131-0193
+  - 🇺🇸US-38.114.114.19-6119
+- name: AUTO
+  type: url-test
+  proxies:
+  - 🇩🇪 | @Evay_vpn
+  - 🇺🇸 US | 🔓 VLESS | @lombo_channel [1]
+  - 🇩🇪 | XpnTeam - Telegrams-r596p9c2
+  - 🇺🇸 US | 🔓 VLESS | @v2ray_youtube [3]
+  - سرور رایگان @HAJIMAMADVPN-8
+  - 🇺🇸 US | 🔓 VLESS | @connectshu [14]
+  - 🇺🇸 US | 🔓 VLESS | @mpproxy [14]
+  - 🇺🇸 US | 🔓 VLESS | @ghotb_scarf [6]
+  - 🇺🇸 US | 🔓 VLESS | @filterk0sh [18]
+  - 🇺🇸 US | 🔓 VLESS | @server_nekobox [3]
+  - '@Vip_Security join us - 383'
+  - 6xzx-@Fr33C0nfig / کانفیگ رایگان 🔗
+  - 🇺🇸 US | 🔓 VLESS | @megavpn_link [3]
+  - 🇺🇸 US | 🔓 VLESS | @mpproxy [11]
+  - 🇺🇸 US | 🔓 VLESS | @lranonline_new [7]
+  - '@v2ray313 کانالمون 🫁'
+  - IRAN 593 (@Outline_Vpn) free
+  - 🚩 CF | 🔓 VLESS | @vmessorg [12]
+  - 🇰🇷@vpn_ioss ♻️ عضو شو
+  - 🚩 CF | 🔓 VLESS | @expressvpn_420 [33]
+  - 🅼🅴🅷🅳🅸
+  - 🇦🇽@SimChin_iR عضو بشید
+  - 🚩 CF | 🔓 VLESS | @realvpnmaster [7]
+  - 🚩 CF | 🔓 VLESS | @mester_v2ray [12]
+  - 🇸🇪 SE | 🔓 VLESS | @realvpnmaster [8]
+  - 🚩 CF | 🔓 VLESS | @filterk0sh [6]
+  - 🚩 CF | 🔓 VLESS | @nofilter_v2rayng [5]
+  - '@bored_vpn'
+  - 'Telegram : @Alfa_v2ray_ng 🔥'
+  - برای اتصال دائمی جوین شو🍦@Outline_ir
+  - 🇸🇪 SE | 🔓 VLESS | @parsashonam [14]
+  - 'Telegram : @Alfa_v2ray_ng 🔥_1'
+  - Binextify⭐-3d97pmxm2
+  - 💎 @AblNet7 💎
+  - 💎کانفیگ های بیشتر در چنل تلگرام💎 Conf...
+  - 🚩 CF | 🔓 VLESS | @configms [5]
+  - 32 | @ConfigFast 🇮🇷💔 عضو بشید تلگرام ...
+  - 🚩 CF | 🔓 VLESS | @flyv2ray [9]
+  - IRAN 556 (@Outline_Vpn) free
+  - WS-@ELiV2RaY
+  - '🇩🇪 جوین بده کانکت بمونی: @STAPersiaNews'
+  - '@CaV2ray ⚡️'
+  - 🚩 CF | 🔓 VLESS | @connectshu [10]
+  - '@bored_vpn_1'
+  - 🚩 CF | 🔓 VLESS | @customizev2ray [20]
+  - 🚩 CF | 🔓 VLESS | @lockey_vpn [14]
+  - 🚩 CF | 🔓 VLESS | @bored_vpn [4]
+  - 🚩 CF | 🔓 VLESS | @goldenshiinevpn [10]
+  - 🇩🇪@FreakConfig
+  - '@Mrconfig_Channel 🩵'
+  - 🇩🇪 All Operator 2 @MaSTeRSeRVeR1
+  - Telegram:@config_proxy 🔥
+  - CF中转_0813046185&security=tls&alpn=h3&...
+  - 🚩 CF | 🔓 VLESS | @diamondproxytm [1]
+  - 🇺🇸 US | 🔓 VLESS | @falcunargo [7]
+  - 🚩 CF | 🔓 VLESS | @pydriclub [2]
+  - 🚩 CF | 🔓 VLESS | @frev2rayng [17]
+  - 🇧🇷@vpn_ioss ♻️ عضو شو
+  - TELEGRAM-MARAMBASHI_MARAMBASHI_MARAMB...
+  - '@V2rayNGVPN <= کانفیگ رایگان'
+  - 🚩 CF | 🔓 VLESS | @renetvpn [10]
+  - ⚡︎ 🇫🇮 𓏺 𝗝𝗼𝗶𝗻 ➠ @PlanB_Proxy | کانال ما 🆔
+  - 🇸🇪 SE | 🔓 VLESS | @meli_v2rayng [25]
+  - 🅼🅴🅷🅳🅸_1
+  - 🇦🇲 AM | 🔓 VLESS | @ai_duet [6]
+  - 🚩 CF | 🔓 VLESS | @mahdivpn2 [3]
+  - 🇳🇱 ProxyCloud Netherlands 👑
+  - 🚩 CF | 🔓 VLESS | @iranvipnet [2]
+  - '🦆Ch: @pPal03🦆جوین بدید عزیزانم🦆'
+  - 🇸🇪 SE | 🔓 VLESS | @expressvpn_420 [32]
+  - '@V2rayNG3'
+  - 🇺🇸 US | 🔓 VLESS | @icv2ray [15]
+  - 🚩 CF | 🔓 VLESS | @novinology [11]
+  - 🚩 CF | 🔓 VLESS | @outlinev2rayng [4]
+  - 𝗝𝗼𝗶𝗻 ➠ @configfree20255 | کانال ما 🆔
+  - '@CaV2ray ⚡️_1'
+  - 🚩 CF | 🔓 VLESS | @iranbfilter [3]
+  - کانال+ما+در+تلگرام+@Asak_Vpn+🏆
+  - 🚩 CF | 🔓 VLESS | @expressvpn_420 [29]
+  - 🚩 CF | 🔓 VLESS | @vmessorg [10]
+  - 🚩 CF | 🔓 VLESS | @melov2ray [43]
+  - 🚩 CF | 🔓 VLESS | @mtproxy22_v2ray [3]
+  - 🚩 CF | 🔓 VLESS | @lockey_vpn [2]
+  - 🚩 CF | 🔓 VLESS | @torang_vpn [6]
+  - US_speednode_0052
+  - '@Vip_Security join us - 376'
+  - '@bored_vpn_2'
+  - 🚩 CF | 🔓 VLESS | @fastshovpn [8]
+  - 🚩 CF | 🔓 VLESS | @vmessorg [16]
+  - ewogicagimfkzci6icixmdqumzeumtyumjyilaog
+  - ewogicagimfkzci6icixnziunjcumjm3lje3niis
+  - ewogicagimfkzci6icixnziunjcumja3ljiwosis
+  - ewogicagimfkzci6icixotauotmumjq3lje4ncis
+  - ewogicagimfkzci6icixnziunjcumjiyljq2iiwk
+  - ewogicagimfkzci6icixoduumjuxljgyljixmiis
+  - ewogicagimfkzci6icixmdqumtkunduumtailaog
+  - ewogicagimfkzci6icixotgundeumjiylje5osis
+  - ewogicagimfkzci6icixotgundeumtkzljexmcis
+  - ewogicagimfkzci6icixmdqumzeumtyundqilaog
+  - ewogicagimfkzci6icj3d3cua2vybmvscy5iawqi
+  - ewogicagimfkzci6icixmdqumzeumtyundeilaog
+  - ewogicagimfkzci6icixntquotiuos4xmjeilaog
+  - ewogicagimfkzci6icixmdqumzeumtyumziilaog
+  - ewogicagimfkzci6icixnjiumtu5ljezoc40niis
+  - ewogicagimfkzci6icixmzcumtc1ljeync4xnjci
+  - ewogicagimfkzci6icixntquotiuos41ocisciag
+  - ewogicagimfkzci6icixmdqumtkundcumjiziiwk
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggvvpnvo7l
+  - eyj2ijoimiisinbzijoixhvkodnjxhvkzgzhxhvk
+  - ewogicagimfkzci6icixnziunjyumy4ymteilaog
+  - ewogicagimfkzci6icixmdqumtkunduumtyilaog
+  - ewogicagimfkzci6icixmdqumzeumtyuntiilaog
+  - ewogicagimfkzci6icixoduumtq4ljewns4ymjmi
+  - ewogicagimfkzci6icixnziunjcumtg5ljgilaog
+  - ewogicagimfkzci6icixnjiumtu5lji0ns4xmjii
+  - ewogicagimfkzci6icixmdqumzeumtyumjgilaog
+  - eyj2ijoimiisinbzijoixhvkodnjxhvkzgywxhvk
+  - ewogicagimfkzci6icixodgumte0ljk5lje4iiwk
+  - ewogicagimfkzci6icixntquotiuos45ncisciag
+  - ewogicagimfkzci6icixnziunjqumji5ljiymyis
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+
+  - ewogicagimfkzci6ici2mi43mi4xnjyumjiziiwk
+  - ewogicagimfkzci6icjiyw90ys5tzsisciagicai
+  - ewogicagimfkzci6icixntquotiuos42iiwkicag
+  - ewogicagimfkzci6icixmdqumzeumtyumzeilaog
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_1
+  - ewogicagimfkzci6icixmdqumtyunjgumzgilaog
+  - ewogicagimfkzci6icixmdqumtkundaumjm3iiwk
+  - ewogicagimfkzci6icixnziunjcumjexljqziiwk
+  - ewogicagimfkzci6icj3d3cucgfyc3zkcy5pciis
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_2
+  - ewogicagimfkzci6icjpt29pt09vb09wljiymjc2
+  - ewogicagimfkzci6icixnziunjqumtuwlju3iiwk
+  - ewogicagimfkzci6icixnjiumtu5lji0mc4xmzai
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_3
+  - ewogicagimfkzci6icjzzxjpzxmtdjeuc2ftyw5l
+  - ewogicagimfkzci6icixnjiumtu5lji0mi4xntui
+  - ewogicagimfkzci6icixnziunjcumje2ljk3iiwk
+  - ewogicagimfkzci6icixndeumtkzljixmy4ymcis
+  - ewogicagimfkzci6icixntquotiuos4ymtiilaog
+  - ewogicagimfkzci6icixodgumte0ljk4lje4iiwk
+  - ewogicagimfkzci6icixntquotiuos4xntailaog
+  - ewogicagimfkzci6icixntquotiuos42osisciag
+  - eyj2ijoimiisinbzijoixhvkodnjxhvkzgzhxhvk_1
+  - ewogicagimfkzci6icixnzmumjq1lju4ljqziiwk
+  - ewogicagimfkzci6icjhy2nlc3muem9vbwluzm8u
+  - ewogicagimfkzci6icixmdqumzeumtyundiilaog
+  - ewogicagimfkzci6icixywyxmzeuzmy0ogzhzguu
+  - ewogicagimfkzci6icixmdqumtkundcumtc4iiwk
+  - ewogicagimfkzci6icj3d3cuz2nvlmdvdi5xysis
+  - ewogicagimfkzci6icixntquotiuos4xnzcilaog
+  - ewogicagimfkzci6icixntquotiuos4xotcilaog
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_4
+  - ewogicagimfkzci6icixnziunjcumtkylje5msis
+  - eyjhzgqioij3d3cud24wmy5jyyisimfpzci6mcwi
+  - ewogicagimfkzci6icixnziunjcumtkxlje2nyis
+  - ewogicagimfkzci6icixnziunjcumjewljk4iiwk
+  - ewogicagimfkzci6icixmdqumtyunjeuocisciag
+  - ewogicagimfkzci6icixmdqumtkundcumjcilaog
+  - ewogicagimfkzci6icixotqumzyuntuumji0iiwk
+  - ewogicagimfkzci6icjnzxqudgvjacisciagicai
+  - ewogicagimfkzci6icixmdqumtgumjaylji1mcis
+  - ewogicagimfkzci6icixnziunjcumtazljg2iiwk
+  - ewogicagimfkzci6icixnjiumtu5ljeyos4xnyis
+  - ewogicagimfkzci6ici3mi4xnjcumjuumjeyiiwk
+  - eyjhzgqioiixndeumtkzljixmy4ymjmilcjhawqi
+  - ewogicagimfkzci6icixntquotiuos4xnzyilaog
+  - ewogicagimfkzci6ici5mi41my4xoteumja5iiwk
+  - ewogicagimfkzci6icixnjiumtu5lji0my4xmjei
+  - ewogicagimfkzci6icixnziunjquodgumta5iiwk
+  - ewogicagimfkzci6icixnziunjcuodeundkilaog
+  - ewogicagimfkzci6icixmdqumzeumtyundcilaog
+  - ewogicagimfkzci6icixnziunjqumtuwlju3iiwk_1
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_5
+  - ewogicagimfkzci6icixmdqumtgumjuuotiilaog
+  - ewogicagimfkzci6icixmdqumtgumjgumje0iiwk
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_6
+  - ewogicagimfkzci6icixnjyunjiumte1ljixnsis
+  - ewogicagimfkzci6icixmdqumtyuos45nsisciag
+  - ewogicagimfkzci6icixnjiumtu5ljezns4yntei
+  - ewogicagimfkzci6icixmdqumtkundcumji2iiwk
+  - ewogicagimfkzci6icixmdqumtkundcumtgilaog
+  - ewogicagimfkzci6icixmdqumtyumje5ljewocis
+  - ewogicagimfkzci6icixmdqumtkunduuocisciag
+  - ewogicagimfkzci6icixmdqumzeumtyumzcilaog
+  - ewogicagimfkzci6icixmdqumtyunjcumzgilaog
+  - ewogicagimfkzci6icj0zxn0my5mbghhlnj1iiwk
+  - ewogicagimfkzci6icixnziunjqumji5ljexniis
+  - ewogicagimfkzci6icixmdqumtkunduumiisciag
+  - ewogicagimfkzci6icixntquotiuos44mcisciag
+  - ewogicagimfkzci6icixnziunjcumjeyljeyocis
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggvvpnvo7l_1
+  - ewogicagimfkzci6icixmdqumtkundcunzkilaog
+  - ewogicagimfkzci6icixotkumzqumji4ljixncis
+  - ewogicagimfkzci6icixnziunjquodiumje1iiwk
+  - ewogicagimfkzci6icixnziunjqumtu4ljewncis
+  - ewogicagimfkzci6icixnziunjcumjeyljy4iiwk
+  - ewogicagimfkzci6icixmdqumtkunduumtmilaog
+  - ewogicagimfkzci6icixmdqumtkundcunduilaog
+  - ewogicagimfkzci6icixmdqumtkuntkuodkilaog
+  - ewogicagimfkzci6icixnziunjcumtuzljexosis
+  - ewogicagimfkzci6icixmdqumtkundauodqilaog
+  - ewogicagimfkzci6icixmdqumtkundauotkilaog
+  - ewogicagimfkzci6icixmdqumjeunzuumjq2iiwk
+  - eyjhzgqioiixnziunjcunzeumtq1iiwiywlkijoi
+  - ewogicagimfkzci6icixmdqumtkumziumje2iiwk
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggx1vtx+e+_7
+  - ewogicagimfkzci6icixnziunjcumtkxlji0mcis
+  - ewogicagimfkzci6ici0ns4xmi4zms4ymjqilaog
+  - ewogicagimfkzci6icjjzg4ubmfydxrvcy50b3ai
+  - ewogicagimfkzci6icixotgunzeumjmyljixmsis
+  - ewogicagimfkzci6icixmdqumtcumty0ljy4iiwk
+  - ewogicagimfkzci6icjpy29vay5oayisciagicai
+  - ewogicagimfkzci6icjzag9wawz5lmnvbsisciag
+  - ewogicagimfkzci6icixnziunjcuodyuodcilaog
+  - ewogicagimfkzci6icixmdqumtkundaumjexiiwk
+  - ewogicagimfkzci6icixnjiumtu5lji0oc4zmcis
+  - ewogicagimfkzci6icixmdqumtkunduumtuilaog
+  - ewogicagimfkzci6icixnziunjqumji5ljeyncis
+  - ewogicagimfkzci6icixmdqumtkundcumja3iiwk
+  - ewogicagimfkzci6icixnziunjquoduumtg5iiwk
+  - ewogicagimfkzci6icixmdqumtkundcuntailaog
+  - ewogicagimfkzci6icixnziunjcumtmxlji0nsis
+  - ewogicagimfkzci6icixnziunjcumjm3ljcziiwk
+  - eyj2ijoimiisinbzijoi8j+huvcfh7ggvvpnvo7l_2
+  - ewogicagimfkzci6icixnziunjcumjeyljq0iiwk
+  - ewogicagimfkzci6icixnziunjcumtk3lju3iiwk
+  - ewogicagimfkzci6icjsqunltkvsrc5dt00ilaog
+  - ewogicagimfkzci6icixoduumtyyljiyoc4ymtui
+  - ewogicagimfkzci6icixnziunjcumtg4ljexmcis
+  - ewogicagimfkzci6icixndeumtaxljexnc4xmtqi
+  - ewogicagimfkzci6icixnjiumtu5lje5nc4xmzui
+  - ewogicagimfkzci6icixnjiumtu5lji0oc4zmsis
+  - ewogicagimfkzci6icjkzs12lnnzag1hec54exoi
+  - ewogicagimfkzci6icixodgumty0lji0oc4ymjqi
+  - ewogicagimfkzci6icixnziunjcumtmwlje0mcis
+  - eyjhzgqioijucg1qcy5jb20ilcjhawqioiiwiiwi
+  - ewogicagimfkzci6icixntquotiuos4xntyilaog
+  - ewogicagimfkzci6icixndeumtaxljeymc4yndmi
+  - ewogicagimfkzci6icixmdqumtyumta4ljewmcis
+  - ewogicagimfkzci6icixntquotiuos4xmzmilaog
+  - ewogicagimfkzci6icixmdawaxauewfuz21pzs5v
+  - ewogicagimfkzci6icixmdqumjeuodaumtgwiiwk
+  - ewogicagimfkzci6icixmdqumtkunduuodailaog
+  - ewogicagimfkzci6icixmdqumzeumtyuntqilaog
+  - ewogicagimfkzci6icixnziunjcumtu4lje0nyis
+  - ewogicagimfkzci6icixmdqumtkundcumtyilaog
+  - 🏁RELAY-185.207.198.195-0667
+  - 🏁RELAY-190.93.246.195-0650
+  - 🏁RELAY-188.42.89.195-0658
+  - 🏁RELAY-185.193.30.195-0671
+  - 🏁RELAY-195.85.23.195-0624
+  - 🏁RELAY-185.207.196.195-0669
+  - 🇺🇸US-43.162.125.204-4909
+  - 🏁RELAY-190.93.247.195-0649
+  - 🇩🇪@FreakConfig_1
+  - 🏁RELAY-185.251.82.195-0661
+  - 🏁RELAY-195.13.45.195-0628
+  - 🇺🇸US-198.71.191.195-0615
+  - 🇺🇸US-198.62.62.195-0619
+  - 🏁RELAY-190.93.244.195-0652
+  - 🏁RELAY-185.221.160.195-0665
+  - 🏁RELAY-185.148.106.195-0687
+  - 🏁RELAY-185.158.133.195-0683
+  - 🏁RELAY-194.152.44.195-0630
+  - 🇺🇸US-198.71.190.195-0616
+  - 🏁RELAY-185.162.229.195-0680
+  - 🏁RELAY-185.193.29.195-0672
+  - '🇩🇪 جوین بده کانکت بمونی: @STAPersiaNews_1'
+  - 🇺🇸US-198.71.188.195-0618
+  - 🇺🇲@FreakConfig
+  - 🏁RELAY-185.18.250.195-0693
+  - 🏁RELAY-195.13.55.195-0626
+  - 🇺🇸US-199.68.156.195-0606
+  - 🏁RELAY-193.124.18.195-0639
+  - 🏁RELAY-205.233.181.195-0603
+  - 🇺🇸US-198.12.145.195-0620
+  - 🏁RELAY-185.156.19.195-0684
+  - 🇺🇸US-216.24.57.195-0596
+  - 🏁RELAY-185.162.230.195-0679
+  - 🏁RELAY-195.13.54.195-0627
+  - 🏁RELAY-213.182.199.195-0599
+  - 🇰🇿KZ-194.76.18.195-0631
+  - 🏁RELAY-190.93.245.195-0651
+  - 🏁RELAY-199.181.197.195-0605
+  - 🏁RELAY-204.93.210.195-0604
+  - 🏁RELAY-185.149.135.195-0685
+  - '@Hope_Net-join-us-on-Telegram'
+  - 🇺🇸US-192.169.223.195-0642
+  - '@Daily_Configs'
+  - 🏁RELAY-185.251.81.195-0662
+  - 🇺🇸 US美国(mibei77.com 米贝节点分享)
+  - 🏁RELAY-195.13.44.195-0629
+  - 🏁RELAY-185.148.105.195-0688
+  - 🚩 CF | 🔒 TROJAN | @teamvpnpro [4]
+  - '@Daily_Configs_1'
+  - 🏁RELAY-195.26.229.195-0625
+  - 🏁RELAY-198.202.211.195-0610
+  - 🏁RELAY-216.205.52.195-0595
+  - 🏁RELAY-185.193.28.195-0673
+  - 🏁RELAY-185.238.228.195-0664
+  - 🇺🇸 US | 🔒 TROJAN | @v2aryng_vpn [2]
+  - 🏁RELAY-188.42.145.195-0657
+  - 🏁RELAY-185.176.24.195-0675
+  - 🇺🇸 美国 V2CROSS.COM
+  - 🏁RELAY-194.53.53.195-0633
+  - 🇧🇷BR-185.133.35.195-0691
+  - 🇺🇸US-23.251.121.242-0304
+  - 🇺🇸 US-107.155.57.51:8080
+  - 🇺🇸US-199.59.243.228-7906
+  - 🇺🇸 US-107.155.57.11:8080
+  - 🇺🇸 US | 🔒 SS | @argo_vpn1 [3]
+  - 🇺🇸US-38.60.163.87-0530
+  - 🇺🇸US-23.157.40.101-0348
+  - 🇺🇸US-104.192.226.106-0289
+  - 🇺🇸US-107.151.182.253-0202
+  - 🇺🇸 همراه اول 2
+  - 🇺🇸US-38.75.137.9-6375
+  - '[Shadowsocks] astrovpn_official-🇺🇸'
+  - 🇺🇸US-38.114.114.67-6493
+  - 🇺🇸US-89.213.184.104-0203
+  - 4Nika-974
+  - 🇺🇸US-38.114.114.19-6182
+  - 🇺🇸US-38.114.114.19-6023
+  - 🇺🇸US-38.114.114.19-6219
+  - 🇺🇸US-212.102.47.132-0218
+  - 🇺🇸US-212.102.47.130-0194
+  - 🇺🇸US-38.114.114.19-5861
+  - '@shadmanegi_vpn👈 سرورهای بیشتر'
+  - United+States
+  - 🇺🇸 US | 🔒 SS | @outlinereleasedkey [16]
+  - 🇺🇸US-38.114.114.19-0416
+  - 🇺🇸US-212.102.47.131-0193
+  - 🇺🇸US-38.114.114.19-6119
+  url: http://www.gstatic.com/generate_204
+  interval: 300
+rules:
+- DOMAIN-SUFFIX,local,DIRECT
+- IP-CIDR,127.0.0.0/8,DIRECT
+- IP-CIDR,172.16.0.0/12,DIRECT
+- IP-CIDR,192.168.0.0/16,DIRECT
+- IP-CIDR,10.0.0.0/8,DIRECT
+- MATCH,PROXY
