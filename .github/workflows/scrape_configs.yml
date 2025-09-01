@@ -1,4 +1,4 @@
-name: Scheduled Scrape and Build
+Name: Scheduled Scrape and Build
 
 on:
   schedule:
@@ -21,6 +21,7 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
+          working-directory: V2V # اضافه کردن این خط
 
       - name: Validate Secrets
         run: |
@@ -46,7 +47,7 @@ jobs:
         run: |
           echo "::debug::Installing dependencies..."
           pip install --upgrade pip
-          pip install -r requirements.txt  # استفاده از فایل requirements.txt برای تمیزی
+          pip install -r requirements.txt
           echo "::info::Dependencies installed."
 
       - name: Run scraper script
