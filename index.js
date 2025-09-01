@@ -73,6 +73,12 @@ export default {
         let pathname = url.pathname;
         const cache = caches.default;
 
+        // [CHANGE] Lines uncommented and integrated here.
+        // This rewrites paths for the main config files to point to the /configs/ directory on GitHub.
+        if (pathname.startsWith('/all_live_configs_') || pathname === '/cache_version.txt') {
+            pathname = `/configs${pathname}`;
+        }
+
         // اندپوینت تست پینگ واقعی کانفیگ
         if (pathname === '/test-config' && request.method === 'POST') {
             try {
@@ -117,17 +123,19 @@ export default {
             
             if (SUBSCRIPTION_UUIDS[uuid]) {
                 const subFileName = `sub_${uuid}.txt`;
-                const cacheKey = new Request(`${url.origin}/sub-files/${subFileName}`, request);
+                // Point to the /configs/ directory for subscription files on the origin
+                const originPath = `/configs/${subFileName}`;
+                const cacheKey = new Request(`${url.origin}${originPath}`, request);
                 let response = await cache.match(cacheKey);
                 
                 if (!response) {
-                    response = await fetch(`${PRIMARY_ORIGIN}/${subFileName}`);
+                    response = await fetch(`${PRIMARY_ORIGIN}${originPath}`);
                     if (response.ok) {
                         const newHeaders = new Headers(response.headers);
                         newHeaders.set('Access-Control-Allow-Origin', '*');
                         newHeaders.set('Content-Type', 'text/plain; charset=utf-8');
                         newHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
-                        let resClone = new Response(response.clone().body, { 
+                        const resClone = new Response(response.clone().body, { 
                             status: response.status, 
                             headers: newHeaders 
                         });
@@ -171,7 +179,7 @@ export default {
              if (response.ok) {
                  const newHeaders = new Headers(response.headers);
                  newHeaders.set('Access-Control-Allow-Origin', '*');
-                 let resClone = new Response(response.clone().body, { status: response.status, headers: newHeaders });
+                 const resClone = new Response(response.clone().body, { status: response.status, headers: newHeaders });
                  ctx.waitUntil(cache.put(cacheKey, resClone));
                  return resClone;
              }
@@ -190,8 +198,8 @@ export default {
             });
         }
 
-        // منطق اصلی برای ارائه فایل‌های کانفیگ (از ریشه)
-        const mainCacheKey = new Request(url.toString(), request);
+        // منطق اصلی برای ارائه فایل‌های دیگر (از ریشه در origin)
+        const mainCacheKey = new Request(`${PRIMARY_ORIGIN}${pathname}`, request);
         let mainResponse = await cache.match(mainCacheKey);
         if (mainResponse) {
             const newHeaders = new Headers(mainResponse.headers);
@@ -205,7 +213,7 @@ export default {
             const newHeaders = new Headers(mainResponse.headers);
             newHeaders.set('Access-Control-Allow-Origin', '*');
             newHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
-            let resClone = new Response(mainResponse.clone().body, { status: mainResponse.status, headers: newHeaders });
+            const resClone = new Response(mainResponse.clone().body, { status: mainResponse.status, headers: newHeaders });
             ctx.waitUntil(cache.put(mainCacheKey, resClone));
             return resClone;
         }
