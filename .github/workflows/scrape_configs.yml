@@ -5,6 +5,7 @@ on:
     # اجرا هر ۸ ساعت یک‌بار
     - cron: "0 */8 * * *"
   workflow_dispatch:
+  # اضافه: امکان trigger از push روی main اگر نیاز به تست سریع باشه، اما غیرفعال نگه داشتم
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,29 +16,64 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 45  # افزایش به 45 برای handle کردن پارسینگ پیشرفته
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
+        # اضافه: اطمینان از کلون عمیق برای handle کردن فایل‌های بزرگ
+        with:
+          fetch-depth: 0
+
+      - name: Validate Secrets
+        run: |
+          if [ -z "$GH_PAT" ]; then
+            echo "::error::GH_PAT secret is missing or empty."
+            exit 1
+          fi
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
 
       - name: Create dummy download test file
-        run: dd if=/dev/zero of=dl-test.bin bs=100k count=1
+        run: |
+          echo "::debug::Creating dummy download test file..."
+          dd if=/dev/zero of=dl-test.bin bs=100k count=1
+          echo "::info::Download test file created."
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"  # بروزرسانی به latest stable برای سازگاری با بهبودهای main.py
 
       - name: Install dependencies
-        run: pip install requests PyYAML PyGithub awscli
+        run: |
+          echo "::debug::Installing dependencies..."
+          pip install --upgrade pip
+          pip install requests PyYAML PyGithub awscli  # تأیید وابستگی‌های main.py
+          echo "::info::Dependencies installed."
 
       - name: Run scraper script
-        run: python scraper.py
+        run: |
+          echo "::debug::Running scraper script..."
+          if [ -z "$GH_PAT" ]; then
+            echo "::error::GH_PAT not set, skipping scraper."
+            exit 1
+          fi
+          python main.py  # تغییر نام فایل به main.py مطابق اصلاحات
+          echo "::info::Scraper script completed successfully."
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         timeout-minutes: 40
+
+      - name: Check for New Changes
+        run: |
+          echo "::debug::Checking for new changes..."
+          if [ -d "./configs" ] && [ "$(ls -A ./configs)" ]; then
+            echo "::info::Configs directory exists and has content."
+          else
+            echo "::warning::No configs found, possibly due to fetch or parse errors."
+          fi
 
       - name: Upload files to ArvanCloud
         if: success()
@@ -46,7 +82,8 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_KEY_SECRET }}
         run: |
-          if [ -z "$AWS_ACCESS_KEY_ID" ]; then
+          echo "::debug::Starting ArvanCloud upload..."
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
             echo "::warning::ArvanCloud secrets not found, skipping upload."
             exit 0
           fi
@@ -54,25 +91,41 @@ jobs:
           BUCKET_NAME="s3://v2v-data"
           
           if [ -d "./configs" ]; then
-            aws s3 sync ./configs "$BUCKET_NAME/" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300"
+            aws s3 sync ./configs "$BUCKET_NAME/" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300" --exclude "*" --include "sub_*.txt" --include "*.yaml" --include "*.json"
+            echo "::info::Configs synced to ArvanCloud."
           fi
           
           if [ -f "cache_version.txt" ]; then
             aws s3 cp cache_version.txt "$BUCKET_NAME/cache_version.txt" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/plain" --cache-control "max-age=300"
+            echo "::info::Cache version uploaded."
           fi
           if [ -f "dl-test.bin" ]; then
             aws s3 cp dl-test.bin "$BUCKET_NAME/dl-test.bin" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=3600"
+            echo "::info::Download test file uploaded."
           fi
+
+      - name: Cleanup Temporary Files
+        run: |
+          echo "::debug::Cleaning up temporary files..."
+          rm -f dl-test.bin  # Cleanup اگر نیاز باشه
+          echo "::info::Cleanup completed."
 
       - name: Commit and Push final files to GitHub
         run: |
+          echo "::debug::Preparing commit..."
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add configs/ cache_version.txt dl-test.bin
           
           if git diff --staged --quiet; then
-            echo "No new changes to commit."
+            echo "::notice::No new changes to commit."
           else
-            git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
-            git push
+            COMMIT_MESSAGE="📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
+            git commit -m "$COMMIT_MESSAGE"
+            if git push; then
+              echo "::info::Changes committed and pushed: $COMMIT_MESSAGE"
+            else
+              echo "::error::Push failed."
+              exit 1
+            fi
           fi
