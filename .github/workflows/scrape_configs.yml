@@ -1,4 +1,4 @@
-Name: Scheduled Scrape and Build
+name: Scheduled Scrape and Build
 
 on:
   schedule:
@@ -56,7 +56,7 @@ jobs:
             echo "::error::GH_PAT not set, skipping scraper."
             exit 1
           fi
-          python scraper.py # نام فایل به scraper.py تغییر یافت
+          python scraper.py
           echo "::info::Scraper script completed successfully."
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
