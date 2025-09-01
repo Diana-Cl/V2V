@@ -2,7 +2,6 @@ name: Scheduled Scrape and Build
 
 on:
   schedule:
-    # اجرا هر ۸ ساعت یک‌بار
     - cron: "0 */8 * * *"
   workflow_dispatch:
 
@@ -15,13 +14,13 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # افزایش به 45 برای handle کردن پارسینگ پیشرفته
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
-          fetch-depth: 0  # اضافه: اطمینان از کلون عمیق برای handle کردن فایل‌های بزرگ
+          fetch-depth: 0
 
       - name: Validate Secrets
         run: |
@@ -41,13 +40,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"  # بروزرسانی به latest stable برای سازگاری با بهبودهای main.py
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
           echo "::debug::Installing dependencies..."
           pip install --upgrade pip
-          pip install requests PyYAML PyGithub awscli  # تأیید وابستگی‌های main.py
+          pip install -r requirements.txt  # استفاده از فایل requirements.txt برای تمیزی
           echo "::info::Dependencies installed."
 
       - name: Run scraper script
@@ -57,7 +56,7 @@ jobs:
             echo "::error::GH_PAT not set, skipping scraper."
             exit 1
           fi
-          python main.py  # تغییر نام فایل به main.py مطابق اصلاحات
+          python main.py
           echo "::info::Scraper script completed successfully."
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
@@ -104,7 +103,7 @@ jobs:
       - name: Cleanup Temporary Files
         run: |
           echo "::debug::Cleaning up temporary files..."
-          rm -f dl-test.bin  # Cleanup اگر نیاز باشه
+          rm -f dl-test.bin
           echo "::info::Cleanup completed."
 
       - name: Commit and Push final files to GitHub
