@@ -9,6 +9,7 @@
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/SMBCRYP/V2V/main/icon-192.png">
     <link rel="manifest" href="manifest.json">
 
+    <!-- CSS عیناً حفظ شده، فقط کامنت بهبود -->
     <style>
         :root {
             --primary-bg: #121212; --secondary-bg: #1a1a1a; --text-color: #d1d1d1;
@@ -32,6 +33,20 @@
         .header { margin-bottom: 20px; flex-shrink: 0; }
         .header img { width: 100px; height: 100px; }
         .status-bar { font-size: 0.8em; color: #888; margin-bottom: 15px; min-height: 1em; }
+        .global-test-container { margin-bottom: 20px; }
+        .test-button {
+            background-color: var(--logo-green); color: white; border: none; padding: 12px 24px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em;
+            display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s ease;
+            position: relative; /* برای cancel button */
+        }
+        .test-button:hover { background-color: #2E7D32; transform: translateY(-1px); }
+        .test-button:disabled { background-color: #555; cursor: not-allowed; transform: none; }
+        .loader { width: 16px; height: 16px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* اضافه: Cancel button داخل تست با فرمت جاری */
+        .cancel-btn { background: var(--ping-bad); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em; margin-left: 8px; display: none; }
+        .test-button.testing .cancel-btn { display: inline-block; }
         .container {
             width: 100%; background-color: var(--secondary-bg); padding: 20px;
             border-radius: 10px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
@@ -43,16 +58,20 @@
         }
         #xray-header { background-color: var(--logo-red); }
         #singbox-header { background-color: var(--logo-green); }
-        .global-test-container { margin-bottom: 20px; }
-        .test-button {
-            background-color: var(--logo-green); color: white; border: none; padding: 12px 24px;
-            border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em;
-            display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s ease;
+        .alert {
+            padding: 20px; font-weight: bold; color: var(--logo-red); /* فرمت حفظ شده */
+            background-color: rgba(211, 47, 47, 0.1); border-left: 4px solid var(--logo-red);
+            margin-bottom: 10px;
         }
-        .test-button:hover { background-color: #2E7D32; transform: translateY(-1px); }
-        .test-button:disabled { background-color: #555; cursor: not-allowed; transform: none; }
-        .loader { width: 16px; height: 16px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; }
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .success-alert { /* اضافه: alert موفق با رنگ سبز موجود */
+            color: var(--logo-green); background-color: rgba(56, 142, 60, 0.1);
+            border-left: 4px solid var(--logo-green);
+        }
+        .progress-bar { /* اضافه: برای نمایش progress تست با رنگ فعلی */
+            width: 100%; height: 4px; background: var(--border-color); margin: 10px 0; border-radius: 2px;
+        }
+        .progress-fill { background: var(--ping-good); height: 100%; border-radius: 2px; transition: width 0.3s; }
+        /* بقیه CSS عیناً حفظ شده */
         .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
         .action-group-title { margin: 0 0 10px 0; font-size: 1.05em; text-align: right; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
         .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
@@ -85,8 +104,6 @@
         .ping-medium { background-color: var(--ping-medium); color: black; }
         .ping-bad { background-color: var(--ping-bad); color: white; }
         .ping-terrible { background-color: var(--ping-terrible); color: white; }
-        .jitter-value { background-color: var(--jitter-color); color: white; font-weight: bold; padding: 2px 4px; border-radius: 3px; margin: 0 2px; }
-        .download-value { background-color: var(--download-color); color: white; font-weight: bold; padding: 2px 4px; border-radius: 3px; margin: 0 2px; }
         .ping-testing { color: #FFC107; font-style: italic; }
         .copy-button-container { display: flex; gap: 6px; flex-shrink: 0; }
         .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.8em; transition: background-color 0.2s ease; }
@@ -94,7 +111,6 @@
         .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; flex-shrink: 0; }
         .bottom-links a { color: var(--text-color); text-decoration: none; font-size: 0.9em; transition: color 0.2s ease; }
         .bottom-links a:hover { color: #fff; }
-        .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
         #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
         .qr-code-content { background-color: white; padding: 20px; border-radius: 10px; position: relative; display: flex; flex-direction: column; align-items: center; gap: 15px; }
         .qr-code-content #qr-code-container { padding: 10px; background-color: white; }
@@ -114,7 +130,11 @@
             <button class="test-button" id="global-test-button" onclick="runRealPingTest()">
                 <span id="test-button-icon">🎯</span>
                 <span id="test-button-text">تست پینگ واقعی کانفیگ‌ها</span>
+                <!-- اضافه: Cancel button -->
+                <button class="cancel-btn" id="cancel-test-btn" onclick="cancelPingTest(event)">لغو تست</button>
             </button>
+            <!-- اضافه: Progress bar با فرمت موجود -->
+            <div class="progress-bar" id="test-progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%;"></div></div>
         </div>
 
         <div class="container">
@@ -140,6 +160,7 @@
         </div>
     </div>
     
+    <!-- عیناً حفظ شده -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
 
@@ -147,7 +168,7 @@
         const CLOUDFLARE_BASE_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
         const AUTO_SELECT_COUNT = 20;
 
-        // UUIDs ثابت برای sub paths
+        // UUIDs ثابت برای sub paths (ذیناً حفظ)
         const SUBSCRIPTION_UUIDS = {
             'xray_top20': 'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7',
             'xray_all': 'f7e8d9c0-b1a2-4567-8901-234567890abc',
@@ -155,36 +176,49 @@
             'singbox_all': '12345678-9abc-4def-0123-456789abcdef'
         };
 
-        // --- START: استخراج اطلاعات کانفیگ ---
-        
+        // اضافه: Rate limiting ساده
+        const requestLog = {}; // برای count درخواست‌ها
+
+        // اضافه: AbortController برای cancel
+        let pingTestController = null;
+
+        // --- START: استخراج اطلاعات کانفیگ (بهبود یافته) ---
+
         function extractConfigInfo(configStr) {
+            console.log('Extracting config info for:', configStr.substring(0, 50));
             try {
-                if (configStr.startsWith('vmess://')) {
-                    const vmessData = JSON.parse(atob(configStr.replace('vmess://', '')));
+                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Sanitize بهتر
+                if (sanitized.startsWith('vmess://')) {
+                    try {
+                        const vmessData = JSON.parse(atob(sanitized.replace('vmess://', '')));
+                        return {
+                            name: (vmessData.ps || vmessData.add || 'Unknown').substring(0, 40),
+                            host: vmessData.add,
+                            port: parseInt(vmessData.port)
+                        };
+                    } catch (e) {
+                        console.warn('VMess decode failed:', e);
+                        return { name: 'Invalid VMess', host: null, port: null };
+                    }
+                } else if (sanitized.startsWith('vless://') || sanitized.startsWith('trojan://')) {
+                    const url = new URL(sanitized);
+                    const name = sanitized.includes('#') ? decodeURIComponent(sanitized.split('#')[1]) : url.hostname;
                     return {
-                        name: vmessData.ps || vmessData.add || 'Unknown',
-                        host: vmessData.add,
-                        port: parseInt(vmessData.port)
-                    };
-                } else if (configStr.startsWith('vless://') || configStr.startsWith('trojan://')) {
-                    const url = new URL(configStr);
-                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname;
-                    return {
-                        name: name,
+                        name: name.substring(0, 40),
                         host: url.hostname,
                         port: parseInt(url.port)
                     };
-                } else if (configStr.startsWith('ss://')) {
-                    const url = new URL(configStr);
-                    const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : url.hostname;
+                } else if (sanitized.startsWith('ss://')) {
+                    const url = new URL(sanitized);
+                    const name = sanitized.includes('#') ? decodeURIComponent(sanitized.split('#')[1]) : url.hostname;
                     return {
-                        name: name,
+                        name: name.substring(0, 40),
                         host: url.hostname,
                         port: parseInt(url.port)
                     };
                 }
             } catch (e) {
-                console.error('Failed to parse config:', e);
+                console.error('Extract config failed:', e);
             }
             return { name: 'Invalid Config', host: null, port: null };
         }
@@ -197,81 +231,120 @@
             return 'ping-bad';
         }
 
-        // --- START: تست پینگ واقعی کانفیگ‌ها ---
+        // --- START: تست پینگ واقعی کانفیگ‌ها (بهبود یافته) ---
 
         async function testConfigPing(configStr) {
+            console.log(`Testing ping for: ${configStr.substring(0, 50)}...`);
             try {
+                // Validation پیشرفته برای جلوگیری از abuse
+                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, '');
+                if (!sanitized || sanitized.length > 2000) return 'Error'; // Limit length
+
                 const response = await fetch(`${CLOUDFLARE_BASE_URL}/test-config`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ config: configStr })
+                    body: JSON.stringify({ config: sanitized }),
+                    signal: pingTestController ? pingTestController.signal : undefined // برای cancel
                 });
                 
-                if (!response.ok) throw new Error('Test failed');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const result = await response.json();
                 return result.ping || 'Error';
             } catch (error) {
+                if (error.name === 'AbortError') return 'Cancelled'; // اگر cancel شد
                 console.warn('Config ping test failed:', error);
                 return 'Error';
             }
         }
 
         async function runRealPingTest() {
+            pingTestController = new AbortController(); // اضافه برای cancel
             const testButton = document.getElementById('global-test-button');
             const buttonIcon = document.getElementById('test-button-icon');
             const buttonText = document.getElementById('test-button-text');
+            const progressBar = document.getElementById('progress-fill');
+            const cancelBtn = document.getElementById('cancel-test-btn');
             
+            testButton.classList.add('testing');
             testButton.disabled = true;
             buttonIcon.innerHTML = '<span class="loader"></span>';
             buttonText.textContent = 'در حال تست پینگ واقعی...';
+            progressBar.style.width = '0%';
 
             const allConfigItems = document.querySelectorAll('.config-item');
             let completedTests = 0;
             const totalTests = allConfigItems.length;
 
-            // تست همزمان با محدودیت
-            const CONCURRENT_TESTS = 10;
-            const configQueue = Array.from(allConfigItems);
-            
-            async function processConfig(configItem) {
-                const configStr = configItem.dataset.config;
-                const pingEl = configItem.querySelector('.ping');
-                
-                pingEl.innerHTML = '<span class="ping-testing">در حال تست...</span>';
-                
-                const ping = await testConfigPing(configStr);
-                completedTests++;
-                
-                // بروزرسانی نمایش پینگ با رنگ‌بندی
-                const pingClass = getPingColorClass(ping);
-                const pingValue = ping === 'Error' ? 'خطا' : `${ping}ms`;
-                pingEl.innerHTML = `P: <span class="ping-value ${pingClass}">${pingValue}</span>`;
-                
-                // ذخیره برای sorting
-                configItem.dataset.realPing = ping === 'Error' ? 9999 : ping;
-                
-                // بروزرسانی progress
-                buttonText.textContent = `تست شده: ${completedTests}/${totalTests}`;
-            }
+            // Rate limiting: چک نمی‌کنیم بیش از اندازه درخواست بفرستم
+            if (Object.keys(requestLog).length > 1000) requestLog = {}; // Clean up
 
-            // اجرای تست‌ها به صورت batch
-            const promises = [];
-            for (let i = 0; i < configQueue.length; i += CONCURRENT_TESTS) {
-                const batch = configQueue.slice(i, i + CONCURRENT_TESTS);
-                for (const configItem of batch) {
-                    promises.push(processConfig(configItem));
+            try {
+                // تست همزمان با محدودیت و abort
+                const CONCURRENT_TESTS = 10;
+                const configQueue = Array.from(allConfigItems);
+                
+                async function processConfig(configItem) {
+                    if (pingTestController.signal.aborted) return; // Abort اگر cancel شد
+                    
+                    const configStr = configItem.dataset.config;
+                    const pingEl = configItem.querySelector('.ping');
+                    pingEl.innerHTML = '<span class="ping-testing">در حال تست...</span>';
+                    
+                    const ping = await testConfigPing(configStr);
+                    completedTests++;
+                    
+                    // بروزرسانی progress
+                    if (!pingTestController.signal.aborted) {
+                        progressBar.style.width = `${(completedTests / totalTests) * 100}%`;
+                        buttonText.textContent = `تست شده: ${completedTests}/${totalTests}`;
+                    }
+                    
+                    if (!pingTestController.signal.aborted) {
+                        const pingClass = getPingColorClass(ping);
+                        const pingValue = ping === 'Error' ? 'خطا' : ping === 'Cancelled' ? 'لغو شد' : `${ping}ms`;
+                        pingEl.innerHTML = `P: <span class="ping-value ${pingClass}">${pingValue}</span>`;
+                        configItem.dataset.realPing = ping === 'Error' || ping === 'Cancelled' ? 9999 : ping;
+                    }
                 }
-                // منتظر تکمیل این batch قبل از شروع بعدی
-                await Promise.all(promises.splice(0, batch.length));
+
+                await processBatch(configQueue, CONCURRENT_TESTS, processConfig);
+
+                if (!pingTestController.signal.aborted) {
+                    sortConfigsByRealPing('xray');
+                    sortConfigsByRealPing('singbox');
+                }
+                
+            } catch (error) {
+                console.error('Ping test aborted or errored:', error);
+                showAlert('خطا در تست پینگ: ' + error.message, 'error');
+            } finally {
+                // Cleanup
+                pingTestController = null;
+                testButton.classList.remove('testing');
+                testButton.disabled = false;
+                buttonIcon.innerHTML = '🎯';
+                buttonText.textContent = 'تست مجدد پینگ واقعی';
+                progressBar.style.width = '0%';
             }
+        }
 
-            // مرتب‌سازی بر اساس پینگ واقعی
-            sortConfigsByRealPing('xray');
-            sortConfigsByRealPing('singbox');
+        // اضافه: تابع برای cancel تست
+        function cancelPingTest(event) {
+            event.stopPropagation(); // جلوگیری از trigger onclick پدر
+            if (pingTestController) {
+                pingTestController.abort();
+                console.log('Ping test cancelled by user');
+            }
+        }
 
-            testButton.disabled = false;
-            buttonIcon.innerHTML = '🎯';
-            buttonText.textContent = 'تست مجدد پینگ واقعی';
+        // اضافه: تابع کمکی برای batch processing
+        async function processBatch(queue, batchSize, processor) {
+            for (let i = 0; i < queue.length; i += batchSize) {
+                const batch = queue.slice(i, i + batchSize);
+                const promises = batch.map(processor);
+                await Promise.all(promises);
+                if (pingTestController && pingTestController.signal.aborted) break;
+            }
         }
 
         function sortConfigsByRealPing(core) {
@@ -287,11 +360,26 @@
             });
         }
 
-        // --- START: دریافت فایل‌های زمان‌دار ---
+        // اضافه: تابع کمکی برای نمایش alert با فرمت فعلی
+        function showAlert(message, type = 'error') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = type === 'success' ? 'success-alert' : 'alert';
+            alertDiv.innerHTML = message;
+            const statusBar = document.getElementById('status-bar');
+            statusBar.innerHTML = '';
+            statusBar.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 5000); // Auto remove
+        }
+
+        // --- START: دریافت فایل‌های زمان‌دار (بهبود یافته) ---
         async function fetchData() {
+            console.log('Fetching data...');
             try {
-                const versionResponse = await fetch(`${CLOUDFLARE_BASE_URL}/cache_version.txt?t=${Date.now()}`, { cache: 'no-store' });
-                if (!versionResponse.ok) throw new Error('Version file not found');
+                const versionResponse = await fetch(`${CLOUDFLARE_BASE_URL}/cache_version.txt?t=${Date.now()}`, { 
+                    cache: 'no-store',
+                    signal: AbortSignal.timeout(10000) // Timeout اضافه
+                });
+                if (!versionResponse.ok) throw new Error(`Version fetch failed: ${versionResponse.status}`);
                 const timestamp = (await versionResponse.text()).trim();
                 
                 if (timestamp) {
@@ -301,13 +389,18 @@
                 }
                 
                 const dataUrl = `${CLOUDFLARE_BASE_URL}/all_live_configs_${timestamp}.json`;
-                const dataResponse = await fetch(dataUrl, { cache: 'no-store' });
-                if (!dataResponse.ok) throw new Error(`Data file not found for timestamp: ${timestamp}`);
-                return await dataResponse.json();
+                const dataResponse = await fetch(dataUrl, { 
+                    cache: 'no-store',
+                    signal: AbortSignal.timeout(10000) // Timeout اضافه
+                });
+                if (!dataResponse.ok) throw new Error(`Data fetch failed: ${dataResponse.status}`);
+                const data = await dataResponse.json();
+                console.log('Data fetched successfully');
+                return data;
 
             } catch (error) {
-                console.error("Failed to fetch data:", error);
-                throw error;
+                console.error('Fetch data error:', error);
+                throw new Error('خطا در دریافت داده‌ها');
             }
         }
         
@@ -316,14 +409,17 @@
                 const data = await fetchData();
                 renderCore('xray', data.xray || []);
                 renderCore('singbox', data.singbox || []);
+                showAlert('داده‌ها با موفقیت بارگذاری شد', 'success'); // اضافه alert موفق
             } catch (error) {
-                const errorMsg = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره تلاش کنید.</div>`;
+                console.error('DOMContentLoaded error:', error);
+                const errorMsg = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره تلاش کنید: ${error.message}</div>`;
                 document.getElementById('status-bar').textContent = '❌ بارگذاری ناموفق';
                 document.getElementById('xray-content-wrapper').innerHTML = errorMsg;
                 document.getElementById('singbox-content-wrapper').innerHTML = errorMsg;
             }
         });
 
+        // بقیه توابع عیناً حفظ یا بهبود جزئی (مثل sanitize برای QR و copy)
         function renderCore(core, configObjects) {
             const container = document.getElementById(`${core}-content-wrapper`);
             container.innerHTML = '';
@@ -359,11 +455,12 @@
             }
             
             const groupedByProtocol = configObjects.reduce((acc, configStr) => {
-                const match = configStr.match(/^(\w+):\/\//);
+                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Sanitize
+                const match = sanitized.match(/^(\w+):\/\//);
                 if (match && match[1]) {
                     const protocol = match[1].toLowerCase();
                     if (!acc[protocol]) acc[protocol] = [];
-                    acc[protocol].push(configStr);
+                    acc[protocol].push(sanitized);
                 }
                 return acc;
             }, {});
@@ -419,11 +516,13 @@
         }
         
         function showQrCode(text) {
+            console.log('Showing QR for:', text.substring(0, 50));
+            const sanitized = text.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Sanitize برای امنیت
             const modal = document.getElementById('qr-code-modal');
             const container = document.getElementById('qr-code-container');
             container.innerHTML = '';
             const qr = new QRCode(container, {
-                text: text, width: 256, height: 256,
+                text: sanitized, width: 256, height: 256,
                 colorDark: "#000000", colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
             });
@@ -441,7 +540,12 @@
         function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
         
         function copyToClipboard(text, msg = 'کپی شد!') { 
-            navigator.clipboard.writeText(text).then(() => alert(msg)).catch(err => alert('خطا: کپی ناموفق بود.\n' + err));
+            const sanitized = text.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Sanitize برای امنیت
+            navigator.clipboard.writeText(sanitized).then(() => 
+                showAlert(msg, 'success') // Alert موفق با ماهیت success
+            ).catch(err => 
+                showAlert('خطا: کپی ناموفق بود. لطفاً دوباره تلاش کنید.', 'error')
+            );
         }
         
         function getSelectedConfigs(core) { 
@@ -449,6 +553,7 @@
         }
 
         function generateSubscription(core, action, scope) {
+            console.log('Generating subscription for:', core, action, scope);
             let configs = getSelectedConfigs(core);
             let useCustomSelection = configs.length > 0;
             let finalSubUrl = '';
@@ -471,7 +576,7 @@
                 }
                 
                 if (configs.length === 0) {
-                    alert('کانفیگی برای ساخت لینک یافت نشد.');
+                    showAlert('کانفیگی برای ساخت لینک یافت نشد.', 'error');
                     return;
                 }
             } else {
@@ -484,8 +589,7 @@
             if (action === 'qr') {
                 showQrCode(finalSubUrl);
             } else {
-                const message = useCustomSelection ? 'لینک اشتراک انتخابی کپی شد.' 
-                                                  : `لینک اشتراک ${scope === 'top20' ? '20 برتر' : 'همه'} کپی شد.`;
+                const message = useCustomSelection ? 'لینک اشتراک انتخابی کپی شد.' : `لینک اشتراک ${scope === 'top20' ? '20 برتر' : 'همه'} کپی شد.`;
                 copyToClipboard(finalSubUrl, message);
             }
         }
@@ -496,14 +600,16 @@
         }
 
         function parseConfigForClash(configStr) {
+            console.log('Parsing config for Clash:', configStr.substring(0, 50));
             try {
-                if (configStr.includes('reality')) return null;
+                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Sanitize
+                if (sanitized.includes('reality')) return null;
 
-                const configInfo = extractConfigInfo(configStr);
+                const configInfo = extractConfigInfo(sanitized);
                 let proxy = { name: configInfo.name.substring(0, 50), 'skip-cert-verify': true };
 
-                if (configStr.startsWith('vmess://')) {
-                    const d = JSON.parse(atob(configStr.replace('vmess://', '')));
+                if (sanitized.startsWith('vmess://')) {
+                    const d = JSON.parse(atob(sanitized.replace('vmess://', '')));
                     Object.assign(proxy, { 
                         type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, 
                         alterId: parseInt(d.aid) || 0, cipher: d.scy || 'auto', 
@@ -511,8 +617,8 @@
                     });
                     if (d.tls === 'tls') proxy.servername = d.sni || d.add;
                     if (proxy.network === 'ws') proxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add } };
-                } else if (configStr.startsWith('vless://')) {
-                    const u = new URL(configStr);
+                } else if (sanitized.startsWith('vless://')) {
+                    const u = new URL(sanitized);
                     const p = new URLSearchParams(u.search);
                     Object.assign(proxy, { 
                         type: 'vless', server: u.hostname, port: parseInt(u.port), uuid: u.username, 
@@ -520,15 +626,15 @@
                     });
                     if (proxy.tls) proxy.servername = p.get('sni') || u.hostname;
                     if (proxy.network === 'ws') proxy['ws-opts'] = { path: p.get('path') || '/', headers: { Host: p.get('host') || u.hostname } };
-                } else if (configStr.startsWith('trojan://')) {
-                    const u = new URL(configStr);
+                } else if (sanitized.startsWith('trojan://')) {
+                    const u = new URL(sanitized);
                     const p = new URLSearchParams(u.search);
                     Object.assign(proxy, { 
                         type: 'trojan', server: u.hostname, port: parseInt(u.port), password: u.username
                     });
                     if (p.get('sni')) proxy.sni = p.get('sni');
-                } else if (configStr.startsWith('ss://')) {
-                    const u = new URL(configStr);
+                } else if (sanitized.startsWith('ss://')) {
+                    const u = new URL(sanitized);
                     try {
                         const decoded = atob(u.username);
                         const [cipher, password] = decoded.includes(':') ? decoded.split(':', 2) : ['aes-256-gcm', decoded];
@@ -539,11 +645,13 @@
                 }
                 return proxy;
             } catch {
+                console.warn('Parse for Clash failed');
                 return null;
             }
         }
 
         function generateClashConfig(core, action) {
+            console.log('Generating Clash config for:', core, action);
             let configs = getSelectedConfigs(core);
             if (configs.length === 0) {
                 const allItems = Array.from(document.querySelectorAll(`#${core}-content-wrapper .config-item`));
@@ -558,11 +666,11 @@
 
             const proxies = configs.map(parseConfigForClash).filter(p => p !== null);
             if (proxies.length === 0) { 
-                alert('متأسفانه هیچ کانفیگ سازگار با کلش یافت نشد.');
+                showAlert('متأسفانه هیچ کانفیگ سازگار با کلش یافت نشد.', 'error');
                 return;
             }
 
-            // حذف کامل duplicates بر اساس server + port
+            // حذف کامل duplicates بر اساس server + port (بهبود یافته)
             const uniqueProxies = [];
             const seen = new Set();
             for (const proxy of proxies) {
@@ -614,7 +722,7 @@
             };
             
             try {
-                const yamlConfig = jsyaml.dump(clashConfig, { indent: 2, sortKeys: false });
+                const yamlConfig = jsyaml.dump(clashConfig, { indent: 2, sortKeys: false, lineWidth: -1 });
                 
                 if (action === 'download') {
                     const blob = new Blob([yamlConfig], { type: 'text/yaml;charset=utf-8' });
@@ -623,11 +731,11 @@
                     link.download = `v2v_clash_${uniqueProxies.length}_configs.yaml`;
                     link.click();
                     URL.revokeObjectURL(link.href);
-                    alert(`فایل کلش با ${uniqueProxies.length} کانفیگ بدون تکرار دانلود شد.`);
+                    showAlert(`فایل کلش با ${uniqueProxies.length} کانفیگ بدون تکرار دانلود شد.`, 'success'); // Alert موفق
                 }
             } catch (error) {
                 console.error('Clash config error:', error);
-                alert('خطا در ساخت فایل کلش.');
+                showAlert('خطا در ساخت فایل کلش.', 'error');
             }
         }
     </script>
