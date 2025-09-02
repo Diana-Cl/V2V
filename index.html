@@ -9,7 +9,6 @@
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/SMBCRYP/V2V/main/icon-192.png">
     <link rel="manifest" href="manifest.json">
 
-    <!-- CSS عیناً حفظ شده، فقط کامنت بهبود -->
     <style>
         :root {
             --primary-bg: #121212; --secondary-bg: #1a1a1a; --text-color: #d1d1d1;
@@ -38,13 +37,12 @@
             background-color: var(--logo-green); color: white; border: none; padding: 12px 24px;
             border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em;
             display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s ease;
-            position: relative; /* برای cancel button */
+            position: relative;
         }
         .test-button:hover { background-color: #2E7D32; transform: translateY(-1px); }
         .test-button:disabled { background-color: #555; cursor: not-allowed; transform: none; }
         .loader { width: 16px; height: 16px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* اضافه: Cancel button داخل تست با فرمت جاری */
         .cancel-btn { background: var(--ping-bad); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em; margin-left: 8px; display: none; }
         .test-button.testing .cancel-btn { display: inline-block; }
         .container {
@@ -59,19 +57,18 @@
         #xray-header { background-color: var(--logo-red); }
         #singbox-header { background-color: var(--logo-green); }
         .alert {
-            padding: 20px; font-weight: bold; color: var(--logo-red); /* فرمت حفظ شده */
+            padding: 20px; font-weight: bold; color: var(--logo-red);
             background-color: rgba(211, 47, 47, 0.1); border-left: 4px solid var(--logo-red);
             margin-bottom: 10px;
         }
-        .success-alert { /* اضافه: alert موفق با رنگ سبز موجود */
+        .success-alert {
             color: var(--logo-green); background-color: rgba(56, 142, 60, 0.1);
             border-left: 4px solid var(--logo-green);
         }
-        .progress-bar { /* اضافه: برای نمایش progress تست با رنگ فعلی */
+        .progress-bar {
             width: 100%; height: 4px; background: var(--border-color); margin: 10px 0; border-radius: 2px;
         }
         .progress-fill { background: var(--ping-good); height: 100%; border-radius: 2px; transition: width 0.3s; }
-        /* بقیه CSS عیناً حفظ شده */
         .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
         .action-group-title { margin: 0 0 10px 0; font-size: 1.05em; text-align: right; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
         .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
@@ -130,10 +127,8 @@
             <button class="test-button" id="global-test-button" onclick="runRealPingTest()">
                 <span id="test-button-icon">🎯</span>
                 <span id="test-button-text">تست پینگ واقعی کانفیگ‌ها</span>
-                <!-- اضافه: Cancel button -->
                 <button class="cancel-btn" id="cancel-test-btn" onclick="cancelPingTest(event)">لغو تست</button>
             </button>
-            <!-- اضافه: Progress bar با فرمت موجود -->
             <div class="progress-bar" id="test-progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%;"></div></div>
         </div>
 
@@ -160,7 +155,6 @@
         </div>
     </div>
     
-    <!-- عیناً حفظ شده -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
 
@@ -237,28 +231,28 @@
             console.log(`Testing ping for: ${configStr.substring(0, 50)}...`);
             try {
                 // Validation پیشرفته برای جلوگیری از abuse
-                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, '');
-                if (!sanitized || sanitized.length > 2000) return 'Error'; // Limit length
+                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Limit length
+                if (!sanitized || sanitized.length > 2000) return 'Error';
 
                 const response = await fetch(`${CLOUDFLARE_BASE_URL}/test-config`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ config: sanitized }),
-                    signal: pingTestController ? pingTestController.signal : undefined // برای cancel
+                    signal: pingTestController ? pingTestController.signal : undefined
                 });
                 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const result = await response.json();
                 return result.ping || 'Error';
             } catch (error) {
-                if (error.name === 'AbortError') return 'Cancelled'; // اگر cancel شد
+                if (error.name === 'AbortError') return 'Cancelled';
                 console.warn('Config ping test failed:', error);
                 return 'Error';
             }
         }
 
         async function runRealPingTest() {
-            pingTestController = new AbortController(); // اضافه برای cancel
+            pingTestController = new AbortController();
             const testButton = document.getElementById('global-test-button');
             const buttonIcon = document.getElementById('test-button-icon');
             const buttonText = document.getElementById('test-button-text');
@@ -275,16 +269,14 @@
             let completedTests = 0;
             const totalTests = allConfigItems.length;
 
-            // Rate limiting: چک نمی‌کنیم بیش از اندازه درخواست بفرستم
-            if (Object.keys(requestLog).length > 1000) requestLog = {}; // Clean up
+            if (Object.keys(requestLog).length > 1000) requestLog = {};
 
             try {
-                // تست همزمان با محدودیت و abort
                 const CONCURRENT_TESTS = 10;
                 const configQueue = Array.from(allConfigItems);
                 
                 async function processConfig(configItem) {
-                    if (pingTestController.signal.aborted) return; // Abort اگر cancel شد
+                    if (pingTestController.signal.aborted) return;
                     
                     const configStr = configItem.dataset.config;
                     const pingEl = configItem.querySelector('.ping');
@@ -293,7 +285,6 @@
                     const ping = await testConfigPing(configStr);
                     completedTests++;
                     
-                    // بروزرسانی progress
                     if (!pingTestController.signal.aborted) {
                         progressBar.style.width = `${(completedTests / totalTests) * 100}%`;
                         buttonText.textContent = `تست شده: ${completedTests}/${totalTests}`;
@@ -318,7 +309,6 @@
                 console.error('Ping test aborted or errored:', error);
                 showAlert('خطا در تست پینگ: ' + error.message, 'error');
             } finally {
-                // Cleanup
                 pingTestController = null;
                 testButton.classList.remove('testing');
                 testButton.disabled = false;
@@ -328,16 +318,14 @@
             }
         }
 
-        // اضافه: تابع برای cancel تست
         function cancelPingTest(event) {
-            event.stopPropagation(); // جلوگیری از trigger onclick پدر
+            event.stopPropagation();
             if (pingTestController) {
                 pingTestController.abort();
                 console.log('Ping test cancelled by user');
             }
         }
 
-        // اضافه: تابع کمکی برای batch processing
         async function processBatch(queue, batchSize, processor) {
             for (let i = 0; i < queue.length; i += batchSize) {
                 const batch = queue.slice(i, i + batchSize);
@@ -360,7 +348,6 @@
             });
         }
 
-        // اضافه: تابع کمکی برای نمایش alert با فرمت فعلی
         function showAlert(message, type = 'error') {
             const alertDiv = document.createElement('div');
             alertDiv.className = type === 'success' ? 'success-alert' : 'alert';
@@ -368,7 +355,7 @@
             const statusBar = document.getElementById('status-bar');
             statusBar.innerHTML = '';
             statusBar.appendChild(alertDiv);
-            setTimeout(() => alertDiv.remove(), 5000); // Auto remove
+            setTimeout(() => alertDiv.remove(), 5000);
         }
 
         // --- START: دریافت فایل‌های زمان‌دار (بهبود یافته) ---
@@ -377,30 +364,38 @@
             try {
                 const versionResponse = await fetch(`${CLOUDFLARE_BASE_URL}/cache_version.txt?t=${Date.now()}`, { 
                     cache: 'no-store',
-                    signal: AbortSignal.timeout(10000) // Timeout اضافه
+                    signal: AbortSignal.timeout(10000)
                 });
                 if (!versionResponse.ok) throw new Error(`Version fetch failed: ${versionResponse.status}`);
                 const timestamp = (await versionResponse.text()).trim();
                 
-                if (timestamp) {
-                    const date = new Date(parseInt(timestamp, 10) * 1000);
-                    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Tehran' };
-                    document.getElementById('status-bar').textContent = `آخرین بروزرسانی: ${date.toLocaleString('fa-IR', options)}`;
+                if (!timestamp) {
+                    throw new Error('فایل زمان‌بندی خالی است. احتمالاً فایل‌های کانفیگ به‌روز نیستند.');
                 }
+                
+                const date = new Date(parseInt(timestamp, 10) * 1000);
+                const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Tehran' };
+                document.getElementById('status-bar').textContent = `آخرین بروزرسانی: ${date.toLocaleString('fa-IR', options)}`;
                 
                 const dataUrl = `${CLOUDFLARE_BASE_URL}/all_live_configs_${timestamp}.json`;
                 const dataResponse = await fetch(dataUrl, { 
                     cache: 'no-store',
-                    signal: AbortSignal.timeout(10000) // Timeout اضافه
+                    signal: AbortSignal.timeout(10000)
                 });
+                
                 if (!dataResponse.ok) throw new Error(`Data fetch failed: ${dataResponse.status}`);
                 const data = await dataResponse.json();
+                
+                if (!data || (!data.xray || data.xray.length === 0) && (!data.singbox || data.singbox.length === 0)) {
+                    throw new Error('هیچ کانفیگ سالمی یافت نشد. لطفاً بعداً دوباره تلاش کنید.');
+                }
+                
                 console.log('Data fetched successfully');
                 return data;
 
             } catch (error) {
                 console.error('Fetch data error:', error);
-                throw new Error('خطا در دریافت داده‌ها');
+                throw new Error('خطا در دریافت داده‌ها: ' + error.message);
             }
         }
         
@@ -409,7 +404,7 @@
                 const data = await fetchData();
                 renderCore('xray', data.xray || []);
                 renderCore('singbox', data.singbox || []);
-                showAlert('داده‌ها با موفقیت بارگذاری شد', 'success'); // اضافه alert موفق
+                showAlert('داده‌ها با موفقیت بارگذاری شد', 'success');
             } catch (error) {
                 console.error('DOMContentLoaded error:', error);
                 const errorMsg = `<div class="alert">❌ خطا در بارگذاری فایل. لطفاً بعداً دوباره تلاش کنید: ${error.message}</div>`;
@@ -419,7 +414,6 @@
             }
         });
 
-        // بقیه توابع عیناً حفظ یا بهبود جزئی (مثل sanitize برای QR و copy)
         function renderCore(core, configObjects) {
             const container = document.getElementById(`${core}-content-wrapper`);
             container.innerHTML = '';
@@ -455,7 +449,7 @@
             }
             
             const groupedByProtocol = configObjects.reduce((acc, configStr) => {
-                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Sanitize
+                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, '');
                 const match = sanitized.match(/^(\w+):\/\//);
                 if (match && match[1]) {
                     const protocol = match[1].toLowerCase();
@@ -517,7 +511,7 @@
         
         function showQrCode(text) {
             console.log('Showing QR for:', text.substring(0, 50));
-            const sanitized = text.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Sanitize برای امنیت
+            const sanitized = text.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, '');
             const modal = document.getElementById('qr-code-modal');
             const container = document.getElementById('qr-code-container');
             container.innerHTML = '';
@@ -540,9 +534,9 @@
         function closeModal() { document.getElementById('qr-code-modal').style.display = 'none'; }
         
         function copyToClipboard(text, msg = 'کپی شد!') { 
-            const sanitized = text.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Sanitize برای امنیت
+            const sanitized = text.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, '');
             navigator.clipboard.writeText(sanitized).then(() => 
-                showAlert(msg, 'success') // Alert موفق با ماهیت success
+                showAlert(msg, 'success')
             ).catch(err => 
                 showAlert('خطا: کپی ناموفق بود. لطفاً دوباره تلاش کنید.', 'error')
             );
@@ -568,7 +562,7 @@
                                                      : allItems.slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
                     const uuidKey = `${core}_top20`;
                     finalSubUrl = `${CLOUDFLARE_BASE_URL}/sub/${SUBSCRIPTION_UUIDS[uuidKey]}`;
-                } else { // scope === 'all'
+                } else {
                     configs = testedItems.length > 0 ? testedItems.map(item => item.dataset.config) 
                                                      : allItems.map(item => item.dataset.config);
                     const uuidKey = `${core}_all`;
@@ -580,7 +574,6 @@
                     return;
                 }
             } else {
-                // اگر کاربر دستی انتخاب کرده، لینک data استفاده کن
                 const subContent = configs.join('\n');
                 const encodedSub = btoa(unescape(encodeURIComponent(subContent)));
                 finalSubUrl = `data:text/plain;base64,${encodedSub}`;
@@ -602,7 +595,7 @@
         function parseConfigForClash(configStr) {
             console.log('Parsing config for Clash:', configStr.substring(0, 50));
             try {
-                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Sanitize
+                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, '');
                 if (sanitized.includes('reality')) return null;
 
                 const configInfo = extractConfigInfo(sanitized);
@@ -670,14 +663,12 @@
                 return;
             }
 
-            // حذف کامل duplicates بر اساس server + port (بهبود یافته)
             const uniqueProxies = [];
             const seen = new Set();
             for (const proxy of proxies) {
                 const key = `${proxy.server}:${proxy.port}`;
                 if (!seen.has(key)) {
                     seen.add(key);
-                    // اطمینان از منحصر به فرد بودن نام
                     let finalName = proxy.name;
                     let counter = 1;
                     while (uniqueProxies.some(p => p.name === finalName)) {
@@ -731,7 +722,7 @@
                     link.download = `v2v_clash_${uniqueProxies.length}_configs.yaml`;
                     link.click();
                     URL.revokeObjectURL(link.href);
-                    showAlert(`فایل کلش با ${uniqueProxies.length} کانفیگ بدون تکرار دانلود شد.`, 'success'); // Alert موفق
+                    showAlert(`فایل کلش با ${uniqueProxies.length} کانفیگ بدون تکرار دانلود شد.`, 'success');
                 }
             } catch (error) {
                 console.error('Clash config error:', error);
@@ -741,3 +732,4 @@
     </script>
 </body>
 </html>
+درسته، می‌خواستم ببینم اگر سایت کار نمیکنه، مشکل از فرانت اند نیست؟
