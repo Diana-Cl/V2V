@@ -13,10 +13,10 @@ const MAX_REQUESTS_PER_INTERVAL = 100;
 
 // UUID mapping برای subscription paths - باید دقیقا با scraper همخوان باشد
 const SUBSCRIPTION_UUIDS = {
-    'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7': 'xray_top20',
-    'f7e8d9c0-b1a2-4567-8901-234567890abc': 'xray_all',
-    '9876543a-bcde-4f01-2345-6789abcdef01': 'singbox_top20',
-    '12345678-9abc-4def-0123-456789abcdef': 'singbox_all'
+    'xray_top20': 'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7',
+    'xray_all': 'f7e8d9c0-b1a2-4567-8901-234567890abc',
+    'singbox_top20': '9876543a-bcde-4f01-2345-6789abcdef01',
+    'singbox_all': '12345678-9abc-4def-0123-456789abcdef'
 };
 
 // Rate limiting storage - در production از KV استفاده کنید
@@ -439,8 +439,126 @@ async function serveFromGitHub(requestedPath, customHeaders = {}, ctx) {
     }
 }
 
-// Handler اصلی Worker
-export default {
+// Handler برای تست کانفیگ
+async function handleConfigTest(request, ip) {
+    try {
+        const body = await request.json();
+        const configStr = body?.config;
+        
+        if (!configStr) {
+            return createErrorResponse('No config provided in request body', 400);
+        }
+        
+        console.log(`Config test request from ${ip}: ${configStr.substring(0, 50)}...`);
+        
+        const result = await testConfigPing(configStr);
+        
+        // اضافه کردن metadata به response
+        const responseData = {
+            ...result,
+            timestamp: new Date().toISOString(),
+            worker_version: '3.0.0'
+        };
+        
+        return createResponse(JSON.stringify(responseData), {
+            headers: { 'Cache-Control': 'no-store' }
+        });
+        
+    } catch (error) {
+        console.error(`Config test handler error: ${error.message}`);
+        return createErrorResponse(`Request processing failed: ${error.message}`, 400);
+    }
+}
+
+// Handler برای subscription endpoints
+async function handleSubscription(pathname, ctx) {
+    const uuid = pathname.replace('/sub/', '');
+    
+    if (!SUBSCRIPTION_UUIDS[uuid]) {
+        console.warn(`Invalid subscription UUID requested: ${uuid}`);
+        return createErrorResponse('Subscription not found', 404);
+    }
+    
+    const subscriptionType = SUBSCRIPTION_UUIDS[uuid];
+    const subFileName = `sub_${uuid}.txt`;
+    const originPath = `/configs/${subFileName}`;
+    
+    console.log(`Serving subscription: ${subscriptionType} (${subFileName})`);
+    
+    return await serveFromGitHub(originPath, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${subFileName}"`,
+        'X-Subscription-Type': subscriptionType
+    }, ctx);
+}
+
+// Handler برای فایل‌های استاتیک
+async function handleStaticFiles(pathname, ctx) {
+    // Root یا index.html
+    if (pathname === '/' || pathname === '/index.html') {
+        return await serveFromGitHub('/index.html', {
+            'Content-Type': 'text/html; charset=utf-8'
+        }, ctx);
+    }
+    
+    // Manifest.json برای PWA
+    if (pathname === '/manifest.json') {
+        return await serveFromGitHub('/manifest.json', {
+            'Content-Type': 'application/manifest+json; charset=utf-8'
+        }, ctx);
+    }
+    
+    // آیکون‌های PWA
+    if (pathname.startsWith('/icon-') && pathname.endsWith('.png')) {
+        return await serveFromGitHub(`${pathname}`, {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=86400' // یک روز برای تصاویر
+        }, ctx);
+    }
+    
+    // فایل‌های CSS
+    if (pathname.endsWith('.css')) {
+        return await serveFromGitHub(`${pathname}`, {
+            'Content-Type': 'text/css; charset=utf-8'
+        }, ctx);
+    }
+    
+    // فایل‌های JavaScript
+    if (pathname.endsWith('.js')) {
+        return await serveFromGitHub(`${pathname}`, {
+            'Content-Type': 'application/javascript; charset=utf-8'
+        }, ctx);
+    }
+    
+    // سایر فایل‌های استاتیک
+    if (pathname.includes('.')) {
+        const extension = pathname.split('.').pop().toLowerCase();
+        const mimeTypes = {
+            'txt': 'text/plain; charset=utf-8',
+            'json': 'application/json; charset=utf-8',
+            'yaml': 'application/x-yaml; charset=utf-8',
+            'yml': 'application/x-yaml; charset=utf-8',
+            'xml': 'application/xml; charset=utf-8',
+            'ico': 'image/x-icon',
+            'svg': 'image/svg+xml',
+            'woff': 'font/woff',
+            'woff2': 'font/woff2',
+            'ttf': 'font/ttf',
+            'eot': 'application/vnd.ms-fontobject'
+        };
+        
+        const contentType = mimeTypes[extension] || 'application/octet-stream';
+        
+        return await serveFromGitHub(`${pathname}`, {
+            'Content-Type': contentType
+        }, ctx);
+    }
+    
+    // اگر هیچ match نشد، سعی کن از ریشه serve کن
+    return await serveFromGitHub(`${pathname}`, {}, ctx);
+}
+
+const mainHandler = {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
         const pathname = url.pathname;
@@ -539,4 +657,4 @@ export default {
     }
 };
 
-هنوز مشکل داره
+export default mainHandler;
