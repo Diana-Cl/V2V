@@ -140,12 +140,38 @@ export default {
         let pathname = url.pathname;
         const cache = caches.default;
 
-        // مسیرها رو به /configs/ ریدایرکت کن
-        if (pathname.startsWith('/all_live_configs_') || pathname === '/cache_version.txt') {
-            pathname = `/configs${pathname}`;
+        // منطق برای سرو کردن فایل‌ها از گیت‌هاب (بهبود یافته)
+        async function serveFromGitHub(requestedPath) {
+            const githubUrl = `${PRIMARY_ORIGIN}${requestedPath}`;
+            const cacheKey = new Request(githubUrl, request);
+            
+            let response = await cache.match(cacheKey);
+            if (response) {
+                const newHeaders = new Headers(response.headers);
+                newHeaders.set('Access-Control-Allow-Origin', '*');
+                return new Response(response.body, { status: response.status, headers: newHeaders });
+            }
+
+            try {
+                response = await fetch(githubUrl, { cache: 'no-store' });
+                if (response.ok) {
+                    const newHeaders = new Headers(response.headers);
+                    newHeaders.set('Access-Control-Allow-Origin', '*');
+                    newHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
+                    const resClone = new Response(response.clone().body, { status: response.status, headers: newHeaders });
+                    ctx.waitUntil(cache.put(cacheKey, resClone));
+                    return resClone;
+                } else {
+                    console.error(`Fetch failed: ${response.status} for ${requestedPath}`);
+                    return new Response(`Not Found: ${requestedPath}`, { status: 404 });
+                }
+            } catch (error) {
+                console.error(`Fetch error for ${requestedPath}: ${error.message}`);
+                return new Response(`Error fetching: ${requestedPath}`, { status: 500 });
+            }
         }
 
-        // اندپوینت تست پینگ واقعی کانفیگ - بهبود یافته
+        // اندپوینت تست پینگ واقعی کانفیگ
         if (pathname === '/test-config' && request.method === 'POST') {
             try {
                 const body = await request.json();
@@ -154,10 +180,7 @@ export default {
                 if (!configStr) {
                     return new Response(JSON.stringify({ ping: 9999, error: 'No config provided' }), {
                         status: 400,
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*' 
-                        }
+                        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
                     });
                 }
                 
@@ -165,107 +188,46 @@ export default {
                 
                 return new Response(JSON.stringify(result), {
                     status: 200,
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*',
-                        'Cache-Control': 'no-store'
-                    }
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
                 });
                 
             } catch (error) {
                 console.error(`Test-config error: ${error.message}`);
                 return new Response(JSON.stringify({ ping: 9999, error: 'Processing failed' }), {
                     status: 400,
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*' 
-                    }
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
                 });
             }
         }
 
-        // اندپوینت subscription با UUID - بهبود شده
+        // اندپوینت subscription با UUID
         if (pathname.startsWith('/sub/')) {
             const uuid = pathname.replace('/sub/', '');
-            
             if (SUBSCRIPTION_UUIDS[uuid]) {
                 const subFileName = `sub_${uuid}.txt`;
                 const originPath = `/configs/${subFileName}`;
-                const cacheKey = new Request(`${url.origin}${originPath}`, request);
-                let response = await cache.match(cacheKey);
-                
-                if (!response) {
-                    try {
-                        response = await fetch(`${PRIMARY_ORIGIN}${originPath}`);
-                        if (response.ok) {
-                            const newHeaders = new Headers(response.headers);
-                            newHeaders.set('Access-Control-Allow-Origin', '*');
-                            newHeaders.set('Content-Type', 'text/plain; charset=utf-8');
-                            newHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
-                            const resClone = new Response(response.clone().body, { 
-                                status: response.status, 
-                                headers: newHeaders 
-                            });
-                            ctx.waitUntil(cache.put(cacheKey, resClone));
-                            return resClone;
-                        } else {
-                            console.error(`Fetch failed: ${response.status} for ${originPath}`);
-                        }
-                    } catch (fetchError) {
-                        console.error(`Subscription fetch error: ${fetchError.message}`);
-                    }
-                }
-                
-                if (response) {
-                    const newHeaders = new Headers(response.headers);
-                    newHeaders.set('Access-Control-Allow-Origin', '*');
-                    return new Response(response.body, { status: response.status, headers: newHeaders });
-                }
+                return serveFromGitHub(originPath);
             }
-            
-            console.warn(`Subscription UUID not found: ${uuid}`);
-            return new Response('Subscription not found', { 
-                status: 404, 
-                headers: { 'Access-Control-Allow-Origin': '*' } 
-            });
+            return new Response('Subscription not found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
-        // اندپوینت تست پینگ شبکه - حفظ شده
+        // اندپوینت‌های اصلی برای فایل‌های تولید شده
+        if (pathname.startsWith('/all_live_configs_') || pathname === '/cache_version.txt' || pathname.startsWith('/clash_subscription.yaml')) {
+            const originPath = `/configs${pathname}`;
+            return serveFromGitHub(originPath);
+        }
+
+        // اندپوینت تست پینگ شبکه
         if (pathname === '/ping') {
-            return new Response('OK', {
-                status: 200,
-                headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }
-            });
+            return new Response('OK', { status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
         }
         
-        // اندپوینت تست سرعت دانلود - بهبود شده برای خطاها
+        // اندپوینت تست سرعت دانلود
         if (pathname.startsWith(DOWNLOAD_TEST_FILE)) {
-             const cacheKey = new Request(url.toString(), request);
-             let response = await cache.match(cacheKey);
-             if (response) {
-                 const newHeaders = new Headers(response.headers);
-                 newHeaders.set('Access-Control-Allow-Origin', '*');
-                 return new Response(response.body, { status: response.status, headers: newHeaders });
-             }
-
-             try {
-                 response = await fetch(`${PRIMARY_ORIGIN}${DOWNLOAD_TEST_FILE}`);
-                 if (response.ok) {
-                     const newHeaders = new Headers(response.headers);
-                     newHeaders.set('Access-Control-Allow-Origin', '*');
-                     const resClone = new Response(response.clone().body, { status: response.status, headers: newHeaders });
-                     ctx.waitUntil(cache.put(cacheKey, resClone));
-                     return resClone;
-                 } else {
-                     console.error(`Download test fetch failed: ${response.status}`);
-                 }
-             } catch (error) {
-                 console.error(`Download test error: ${error.message}`);
-             }
-             return response || new Response('Download test failed', { status: 500 });
+            return serveFromGitHub(DOWNLOAD_TEST_FILE);
         }
 
-        // CORS preflight - حفظ شده
+        // CORS preflight
         if (request.method === 'OPTIONS') {
             return new Response(null, {
                 status: 200,
@@ -276,33 +238,8 @@ export default {
                 }
             });
         }
-
-        // منطق اصلی برای فایل‌ها - بهبود شده برای خطاها
-        try {
-            const mainCacheKey = new Request(`${PRIMARY_ORIGIN}${pathname}`, request);
-            let mainResponse = await cache.match(mainCacheKey);
-            if (mainResponse) {
-                const newHeaders = new Headers(mainResponse.headers);
-                newHeaders.set('Access-Control-Allow-Origin', '*');
-                return new Response(mainResponse.body, { status: mainResponse.status, headers: newHeaders });
-            }
-            
-            mainResponse = await fetch(`${PRIMARY_ORIGIN}${pathname}`);
-            
-            if (mainResponse && mainResponse.ok) {
-                const newHeaders = new Headers(mainResponse.headers);
-                newHeaders.set('Access-Control-Allow-Origin', '*');
-                newHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
-                const resClone = new Response(mainResponse.clone().body, { status: mainResponse.status, headers: newHeaders });
-                ctx.waitUntil(cache.put(mainCacheKey, resClone));
-                return resClone;
-            } else {
-                console.error(`Main fetch failed: ${mainResponse?.status || 'No response'}`);
-            }
-        } catch (error) {
-            console.error(`Main request error: ${error.message}`);
-        }
-
-        return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+        
+        // درخواست‌های دیگر به GitHub منتقل می‌شوند (برای index.html و assetها)
+        return serveFromGitHub(pathname);
     }
 };
