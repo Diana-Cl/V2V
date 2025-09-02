@@ -13,10 +13,10 @@ const MAX_REQUESTS_PER_INTERVAL = 100;
 
 // UUID mapping برای subscription paths - باید دقیقا با scraper همخوان باشد
 const SUBSCRIPTION_UUIDS = {
-    'xray_top20': 'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7',
-    'xray_all': 'f7e8d9c0-b1a2-4567-8901-234567890abc',
-    'singbox_top20': '9876543a-bcde-4f01-2345-6789abcdef01',
-    'singbox_all': '12345678-9abc-4def-0123-456789abcdef'
+    'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7': 'xray_top20',
+    'f7e8d9c0-b1a2-4567-8901-234567890abc': 'xray_all',
+    '9876543a-bcde-4f01-2345-6789abcdef01': 'singbox_top20',
+    '12345678-9abc-4def-0123-456789abcdef': 'singbox_all'
 };
 
 // Rate limiting storage - در production از KV استفاده کنید
@@ -572,4 +572,103 @@ async function handleStaticFiles(pathname, ctx) {
     return await serveFromGitHub(`${pathname}`, {}, ctx);
 }
 
-این فایل.بدون دستکاری اصلاحش کن
+const mainHandler = {
+    async fetch(request, env, ctx) {
+        const url = new URL(request.url);
+        const pathname = url.pathname;
+        
+        // استخراج IP address
+        const ip = request.headers.get('CF-Connecting-IP') ||
+                   request.headers.get('X-Forwarded-For') ||
+                   request.headers.get('X-Real-IP') ||
+                   'unknown';
+        
+        // Log request
+        logRequest(request, ip);
+        
+        // CORS preflight handling
+        if (request.method === 'OPTIONS') {
+            return createResponse(null, {
+                status: 200,
+                headers: { 'Content-Length': '0' }
+            });
+        }
+        
+        // Rate limiting check
+        if (checkRateLimit(ip)) {
+            console.warn(`Rate limit exceeded for IP: ${ip}`);
+            return createErrorResponse('Rate limit exceeded. Please try again later.', 429);
+        }
+        
+        try {
+            // اندپوینت تست پینگ کانفیگ
+            if (pathname === '/test-config' && request.method === 'POST') {
+                return await handleConfigTest(request, ip);
+            }
+            
+            // اندپوینت subscription با UUID
+            if (pathname.startsWith('/sub/')) {
+                return await handleSubscription(pathname, ctx);
+            }
+            
+            // اندپوینت‌های فایل‌های داده
+            if (pathname.startsWith('/all_live_configs_')) {
+                return await serveFromGitHub(`/configs${pathname}`, {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Content-Disposition': `attachment; filename="${pathname.substring(1)}"`
+                }, ctx);
+            }
+            
+            if (pathname === '/cache_version.txt') {
+                return await serveFromGitHub('/configs/cache_version.txt', {
+                    'Content-Type': 'text/plain; charset=utf-8'
+                }, ctx);
+            }
+            
+            if (pathname === '/clash_subscription.yaml') {
+                return await serveFromGitHub('/configs/clash_subscription.yaml', {
+                    'Content-Type': 'application/x-yaml; charset=utf-8',
+                    'Content-Disposition': 'attachment; filename="clash_subscription.yaml"'
+                }, ctx);
+            }
+            
+            // اندپوینت تست شبکه
+            if (pathname === '/ping') {
+                return createResponse('OK', {
+                    headers: { 
+                        'Cache-Control': 'no-store',
+                        'Content-Type': 'text/plain'
+                    }
+                });
+            }
+            
+            // اندپوینت تست سرعت دانلود
+            if (pathname === '/dl-test.bin') {
+                return await serveFromGitHub('/configs/dl-test.bin', {
+                    'Content-Type': 'application/octet-stream',
+                    'Content-Disposition': 'attachment; filename="dl-test.bin"'
+                }, ctx);
+            }
+            
+            // اندپوینت health check
+            if (pathname === '/health') {
+                return createResponse(JSON.stringify({
+                    status: 'healthy',
+                    version: '3.0.0',
+                    timestamp: new Date().toISOString(),
+                    worker: 'V2V-Cloudflare',
+                    rate_limit_entries: rateLimitMap.size
+                }));
+            }
+            
+            // سرو فایل‌های استاتیک
+            return await handleStaticFiles(pathname, ctx);
+            
+        } catch (error) {
+            console.error(`Worker error for ${pathname}: ${error.message}`);
+            return createErrorResponse(`Internal server error: ${error.message}`, 500);
+        }
+    }
+};
+
+export default mainHandler;
