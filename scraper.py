@@ -48,12 +48,12 @@ class Config:
         'v2ray subscription', 'vless subscription', 'proxy subscription'
     ]
     MAX_CONFIGS_TO_TEST = 3000
-    MAX_PING_THRESHOLD = 5000  # این مقدار به 5000 تغییر یافت
+    MAX_PING_THRESHOLD = 8000
     TARGET_CONFIGS_PER_CORE = 500
     REQUEST_TIMEOUT = 10
     TCP_TEST_TIMEOUT = 8
     MAX_NAME_LENGTH = 40
-    MAX_RAW_CONFIGS = 5000  # اضافه: حد نصاب برای جلوگیری از memory overload
+    MAX_RAW_CONFIGS = 5000
     PROTOCOL_QUOTAS = {'vless': 0.35, 'vmess': 0.35, 'trojan': 0.15, 'ss': 0.15}
 
 # اضافه کردن GITHUB_PAT به headers اگر موجود باشد
@@ -73,7 +73,7 @@ def decode_padded_b64(encoded_str: str) -> str:
     try:
         return base64.b64decode(padded_str).decode('utf-8')
     except Exception:
-        for encoding in ['latin1', 'ascii', 'utf-16', 'cp1252']:  # اضافه: encodings بیشتر
+        for encoding in ['latin1', 'ascii', 'utf-16', 'cp1252']:
             try:
                 return base64.b64decode(padded_str).decode(encoding)
             except Exception:
@@ -90,7 +90,7 @@ def is_valid_config_format(config_str: str) -> bool:
             parsed.hostname and
             len(config_str) > 20 and
             '://' in config_str and
-            not any(char in config_str for char in ['<', '>', '&'])  # اضافه: چک basic corruption
+            not any(char in config_str for char in ['<', '>', '&'])
         )
     except Exception:
         return False
@@ -129,7 +129,7 @@ def parse_subscription_content(content: str) -> set:
     content_variants = [original_content]
     
     # ۱. تلاش برای decode Base64 پیشرفته (شامل scrambled)
-    for encoding_attempt in [original_content, original_content.replace('\n', ''), original_content.replace(' ', ''), original_content[::-1]]:  # اضافه: reverse برای scrambled
+    for encoding_attempt in [original_content, original_content.replace('\n', ''), original_content.replace(' ', ''), original_content[::-1]]:
         try:
             decoded = decode_padded_b64(encoding_attempt)
             if decoded and len(decoded) > 10 and decoded != encoding_attempt:
@@ -148,7 +148,7 @@ def parse_subscription_content(content: str) -> set:
                     content_variants.append('\n'.join(str(item) for item in value))
                 elif isinstance(value, str) and '://' in value:
                     content_variants.append(value)
-                elif isinstance(value, dict):  # اضافه: handling nested dict
+                elif isinstance(value, dict):
                     for sub_key, sub_value in value.items():
                         if isinstance(sub_value, str) and '://' in sub_value:
                             content_variants.append(sub_value)
@@ -200,7 +200,7 @@ def parse_subscription_content(content: str) -> set:
         if not variant:
             continue
             
-        pattern = r'(' + '|'.join(re.escape(p) for p in Config.VALID_PREFIXES) + r')[^\s]*[^,\.;]'  # بهبود regex
+        pattern = r'(' + '|'.join(re.escape(p) for p in Config.VALID_PREFIXES) + r')[^\s]*[^,\.;]'
         matches = re.findall(pattern, str(variant), re.MULTILINE | re.IGNORECASE)
         
         for match in matches:
@@ -219,7 +219,7 @@ def parse_subscription_content(content: str) -> set:
 def fetch_and_parse_url(source: dict) -> set:
     """بهبود: exception handling کامل‌تر با logging و SSL checks"""
     try:
-        response = requests.get(source['url'], timeout=Config.REQUEST_TIMEOUT, headers=Config.HEADERS, verify=True)  # اضافه verify
+        response = requests.get(source['url'], timeout=Config.REQUEST_TIMEOUT, headers=Config.HEADERS, verify=True)
         response.raise_for_status()
         logging.info(f"Successfully fetched from {source['url']}")
         return parse_subscription_content(response.text)
@@ -262,12 +262,12 @@ def discover_dynamic_sources() -> list:
         return []
     
     freshness_threshold = datetime.now(timezone.utc) - timedelta(hours=Config.GITHUB_FRESHNESS_HOURS)
-    dynamic_sources = set()  # تغییر به set برای جلوگیری duplicate
-    backoff_time = 1  # برای rate limiting
+    dynamic_sources = set()
+    backoff_time = 1
     
     for query in Config.GITHUB_SEARCH_QUERIES:
         try:
-            repos = g.search_repositories(query=f'{query} lang:yaml OR lang:json', sort='updated', order='desc')  # بهبود query
+            repos = g.search_repositories(query=f'{query} lang:yaml OR lang:json', sort='updated', order='desc')
             for repo in repos:
                 if len(dynamic_sources) >= Config.GITHUB_SEARCH_LIMIT or repo.updated_at < freshness_threshold:
                     break
@@ -316,7 +316,7 @@ def test_config_advanced(config_str: str) -> dict | None:
                 start_time = time.monotonic()
                 if is_tls:
                     context = ssl.create_default_context()
-                    context.check_hostname = False  # اضافی برای configهای خاص
+                    context.check_hostname = False
                     context.verify_mode = ssl.CERT_NONE
                     with context.wrap_socket(sock, server_hostname=sni) as ssock:
                         ssock.connect(sockaddr)
@@ -338,38 +338,235 @@ def test_config_advanced(config_str: str) -> dict | None:
         logging.debug(f"Error in advanced test for {config_str[:30]}...: {e}")
     return None
 
-# =================================================================================
-# === باقی کد (Clash, Sub, Main) ===
-# =================================================================================
-
-# توابع create_clash_yaml, create_subscription_files، و main() تقریبا بدون تغییر ماندند – فقط logging اضافه شدند و اطمینان از استثنا handling
-# (برای کوتاه بودن، اگر بخوای کل جزئیات، بگو کامنت کن)
-
-def create_clash_yaml(configs, filename):
-    # اضافه logging
-    logging.info(f"Generating Clash YAML with {len(configs)} configs")
-    # همان کد اصلی، با try-except بهتر
-    try:
-        # کد اصلی اینجا قرار می‌گیره
-        pass
-    except Exception as e:
-        logging.error(f"Clash YAML generation failed: {e}")
-
-def create_subscription_files(final_xray, final_singbox):
-    # اضافه logging
-    logging.info(f"Generating subscription files: Xray {len(final_xray)}, Singbox {len(final_singbox)}")
-    # کد اصلی
-
 def main():
     start_time = time.time()
     logging.info("Starting V2V scraper script")
+    
+    # ۱. دریافت تمام منابع از فایل static و جستجوی dynamic
+    sources = get_static_sources()
+    sources.extend(discover_dynamic_sources())
+    logging.info(f"Found {len(sources)} unique sources.")
+    
+    all_configs_from_sources = set()
+    for source in sources:
+        configs = fetch_and_parse_url(source)
+        logging.info(f"Fetched {len(configs)} configs from {source['url']}")
+        all_configs_from_sources.update(configs)
+        if len(all_configs_from_sources) > Config.MAX_RAW_CONFIGS:
+            logging.warning(f"Exceeding MAX_RAW_CONFIGS limit. Stopping at {len(all_configs_from_sources)}.")
+            break
+            
+    logging.info(f"Total raw configs: {len(all_configs_from_sources)}")
+
+    # ۲. تست و فیلتر کردن کانفیگ‌ها به صورت parallel
+    tested_configs = []
+    if all_configs_from_sources:
+        with ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
+            future_to_config = {executor.submit(test_config_advanced, config): config for config in all_configs_from_sources}
+            for future in future_to_config:
+                result = future.result()
+                if result:
+                    tested_configs.append(result)
+                    
+    logging.info(f"Total live configs: {len(tested_configs)}")
+    
+    # ۳. تقسیم‌بندی کانفیگ‌های سالم بر اساس هسته
+    xray_configs_raw = []
+    singbox_configs_raw = []
+    for config in tested_configs:
+        config_str = config['config_str']
+        
+        # تعیین هسته بر اساس پروتکل
+        if any(config_str.startswith(p) for p in ['vless://', 'vmess://', 'trojan://']):
+            xray_configs_raw.append(config_str)
+            singbox_configs_raw.append(config_str)
+        elif any(config_str.startswith(p) for p in ['ss://', 'hysteria2://', 'hy2://', 'tuic://']):
+            singbox_configs_raw.append(config_str)
+            
+    # ۴. اعمال quotas و انتخاب بهترین‌ها
+    xray_configs = select_best_configs(xray_configs_raw)
+    singbox_configs = select_best_configs(singbox_configs_raw)
+
+    logging.info(f"Final Xray configs: {len(xray_configs)}")
+    logging.info(f"Final Singbox configs: {len(singbox_configs)}")
+
+    # ۵. ایجاد فایل‌های نهایی
+    os.makedirs(Config.OUTPUT_DIR, exist_ok=True)
+    
+    timestamp = str(int(datetime.now().timestamp()))
+    
+    with open(os.path.join(Config.OUTPUT_DIR, f"all_live_configs_{timestamp}.json"), 'w') as f:
+        json.dump({"xray": xray_configs, "singbox": singbox_configs}, f, indent=2)
+    logging.info(f"Generated all_live_configs_{timestamp}.json")
+    
+    with open(os.path.join(Config.OUTPUT_DIR, Config.CACHE_VERSION_FILE), 'w') as f:
+        f.write(timestamp)
+    logging.info("Generated cache_version.txt")
+    
+    # ایجاد فایل‌های sub با UUID
+    create_subscription_files(xray_configs, singbox_configs)
+    
+    # ایجاد فایل clash subscription
+    clash_configs = [parse_config_for_clash(c) for c in xray_configs]
+    clash_configs = [c for c in clash_configs if c]
+    create_clash_yaml(clash_configs, os.path.join(Config.OUTPUT_DIR, Config.OUTPUT_CLASH_FILE_NAME))
+    
+    elapsed_time = time.time() - start_time
+    logging.info(f"Script completed successfully in {elapsed_time:.2f} seconds")
+
+def select_best_configs(configs):
+    """انتخاب کانفیگ‌های برتر با توجه به quotas"""
+    protocol_counts = defaultdict(int)
+    final_configs = []
+    
+    # Group configs by protocol
+    grouped_configs = defaultdict(list)
+    for config_str in configs:
+        protocol = urlparse(config_str).scheme.lower()
+        if protocol in Config.PROTOCOL_QUOTAS:
+            grouped_configs[protocol].append(config_str)
+        else:
+            # Add other protocols without quota
+            final_configs.append(config_str)
+            
+    # Select from each group based on quota
+    total_configs = len(configs)
+    if total_configs > 0:
+        for protocol, quota in Config.PROTOCOL_QUOTAS.items():
+            limit = int(total_configs * quota)
+            final_configs.extend(grouped_configs[protocol][:limit])
+            
+    # Fallback to random if not enough selected
+    if len(final_configs) < Config.TARGET_CONFIGS_PER_CORE:
+        remaining = list(set(configs) - set(final_configs))
+        final_configs.extend(remaining[:Config.TARGET_CONFIGS_PER_CORE - len(final_configs)])
+        
+    return final_configs[:Config.TARGET_CONFIGS_PER_CORE]
+
+def create_clash_yaml(configs, filename):
+    """ایجاد فایل YAML برای Clash Meta"""
+    logging.info(f"Generating Clash YAML with {len(configs)} configs")
+
+    unique_proxies = []
+    seen = set()
+    for proxy in configs:
+        key = f"{proxy['server']}:{proxy['port']}"
+        if key not in seen:
+            seen.add(key)
+            final_name = proxy['name']
+            counter = 1
+            while any(p['name'] == final_name for p in unique_proxies):
+                final_name = f"{proxy['name'].split('_')[0]}_{counter}"
+                counter += 1
+            proxy['name'] = final_name
+            unique_proxies.append(proxy)
+    
+    clash_config = {
+        'port': 7890,
+        'socks-port': 7891,
+        'allow-lan': True,
+        'mode': 'rule',
+        'log-level': 'info',
+        'external-controller': '127.0.0.1:9090',
+        'proxies': unique_proxies,
+        'proxy-groups': [
+            {
+                'name': 'PROXY',
+                'type': 'select',
+                'proxies': ['AUTO'] + [p['name'] for p in unique_proxies]
+            },
+            {
+                'name': 'AUTO',
+                'type': 'url-test',
+                'proxies': [p['name'] for p in unique_proxies],
+                'url': 'http://www.gstatic.com/generate_204',
+                'interval': 300
+            }
+        ],
+        'rules': [
+            'DOMAIN-SUFFIX,local,DIRECT',
+            'IP-CIDR,127.0.0.0/8,DIRECT',
+            'IP-CIDR,172.16.0.0/12,DIRECT', 
+            'IP-CIDR,192.168.0.0/16,DIRECT',
+            'IP-CIDR,10.0.0.0/8,DIRECT',
+            'MATCH,PROXY'
+        ]
+    }
+    
     try:
-        # کد اصلی با catch کلی برای خطاها
-        elapsed_time = time.time() - start_time
-        logging.info(f"Script completed successfully in {elapsed_time:.2f} seconds")
+        with open(filename, 'w', encoding='utf-8') as f:
+            yaml.dump(clash_config, f, indent=2, sort_keys=False, allow_unicode=True)
+        logging.info(f"Clash YAML file generated: {filename}")
     except Exception as e:
-        logging.critical(f"Script failed with error: {e}")
-        raise
+        logging.error(f"Failed to generate Clash YAML: {e}")
+
+def parse_config_for_clash(config_str: str):
+    """تجزیه یک کانفیگ برای تبدیل به فرمت Clash"""
+    try:
+        if 'reality' in config_str:
+            return None
+        
+        url = urlparse(config_str)
+        params = dict(parse_qsl(url.query))
+        
+        proxy = {'name': unquote(config_str.split('#')[-1])[:Config.MAX_NAME_LENGTH-3] if '#' in config_str else url.hostname[:Config.MAX_NAME_LENGTH-3], 'skip-cert-verify': True}
+        
+        if url.scheme == 'vmess':
+            d = json.loads(base64.b64decode(url.netloc + '==').decode('utf-8'))
+            proxy.update({
+                'type': 'vmess', 'server': d['add'], 'port': int(d['port']), 'uuid': d['id'],
+                'alterId': int(d.get('aid', 0)), 'cipher': d.get('scy', 'auto'),
+                'tls': d.get('tls') == 'tls', 'network': d.get('net', 'tcp')
+            })
+            if proxy['tls']: proxy['servername'] = d.get('sni', proxy['server'])
+            if proxy['network'] == 'ws': proxy['ws-opts'] = {'path': d.get('path', '/'), 'headers': {'Host': d.get('host', proxy['server'])}}
+            
+        elif url.scheme == 'vless':
+            proxy.update({
+                'type': 'vless', 'server': url.hostname, 'port': int(url.port), 'uuid': url.username,
+                'tls': params.get('security') == 'tls', 'network': params.get('type', 'tcp')
+            })
+            if proxy['tls']: proxy['servername'] = params.get('sni', url.hostname)
+            if proxy['network'] == 'ws': proxy['ws-opts'] = {'path': params.get('path', '/'), 'headers': {'Host': params.get('host', url.hostname)}}
+
+        elif url.scheme == 'trojan':
+            proxy.update({
+                'type': 'trojan', 'server': url.hostname, 'port': int(url.port), 'password': url.username
+            })
+            if params.get('sni'): proxy['sni'] = params.get('sni')
+
+        elif url.scheme == 'ss':
+            try:
+                decoded = base64.b64decode(url.username + '==').decode('utf-8')
+                [cipher, password] = decoded.split(':', 1)
+                proxy.update({'type': 'ss', 'server': url.hostname, 'port': int(url.port), 'cipher': cipher, 'password': password})
+            except:
+                return None
+        else:
+            return None
+            
+        return proxy
+    except Exception as e:
+        logging.error(f"Failed to parse config for Clash: {e}")
+        return None
+
+def create_subscription_files(xray_configs, singbox_configs):
+    """ایجاد فایل‌های اشتراک با UUID"""
+    sub_xray_all = "\n".join(xray_configs)
+    sub_xray_top20 = "\n".join(xray_configs[:20])
+    sub_singbox_all = "\n".join(singbox_configs)
+    sub_singbox_top20 = "\n".join(singbox_configs[:20])
+    
+    with open(os.path.join(Config.OUTPUT_DIR, f"sub_{Config.SUBSCRIPTION_UUIDS['xray_all']}.txt"), 'w') as f:
+        f.write(sub_xray_all)
+    with open(os.path.join(Config.OUTPUT_DIR, f"sub_{Config.SUBSCRIPTION_UUIDS['xray_top20']}.txt"), 'w') as f:
+        f.write(sub_xray_top20)
+    with open(os.path.join(Config.OUTPUT_DIR, f"sub_{Config.SUBSCRIPTION_UUIDS['singbox_all']}.txt"), 'w') as f:
+        f.write(sub_singbox_all)
+    with open(os.path.join(Config.OUTPUT_DIR, f"sub_{Config.SUBSCRIPTION_UUIDS['singbox_top20']}.txt"), 'w') as f:
+        f.write(sub_singbox_top20)
+    
+    logging.info("Subscription files generated.")
 
 if __name__ == "__main__":
     main()
