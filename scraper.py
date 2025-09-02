@@ -48,7 +48,7 @@ class Config:
         'v2ray subscription', 'vless subscription', 'proxy subscription'
     ]
     MAX_CONFIGS_TO_TEST = 3000
-    MAX_PING_THRESHOLD = 5000
+    MAX_PING_THRESHOLD = 5000  # این مقدار به 5000 تغییر یافت
     TARGET_CONFIGS_PER_CORE = 500
     REQUEST_TIMEOUT = 10
     TCP_TEST_TIMEOUT = 8
