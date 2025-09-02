@@ -671,5 +671,3 @@ async function handleStaticFiles(pathname, ctx) {
     // اگر هیچ match نشد، سعی کن از ریشه serve کن
     return await serveFromGitHub(`${pathname}`, {}, ctx);
 }
-
-این بهتره یا فایل قبلی خودمون برای کلادفلر؟
