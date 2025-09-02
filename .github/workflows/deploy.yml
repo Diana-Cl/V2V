@@ -3,8 +3,8 @@ name: Deploy to Cloudflare Workers
 on:
   push:
     branches:
-      - "main" # فقط زمانی که به شاخه اصلی پوش می‌شود اجرا شو
-  workflow_dispatch: # امکان اجرای دستی
+      - "main"
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -14,6 +14,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # با اضافه کردن این خط، تمامی مراحل بعدی در پوشه V2V اجرا می‌شوند.
+          working-directory: V2V
 
       - name: Install Wrangler
         run: npm install -g wrangler
@@ -21,5 +24,4 @@ jobs:
       - name: Deploy Worker
         run: wrangler deploy
         env:
-          # از توکنی که در مرحله ۲ ثبت کردیم استفاده می‌کند
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
