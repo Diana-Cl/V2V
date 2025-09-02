@@ -1,4 +1,4 @@
-Name: Scheduled Scrape and Build
+name: Scheduled Scrape and Build
 
 on:
   schedule:
@@ -119,7 +119,7 @@ jobs:
               exit 1
             fi
           fi
-
+          
       - name: Cleanup Temporary Files
         run: |
           echo "::debug::Cleaning up temporary files..."
