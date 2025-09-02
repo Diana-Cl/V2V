@@ -15,10 +15,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
       - name: Install Wrangler
-        run: npm install -g wrangler
+        run: npm install -g wrangler@3.33.0
 
       - name: Deploy Worker
-        run: wrangler deploy
+        run: wrangler deploy --minify
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
