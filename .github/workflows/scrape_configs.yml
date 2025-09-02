@@ -1,4 +1,4 @@
-name: Scheduled Scrape and Build
+Name: Scheduled Scrape and Build
 
 on:
   schedule:
@@ -100,12 +100,6 @@ jobs:
             echo "::info::Download test file uploaded."
           fi
 
-      - name: Cleanup Temporary Files
-        run: |
-          echo "::debug::Cleaning up temporary files..."
-          rm -f dl-test.bin
-          echo "::info::Cleanup completed."
-
       - name: Commit and Push final files to GitHub
         run: |
           echo "::debug::Preparing commit..."
@@ -125,3 +119,9 @@ jobs:
               exit 1
             fi
           fi
+
+      - name: Cleanup Temporary Files
+        run: |
+          echo "::debug::Cleaning up temporary files..."
+          rm -f dl-test.bin
+          echo "::info::Cleanup completed."
