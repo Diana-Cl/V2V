@@ -1,6 +1,6 @@
 /**
  * V2V Cloudflare Worker - Fixed Version
- * @version 3.0.0 - تصحیح کامل مشکلات
+ * @version 3.1.0 - اصلاح ساختار export default
  */
 
 // ثوابت پیکربندی
@@ -30,39 +30,6 @@ const CORS_HEADERS = {
     'Access-Control-Max-Age': '86400',
     'Access-Control-Allow-Credentials': 'false'
 };
-
-// Rate limiting function بهبود یافته
-function checkRateLimit(ip) {
-    const now = Date.now();
-    const key = ip || 'unknown';
-    const windowStart = now - RATE_LIMIT_INTERVAL;
-    
-    // پاک کردن entries قدیمی
-    for (const [k, v] of rateLimitMap.entries()) {
-        if (v.timestamp < windowStart) {
-            rateLimitMap.delete(k);
-        }
-    }
-    
-    if (!rateLimitMap.has(key)) {
-        rateLimitMap.set(key, { count: 1, timestamp: now });
-        return false; // مجاز
-    }
-    
-    const current = rateLimitMap.get(key);
-    if (current.timestamp < windowStart) {
-        // Window جدید شروع شده
-        rateLimitMap.set(key, { count: 1, timestamp: now });
-        return false;
-    }
-    
-    if (current.count >= MAX_REQUESTS_PER_INTERVAL) {
-        return true; // Rate limited
-    }
-    
-    current.count++;
-    return false;
-}
 
 // تابع کمکی برای ایجاد response با CORS
 function createResponse(body, options = {}) {
@@ -109,7 +76,6 @@ function validateConfigString(configStr) {
         return { valid: false, error: 'Config must be a non-empty string' };
     }
     
-    // بررسی طول
     if (configStr.length > 2000) {
         return { valid: false, error: 'Config too long (max 2000 chars)' };
     }
@@ -118,7 +84,6 @@ function validateConfigString(configStr) {
         return { valid: false, error: 'Config too short (min 10 chars)' };
     }
     
-    // بررسی characters مضر
     const harmfulChars = ['<', '>', '&', '"', "'"];
     for (const char of harmfulChars) {
         if (configStr.includes(char)) {
@@ -126,7 +91,6 @@ function validateConfigString(configStr) {
         }
     }
     
-    // بررسی prefix معتبر
     const validPrefixes = ['vmess://', 'vless://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://'];
     const hasValidPrefix = validPrefixes.some(prefix => configStr.startsWith(prefix));
     
@@ -183,7 +147,6 @@ function parseUrlBasedConfig(configStr) {
 async function testConfigPing(configStr) {
     console.log(`Starting ping test for config: ${configStr.substring(0, 50)}...`);
     
-    // Validation اولیه
     const validation = validateConfigString(configStr);
     if (!validation.valid) {
         console.warn(`Config validation failed: ${validation.error}`);
@@ -193,7 +156,6 @@ async function testConfigPing(configStr) {
     let host, port, sni, isTls = false;
     
     try {
-        // Parse کانفیگ بر اساس نوع
         if (configStr.startsWith('vmess://')) {
             ({ host, port, isTls, sni } = parseVmessConfig(configStr));
         } else {
@@ -207,11 +169,9 @@ async function testConfigPing(configStr) {
         return { ping: 9999, error: `Parse failed: ${error.message}` };
     }
     
-    // تست اتصال با چندین روش
     const startTime = Date.now();
     
     try {
-        // روش 1: تست HTTPS برای TLS configs
         if (isTls) {
             const httpsResult = await testHttpsConnection(host, port, sni);
             if (httpsResult.success) {
@@ -222,7 +182,6 @@ async function testConfigPing(configStr) {
             console.log(`HTTPS test failed: ${httpsResult.error}`);
         }
         
-        // روش 2: تست HTTP برای non-TLS configs
         if (!isTls) {
             const httpResult = await testHttpConnection(host, port);
             if (httpResult.success) {
@@ -233,15 +192,13 @@ async function testConfigPing(configStr) {
             console.log(`HTTP test failed: ${httpResult.error}`);
         }
         
-        // روش 3: تست DNS resolution به عنوان fallback
         const dnsResult = await testDnsResolution(host);
         if (dnsResult.success) {
-            const ping = Math.min(Date.now() - startTime + 200, MAX_PING_THRESHOLD); // +200ms penalty
+            const ping = Math.min(Date.now() - startTime + 200, MAX_PING_THRESHOLD);
             console.log(`DNS fallback successful: ${ping}ms for ${host}`);
             return { ping };
         }
         
-        // اگر همه روش‌ها fail شدند
         console.warn(`All connection tests failed for ${host}:${port}`);
         return { ping: 9999, error: 'All connection methods failed' };
         
@@ -265,15 +222,12 @@ async function testHttpsConnection(host, port, sni) {
             redirect: 'manual',
             headers: {
                 'Accept': '*/*',
-                'User-Agent': 'V2V-Worker/3.0',
-                'Cache-Control': 'no-cache'
+                'User-Agent': 'V2V-Worker/3.1'
             }
         });
         
         clearTimeout(timeoutId);
         
-        // هر response که timeout نشده موفق محسوب می‌شود
-        // حتی 404 یا 500 نشان‌دهنده اتصال موفق است
         console.log(`HTTPS response: ${response.status} for ${testUrl}`);
         return { success: true, status: response.status };
         
@@ -297,8 +251,7 @@ async function testHttpConnection(host, port) {
             redirect: 'manual',
             headers: {
                 'Accept': '*/*',
-                'User-Agent': 'V2V-Worker/3.0',
-                'Cache-Control': 'no-cache'
+                'User-Agent': 'V2V-Worker/3.1'
             }
         });
         
@@ -322,7 +275,7 @@ async function testDnsResolution(host) {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
-                'User-Agent': 'V2V-Worker/3.0'
+                'User-Agent': 'V2V-Worker/3.1'
             }
         });
         
@@ -358,12 +311,10 @@ async function serveFromGitHub(requestedPath, customHeaders = {}, ctx) {
         console.log(`Cache hit: ${requestedPath}`);
         const newHeaders = new Headers(response.headers);
         
-        // اضافه کردن CORS headers
         Object.entries(CORS_HEADERS).forEach(([key, value]) => {
             newHeaders.set(key, value);
         });
         
-        // اضافه کردن custom headers
         Object.entries(customHeaders).forEach(([key, value]) => {
             newHeaders.set(key, value);
         });
@@ -381,7 +332,7 @@ async function serveFromGitHub(requestedPath, customHeaders = {}, ctx) {
         response = await fetch(githubUrl, {
             method: 'GET',
             headers: {
-                'User-Agent': 'V2V-Worker/3.0',
+                'User-Agent': 'V2V-Worker/3.1',
                 'Cache-Control': 'no-cache',
                 'Accept': '*/*'
             },
@@ -394,33 +345,28 @@ async function serveFromGitHub(requestedPath, customHeaders = {}, ctx) {
         if (response.ok) {
             const responseHeaders = new Headers();
             
-            // کپی headers مهم از response اصلی
             for (const [key, value] of response.headers.entries()) {
                 if (['content-type', 'content-length', 'last-modified', 'etag'].includes(key.toLowerCase())) {
                     responseHeaders.set(key, value);
                 }
             }
             
-            // اضافه کردن CORS headers
             Object.entries(CORS_HEADERS).forEach(([key, value]) => {
                 responseHeaders.set(key, value);
             });
             
-            // اضافه کردن custom headers
             Object.entries(customHeaders).forEach(([key, value]) => {
                 responseHeaders.set(key, value);
             });
             
-            // تنظیم cache headers
             responseHeaders.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
-            responseHeaders.set('X-Served-By', 'V2V-Worker/3.0');
+            responseHeaders.set('X-Served-By', 'V2V-Worker/3.1');
             
             const responseToReturn = new Response(response.body, {
                 status: response.status,
                 headers: responseHeaders
             });
             
-            // Cache async
             if (ctx) {
                 ctx.waitUntil(cache.put(cacheKey, responseToReturn.clone()));
             }
@@ -453,11 +399,10 @@ async function handleConfigTest(request, ip) {
         
         const result = await testConfigPing(configStr);
         
-        // اضافه کردن metadata به response
         const responseData = {
             ...result,
             timestamp: new Date().toISOString(),
-            worker_version: '3.0.0'
+            worker_version: '3.1.0'
         };
         
         return createResponse(JSON.stringify(responseData), {
@@ -494,43 +439,37 @@ async function handleSubscription(pathname, ctx) {
 
 // Handler برای فایل‌های استاتیک
 async function handleStaticFiles(pathname, ctx) {
-    // Root یا index.html
     if (pathname === '/' || pathname === '/index.html') {
         return await serveFromGitHub('/index.html', {
             'Content-Type': 'text/html; charset=utf-8'
         }, ctx);
     }
     
-    // Manifest.json برای PWA
     if (pathname === '/manifest.json') {
         return await serveFromGitHub('/manifest.json', {
             'Content-Type': 'application/manifest+json; charset=utf-8'
         }, ctx);
     }
     
-    // آیکون‌های PWA
     if (pathname.startsWith('/icon-') && pathname.endsWith('.png')) {
         return await serveFromGitHub(`${pathname}`, {
             'Content-Type': 'image/png',
-            'Cache-Control': 'public, max-age=86400' // یک روز برای تصاویر
+            'Cache-Control': 'public, max-age=86400'
         }, ctx);
     }
     
-    // فایل‌های CSS
     if (pathname.endsWith('.css')) {
         return await serveFromGitHub(`${pathname}`, {
             'Content-Type': 'text/css; charset=utf-8'
         }, ctx);
     }
     
-    // فایل‌های JavaScript
     if (pathname.endsWith('.js')) {
         return await serveFromGitHub(`${pathname}`, {
             'Content-Type': 'application/javascript; charset=utf-8'
         }, ctx);
     }
     
-    // سایر فایل‌های استاتیک
     if (pathname.includes('.')) {
         const extension = pathname.split('.').pop().toLowerCase();
         const mimeTypes = {
@@ -554,25 +493,18 @@ async function handleStaticFiles(pathname, ctx) {
         }, ctx);
     }
     
-    // اگر هیچ match نشد، سعی کن از ریشه serve کن
     return await serveFromGitHub(`${pathname}`, {}, ctx);
 }
 
-const mainHandler = {
+// ساختار نهایی و صحیح
+export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
         const pathname = url.pathname;
-        
-        // استخراج IP address
-        const ip = request.headers.get('CF-Connecting-IP') ||
-                   request.headers.get('X-Forwarded-For') ||
-                   request.headers.get('X-Real-IP') ||
-                   'unknown';
-        
-        // Log request
+        const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+
         logRequest(request, ip);
-        
-        // CORS preflight handling
+
         if (request.method === 'OPTIONS') {
             return createResponse(null, {
                 status: 200,
@@ -580,24 +512,20 @@ const mainHandler = {
             });
         }
         
-        // Rate limiting check
         if (checkRateLimit(ip)) {
             console.warn(`Rate limit exceeded for IP: ${ip}`);
             return createErrorResponse('Rate limit exceeded. Please try again later.', 429);
         }
-        
+
         try {
-            // اندپوینت تست پینگ کانفیگ
             if (pathname === '/test-config' && request.method === 'POST') {
                 return await handleConfigTest(request, ip);
             }
             
-            // اندپوینت subscription با UUID
             if (pathname.startsWith('/sub/')) {
                 return await handleSubscription(pathname, ctx);
             }
             
-            // اندپوینت‌های فایل‌های داده
             if (pathname.startsWith('/all_live_configs_')) {
                 return await serveFromGitHub(`/configs${pathname}`, {
                     'Content-Type': 'application/json; charset=utf-8',
@@ -618,7 +546,6 @@ const mainHandler = {
                 }, ctx);
             }
             
-            // اندپوینت تست شبکه
             if (pathname === '/ping') {
                 return createResponse('OK', {
                     headers: { 
@@ -628,7 +555,6 @@ const mainHandler = {
                 });
             }
             
-            // اندپوینت تست سرعت دانلود
             if (pathname === '/dl-test.bin') {
                 return await serveFromGitHub('/configs/dl-test.bin', {
                     'Content-Type': 'application/octet-stream',
@@ -636,18 +562,16 @@ const mainHandler = {
                 }, ctx);
             }
             
-            // اندپوینت health check
             if (pathname === '/health') {
                 return createResponse(JSON.stringify({
                     status: 'healthy',
-                    version: '3.0.0',
+                    version: '3.1.0',
                     timestamp: new Date().toISOString(),
                     worker: 'V2V-Cloudflare',
                     rate_limit_entries: rateLimitMap.size
                 }));
             }
             
-            // سرو فایل‌های استاتیک
             return await handleStaticFiles(pathname, ctx);
             
         } catch (error) {
@@ -656,5 +580,3 @@ const mainHandler = {
         }
     }
 };
-
-export default mainHandler;
