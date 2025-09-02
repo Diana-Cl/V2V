@@ -231,7 +231,7 @@
             console.log(`Testing ping for: ${configStr.substring(0, 50)}...`);
             try {
                 // Validation پیشرفته برای جلوگیری از abuse
-                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, ''); // Limit length
+                const sanitized = configStr.replace(/[^\w:\-=\/.@\{\}\[\]"'?,&]/g, '');
                 if (!sanitized || sanitized.length > 2000) return 'Error';
 
                 const response = await fetch(`${CLOUDFLARE_BASE_URL}/test-config`, {
@@ -364,7 +364,7 @@
             try {
                 const versionResponse = await fetch(`${CLOUDFLARE_BASE_URL}/cache_version.txt?t=${Date.now()}`, { 
                     cache: 'no-store',
-                    signal: AbortSignal.timeout(10000)
+                    signal: AbortSignal.timeout(20000)
                 });
                 if (!versionResponse.ok) throw new Error(`Version fetch failed: ${versionResponse.status}`);
                 const timestamp = (await versionResponse.text()).trim();
@@ -380,7 +380,7 @@
                 const dataUrl = `${CLOUDFLARE_BASE_URL}/all_live_configs_${timestamp}.json`;
                 const dataResponse = await fetch(dataUrl, { 
                     cache: 'no-store',
-                    signal: AbortSignal.timeout(10000)
+                    signal: AbortSignal.timeout(20000)
                 });
                 
                 if (!dataResponse.ok) throw new Error(`Data fetch failed: ${dataResponse.status}`);
