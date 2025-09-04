@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-V2V Scraper v11.0 - Stable & Verbose
+V2V Scraper v12.0 - Multi-Format Engine
 This script scrapes, tests, and categorizes proxy configurations from various sources.
-This version includes enhanced logging for better diagnostics in CI/CD environments.
+Key Features:
+- Multi-format parsing: Handles plain text, base64, and structured JSON configs.
+- Advanced dynamic discovery using targeted GitHub search queries.
+- Performs advanced TCP+TLS handshake tests for accurate ping results.
+- Categorizes configs for Xray and Sing-box compatibility.
+- Balances the final config list based on protocol quotas.
+- Generates a JSON output with ping data for the front-end API.
+- Generates a Clash-compatible subscription file.
 """
 
 import requests
@@ -29,11 +36,19 @@ OUTPUT_CLASH_FILE = os.path.join(BASE_DIR, "clash_subscription.yaml")
 CACHE_VERSION_FILE = os.path.join(BASE_DIR, "cache_version.txt")
 
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
-HEADERS = {'User-Agent': f'V2V-Scraper/v11.0','Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0'}
+HEADERS = {'User-Agent': f'V2V-Scraper/v12.0','Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0'}
 GITHUB_PAT = os.environ.get('GH_PAT')
 GITHUB_SEARCH_LIMIT = 75
 GITHUB_FRESHNESS_HOURS = 240
-GITHUB_SEARCH_QUERIES = ['v2ray subscription', 'vless subscription', 'proxy subscription','vmess config', 'trojan config', 'clash subscription']
+# Advanced, more targeted GitHub search queries
+GITHUB_SEARCH_QUERIES = [
+    '"vless" "subscription" in:file',
+    '"vmess" "sub" in:file',
+    'filename:v2ray.txt',
+    'filename:clash.yaml "vless"',
+    'path:.github/workflows "v2ray"',
+    '"trojan" "configs" in:file'
+]
 
 MAX_CONFIGS_TO_TEST = 4000
 MAX_PING_THRESHOLD = 2500
@@ -92,11 +107,47 @@ def parse_subscription_content(content: str) -> set:
         if _is_valid_config_format(clean_match): configs.add(clean_match)
     return configs
 
+def parse_singbox_json_config(json_content: dict) -> set:
+    """Parses a full Sing-box JSON config file and reconstructs config links."""
+    configs = set()
+    if not isinstance(json_content, dict): return configs
+    for outbound in json_content.get("outbounds", []):
+        try:
+            protocol = outbound.get("type")
+            server = outbound.get("server")
+            port = outbound.get("server_port")
+            uuid = outbound.get("uuid")
+            tag = quote(outbound.get("tag", f"{protocol}-{server}"))
+            if not all([protocol, server, port, uuid]): continue
+            if protocol == "vless":
+                tls_settings = outbound.get("tls", {})
+                transport_settings = outbound.get("transport", {})
+                params = {
+                    "type": transport_settings.get("type", "tcp"),
+                    "security": "tls" if tls_settings.get("enabled") else "none",
+                    "sni": tls_settings.get("server_name", server),
+                    "path": transport_settings.get("path", "/"),
+                    "host": transport_settings.get("headers", {}).get("Host", server)
+                }
+                query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+                config_str = f"vless://{uuid}@{server}:{port}?{query_string}#{tag}"
+                if _is_valid_config_format(config_str): configs.add(config_str)
+        except Exception: continue
+    return configs
+
 def fetch_and_parse_url(url: str) -> set:
+    """Fetches content from a URL and dispatches to the appropriate parser."""
     try:
         response = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
-        return parse_subscription_content(response.text)
+        content = response.text
+        if url.endswith((".json", "sing-box.json")):
+            try:
+                json_data = json.loads(content)
+                return parse_singbox_json_config(json_data)
+            except json.JSONDecodeError:
+                return parse_subscription_content(content)
+        return parse_subscription_content(content)
     except (requests.RequestException, Exception):
         return set()
 
@@ -116,23 +167,21 @@ def discover_dynamic_sources() -> list:
     if not GITHUB_PAT:
         print("CRITICAL: Skipping dynamic source discovery because GH_PAT is missing.")
         return []
-    
     dynamic_sources = set()
     try:
         g = Github(auth=Auth.Token(GITHUB_PAT), timeout=30)
         user = g.get_user()
         print(f"INFO: Successfully authenticated to GitHub as user '{user.login}'.")
-
         freshness_threshold = datetime.now(timezone.utc) - timedelta(hours=GITHUB_FRESHNESS_HOURS)
         for query in GITHUB_SEARCH_QUERIES:
             print(f"INFO: Searching GitHub for query: '{query}'")
             try:
-                repos = g.search_repositories(query=f'{query} language:text', sort='updated', order='desc')
+                repos = g.search_repositories(query=f'{query}', sort='updated', order='desc')
                 for repo in repos:
                     if repo.updated_at < freshness_threshold or len(dynamic_sources) >= GITHUB_SEARCH_LIMIT: break
                     try:
                         for content_file in repo.get_contents(""):
-                            if content_file.type == 'file' and content_file.name.lower().endswith(('.txt', '.md')):
+                            if content_file.type == 'file' and content_file.name.lower().endswith(('.txt', '.md', '.json', '.yaml', '.yml')):
                                 dynamic_sources.add(content_file.download_url)
                     except GithubException: continue
                     if len(dynamic_sources) >= GITHUB_SEARCH_LIMIT: break
@@ -172,7 +221,6 @@ def test_config_advanced(config_str: str) -> dict:
             is_tls = params.get('security') == 'tls' or parsed_url.scheme == 'trojan'
             sni = params.get('sni', host)
         if not host or not port: return {'config_str': config_str, 'ping': 9999}
-        
         family, _, _, _, sockaddr = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)[0]
         sock = None
         try:
@@ -249,15 +297,13 @@ def generate_clash_subscription(configs: list) -> str | None:
 
 # --- MAIN EXECUTION ---
 def main():
-    print("--- V2V Scraper v11.0 ---")
+    print("--- V2V Scraper v12.0 ---")
     start_time = time.time()
-    
     all_sources = list(set(get_static_sources() + discover_dynamic_sources()))
     print(f"INFO: Total unique sources to fetch: {len(all_sources)}")
     if not all_sources:
         print("CRITICAL: No sources found. Exiting gracefully.")
         return
-
     raw_configs = set()
     with ThreadPoolExecutor(max_workers=30) as executor:
         for result in executor.map(fetch_and_parse_url, all_sources):
@@ -266,54 +312,44 @@ def main():
     if not raw_configs:
         print("CRITICAL: No raw configs could be parsed from any source. Exiting gracefully.")
         return
-
     categorized_configs = validate_and_categorize_configs(raw_configs)
     xray_compatible_set, singbox_only_set = categorized_configs['xray'], categorized_configs['singbox_only']
     print(f"INFO: Categorized configs: {len(xray_compatible_set)} Xray-compatible | {len(singbox_only_set)} Sing-box only")
-    
     all_unique_configs = list(xray_compatible_set.union(singbox_only_set))
     configs_to_test = all_unique_configs[:MAX_CONFIGS_TO_TEST]
-    
     print(f"INFO: Starting to test {len(configs_to_test)} configs...")
     fast_configs_results = []
     with ThreadPoolExecutor(max_workers=50) as executor:
         for result in executor.map(test_config_advanced, configs_to_test):
             if result.get('ping', 9999) < MAX_PING_THRESHOLD:
                 fast_configs_results.append(result)
-
     fast_configs_results.sort(key=lambda x: x['ping'])
     print(f"INFO: Found {len(fast_configs_results)} fast configs after testing.")
     if not fast_configs_results:
         print("CRITICAL: No fast configs found. No output files will be generated.")
         return
-    
     def process_and_shorten(results):
         processed = []
         for res in results:
             shortened_config = shorten_config_name(res['config_str'])
             processed.append({'config': shortened_config, 'ping': res['ping']})
         return processed
-
     fast_xray_compatible_res = [res for res in fast_configs_results if res['config_str'] in xray_compatible_set]
     fast_singbox_only_res = [res for res in fast_configs_results if res['config_str'] in singbox_only_set]
-    
     grouped_xray_fast = defaultdict(list)
     for res in fast_xray_compatible_res:
         proto = res['config_str'].split("://")[0]
         grouped_xray_fast[proto].append(res)
-
     balanced_xray_results = []
     for proto, quota_percent in PROTOCOL_QUOTAS.items():
         quota_size = int(TARGET_CONFIGS_PER_CORE * quota_percent)
         balanced_xray_results.extend(grouped_xray_fast.get(proto, [])[:quota_size])
-    
     if len(balanced_xray_results) < TARGET_CONFIGS_PER_CORE:
         existing_configs = {res['config_str'] for res in balanced_xray_results}
         for res in fast_xray_compatible_res:
             if len(balanced_xray_results) >= TARGET_CONFIGS_PER_CORE: break
             if res['config_str'] not in existing_configs:
                 balanced_xray_results.append(res)
-
     final_xray_res = balanced_xray_results[:TARGET_CONFIGS_PER_CORE]
     final_singbox_res = fast_singbox_only_res[:]
     remaining_needed = TARGET_CONFIGS_PER_CORE - len(final_singbox_res)
@@ -322,27 +358,22 @@ def main():
         xray_configs_for_singbox = [res for res in fast_xray_compatible_res if res['config_str'] not in existing_singbox_configs]
         final_singbox_res.extend(xray_configs_for_singbox[:remaining_needed])
     final_singbox_res = final_singbox_res[:TARGET_CONFIGS_PER_CORE]
-
     final_xray = process_and_shorten(final_xray_res)
     final_singbox = process_and_shorten(final_singbox_res)
-
     print("INFO: Preparing to write output files to project root...")
     output_for_frontend = {'xray': final_xray, 'singbox': final_singbox}
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(output_for_frontend, f, ensure_ascii=False, indent=2)
     print(f"SUCCESS: '{OUTPUT_JSON_FILE}' created successfully.")
-
     clash_configs = [item['config'] for item in final_xray]
     clash_content = generate_clash_subscription(clash_configs)
     if clash_content:
         with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f:
             f.write(clash_content)
         print(f"SUCCESS: '{OUTPUT_CLASH_FILE}' created successfully.")
-    
     with open(CACHE_VERSION_FILE, 'w') as f:
         f.write(str(int(time.time())))
     print(f"SUCCESS: '{CACHE_VERSION_FILE}' created successfully.")
-
     elapsed_time = time.time() - start_time
     print(f"\n--- Process Completed in {elapsed_time:.2f} seconds ---")
     print(f"Results: | Xray: {len(final_xray)} | Sing-box: {len(final_singbox)} |")
