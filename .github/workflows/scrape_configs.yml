@@ -57,7 +57,7 @@ jobs:
         continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_KEY_SECRET }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         run: |
           if [ -z "$AWS_ACCESS_KEY_ID" ]; then
             echo "::warning::ArvanCloud secrets not found, skipping upload."
