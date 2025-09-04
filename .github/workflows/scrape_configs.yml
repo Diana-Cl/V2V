@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,10 +32,7 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
 
       - name: Create dummy download test file
-        run: |
-          echo "::debug::Creating dummy download test file..."
-          dd if=/dev/zero of=dl-test.bin bs=100k count=1
-          echo "::info::Download test file created."
+        run: dd if=/dev/zero of=dl-test.bin bs=100k count=1
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -44,32 +41,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo "::debug::Installing dependencies..."
           pip install --upgrade pip
-          pip install -r requirements.txt
-          echo "::info::Dependencies installed."
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          fi
 
       - name: Run scraper script
-        run: |
-          echo "::debug::Running scraper script..."
-          if [ -z "$GH_PAT" ]; then
-            echo "::error::GH_PAT not set, skipping scraper."
-            exit 1
-          fi
-          python scraper.py
-          echo "::info::Scraper script completed successfully."
+        run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-        timeout-minutes: 40
-
-      - name: Check for New Changes
-        run: |
-          echo "::debug::Checking for new changes..."
-          if [ -d "./configs" ] && [ "$(ls -A ./configs)" ]; then
-            echo "::info::Configs directory exists and has content."
-          else
-            echo "::warning::No configs found, possibly due to fetch or parse errors."
-          fi
+        timeout-minutes: 55
 
       - name: Upload files to ArvanCloud
         if: success()
@@ -78,50 +59,38 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_KEY_SECRET }}
         run: |
-          echo "::debug::Starting ArvanCloud upload..."
-          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+          if [ -z "$AWS_ACCESS_KEY_ID" ]; then
             echo "::warning::ArvanCloud secrets not found, skipping upload."
             exit 0
           fi
           ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.com"
           BUCKET_NAME="s3://v2v-data"
-          
-          if [ -d "./configs" ]; then
-            aws s3 sync ./configs "$BUCKET_NAME/" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=300" --exclude "*" --include "sub_*.txt" --include "*.yaml" --include "*.json"
-            echo "::info::Configs synced to ArvanCloud."
+
+          # Upload main output files from root
+          if [ -f "all_live_configs.json" ]; then
+            aws s3 cp all_live_configs.json "$BUCKET_NAME/all_live_configs.json" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "application/json" --cache-control "max-age=300"
+          fi
+          if [ -f "clash_subscription.yaml" ]; then
+            aws s3 cp clash_subscription.yaml "$BUCKET_NAME/clash_subscription.yaml" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/yaml" --cache-control "max-age=300"
           fi
           
+          # Upload other utility files from root
           if [ -f "cache_version.txt" ]; then
             aws s3 cp cache_version.txt "$BUCKET_NAME/cache_version.txt" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/plain" --cache-control "max-age=300"
-            echo "::info::Cache version uploaded."
           fi
           if [ -f "dl-test.bin" ]; then
             aws s3 cp dl-test.bin "$BUCKET_NAME/dl-test.bin" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=3600"
-            echo "::info::Download test file uploaded."
           fi
 
       - name: Commit and Push final files to GitHub
         run: |
-          echo "::debug::Preparing commit..."
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add configs/ cache_version.txt dl-test.bin
+          git add all_live_configs.json clash_subscription.yaml cache_version.txt
           
           if git diff --staged --quiet; then
-            echo "::notice::No new changes to commit."
+            echo "No new changes to commit."
           else
-            COMMIT_MESSAGE="📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
-            git commit -m "$COMMIT_MESSAGE"
-            if git push; then
-              echo "::info::Changes committed and pushed: $COMMIT_MESSAGE"
-            else
-              echo "::error::Push failed."
-              exit 1
-            fi
+            git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
+            git push
           fi
-          
-      - name: Cleanup Temporary Files
-        run: |
-          echo "::debug::Cleaning up temporary files..."
-          rm -f dl-test.bin
-          echo "::info::Cleanup completed."
