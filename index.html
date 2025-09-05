@@ -90,7 +90,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- CONFIGURATION ---
-            const API_BASE_URL = ''; // Vercel API will be on the same domain
+            const API_BASE_URL = ''; // Vercel API is on the same domain
             const DATA_URL = 'all_live_configs.json';
             const CACHE_URL = 'cache_version.txt';
             const PING_URL = 'https://v2v-final.vercel.app/'; // Root of the API returns a quick response
@@ -104,15 +104,15 @@
             const qrContainer = document.getElementById('qr-code-container');
             const qrDownloadBtn = document.getElementById('qr-download-btn');
             
-            // --- GLOBAL STATE ---
-            let allConfigs = { xray: [], singbox: [] };
-
             // --- HELPER FUNCTIONS ---
             const toShamsi = (timestamp) => {
-                const date = new Date(parseInt(timestamp, 10) * 1000);
-                const jalaaliDate = jalaali.toJalaali(date);
-                const format = (n) => n < 10 ? '0' + n : n;
-                return `${jalaaliDate.jy}/${format(jalaaliDate.jm)}/${format(jalaaliDate.jd)} ساعت ${format(date.getHours())}:${format(date.getMinutes())}`;
+                try {
+                    const date = new Date(parseInt(timestamp, 10) * 1000);
+                    if (isNaN(date.getTime())) return "نامشخص";
+                    const jalaaliDate = jalaali.toJalaali(date);
+                    const format = (n) => n < 10 ? '0' + n : n;
+                    return `${jalaaliDate.jy}/${format(jalaaliDate.jm)}/${format(jalaaliDate.jd)} ساعت ${format(date.getHours())}:${format(date.getMinutes())}`;
+                } catch (e) { return "نامشخص"; }
             };
             const copyToClipboard = (text, msg = 'کپی شد!') => {
                 navigator.clipboard.writeText(text).then(() => alert(msg)).catch(() => alert('خطا: امکان کپی وجود ندارد.'));
@@ -140,7 +140,7 @@
                     await fetch(`${PING_URL}?t=${Date.now()}`, { signal: controller.signal, cache: 'no-store' });
                     return Math.round(performance.now() - startTime);
                 } catch (error) {
-                    return null; // Return null on failure
+                    return null;
                 }
             };
             
@@ -166,7 +166,7 @@
 
             function renderCore(core, configs) {
                 const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
-                wrapper.innerHTML = ''; // Clear loading message
+                wrapper.innerHTML = ''; 
                 
                 const actionsContainer = document.createElement('div');
                 actionsContainer.innerHTML = `
@@ -174,8 +174,8 @@
                     <div class="action-group">
                         <h4 class="action-group-title">اشتراک شخصی (Standard)</h4>
                         <div class="action-buttons">
-                            <button class="action-button" onclick="window.v2v.createSubscription('${core}', 'standard', 'url')">کپی لینک UUID</button>
-                            <button class="action-button" onclick="window.v2v.createSubscription('${core}', 'standard', 'qr')">QR Code لینک</button>
+                            <button class="action-button" onclick="window.v2v.createSubscription('${core}', 'standard', 'url', event)">کپی لینک UUID</button>
+                            <button class="action-button" onclick="window.v2v.createSubscription('${core}', 'standard', 'qr', event)">QR Code لینک</button>
                         </div>
                     </div>
                 `;
@@ -184,8 +184,8 @@
                         <div class="action-group">
                             <h4 class="action-group-title">اشتراک شخصی (Clash)</h4>
                             <div class="action-buttons">
-                                <button class="action-button" onclick="window.v2v.createSubscription('${core}', 'clash', 'url')">کپی لینک Clash</button>
-                                <button class="action-button" onclick="window.v2v.downloadClashFile('${core}')">دانلود فایل Clash</button>
+                                <button class="action-button" onclick="window.v2v.createSubscription('${core}', 'clash', 'url', event)">کپی لینک Clash</button>
+                                <button class="action-button" onclick="window.v2v.downloadClashFile('${core}', event)">دانلود فایل Clash</button>
                             </div>
                         </div>`;
                 }
@@ -222,11 +222,15 @@
                         li.dataset.backendPing = configObj.ping;
                         try {
                             const serverName = configObj.config.includes('#') ? decodeURIComponent(configObj.config.split('#')[1]) : new URL(configObj.config).hostname;
+                            let pingColor = 'var(--ping-good)';
+                            if (configObj.ping > 700) pingColor = 'var(--ping-medium)';
+                            if (configObj.ping > 1500) pingColor = 'var(--ping-bad)';
+
                             li.innerHTML = `
                                 <input type="checkbox" class="config-checkbox">
                                 <div class="config-details">
                                     <span class="server">${serverName}</span>
-                                    <span class="ping-result">پینگ بک‌اند: ${configObj.ping}ms</span>
+                                    <span class="ping-result" style="color:${pingColor};">پینگ بک‌اند: ${configObj.ping}ms</span>
                                 </div>
                                 <div class="copy-button-container">
                                     <button class="copy-btn" onclick="window.v2v.copyConfig(event)">کپی</button>
@@ -267,7 +271,6 @@
                     pingEl.innerHTML = `امتیاز نهایی: <strong style="color:${pingColor};">${finalScore}</strong>`;
                 });
                 
-                // Sort configs within each protocol group based on the new score
                 document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => { 
                     const list = group.querySelector('.config-list'); 
                     const items = Array.from(list.children); 
@@ -279,7 +282,6 @@
                 testButton.textContent = 'اجرای مجدد تست سرعت';
             }
 
-            // --- GLOBAL API INTERACTION ---
             window.v2v = {
                 copyConfig: (event) => {
                     event.stopPropagation();
@@ -289,7 +291,7 @@
                 showConfigQr: (event) => {
                     event.stopPropagation();
                     const config = event.target.closest('.config-item').dataset.config;
-                    showQrCode(window.event, config);
+                    showQrCode(event, config);
                 },
                 getSelectedConfigs: (core) => {
                     let selected = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`))
@@ -297,17 +299,18 @@
                     if (selected.length === 0) {
                         alert(`هیچ کانفیگی انتخاب نشده. ${AUTO_SELECT_COUNT} عدد از بهترین کانفیگ‌ها به صورت خودکار انتخاب می‌شوند.`);
                         selected = Array.from(document.querySelectorAll(`#${core}-section .config-item`))
-                                        .sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999))
+                                        .sort((a, b) => (a.dataset.finalScore || parseInt(a.dataset.backendPing, 10)) - (b.dataset.finalScore || parseInt(b.dataset.backendPing, 10)))
                                         .slice(0, AUTO_SELECT_COUNT)
                                         .map(item => item.dataset.config);
                     }
                     return selected;
                 },
-                createSubscription: async (core, type, action) => {
+                createSubscription: async (core, type, action, event) => {
                     const configs = window.v2v.getSelectedConfigs(core);
                     if (configs.length === 0) return alert('هیچ کانفیگی برای ساخت لینک وجود ندارد.');
                     
                     const btn = event.target;
+                    const originalText = btn.textContent;
                     btn.disabled = true;
                     btn.textContent = '...درحال ساخت';
                     try {
@@ -316,22 +319,23 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ configs, type })
                         });
-                        if (!response.ok) throw new Error('API request failed');
+                        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
                         const data = await response.json();
                         
                         if (action === 'url') {
                             copyToClipboard(data.subscription_url, 'لینک اشتراک UUID کپی شد!');
                         } else if (action === 'qr') {
-                            showQrCode(window.event, data.subscription_url);
+                            showQrCode(event, data.subscription_url);
                         }
                     } catch (error) {
                         alert('خطا در ساخت لینک اشتراک. لطفاً دوباره تلاش کنید.');
+                        console.error("Subscription creation failed:", error);
                     } finally {
                         btn.disabled = false;
-                        btn.textContent = action === 'url' ? (type === 'clash' ? 'کپی لینک Clash' : 'کپی لینک UUID') : 'QR Code لینک';
+                        btn.textContent = originalText;
                     }
                 },
-                downloadClashFile: (core) => {
+                downloadClashFile: (core, event) => {
                     const configs = window.v2v.getSelectedConfigs(core);
                     if (configs.length === 0) return alert('هیچ کانفیگی برای ساخت فایل وجود ندارد.');
 
@@ -361,13 +365,11 @@
                 }
             };
 
-            // --- INITIALIZE ---
             (async () => {
                 try {
                     const data = await fetchData();
-                    allConfigs = { xray: data.xray || [], singbox: data.singbox || [] };
-                    renderCore('xray', allConfigs.xray);
-                    renderCore('singbox', allConfigs.singbox);
+                    renderCore('xray', data.xray || []);
+                    renderCore('singbox', data.singbox || []);
                 } catch (error) {
                     console.error(error);
                     const errorMsg = `<div class="alert">خطا در بارگذاری کانفیگ‌ها. لطفاً صفحه را رفرش کنید.</div>`;
