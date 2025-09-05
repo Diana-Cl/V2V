@@ -82,15 +82,24 @@ jobs:
             aws s3 cp dl-test.bin "$BUCKET_NAME/dl-test.bin" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=3600"
           fi
 
-      - name: Commit and Push final files to GitHub
+          - name: Commit and Push final files to GitHub
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          
+          # ابتدا چک می‌کنیم که آیا فایلی برای اضافه کردن وجود دارد یا نه
+          if [ ! -f "all_live_configs.json" ]; then
+            echo "all_live_configs.json not found, skipping commit."
+            exit 0
+          fi
+          
           git add all_live_configs.json clash_subscription.yaml cache_version.txt
           
           if git diff --staged --quiet; then
             echo "No new changes to commit."
           else
+            # قبل از پوش، آخرین تغییرات را با rebase دریافت می‌کنیم
+            git pull --rebase
             git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
             git push
           fi
