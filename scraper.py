@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-V2V Scraper v15.1 - Syntax Hotfix
-This script scrapes, tests, and categorizes proxy configurations from various sources.
-This version spoofs a browser User-Agent and intelligently detects HTML block pages.
+V2V Scraper v16.0 - User-Driven Expert Analysis Edition
+This version implements advanced anti-bot detection and full browser headers based on user feedback.
 """
-
 import requests
 import base64
 import os
@@ -29,10 +27,16 @@ OUTPUT_CLASH_FILE = os.path.join(BASE_DIR, "clash_subscription.yaml")
 CACHE_VERSION_FILE = os.path.join(BASE_DIR, "cache_version.txt")
 
 VALID_PREFIXES = ('vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://', 'tuic://')
-# Using a standard browser User-Agent to bypass basic anti-bot systems
+# Enhanced headers to better mimic a real browser
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-    'Cache-Control': 'no-cache', 'Pragma': 'no-cache', 'Expires': '0'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache'
 }
 GITHUB_PAT = os.environ.get('GH_PAT')
 GITHUB_SEARCH_QUERIES = [
@@ -40,7 +44,6 @@ GITHUB_SEARCH_QUERIES = [
     'filename:clash.yaml "vless"', 'path:.github/workflows "v2ray"', '"trojan" "configs" in:file'
 ]
 
-# ... (rest of the configuration is unchanged)
 MAX_CONFIGS_TO_TEST = 4000
 MAX_PING_THRESHOLD = 5000
 TARGET_CONFIGS_PER_CORE = 500
@@ -89,7 +92,6 @@ def parse_subscription_content(content: str) -> set:
         clean_match = match.strip().strip('\'"')
         if _is_valid_config_format(clean_match): configs.add(clean_match)
     return configs
-
 def parse_singbox_json_config(json_content: dict) -> set:
     configs = set()
     if not isinstance(json_content, dict): return configs
@@ -100,7 +102,6 @@ def parse_singbox_json_config(json_content: dict) -> set:
             if protocol == "vless":
                 tls, transport = outbound.get("tls", {}), outbound.get("transport", {})
                 params = {"type": transport.get("type", "tcp"), "security": "tls" if tls.get("enabled") else "none", "sni": tls.get("server_name", server), "path": transport.get("path", "/"), "host": transport.get("headers", {}).get("Host", server)}
-                # CORRECTED SYNTAX ERROR ON THE LINE BELOW
                 query_string = "&".join([f"{k}={v}" for k, v in params.items()])
                 config_str = f"vless://{uuid}@{server}:{port}?{query_string}#{tag}"
                 if _is_valid_config_format(config_str): configs.add(config_str)
@@ -110,16 +111,24 @@ def parse_singbox_json_config(json_content: dict) -> set:
 # --- CORE LOGIC FUNCTIONS ---
 def fetch_and_parse_url(url: str) -> set:
     """
-    Fetches content and intelligently handles anti-bot pages.
+    Fetches content with enhanced headers and smarter anti-bot detection.
     """
     try:
         response = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
-        content_type = response.headers.get('Content-Type', '')
-        if 'text/html' in content_type:
-            print(f"ANTI-BOT [WARNING]: Source {url} returned an HTML page, likely an anti-bot challenge. Skipping.")
-            return set()
         content = response.text
+        content_type = response.headers.get('Content-Type', '')
+        
+        # Smarter anti-bot detection based on user analysis
+        # Only skip if it's HTML AND contains suspicious keywords.
+        anti_bot_keywords = ['cloudflare', 'challenge', 'bot', 'captcha', 'attention required']
+        is_html_suspicious = ('text/html' in content_type and any(keyword in content.lower() for keyword in anti_bot_keywords))
+        
+        if is_html_suspicious:
+            print(f"ANTI-BOT [WARNING]: Source {url} returned a suspicious HTML page. Skipping.")
+            return set()
+        
+        # Dispatch to appropriate parser
         if url.endswith((".json", "sing-box.json")):
             try:
                 json_data = json.loads(content)
@@ -128,6 +137,7 @@ def fetch_and_parse_url(url: str) -> set:
                 return parse_subscription_content(content)
         else:
             return parse_subscription_content(content)
+
     except requests.RequestException:
         return set()
     except Exception:
@@ -267,7 +277,7 @@ def generate_clash_subscription(configs: list) -> str | None:
     clash_config = {'proxies': proxies,'proxy-groups': [{'name': 'V2V-Auto','type': 'url-test','proxies': [p['name'] for p in proxies],'url': 'http://www.gstatic.com/generate_204','interval': 300},{'name': 'V2V-Proxies','type': 'select','proxies': ['V2V-Auto'] + [p['name'] for p in proxies]}],'rules': ['MATCH,V2V-Proxies']}
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False, indent=2)
 def main():
-    print("--- V2V Scraper v15.1 ---")
+    print("--- V2V Scraper v16.0 ---")
     start_time = time.time()
     all_sources = list(set(get_static_sources() + discover_dynamic_sources()))
     print(f"INFO: Total unique sources to fetch: {len(all_sources)}")
