@@ -57,16 +57,14 @@ def get_country_code(hostname):
     if not hostname: return "🏁"
     try:
         ip_address = socket.gethostbyname(hostname)
-        # Using a free, no-key-required GeoIP service
         response = requests.get(f"http://ip-api.com/json/{ip_address}?fields=countryCode", timeout=2)
         response.raise_for_status()
         data = response.json()
         country_code = data.get("countryCode")
         if country_code and len(country_code) == 2:
-            # Convert country code to flag emoji
             return "".join(chr(ord(char) + 127397) for char in country_code.upper())
     except Exception:
-        return "🏁" # Default flag for errors
+        return "🏁"
     return "🏁"
 
 def _decode_padded_b64(encoded_str: str) -> str:
@@ -83,22 +81,16 @@ def _decode_padded_b64(encoded_str: str) -> str:
 def _is_valid_config_format(config_str: str) -> bool:
     try:
         parsed = urlparse(config_str)
-        # A basic check for scheme and hostname presence
         return (parsed.scheme in [p.replace('://', '') for p in VALID_PREFIXES] and (parsed.hostname or "vmess" in config_str) and len(config_str) > 20 and '://' in config_str)
     except Exception: return False
 
 def shorten_config_name(config_str: str, country_flag: str) -> str:
     try:
         if '#' not in config_str:
-            # If no name part exists, create one with the flag
             return f"{config_str}#{quote(country_flag)}" if country_flag else config_str
-        
         base_part, name_part = config_str.split('#', 1)
         decoded_name = unquote(name_part)
-        
-        # Prepend flag to the existing name
         final_name = f"{country_flag} {decoded_name}".strip()
-        
         if len(final_name) > MAX_NAME_LENGTH:
             final_name = final_name[:MAX_NAME_LENGTH-3] + '...'
         return base_part + '#' + quote(final_name)
@@ -111,7 +103,6 @@ def parse_subscription_content(content: str) -> set:
         if decoded_content and decoded_content.count("://") > content.count("://"): 
             content = decoded_content
     except Exception: pass
-
     lines = content.replace('\r\n', '\n').replace('\r', '\n').split('\n')
     for line in lines:
         line = line.strip()
@@ -140,20 +131,16 @@ def parse_singbox_json_config(json_content: dict) -> set:
         except Exception: continue
     return configs
 
-# --- CORE LOGIC FUNCTIONS ---
 def fetch_and_parse_url(url: str) -> set:
     try:
         response = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
         if response.status_code != 200: return set()
-        
         content = response.text
         content_type = response.headers.get('Content-Type', '')
-        
         anti_bot_keywords = ['cloudflare', 'challenge', 'bot', 'captcha', 'attention required']
         if 'text/html' in content_type and any(keyword in content.lower() for keyword in anti_bot_keywords):
             print(f"ANTI-BOT [WARNING]: Source {url} returned a suspicious HTML page. Skipping.")
             return set()
-        
         if url.endswith((".json", "sing-box.json")):
             try:
                 json_data = json.loads(content)
@@ -272,6 +259,7 @@ def generate_clash_subscription(configs: list) -> str | None:
             if not url.hostname or not url.port or 'reality' in config_str.lower(): continue
             name = unquote(url.fragment) if url.fragment else f"{protocol}-{url.hostname}-{i}"
             original_name = re.sub(r'[^\w\s-]', '', name).strip()[:50]
+            if not original_name: original_name = f"{protocol}-{i}"
             final_name, count = original_name, 1
             while final_name in used_names:
                 final_name = f"{original_name}_{count}"
@@ -325,6 +313,9 @@ def main():
         def process_config_geo(result):
             try:
                 hostname = urlparse(result['config_str']).hostname
+                if not hostname and "vmess" in result['config_str']:
+                    vmess_data = json.loads(_decode_padded_b64(result['config_str'].replace("vmess://", "")))
+                    hostname = vmess_data.get('add')
                 result['flag'] = get_country_code(hostname)
             except: result['flag'] = "🏁"
             return result
@@ -341,7 +332,6 @@ def main():
             processed.append({'config': shortened_config, 'ping': res['ping']})
         return processed
 
-    # The rest of the logic uses `final_results_with_geo` instead of `fast_configs_results`
     fast_xray_compatible_res = [res for res in final_results_with_geo if res['config_str'] in xray_compatible_set]
     fast_singbox_only_res = [res for res in final_results_with_geo if res['config_str'] in singbox_only_set]
     
@@ -357,11 +347,17 @@ def main():
         existing_configs = {res['config_str'] for res in balanced_xray_results}
         for res in fast_xray_compatible_res:
             if len(balanced_xray_results) >= TARGET_CONFIGS_PER_CORE: break
-            if res['config_str'] not in existing_configs: balanced_xray_results.append(res)
+            if res['config_str'] not in existing_configs:
+                balanced_xray_results.append(res)
 
     final_xray_res = balanced_xray_results[:TARGET_CONFIGS_PER_CORE]
+    
     final_singbox_res = fast_singbox_only_res[:TARGET_CONFIGS_PER_CORE]
-    # (Sing-box fill logic is simplified for clarity, the previous full logic is fine)
+    if len(final_singbox_res) < TARGET_CONFIGS_PER_CORE:
+        existing_singbox_configs = {res['config_str'] for res in final_singbox_res}
+        fill_needed = TARGET_CONFIGS_PER_CORE - len(final_singbox_res)
+        non_singbox_configs = [res for res in fast_xray_compatible_res if res['config_str'] not in existing_singbox_configs]
+        final_singbox_res.extend(non_singbox_configs[:fill_needed])
 
     final_xray = process_and_shorten(final_xray_res)
     final_singbox = process_and_shorten(final_singbox_res)
