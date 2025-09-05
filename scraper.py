@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-V2V Scraper v15.0 - Anti-Anti-Bot Edition
+V2V Scraper v15.1 - Syntax Hotfix
+This script scrapes, tests, and categorizes proxy configurations from various sources.
 This version spoofs a browser User-Agent and intelligently detects HTML block pages.
 """
 
@@ -51,7 +52,6 @@ PROTOCOL_QUOTAS = {'vless': 0.45, 'vmess': 0.45, 'trojan': 0.05, 'ss': 0.05}
 if GITHUB_PAT: HEADERS['Authorization'] = f'token {GITHUB_PAT}'
 
 # --- PARSING & HELPER FUNCTIONS ---
-# ... (These functions are unchanged from v12)
 def _decode_padded_b64(encoded_str: str) -> str:
     if not encoded_str: return ""
     encoded_str = encoded_str.strip().replace('\n', '').replace('\r', '').replace(' ', '')
@@ -89,6 +89,7 @@ def parse_subscription_content(content: str) -> set:
         clean_match = match.strip().strip('\'"')
         if _is_valid_config_format(clean_match): configs.add(clean_match)
     return configs
+
 def parse_singbox_json_config(json_content: dict) -> set:
     configs = set()
     if not isinstance(json_content, dict): return configs
@@ -99,8 +100,9 @@ def parse_singbox_json_config(json_content: dict) -> set:
             if protocol == "vless":
                 tls, transport = outbound.get("tls", {}), outbound.get("transport", {})
                 params = {"type": transport.get("type", "tcp"), "security": "tls" if tls.get("enabled") else "none", "sni": tls.get("server_name", server), "path": transport.get("path", "/"), "host": transport.get("headers", {}).get("Host", server)}
-                query = "&"..join([f"{k}={v}" for k, v in params.items()])
-                config_str = f"vless://{uuid}@{server}:{port}?{query}#{tag}"
+                # CORRECTED SYNTAX ERROR ON THE LINE BELOW
+                query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+                config_str = f"vless://{uuid}@{server}:{port}?{query_string}#{tag}"
                 if _is_valid_config_format(config_str): configs.add(config_str)
         except Exception: continue
     return configs
@@ -113,17 +115,11 @@ def fetch_and_parse_url(url: str) -> set:
     try:
         response = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
-
-        # Anti-bot detection logic
         content_type = response.headers.get('Content-Type', '')
         if 'text/html' in content_type:
-            # It's likely a block page, not a subscription file.
             print(f"ANTI-BOT [WARNING]: Source {url} returned an HTML page, likely an anti-bot challenge. Skipping.")
             return set()
-
         content = response.text
-        
-        # Dispatch to appropriate parser
         if url.endswith((".json", "sing-box.json")):
             try:
                 json_data = json.loads(content)
@@ -132,14 +128,11 @@ def fetch_and_parse_url(url: str) -> set:
                 return parse_subscription_content(content)
         else:
             return parse_subscription_content(content)
-
     except requests.RequestException:
-        return set() # Silently ignore failed fetches
+        return set()
     except Exception:
-        return set() # Silently ignore other errors
+        return set()
 
-# ... (The rest of the script, including get_static_sources, discover_dynamic_sources, testing, and main logic remains unchanged from v12)
-# The full script is provided for completeness.
 def get_static_sources() -> list:
     print("INFO: Loading static sources...")
     try:
@@ -274,7 +267,7 @@ def generate_clash_subscription(configs: list) -> str | None:
     clash_config = {'proxies': proxies,'proxy-groups': [{'name': 'V2V-Auto','type': 'url-test','proxies': [p['name'] for p in proxies],'url': 'http://www.gstatic.com/generate_204','interval': 300},{'name': 'V2V-Proxies','type': 'select','proxies': ['V2V-Auto'] + [p['name'] for p in proxies]}],'rules': ['MATCH,V2V-Proxies']}
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False, indent=2)
 def main():
-    print("--- V2V Scraper v15.0 ---")
+    print("--- V2V Scraper v15.1 ---")
     start_time = time.time()
     all_sources = list(set(get_static_sources() + discover_dynamic_sources()))
     print(f"INFO: Total unique sources to fetch: {len(all_sources)}")
