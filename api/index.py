@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, uuid, json, base64, requests, yaml
+import os, uuid, json, base64, requests, yaml, re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from redis import Redis
