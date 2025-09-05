@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-V2V Scraper v16.0 - User-Driven Expert Analysis Edition
-This version implements advanced anti-bot detection and full browser headers based on user feedback.
+V2V Scraper v16.1 - Anti-Bot Test Edition
+This version implements the user's suggestion to disable the smart anti-bot filter
+for diagnostic purposes, to test the hypothesis that valid sources are being filtered.
 """
 import requests
 import base64
@@ -14,7 +15,7 @@ import socket
 import ssl
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
-from urllib.parse import urlparse, parse_qsl, unquote, quote
+from urllib.parse import urlparse, parse_qsl, unquote, quote, urlencode
 from collections import defaultdict
 from github import Github, Auth, GithubException
 
@@ -102,7 +103,7 @@ def parse_singbox_json_config(json_content: dict) -> set:
             if protocol == "vless":
                 tls, transport = outbound.get("tls", {}), outbound.get("transport", {})
                 params = {"type": transport.get("type", "tcp"), "security": "tls" if tls.get("enabled") else "none", "sni": tls.get("server_name", server), "path": transport.get("path", "/"), "host": transport.get("headers", {}).get("Host", server)}
-                query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+                query_string = urlencode(params)
                 config_str = f"vless://{uuid}@{server}:{port}?{query_string}#{tag}"
                 if _is_valid_config_format(config_str): configs.add(config_str)
         except Exception: continue
@@ -111,22 +112,20 @@ def parse_singbox_json_config(json_content: dict) -> set:
 # --- CORE LOGIC FUNCTIONS ---
 def fetch_and_parse_url(url: str) -> set:
     """
-    Fetches content with enhanced headers and smarter anti-bot detection.
+    Fetches content with enhanced headers. Anti-bot detection is disabled for this test.
     """
     try:
         response = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
         response.raise_for_status()
         content = response.text
-        content_type = response.headers.get('Content-Type', '')
         
-        # Smarter anti-bot detection based on user analysis
-        # Only skip if it's HTML AND contains suspicious keywords.
-        anti_bot_keywords = ['cloudflare', 'challenge', 'bot', 'captcha', 'attention required']
-        is_html_suspicious = ('text/html' in content_type and any(keyword in content.lower() for keyword in anti_bot_keywords))
-        
-        if is_html_suspicious:
-            print(f"ANTI-BOT [WARNING]: Source {url} returned a suspicious HTML page. Skipping.")
-            return set()
+        # --- ANTI-BOT DETECTION DISABLED AS PER YOUR REQUEST FOR TESTING ---
+        # content_type = response.headers.get('Content-Type', '')
+        # anti_bot_keywords = ['cloudflare', 'challenge', 'bot', 'captcha', 'attention required']
+        # is_html_suspicious = ('text/html' in content_type and any(keyword in content.lower() for keyword in anti_bot_keywords))
+        # if is_html_suspicious:
+        #     print(f"ANTI-BOT [DISABLED-TEST]: Source {url} returned a suspicious HTML page. Processing anyway.")
+        # --------------------------------------------------------------------
         
         # Dispatch to appropriate parser
         if url.endswith((".json", "sing-box.json")):
@@ -277,7 +276,7 @@ def generate_clash_subscription(configs: list) -> str | None:
     clash_config = {'proxies': proxies,'proxy-groups': [{'name': 'V2V-Auto','type': 'url-test','proxies': [p['name'] for p in proxies],'url': 'http://www.gstatic.com/generate_204','interval': 300},{'name': 'V2V-Proxies','type': 'select','proxies': ['V2V-Auto'] + [p['name'] for p in proxies]}],'rules': ['MATCH,V2V-Proxies']}
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False, indent=2)
 def main():
-    print("--- V2V Scraper v16.0 ---")
+    print("--- V2V Scraper v16.1 (Anti-Bot Test) ---")
     start_time = time.time()
     all_sources = list(set(get_static_sources() + discover_dynamic_sources()))
     print(f"INFO: Total unique sources to fetch: {len(all_sources)}")
