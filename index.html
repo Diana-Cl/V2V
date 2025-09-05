@@ -12,18 +12,18 @@
         html { height: 100%; box-sizing: border-box; }
         *, *:before, *:after { box-sizing: inherit; }
         body { background-color: var(--primary-bg); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100%; }
-        .main-wrapper { width: 100%; max-width: 700px; padding: 20px 10px; display: flex; flex-direction: column; flex-grow: 1; }
-        .header { margin-bottom: 20px; flex-shrink: 0; }
-        .header img { width: 100px; height: 100px; }
-        .slogan { font-size: 0.9em; color: #aaa; margin-top: 10px; font-style: italic; }
+        .main-wrapper { width: 100%; max-width: 700px; padding: 15px 10px; display: flex; flex-direction: column; flex-grow: 1; }
+        .header { margin-bottom: 15px; flex-shrink: 0; }
+        .header img { width: 90px; height: 90px; }
+        .slogan { font-size: 0.85em; color: #aaa; margin-top: 8px; font-style: italic; }
         .status-bar { font-size: 0.8em; color: #888; margin-bottom: 15px; min-height: 1em; }
-        .container { width: 100%; background-color: var(--secondary-bg); padding: 20px; border-radius: 10px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); margin-bottom: 20px; }
-        .core-header { color: white; padding: 15px; border-radius: 8px; font-size: 1.3em; font-weight: bold; margin-bottom: 20px; }
+        .container { width: 100%; background-color: var(--secondary-bg); padding: 15px; border-radius: 10px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); margin-bottom: 15px; }
+        .core-header { color: white; padding: 12px; border-radius: 8px; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
         #xray-header { background-color: var(--logo-red); }
         #singbox-header { background-color: var(--logo-green); }
-        .test-button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1em; margin-bottom: 20px; width: 100%; transition: background-color 0.2s; }
+        .test-button { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1em; margin-bottom: 15px; width: 100%; transition: background-color 0.2s; }
         .test-button:disabled { background-color: #555; cursor: not-allowed; }
-        .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
         .action-group-title { margin: 0 0 10px 0; font-size: 1.1em; text-align: right; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
         .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         .action-button { background-color: #333; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 0.9em; flex-grow: 1; color: var(--text-color); }
@@ -33,15 +33,15 @@
         .protocol-group.open .toggle-icon { transform: rotate(-135deg); }
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.4s ease-in-out; overflow-y: auto; }
         .protocol-group.open .config-list { max-height: 500px; }
-        .config-item { padding: 10px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
+        .config-item { padding: 8px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
         .config-checkbox { flex-shrink: 0; transform: scale(1.2); margin-left: 8px; accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.9em; }
         .ping-result { font-size: 0.85em; }
         .copy-button-container { display: flex; gap: 6px; }
         .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
-        .bottom-links { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border-color); width: 100%; display: flex; gap: 20px; justify-content: center; flex-shrink: 0; }
-        .bottom-links a { color: var(--text-color); text-decoration: none; font-size: 0.9em; }
+        .bottom-links { margin-top: auto; padding: 15px 0; border-top: 1px solid var(--border-color); width: 100%; display: flex; gap: 15px; justify-content: center; flex-shrink: 0; }
+        .bottom-links a { color: #aaa; text-decoration: none; font-size: 0.85em; }
         .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
         #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
         .qr-code-content { background-color: white; padding: 20px; border-radius: 10px; position: relative; display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -69,9 +69,10 @@
             </div>
         </div>
 
-        <div class="bottom-links">
-            <a href="https://github.com/SMBCRYP/V2V/blob/main/README.md" target="_blank">راهنما</a>
-            <a href="https://github.com/SMBCRYP/V2V" target="_blank">گیت‌هاب</a>
+        <div class="bottom-links" id="footer-links">
+             <a href="https://v2v-vercel.vercel.app/" target="_blank">ورسل</a>
+             <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank">ابر آروان</a>
+             <a href="https://github.com/SMBCRYP/V2V" target="_blank">گیت‌هاب</a>
         </div>
     </div>
 
@@ -90,10 +91,13 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- CONFIGURATION ---
-            const API_BASE_URL = ''; // Vercel API is on the same domain
+            const API_BASE_URL = 'https://v2v-vercel.vercel.app';
             const DATA_URL = 'all_live_configs.json';
             const CACHE_URL = 'cache_version.txt';
-            const PING_URL = 'https://v2v-final.vercel.app/'; // Root of the API returns a quick response
+            const PING_TARGETS = [
+                'https://v2v-vercel.vercel.app/',
+                'https://cloudflare.com/cdn-cgi/trace'
+            ];
             const AUTO_SELECT_COUNT = 30;
 
             // --- DOM ELEMENTS ---
@@ -132,14 +136,21 @@
                 qrModal.style.display = 'flex';
             };
             window.toggleGroup = (groupId) => document.getElementById(groupId)?.parentNode.classList.toggle('open');
-            const getUserPing = async (timeout = 4000) => {
-                const startTime = performance.now();
-                try {
+            const getUserPing = async (timeout = 3000) => {
+                const fetchWithTimeout = (url) => new Promise(async (resolve, reject) => {
                     const controller = new AbortController();
-                    setTimeout(() => controller.abort(), timeout);
-                    await fetch(`${PING_URL}?t=${Date.now()}`, { signal: controller.signal, cache: 'no-store' });
-                    return Math.round(performance.now() - startTime);
+                    const timer = setTimeout(() => { controller.abort(); reject(new Error('Timeout')); }, timeout);
+                    try {
+                        const startTime = performance.now();
+                        await fetch(`${url}?t=${Date.now()}`, { signal: controller.signal, cache: 'no-store', mode: 'no-cors' });
+                        resolve(Math.round(performance.now() - startTime));
+                    } catch (e) { reject(e); } 
+                    finally { clearTimeout(timer); }
+                });
+                try {
+                    return await Promise.any(PING_TARGETS.map(url => fetchWithTimeout(url)));
                 } catch (error) {
+                    console.warn("All user ping endpoints failed.");
                     return null;
                 }
             };
@@ -222,15 +233,11 @@
                         li.dataset.backendPing = configObj.ping;
                         try {
                             const serverName = configObj.config.includes('#') ? decodeURIComponent(configObj.config.split('#')[1]) : new URL(configObj.config).hostname;
-                            let pingColor = 'var(--ping-good)';
-                            if (configObj.ping > 700) pingColor = 'var(--ping-medium)';
-                            if (configObj.ping > 1500) pingColor = 'var(--ping-bad)';
-
                             li.innerHTML = `
                                 <input type="checkbox" class="config-checkbox">
                                 <div class="config-details">
                                     <span class="server">${serverName}</span>
-                                    <span class="ping-result" style="color:${pingColor};">پینگ بک‌اند: ${configObj.ping}ms</span>
+                                    <span class="ping-result"></span>
                                 </div>
                                 <div class="copy-button-container">
                                     <button class="copy-btn" onclick="window.v2v.copyConfig(event)">کپی</button>
