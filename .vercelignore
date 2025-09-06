@@ -1,0 +1,17 @@
+# Cloudflare Worker files
+wrangler.toml
+worker.js
+
+# Node.js files
+package.json
+package-lock.json
+node_modules/
+
+# Python Scraper (not part of the live site)
+scraper.py
+sources.json
+
+# Other non-essential files
+.github/
+configs/
+dl-test.bin
