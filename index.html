@@ -86,9 +86,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const API_BASE_URL = 'https://v2v-vercel.vercel.app';
-            // ⬇️ **مسیرهای API جدید برای تست پینگ**
-            const CF_PING_ENDPOINT = 'https://your-cloudflare-worker.workers.dev/ping'; // ** آدرس ورکر کلادفلر خود را جایگزین کنید **
-            const VERCEL_PING_ENDPOINT = `${API_BASE_URL}/api/ping`; // ** مسیر سرورلس فانکشن ورسل **
+            // ⬇️ **مسیرهای API تست پینگ**
+            // ** آدرس ورکر کلادفلر خود را بعدا در اینجا جایگزین کنید **
+            const CF_PING_ENDPOINT = 'https://temp-placeholder.workers.dev/ping'; 
+            const VERCEL_PING_ENDPOINT = `${API_BASE_URL}/api/ping`; 
             
             const DATA_URL = 'all_live_configs.json';
             const CACHE_URL = 'cache_version.txt';
@@ -148,7 +149,6 @@
                 const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
                 wrapper.innerHTML = ''; 
                 const actionsContainer = document.createElement('div');
-                // ⬇️ **اصلاح `event` در `onclick`**
                 actionsContainer.innerHTML = `<button class="test-button" id="${core}-test-btn">اجرای تست سرعت دقیق</button>
                     <div class="action-group">
                         <h4 class="action-group-title">اشتراک شخصی (Standard)</h4>
@@ -200,7 +200,6 @@
                 }
             }
             
-            // ⬇️ **تابع تست پینگ کاملا بازنویسی شده**
             async function runRealPingTest(core) {
                 const testButton = document.getElementById(`${core}-test-btn`);
                 if (testButton.disabled) return;
@@ -233,16 +232,14 @@
 
                 let pingResults;
                 try {
-                    // **تلاش اول: کلادفلر**
                     testButton.textContent = 'درحال تست از نزدیک‌ترین سرور...';
                     pingResults = await fetchWithTimeout(CF_PING_ENDPOINT, allConfigs);
                     console.log('Ping test successful via Cloudflare.');
                 } catch (error) {
                     console.warn('Cloudflare ping failed, falling back to Vercel.', error);
                     try {
-                        // **نقشه دوم: ورسل**
                         testButton.textContent = 'خطا! تلاش مجدد از سرور پشتیبان...';
-                        pingResults = await fetchWithTimeout(VERCEL_PING_ENDPOINT, allConfigs, 8000); // Timeout طولانی‌تر برای سرور پشتیبان
+                        pingResults = await fetchWithTimeout(VERCEL_PING_ENDPOINT, allConfigs, 8000);
                         console.log('Ping test successful via Vercel (fallback).');
                     } catch (fallbackError) {
                         console.error('All ping tests failed.', fallbackError);
@@ -252,7 +249,6 @@
                     }
                 }
 
-                // **پردازش و نمایش نتایج**
                 const pingMap = new Map(pingResults.map(p => [p.config, p.ping]));
                 const items = document.querySelectorAll(`#${core}-section .config-item`);
 
@@ -298,7 +294,6 @@
                     }
                     return selected;
                 },
-                // ⬇️ **اصلاح `event` در پارامتر تابع**
                 createSubscription: async (core, type, action, event) => {
                     const configs = window.v2v.getSelectedConfigs(core);
                     if (configs.length === 0) return alert('هیچ کانفیگی برای ساخت لینک وجود ندارد.');
@@ -327,7 +322,6 @@
                             if (configStr.startsWith('vmess://')) { const d = JSON.parse(atob(configStr.replace('vmess://', ''))); proxy = {...proxy, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: d.aid, cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net || 'tcp', 'skip-cert-verify': true, servername: d.sni || d.add }; if (proxy.network === 'ws') proxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add } }; } 
                             else if (configStr.startsWith('vless://')) { const u = new URL(configStr); const p = new URLSearchParams(u.search); proxy = {...proxy, type: 'vless', server: u.hostname, port: parseInt(u.port), uuid: u.username, tls: p.get('security') === 'tls', network: p.get('type') || 'tcp', servername: p.get('sni') || u.hostname, 'skip-cert-verify': true}; if (proxy.network === 'ws') proxy['ws-opts'] = { path: p.get('path') || '/', headers: { Host: p.get('host') || u.hostname } }; } 
                             else if (configStr.startsWith('trojan://')) { const u = new URL(configStr); const p = new URLSearchParams(u.search); proxy = {...proxy, type: 'trojan', server: u.hostname, port: parseInt(u.port), password: u.username, sni: p.get('sni') || u.hostname, 'skip-cert-verify': true }; } 
-                            // ⬇️ **اصلاح باگ `ss://`**
                             else if (configStr.startsWith('ss://')) { const u = new URL(configStr); const [cipher, password] = atob(u.username).split(':'); proxy = {...proxy, type: 'ss', server: u.hostname, port: parseInt(u.port), cipher, password}; } 
                             else { return null; } 
                             return proxy; 
