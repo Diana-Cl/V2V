@@ -1,155 +1,71 @@
 proxies:
-- name: meli_proxyy
-  type: vless
-  server: turboo-server.sadafspace.com
-  port: 80
-  uuid: turboo-server
-  tls: false
-  network: ws
-  servername: turboo-server.sadafspace.com
-  skip-cert-verify: true
-  ws-opts:
-    path: /--ping--www.speedtest.net?ed=2080/?TELEGRAM_CHANEL_JKVPN_JKVPN_JKVPN
-    headers:
-      Host: turboo-server.sadafspace.com
-- name: این کانفیگ تستیه کانفیگ اصلی رو بردار
-  type: vless
-  server: server.turboo-server.com.co
-  port: 80
-  uuid: turboo-server
-  tls: false
-  network: ws
-  servername: server.turboo-server.com.co
-  skip-cert-verify: true
-  ws-opts:
-    path: /--ping--www.speedtest.net?ed=2080
-    headers:
-      Host: server.turboo-server.com.co
-- name: Vip_Security
-  type: vless
-  server: 151.101.64.155
-  port: 80
-  uuid: 2302c824-6a71-4ed0-b784-5191c2e773a4
-  tls: false
-  network: ws
-  servername: 151.101.64.155
-  skip-cert-verify: true
-  ws-opts:
-    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
-    headers:
-      Host: Lightning6.ir
-- name: vpnclashfa
-  type: vless
-  server: nwarne.fast.hosting-ip.com
-  port: 80
-  uuid: 8b4bb431-21bf-46c9-a4bf-4deac75613f9
-  tls: false
-  network: ws
-  servername: nwarne.fast.hosting-ip.com
-  skip-cert-verify: true
-  ws-opts:
-    path: /de?ed=1048
-    headers:
-      Host: Shupyghb.com
-- name: oxnet_ir  VL-WS-NA  US 26ms
-  type: vless
-  server: svnteam.fast.hosting-ip.com
-  port: 80
-  uuid: 987b346f-113c-49e8-9622-f5d41b6de779
-  tls: false
-  network: ws
-  servername: svnteam.fast.hosting-ip.com
-  skip-cert-verify: true
-  ws-opts:
-    path: /@SvnProBot?ed=2560
-    headers:
-      Host: Aeza.net
-- name: vipV2rayNGnp
+- name: US
   type: vless
   server: speedtest.net
   port: 80
-  uuid: ca9fc94c-8ffc-4fb0-8cfa-a21bab6fcddf
+  uuid: 2dc3ae5b-589c-4696-a232-454117fe2ee5
   tls: false
   network: xhttp
   servername: speedtest.net
   skip-cert-verify: true
-- name: Vip_Security_1
+- name: vless-1
   type: vless
-  server: test.fast.hosting-ip.com
+  server: 151.101.66.228
   port: 80
-  uuid: 645360ac-4ffc-4504-85d2-807309a313c1
+  uuid: fbfb8c1f-b755-438c-af77-172f6453a3f2
+  tls: false
+  network: ws
+  servername: 151.101.66.228
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy?ed=2048
+    headers:
+      Host: joinshhproxybedeedeeeeee.ir
+- name: fr33c0nfig  VL-XHTTP-NA  US 20ms
+  type: vless
+  server: viop.fast.hosting-ip.com
+  port: 80
+  uuid: 7fa08b3d-86d8-4b14-92b3-4c56a83f027d
   tls: false
   network: xhttp
-  servername: test.fast.hosting-ip.com
+  servername: viop.fast.hosting-ip.com
   skip-cert-verify: true
-- name: vpnclashfa_1
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: f633fabf-ee7e-4562-a2c2-459848818b29
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: tmeentryNETconfig1842542042382654
-  type: vless
-  server: speedtestcustom.com
-  port: 80
-  uuid: a98b1a4d-02d5-442b-a80e-928a1f7f81b4
-  tls: false
-  network: xhttp
-  servername: speedtestcustom.com
-  skip-cert-verify: true
-- name: US
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 12b436f1-a946-43c6-83ca-43b332edfae7
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: XpnTeam-k9f4ny3x7
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 0134428a-02d8-4f94-8221-a1e858552212
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: Telegram
-  type: vless
-  server: test.fast.hosting-ip.com
-  port: 80
-  uuid: telegram-id-ArV2ray
-  tls: false
-  network: xhttp
-  servername: test.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: CaV2ray
-  type: vless
-  server: test.fast.hosting-ip.com
-  port: 80
-  uuid: TELEGRAM-NUFiLTER
-  tls: false
-  network: xhttp
-  servername: test.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: CaV2ray_1
-  type: vless
-  server: test.fast.hosting-ip.com
-  port: 80
-  uuid: 0788f940-bc79-4438-9553-ac469844469d
-  tls: false
-  network: xhttp
-  servername: test.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: Vip_Security_2
+- name: سرور های بیشتر customv2ray
   type: vless
   server: speedtest.net
   port: 80
-  uuid: b1f58d90-e65f-4566-91f3-1b96e9a68617
+  uuid: e02a83a6-16c9-4eaf-d40e-1387028d93a0
+  tls: false
+  network: xhttp
+  servername: speedtest.net
+  skip-cert-verify: true
+- name: vpnclashfa
+  type: vless
+  server: speedtest.net
+  port: 80
+  uuid: 81a75e30-1223-4076-9fb8-775df00c6665
+  tls: false
+  network: xhttp
+  servername: speedtest.net
+  skip-cert-verify: true
+- name: All
+  type: vless
+  server: 151.101.67.8
+  port: 80
+  uuid: 5d2eb11f-0138-490d-9781-f9cfb60c1766
+  tls: false
+  network: ws
+  servername: 151.101.67.8
+  skip-cert-verify: true
+  ws-opts:
+    path: /admin?TELEGRAM_Join----JKVPN---Join----JKVPN----Join----JKVPN----Join----JKVPN?ed=2048
+    headers:
+      Host: gm195.io
+- name: Digiv2ray
+  type: vless
+  server: speedtest.net
+  port: 80
+  uuid: b1f58d90-e65f-4566-91f3-1b96e9a68612
   tls: false
   network: ws
   servername: speedtest.net
@@ -158,131 +74,179 @@ proxies:
     path: /@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--?ed=2048
     headers:
       Host: JoiIInNn--DIgiv2Ray.Ir.
-- name: tmlightning6
-  type: vless
-  server: speedtestcustom.com
-  port: 80
-  uuid: 947006de-c484-4466-98d2-b8dd01a82cbe
-  tls: false
-  network: xhttp
-  servername: speedtestcustom.com
-  skip-cert-verify: true
-- name: configLINE4
-  type: vless
-  server: test.fast.hosting-ip.com
-  port: 80
-  uuid: f14fe691-0868-4cb0-b6ff-e42444a84adf
-  tls: false
-  network: xhttp
-  servername: test.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: configLINE2
-  type: vless
-  server: test.fast.hosting-ip.com
-  port: 80
-  uuid: 054c14f5-624b-4ea8-b1f3-9ea96a35a388
-  tls: false
-  network: xhttp
-  servername: test.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: tmlightning6_1
-  type: vless
-  server: speedtestcustom.com
-  port: 80
-  uuid: f0dc048a-1fd1-4ccc-9615-ee62fce4389f
-  tls: false
-  network: xhttp
-  servername: speedtestcustom.com
-  skip-cert-verify: true
-- name: configx2ray  VL-XHTTP-NA  US 117ms
-  type: vless
-  server: speedtestcustom.com
-  port: 80
-  uuid: 73cbb67b-42c5-415a-adf1-a7ff765109ce
-  tls: false
-  network: xhttp
-  servername: speedtestcustom.com
-  skip-cert-verify: true
-- name: vpnclashfa_2
-  type: vless
-  server: tel.v2angbot.fast.hosting-ip.com
-  port: 80
-  uuid: 48a2c4cb-b4ce-427d-8860-a512b1f2b849
-  tls: false
-  network: xhttp
-  servername: tel.v2angbot.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: confiig_hub
-  type: vless
-  server: 151.101.195.8
-  port: 80
-  uuid: TELEGRAM-CONFiGLiNE
-  tls: false
-  network: xhttp
-  servername: 151.101.195.8
-  skip-cert-verify: true
-- name: Telegram_1
-  type: vless
-  server: speedtestcustom.com
-  port: 80
-  uuid: 97b58d0f-0102-44d9-91cc-0371522860ad
-  tls: false
-  network: xhttp
-  servername: speedtestcustom.com
-  skip-cert-verify: true
-- name: v2rayng_fars
-  type: vless
-  server: speedtestcustom.com
-  port: 80
-  uuid: 97b58d0f-0102-44d9-91cc-0371522860ad
-  tls: false
-  network: xhttp
-  servername: speedtestcustom.com
-  skip-cert-verify: true
-- name: configLINE
-  type: vless
-  server: configline.fast.hosting-ip.com
-  port: 80
-  uuid: TELEGRAM-CONFiGLiNE
-  tls: false
-  network: xhttp
-  servername: configline.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: Vip_Security_3
-  type: vless
-  server: 151.101.67.8
-  port: 80
-  uuid: V2rayNGFreeeV2rayNGFreee
-  tls: false
-  network: xhttp
-  servername: 151.101.67.8
-  skip-cert-verify: true
-- name: configLINE_1
-  type: vless
-  server: nufilter.fast.hosting-ip.com
-  port: 80
-  uuid: TELEGRAM-CONFiGLiNE-joinn
-  tls: false
-  network: xhttp
-  servername: nufilter.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: Vip_Security_4
-  type: vless
-  server: configline.fast.hosting-ip.com
-  port: 80
-  uuid: 69268d69-4d1a-44fe-9e3a-e3238fe5fcb0
-  tls: false
-  network: xhttp
-  servername: configline.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: vless-28
+- name: Telegram
   type: vless
   server: speedtest.net
   port: 80
-  uuid: cc9eb33f-b0ca-440d-b35e-631e49dd36d4
+  uuid: ca9fc94c-8ffc-4fb0-8cfa-a21bab6fcddf
   tls: false
-  network: tcp
+  network: xhttp
   servername: speedtest.net
+  skip-cert-verify: true
+- name: Vip_Security
+  type: vless
+  server: 151.101.1.124
+  port: 80
+  uuid: f149f3ea-ac0f-4e29-8db2-89d57b4f6eac
+  tls: false
+  network: ws
+  servername: 151.101.1.124
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: danuwazero.com
+- name: vless-9
+  type: vless
+  server: 151.101.194.219
+  port: 80
+  uuid: ed87c882-17f3-491a-810c-c0000e4b279e
+  tls: false
+  network: ws
+  servername: 151.101.194.219
+  skip-cert-verify: true
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: foffmelo.com
+- name: vless-10
+  type: vless
+  server: evay-vpn.fast.hosting-ip.com
+  port: 80
+  uuid: bb57d265-b716-4092-bd0a-68f3988db63c
+  tls: false
+  network: xhttp
+  servername: evay-vpn.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: configLINEتست
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: 5bdc4429-a059-453a-b033-b0502ad43a44
+  tls: false
+  network: xhttp
+  servername: test.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: vless-12
+  type: vless
+  server: evay_vpn.fast.hosting-ip.com
+  port: 80
+  uuid: c95e1271-871f-44ad-bbe9-e05d028d3d40
+  tls: false
+  network: xhttp
+  servername: evay_vpn.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: Telegram_1
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 58abe093-fc17-4060-b6c5-a19cbe4ae7ba
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: Vip_Security_1
+  type: vless
+  server: speedtest.net
+  port: 80
+  uuid: b1f58d90-e65f-4566-91f3-1b96e9a68616
+  tls: false
+  network: ws
+  servername: speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--@Digiv2ray--?ed=2048
+    headers:
+      Host: JoiIInNn--DIgiv2Ray.Ir.
+- name: vless-15
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 3f168ea9-f0cd-4a59-c5c2-8dd90d77b8ec
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: vpnclashfa_1
+  type: vless
+  server: www.fast.hosting-ip.com
+  port: 80
+  uuid: 01abdb29-cca0-47c6-844d-9f4e29f21c56
+  tls: false
+  network: xhttp
+  servername: www.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: US_1
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: 3ec5186b-d636-48b0-9a0a-30d824f63078
+  tls: false
+  network: xhttp
+  servername: test.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: US_2
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: 0788f940-bc79-4438-9553-ac469844469d
+  tls: false
+  network: xhttp
+  servername: test.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: US   VLESS  arv2ray 18
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: telegram-id-ArV2ray
+  tls: false
+  network: xhttp
+  servername: test.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: 𝗝𝗼𝗶𝗻
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: telegram-id-ArV2ray
+  tls: false
+  network: xhttp
+  servername: test.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: Vip_Security_2
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 263535f3-e631-442f-b25f-1f3f1db2b8e7
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: Vip_Security_3
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: 2c8aaf87-b1e3-4fc6-915b-0e48a26b1cd6
+  tls: false
+  network: xhttp
+  servername: test.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: vipV2rayNGnp
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: 24984e27-b731-4ee3-84e5-a143472d3620
+  tls: false
+  network: xhttp
+  servername: test.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: FreakConfig
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: 645360ac-4ffc-4504-85d2-807309a313c1
+  tls: false
+  network: xhttp
+  servername: test.fast.hosting-ip.com
   skip-cert-verify: true
 - name: confegraigan
   type: vless
@@ -293,192 +257,302 @@ proxies:
   network: xhttp
   servername: test.fast.hosting-ip.com
   skip-cert-verify: true
-- name: vless-30
+- name: Confiig_hub
   type: vless
   server: 151.101.3.8
   port: 80
-  uuid: 1dc37b8f-49a9-478f-91e1-147f0a1249f8
+  uuid: TELEGRAM-CONFiGLiNE-join
   tls: false
   network: xhttp
   servername: 151.101.3.8
   skip-cert-verify: true
+- name: US_3
+  type: vless
+  server: 151.101.0.155
+  port: 80
+  uuid: b5ae01f4-abcb-4c22-9377-1573ea1a9929
+  tls: false
+  network: xhttp
+  servername: 151.101.0.155
+  skip-cert-verify: true
+- name: Vip_Security_4
+  type: vless
+  server: 151.101.2.133
+  port: 80
+  uuid: 275d87d1-221a-4e47-96b1-9a6f76a7daba
+  tls: false
+  network: xhttp
+  servername: 151.101.2.133
+  skip-cert-verify: true
+- name: v2ray_configs_poolCanadaMontre
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: f02f%65%6145-%615bb-4d8f-9%6160-874%61d0b4439c
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: configLINE
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: TELEGRAM-CONFiGLiNE-join
+  tls: false
+  network: xhttp
+  servername: test.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: vless-31
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 76b59083-6d22-4692-ecae-c08f534220c2
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: vless-32
+  type: vless
+  server: 151.101.2.228
+  port: 80
+  uuid: fbfb8c1f-b755-438c-af77-172f6453a3f2
+  tls: false
+  network: ws
+  servername: 151.101.2.228
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy?ed=2048
+    headers:
+      Host: joinshhproxybedeedeeeeee.ir
+- name: vpnclashfa_2
+  type: vless
+  server: speedtest.net
+  port: 80
+  uuid: 306d3b21-2f56-4679-8806-9d17ecb82a26
+  tls: false
+  network: xhttp
+  servername: speedtest.net
+  skip-cert-verify: true
+- name: ShatakVPN 207570
+  type: vless
+  server: 104.17.148.22
+  port: 2052
+  uuid: 95260b6a-e711-455c-d273-3439ca210d44
+  tls: false
+  network: ws
+  servername: 104.17.148.22
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: Vmessorg.paradoxone.ir
+- name: ogsvpnbotخرید
+  type: vless
+  server: cumhuriyet.com.tr
+  port: 80
+  uuid: 712e7715-0f22-4a5e-a986-a39427853fa3
+  tls: false
+  network: ws
+  servername: cumhuriyet.com.tr
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: Vmessorg.paradoxone.ir
+- name: v2raying
+  type: vless
+  server: 104.16.85.3
+  port: 8880
+  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
+  tls: false
+  network: ws
+  servername: 104.16.85.3
+  skip-cert-verify: true
+  ws-opts:
+    path: '/telegram: @Eternal_Connect - telegram: @Eternal_Connect - telegram: @Eternal_Connect
+      - telegram: @Eternal_Connect'
+    headers:
+      Host: vngsupply.ip-ddns.com
 - name: Vip_Security_5
   type: vless
   server: 151.101.3.8
   port: 80
-  uuid: f222a575-5a5b-496f-b1b8-7e95aefee02b
+  uuid: afdbecef-a23d-4900-9a1b-da854dad1a97
   tls: false
   network: ws
   servername: 151.101.3.8
   skip-cert-verify: true
   ws-opts:
-    path: /olem/ws?ed=1024
+    path: ?=9090
     headers:
-      Host: fatmelo.com
-- name: Vip_Security_6
+      Host: External_Net.org
+- name: سرور های بیشتر customv2ray_1
   type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 0c41105%65-22b7-48%658-9f7f-81f1cd43c8%61c
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: Vip_Security_7
-  type: vless
-  server: speedtest.net
-  port: 80
-  uuid: 7cccefc2-6e9b-47bb-f30c-ea2d3cdc8593
+  server: www.speedtest.net
+  port: 2095
+  uuid: 89ba9206-305a-4dbf-bd62-9144c1b0e0c4
   tls: false
   network: ws
-  servername: speedtest.net
+  servername: www.speedtest.net
   skip-cert-verify: true
   ws-opts:
-    path: /olem/ws?ed=1024
+    path: /hajmi?ed=2050
     headers:
-      Host: foffmelo.com
-- name: FreakConfig
+      Host: dbe661d5a761ff6c.s-5HU09JDF-97SHS.WWWrubika.irto.xn--ls8haaaaaaaaaaaaaaaaaa.la.which.xn--ls8haaaaaaaaaaaaaaaaaa.xn-ls8faaaaaaaaaa.speedtest.net.google.com.eu.ir.nl.aparat.com.komak.IR.Nb-En.85858599.xYz.
+- name: سرور
   type: vless
-  server: compose.fast.hosting-ip.com
+  server: hajimamadvpn.fast.hosting-ip.com
   port: 80
-  uuid: ab80613b-e04b-4af5-bad9-9ca5c448266e
+  uuid: 378b8e58-6a23-4fc6-b227-67665a78033d
   tls: false
   network: xhttp
-  servername: compose.fast.hosting-ip.com
+  servername: hajimamadvpn.fast.hosting-ip.com
   skip-cert-verify: true
 - name: FreakConfig_1
   type: vless
-  server: test.fast.hosting-ip.com
+  server: fastly.vipfast7.site
   port: 80
-  uuid: 054c14f5-624b-4ea8-b1f3-9ea96a35a388
+  uuid: 35e905b6-01d4-4697-8e1a-fce4cac9df75
   tls: false
-  network: xhttp
-  servername: test.fast.hosting-ip.com
+  network: ws
+  servername: fastly.vipfast7.site
   skip-cert-verify: true
-- name: US   VLESS  komail315 2
-  type: vless
-  server: 151.101.3.8
-  port: 80
-  uuid: 0f608156-ecc4-4ee0-8cd4-e5e6d1c891ab
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: configx2ray  VL-XHTTP-NA  US 21ms
-  type: vless
-  server: test.fast.hosting-ip.com
-  port: 80
-  uuid: telegram-id-ArV2ray
-  tls: false
-  network: xhttp
-  servername: test.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: Vip_Security_8
-  type: vless
-  server: test.fast.hosting-ip.com
-  port: 80
-  uuid: TELEGRAM-CONFiGLiNE
-  tls: false
-  network: xhttp
-  servername: test.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: Vip_Security_9
+  ws-opts:
+    path: /@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7?ed=2048
+    headers:
+      Host: testfast7.v2fast7.com
+- name: EXPRESSVPN_420
   type: vless
   server: speedtest.net
   port: 80
-  uuid: ca9fc94c-8ffc-4fb0-8cfa-a21bab6fcddf
+  uuid: 4801c19d-37aa-4704-921e-9ee9bab80f1d
   tls: false
   network: xhttp
   servername: speedtest.net
   skip-cert-verify: true
-- name: 6xzx-Fr33C0nfig  کانفیگ رایگان
+- name: vless-42
   type: vless
-  server: viop.fast.hosting-ip.com
-  port: 80
-  uuid: 7fa08b3d-86d8-4b14-92b3-4c56a83f027d
+  server: 198.41.216.98
+  port: 8080
+  uuid: 206b6081-24e9-4516-aa1c-90fc57614f9a
   tls: false
-  network: xhttp
-  servername: viop.fast.hosting-ip.com
+  network: httpupgrade
+  servername: 198.41.216.98
   skip-cert-verify: true
-- name: Vip_Security_10
-  type: vless
-  server: 156.238.18.166
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
-  tls: false
-  network: ws
-  servername: 156.238.18.166
-  skip-cert-verify: true
-  ws-opts:
-    path: Telegram@WangCai2/?ed=2048
-    headers:
-      Host: sg.laoyoutiao.link
-- name: mehrosaboran
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 6b758c57-3a4b-41f3-be1e-25025eba8bfc
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join----VPNCUSTOMIZE---Join----VPNCUSTOMIZE
-    headers:
-      Host: revest.maketunnelim.Lat.
-- name: All-IRAN_V2RAY1
-  type: vless
-  server: 104.17.147.22
-  port: 80
-  uuid: 58a6047f-b46e-4e7a-c7d0-c08b48f3c505
-  tls: false
-  network: ws
-  servername: 104.17.147.22
-  skip-cert-verify: true
-  ws-opts:
-    path: /olem/ws?ed=1024
-    headers:
-      Host: fin.channel.digicyber.click
-- name: Vip_Security_11
+- name: Vip_Security_6
   type: vless
   server: 172.66.40.99
   port: 8080
-  uuid: 6b6c9c%659-0%6123-4b1b-cd03-35493c801007
+  uuid: 7aa00fca-7e45-442f-bffb-ab72afe864dc
   tls: false
   network: ws
   servername: 172.66.40.99
   skip-cert-verify: true
   ws-opts:
-    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    path: /telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE?ed=80
     headers:
-      Host: join-to-unlimiteddev.sabadyt.ir
-- name: IRAN 206 Outline_Vpn free
+      Host: LeaSe.motorbazan.cOm
+- name: کانفیگ
   type: vless
-  server: 104.16.241.234
+  server: 104.19.76.13
+  port: 8880
+  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
+  tls: false
+  network: ws
+  servername: 104.19.76.13
+  skip-cert-verify: true
+  ws-opts:
+    path: /G8ZDmBYwOAz3ahmR?ed=2560
+    headers:
+      Host: vngsupply.ip-ddns.com
+- name: vless-45
+  type: vless
+  server: 173.245.59.132
+  port: 8080
+  uuid: 8f08ff2c-b7b7-4d53-b2cf-0e594c742b85
+  tls: false
+  network: httpupgrade
+  servername: 173.245.59.132
+  skip-cert-verify: true
+- name: GB
+  type: vless
+  server: 63.141.128.32
+  port: 8080
+  uuid: 6e33a2c0-85f4-4c66-99f4-421636868a83
+  tls: false
+  network: ws
+  servername: 63.141.128.32
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: f.jOin.zEdMoDeOn.oNl.
+- name: FreakConfig_2
+  type: vless
+  server: 104.18.26.90
   port: 80
   uuid: 92f481b6-ad92-43e4-a683-2bb0aeaa9846
   tls: false
   network: ws
-  servername: 104.16.241.234
+  servername: 104.18.26.90
   skip-cert-verify: true
   ws-opts:
-    path: /?ed=2590
+    path: /Telegram---MTMVPN---Telegram---MTMVPN---Telegram---MTMVPN---Telegram---MTMVPN?ed=2590
     headers:
       Host: dw.alibichareh.dpdns.org
-- name: securitytlsalpnh2http11encryp
+- name: VIProxys
   type: vless
-  server: 172.66.40.99
-  port: 443
-  uuid: bee3ac04-a986-4de1-9c2f-12dba6caa371
+  server: 154.197.121.29
+  port: 8880
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
   tls: false
-  network: tcp
-  servername: 172.66.40.99
+  network: ws
+  servername: hk.laoyoutiao.link
   skip-cert-verify: true
-- name: bored_vpn
+  ws-opts:
+    path: /TelegramU0001F1E8U0001F1F3
+    headers:
+      Host: hk.laoyoutiao.link
+- name: CaV2ray
+  type: vless
+  server: 172.67.128.105
+  port: 80
+  uuid: 4179c595-08ca-45cd-b555-91b6f1faeadc
+  tls: false
+  network: ws
+  servername: 172.67.128.105
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: di.dibdibini.dpdns.org
+- name: mehrosaboran
+  type: vless
+  server: 104.17.148.22
+  port: 2095
+  uuid: b6a137d5-2204-4f7c-cd4e-cb400e04b111
+  tls: false
+  network: httpupgrade
+  servername: 104.17.148.22
+  skip-cert-verify: true
+- name: vpnclashfa_3
+  type: vless
+  server: 63.141.128.13
+  port: 80
+  uuid: fdf5ef4d-bf23-4bd1-b04e-39c80ba0c577
+  tls: false
+  network: ws
+  servername: 63.141.128.13
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: c.jOin.zEdMoDeOn.oNl.
+- name: Vip_Security_7
   type: vless
   server: 172.67.72.39
   port: 8080
-  uuid: 0a5cb919-247b-4e6c-e1ee-99ae0e58798d
+  uuid: 73%616237b-4cdf-42%657-%61%61b6-c80b5948%65%61d%65
   tls: false
   network: ws
   servername: 172.67.72.39
@@ -487,649 +561,59 @@ proxies:
     path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
     headers:
       Host: bia-to-unlimiteddev.unlimiteddev-service.ir
-- name: FreakConfig_2
+- name: VIPro
   type: vless
-  server: 104.16.53.11
-  port: 80
-  uuid: b221eccb-6823-4940-8980-59db5ee0dbf1
-  tls: false
-  network: ws
-  servername: 104.16.53.11
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed
-    headers:
-      Host: aKmDuHdNrOjhEjGs1.FligHtbEaN24.Com
-- name: Vip_Security_12
-  type: vless
-  server: 185.146.173.39
+  server: 91.193.58.32
   port: 8880
-  uuid: Parsashonam-301
-  tls: false
-  network: httpupgrade
-  servername: 185.146.173.39
-  skip-cert-verify: true
-- name: mehrosaboran_1
-  type: vless
-  server: 63.141.128.16
-  port: 80
-  uuid: 00a87d0f-6eb9-4b10-9793-7b8bd4553617
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
   tls: false
   network: ws
-  servername: 63.141.128.16
+  servername: sk.laoyoutiao.link
   skip-cert-verify: true
   ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    path: /TelegramU0001F1E8U0001F1F3
     headers:
-      Host: e.jOin.zEdMoDeOn.oNl.
-- name: کانفیگ های بیشتر customv2ray
-  type: vless
-  server: communal-loss.oneeat.co
-  port: 80
-  uuid: a2af50d9-09c7-4a44-90d0-42da35923e9e
-  tls: false
-  network: ws
-  servername: communal-loss.oneeat.co
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: communal-loss.oneeat.co
-- name: PersianGulf 70 Outline_Vpn
-  type: vless
-  server: 209.46.30.20
-  port: 8880
-  uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
-  tls: false
-  network: ws
-  servername: 209.46.30.20
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: reedfree8mahsang2.redorg.ir
-- name: RELAY
-  type: vless
-  server: llc.v2sub.ir
-  port: 2082
-  uuid: 000f1ace-a4d6-44ea-93b0-d5d384fc9cd7
-  tls: false
-  network: xhttp
-  servername: llc.v2sub.ir
-  skip-cert-verify: true
-- name: Vip_Security_13
-  type: vless
-  server: handsome-device.oneeat.co
-  port: 80
-  uuid: 2ad87f95-7a0b-4018-8497-5ecaac2f0ddf
-  tls: false
-  network: ws
-  servername: handsome-device.oneeat.co
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: handsome-device.oneeat.co
-- name: Telegram_2
-  type: vless
-  server: 104.16.51.36
-  port: 80
-  uuid: 5459f68e-d914-4b31-93a3-ecdf638b7a5b
-  tls: false
-  network: ws
-  servername: 104.16.51.36
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: barayeiran-mahsang.taraneh.dpdns.org
-- name: CF   VLESS  netmellianti 17
-  type: vless
-  server: 104.16.53.11
-  port: 8080
-  uuid: 1a719865-dc7d-43eb-9e01-44bbcb6c7205
-  tls: false
-  network: httpupgrade
-  servername: 104.16.53.11
-  skip-cert-verify: true
-- name: v2rayng
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 31cffb7a-a6f1-422b-b156-4360613ff720
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: a.joIn.zEdMoDeOn.oNl.
-- name: Channel
-  type: vless
-  server: www.speedtest.net
-  port: 8880
-  uuid: 65b71cc5-a34d-4efa-8af8-7a0d9bedd240
-  tls: false
-  network: httpupgrade
-  servername: www.speedtest.net
-  skip-cert-verify: true
-- name: CF   VLESS  expressvpn_420 28
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 77050208-c927-42fd-bbd8-bea4fe5cca6b
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420?ed=2080
-    headers:
-      Host: s6.inFo.laLezaRanegomaNandish.suB420-mohaMad.OnlinE.
-- name: CaV2ray_2
-  type: vless
-  server: tgju.org
-  port: 80
-  uuid: 76ad8213-4617-47eb-92cc-5392b39b45ce
-  tls: false
-  network: ws
-  servername: tgju.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2048
-    headers:
-      Host: eLOQuENt-caSE.ZUlaIR.orG.
-- name: vpnclashfa_3
-  type: vless
-  server: kafshu.ir
-  port: 8080
-  uuid: 07e97b58-4e24-4c56-b3ce-3d65792b9602
-  tls: false
-  network: ws
-  servername: kafshu.ir
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy----@Shh_Proxy
-    headers:
-      Host: inFo.laLezaRanegomaNandish.onlineshopbb.org.
-- name: vless-62
-  type: vless
-  server: 172.67.72.39
-  port: 2082
-  uuid: cb93debf-77f5-4a26-af9e-f6b67c0d294d
-  tls: false
-  network: ws
-  servername: 172.67.72.39
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420?ed=2080
-    headers:
-      Host: s6.inFo.laLezaRanegomaNandish.suB420-mohaMad.OnlinE.
+      Host: sk.laoyoutiao.link
 - name: vpnclashfa_4
   type: vless
-  server: 172.66.40.99
-  port: 2052
-  uuid: 7d9e7e39-c5ab-4872-9b3a-0f71191c67e1
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: υρρσят-多言語-دعم.snaptripupport.space.
-- name: vpnclashfa_5
-  type: vless
-  server: 104.17.148.22
-  port: 2095
-  uuid: 2239c741-cd2b-44a0-aa22-7965ef96e3dd
-  tls: false
-  network: httpupgrade
-  servername: 104.17.148.22
-  skip-cert-verify: true
-- name: IRAN 417 Outline_Vpn free
-  type: vless
-  server: fierce-data.seotoolsforyou.co.uk
+  server: 151.101.3.8
   port: 80
-  uuid: c313c27c-97ff-45ed-ab5c-64641af5debc
+  uuid: 0fd903a3-a4d0-4d9b-824e-dcd07ec816fa
   tls: false
   network: ws
-  servername: fierce-data.seotoolsforyou.co.uk
+  servername: 151.101.3.8
   skip-cert-verify: true
   ws-opts:
     path: /
     headers:
-      Host: fierce-data.seotoolsforyou.co.uk
-- name: V2rayBaaz
+      Host: befreewithus.com
+- name: CaV2ray_1
   type: vless
-  server: 69.84.182.90
-  port: 8880
-  uuid: 65b71cc5-a34d-4efa-8af8-7a0d9bedd240
-  tls: false
-  network: httpupgrade
-  servername: 69.84.182.90
-  skip-cert-verify: true
-- name: mehrosaboran_2
-  type: vless
-  server: 188.114.97.1
+  server: 188.114.98.18
   port: 80
-  uuid: 9662e996-a765-45d8-dbdd-b95560d29f7d
+  uuid: a43ecdaf-c1e9-44f6-bbd9-1c113cb7d48f
   tls: false
   network: ws
-  servername: 188.114.97.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY?ed=2560
-    headers:
-      Host: speeeDeio.xpnvip.ir.
-- name: Vip_Security_14
-  type: vless
-  server: 63.141.128.35
-  port: 80
-  uuid: 79265bcd-e650-42de-ab50-83fbc9089a18
-  tls: false
-  network: ws
-  servername: 63.141.128.35
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-bia-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON
-    headers:
-      Host: f.jOin.zEdMoDeOn.oNl.
-- name: vless-69
-  type: vless
-  server: 173.245.59.132
-  port: 8080
-  uuid: 65d9b3ce-470d-485f-8c8e-15ae0ec1b4da
-  tls: false
-  network: httpupgrade
-  servername: 173.245.59.132
-  skip-cert-verify: true
-- name: vless-70
-  type: vless
-  server: 173.245.59.132
-  port: 8080
-  uuid: 84b048c1-897f-4d8a-91e6-cde35a1b8108
-  tls: false
-  network: httpupgrade
-  servername: 173.245.59.132
-  skip-cert-verify: true
-- name: vpnclashfa_6
-  type: vless
-  server: 185.146.173.39
-  port: 8880
-  uuid: Parsashonam-304
-  tls: false
-  network: httpupgrade
-  servername: 185.146.173.39
-  skip-cert-verify: true
-- name: confiig_hub---confiig_hub---confiig_
-  type: vless
-  server: numberland.ir
-  port: 2052
-  uuid: 78e3cff7-75e1-4418-9db0-b3a00aece703
-  tls: false
-  network: tcp
-  servername: numberland.ir
-  skip-cert-verify: true
-- name: mehrosaboran_3
-  type: vless
-  server: 63.141.128.30
-  port: 8080
-  uuid: 957b51bc-1271-4516-ab39-68d68aa6fa1a
-  tls: false
-  network: ws
-  servername: 63.141.128.30
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: c.jOin.zEdMoDeOn.oNl.
-- name: IRAN 65 Outline_Vpn free
-  type: vless
-  server: www.speedtest.net
-  port: 80
-  uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: redfree8mahsang6.redfree8.ir
-- name: vpnclashfa_7
-  type: vless
-  server: check-host.net
-  port: 2082
-  uuid: 846e7df6-a3a0-4133-be03-c588fe070d0d
-  tls: false
-  network: ws
-  servername: check-host.net
-  skip-cert-verify: true
-  ws-opts:
-    path: '@Rayan_Config'
-    headers:
-      Host: rAyAn-cOnFiG-TeLeGrAm-pRo-5.rAyAn-5.cLoUdNs.pRo
-- name: vmesskhodam
-  type: vless
-  server: 104.16.69.64
-  port: 8880
-  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
-  tls: false
-  network: ws
-  servername: 104.16.69.64
+  servername: 188.114.98.18
   skip-cert-verify: true
   ws-opts:
     path: /
     headers:
-      Host: vghavi32.ip-ddns.com
-- name: mehrosaboran_4
+      Host: q6.19kalA.co
+- name: FreakCon
   type: vless
-  server: 63.141.128.34
+  server: bewildered-poem.seotoolsforyou.co.uk
   port: 80
-  uuid: 2f2327bd-ff1b-4ce5-bf86-fe0565334138
+  uuid: 0f4865d9-9405-4703-a282-46e326e6d9e7
   tls: false
   network: ws
-  servername: 63.141.128.34
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: b.jOin.zEdMoDeOn.oNl.
-- name: soskeynet  VL-WS-NA  SE 5ms
-  type: vless
-  server: 185.146.173.39
-  port: 2052
-  uuid: aec7d79a-8b42-43ad-ab44-23062a1a430b
-  tls: false
-  network: ws
-  servername: 185.146.173.39
-  skip-cert-verify: true
-  ws-opts:
-    path: /wsmmad
-    headers:
-      Host: De.lemoex.ir.
-- name: v2rayng_fars_1
-  type: vless
-  server: 104.17.147.22
-  port: 8880
-  uuid: Parsashonam-Bot-13
-  tls: false
-  network: ws
-  servername: 104.17.147.22
-  skip-cert-verify: true
-  ws-opts:
-    path: /Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam?ed=2056
-    headers:
-      Host: Fi.Parsashonam.CfD.
-- name: Vip_Security_15
-  type: vless
-  server: fastshovpntelegram2.vinamarketcenter.ir
-  port: 80
-  uuid: 1b739b3d-2ef9-4673-ab78-0b4e7bed89b9
-  tls: false
-  network: ws
-  servername: fastshovpntelegram2.vinamarketcenter.ir
-  skip-cert-verify: true
-  ws-opts:
-    path: /FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM?ed=2048
-    headers:
-      Host: eng.vinamarketcenter.ir
-- name: Gp_Config  رایگان vpn منبع
-  type: vless
-  server: 104.18.14.19
-  port: 8880
-  uuid: 32d8a6a8-c73b-47ae-919c-322d3b895a42
-  tls: false
-  network: ws
-  servername: 104.18.14.19
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: 0126.3ecopkit.workers.dev
-- name: Vip_Security_16
-  type: vless
-  server: 63.141.128.15
-  port: 80
-  uuid: 3f61f942-a48a-43a5-8f50-72ddf5828779
-  tls: false
-  network: ws
-  servername: 63.141.128.15
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-bia-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON
-    headers:
-      Host: d.jOin.zEdMoDeOn.oNl.
-- name: Vip_Security_17
-  type: vless
-  server: chat.openai.com
-  port: 8080
-  uuid: e7ef2316-2ff9-4266-8d09-acbf90fbd0e4
-  tls: false
-  network: ws
-  servername: chat.openai.com
-  skip-cert-verify: true
-  ws-opts:
-    path: /olem/ws?ed=1024
-    headers:
-      Host: shad.ir.fin.test.digicyber.click.
-- name: Vip_Security_18
-  type: vless
-  server: communal-loss.oneeat.co
-  port: 80
-  uuid: a2af50d9-09c7-4a44-90d0-42da35923e9e
-  tls: false
-  network: ws
-  servername: communal-loss.oneeat.co
+  servername: bewildered-poem.seotoolsforyou.co.uk
   skip-cert-verify: true
   ws-opts:
     path: /
     headers:
-      Host: communal-loss.oneeat.co
-- name: VIProxys
-  type: vless
-  server: 104.25.138.53
-  port: 80
-  uuid: 948f6596-66f9-4707-aa92-3107a214ce53
-  tls: false
-  network: ws
-  servername: 104.25.138.53
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560/?BIA_CHANEL@JOKERRVPN
-    headers:
-      Host: oops.shalamshorba.dpdns.org
-- name: کانفیگ
-  type: vless
-  server: 104.17.1.197
-  port: 8880
-  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
-  tls: false
-  network: ws
-  servername: 104.17.1.197
-  skip-cert-verify: true
-  ws-opts:
-    path: /1ycR2zb3KeELWRha?ed=2560
-    headers:
-      Host: VngSuPpLY.IP-DdnS.com
-- name: vless-87
-  type: vless
-  server: 104.21.72.109
-  port: 80
-  uuid: e3098c2b-d2ec-40e1-b42e-208693bb9b38
-  tls: false
-  network: grpc
-  servername: 104.21.72.109
-  skip-cert-verify: true
-- name: DE
-  type: vless
-  server: 185.146.173.39
-  port: 8880
-  uuid: Parsashonam-305
-  tls: false
-  network: httpupgrade
-  servername: 185.146.173.39
-  skip-cert-verify: true
-- name: vless-89
-  type: vless
-  server: 190.93.244.170
-  port: 2082
-  uuid: e0782d4d-246a-4832-88e1-6d7e73c8eb22
-  tls: false
-  network: httpupgrade
-  servername: 190.93.244.170
-  skip-cert-verify: true
-- name: Channel-iSpeedTopVPN
-  type: vless
-  server: cdn19.zarghamportal.ir
-  port: 80
-  uuid: b4ce592d-4db0-4f08-894a-26c559fd0663
-  tls: false
-  network: httpupgrade
-  servername: cdn19.zarghamportal.ir
-  skip-cert-verify: true
-- name: vpnclashfa_8
-  type: vless
-  server: 104.18.11.114
-  port: 80
-  uuid: 17c20397-e203-436b-906e-d79264d6aeda
-  tls: false
-  network: ws
-  servername: 104.18.11.114
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: bia-to-channel4.unlimiteddev.shop
-- name: Vip_Security_19
-  type: vless
-  server: all2.golnar-clod.ir
-  port: 8880
-  uuid: 862873ea-4ea7-4207-b8d3-8f3c440f0afc
-  tls: false
-  network: httpupgrade
-  servername: all2.golnar-clod.ir
-  skip-cert-verify: true
-- name: FR
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 41125b44-841b-450d-a727-5eaf5105c672
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-bia-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON-ZE%44MO%44EON
-    headers:
-      Host: c.jOin.zEdMoDeOn.oNl.
-- name: CF   VLESS  vpn_zvpn 13
-  type: vless
-  server: www.speedtest.net
-  port: 8080
-  uuid: Parsashonam-67
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: '/?Telegram:'
-    headers:
-      Host: Parsashonam.我们累了.tech.
-- name: Telegram_3
-  type: vless
-  server: www.speedtest.net
-  port: 2082
-  uuid: 03-TELEGRAM-ID-free_vpn0088
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: 565c3be3-7779-46a6-9f6b-4bea859c1858.teleconomiser.sbs
-- name: v2rayng_fars_2
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 8c2aef39-f7c4-4596-b13f-6524b023d43a
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: f.zedmodeon.ip-ddns.com
-- name: vpnclashfa_9
-  type: vless
-  server: creative-computer.oneeat.co
-  port: 80
-  uuid: f1fe4963-66f7-4f71-a038-9e07ea6cf20f
-  tls: false
-  network: ws
-  servername: creative-computer.oneeat.co
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: creative-computer.oneeat.co
-- name: vless-98
-  type: vless
-  server: www.speedtest.net
-  port: 2052
-  uuid: b5ea09a3-c4b2-425b-c3f9-1b190ffd30f5
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
-    headers:
-      Host: Vmessorg.paradoxone.ir
-- name: Digiv2ray-1
-  type: vless
-  server: www.speedtest.net
-  port: 2052
-  uuid: DIGIV2RAY
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /tm-Digiv2-__teldIGIv2__-DIGiv
-    headers:
-      Host: www.speedtest.net.ftp.debian.org.www.digikala.com.cloudflare.com.harmale.ir.
-- name: Vip_Security_20
-  type: vless
-  server: www.speedtest.net
-  port: 80
-  uuid: acc88aa8-cb11-47d9-8a7e-081049289cb5
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /olem/ws?ed=1024
-    headers:
-      Host: fin.channel.digicyber.click
-- name: FreakConfig_3
-  type: vless
-  server: narrow-passenger.oneeat.co
-  port: 80
-  uuid: 5a12794b-2125-46d7-a748-927a989faa04
-  tls: false
-  network: ws
-  servername: narrow-passenger.oneeat.co
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: narrow-passenger.oneeat.co
-- name: V2ray_cartel
+      Host: bewildered-poem.seotoolsforyou.co.uk
+- name: Vip_Security_8
   type: vless
   server: 104.21.96.1
   port: 80
@@ -1142,434 +626,373 @@ proxies:
     path: /193.123.81.105=443
     headers:
       Host: zoomgov.vipren.biz.id
-- name: Vip_Security_21
+- name: vpn_ioss  عضو شو
   type: vless
-  server: 188.114.97.1
-  port: 80
-  uuid: f380df%61c-92c1-49b6-%657b4-%61%6577d%6113c487
-  tls: false
-  network: ws
-  servername: 188.114.97.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY?ed=2560
-    headers:
-      Host: binextv.iransheep.web.tr.
-- name: Vip_Security_22
-  type: vless
-  server: deep-radio.seotoolsforyou.co.uk
-  port: 80
-  uuid: 5139af95-a453-46c6-831a-a532b6b51305
-  tls: false
-  network: ws
-  servername: deep-radio.seotoolsforyou.co.uk
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: deep-radio.seotoolsforyou.co.uk
-- name: unlimiteddev-link1
-  type: vless
-  server: numberland.ir
-  port: 8080
-  uuid: e46f5eb6-e1ed-4f49-9c06-36c51880fe86
-  tls: false
-  network: ws
-  servername: numberland.ir
-  skip-cert-verify: true
-  ws-opts:
-    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
-    headers:
-      Host: bia-to-unlimiteddev.unlimiteddev-service.ir
-- name: confiig_hub---confiig_hub---confiig__1
-  type: vless
-  server: 63.141.128.33
-  port: 8080
-  uuid: d57b9b25-ad3c-4c5b-a0b1-510e7f852777
-  tls: false
-  network: tcp
-  servername: 63.141.128.33
-  skip-cert-verify: true
-- name: NETMelliAnti
-  type: vless
-  server: 104.16.53.11
-  port: 8080
-  uuid: f7d30f9b-e77f-4162-b553-1ca6f816b870
-  tls: false
-  network: httpupgrade
-  servername: 104.16.53.11
-  skip-cert-verify: true
-- name: v2ray313 کانالمون
-  type: vless
-  server: 172.67.188.18
-  port: 80
-  uuid: 2cf5523e-c4e2-4e97-be1f-b9b7d356c140
-  tls: false
-  network: ws
-  servername: 172.67.188.18
-  skip-cert-verify: true
-  ws-opts:
-    path: /aioproxybot/8.215.59.6-443
-    headers:
-      Host: aio.loophole.Biz.iD
-- name: FASTSHOVPN
-  type: vless
-  server: fastshovpntelegram2.vinamarketcenter.ir
-  port: 80
-  uuid: 00faa3f3-479e-4903-d5fb-dc2d4990ed91
-  tls: false
-  network: ws
-  servername: fastshovpntelegram2.vinamarketcenter.ir
-  skip-cert-verify: true
-  ws-opts:
-    path: /FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM?ed=2048
-    headers:
-      Host: eng.vinamarketcenter.ir
-- name: Telegram_4
-  type: vless
-  server: 104.16.150.135
-  port: 80
-  uuid: b68ae076-1268-45f0-b82a-813732495724
-  tls: false
-  network: ws
-  servername: 104.16.150.135
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2048@v2ray_configs_pools
-    headers:
-      Host: baryeiran.sarina.ip-ddns.com
-- name: PersianGulf 73 Outline_Vpn
-  type: vless
-  server: 92.53.189.20
-  port: 8880
-  uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
-  tls: false
-  network: ws
-  servername: 92.53.189.20
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: reedfree8mahsang2.redorg.ir
-- name: ae_proxy
-  type: vless
-  server: 104.17.21.157
-  port: 2095
-  uuid: 85de686c-3502-4de1-b071-5842f496e6f0
-  tls: false
-  network: httpupgrade
-  servername: 104.17.21.157
-  skip-cert-verify: true
-- name: Maznet-46179-1
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: dd5d8352-b889-476e-85fa-c30b72a7a5cd
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: υρρσят-多言語-دعم.snaptripupport.space.
-- name: Telegram Canfing_VPNCanfing_VPN
-  type: vless
-  server: www.speedtest.net
-  port: 2082
-  uuid: a83b75d7-6b87-4201-a12a-8105fad6a8da
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: "ð\x9F\x94\x92"
-    headers:
-      Host: rAyAn-cOnFiG-TeLeGrAm-cLuB-6.RaYaN-6.ClOuDnS.ClUb
-- name: Hope_Net-join-us-on-Telegram
-  type: vless
-  server: 151.101.2.165
-  port: 80
-  uuid: 91a8fb52-f31e-4c1a-e820-401570811774
-  tls: false
-  network: ws
-  servername: 151.101.2.165
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: XpnTeam.ir
-- name: Golestan_VPN - JOIN
-  type: vless
-  server: 5.10.214.180
-  port: 8880
-  uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
-  tls: false
-  network: ws
-  servername: reedfree8mahsang2.redorg.ir
-  skip-cert-verify: true
-  ws-opts:
-    path: /TelegramU0001F1E8U0001F1F3
-    headers:
-      Host: reedfree8mahsang2.redorg.ir
-- name: سرورهایبیشتردرکانالprrofile_purple
-  type: vless
-  server: 104.16.1.106
-  port: 80
-  uuid: de7e69b8-c4e7-4461-f061-12f42115b51b
-  tls: false
-  network: ws
-  servername: 104.16.1.106
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: eng.vinamarketcenter.ir
-- name: این کانفیگ تستیه کانفیگ اصلی رو بردار_1
-  type: vless
-  server: test.fast.hosting-ip.com
-  port: 80
-  uuid: TELEGRAM-CONFiGLiNE
-  tls: false
-  network: xhttp
-  servername: test.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: vless-119
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 5e94411b-4aac-444b-a85e-7f034b99fe2d
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420/Telegram,@EXPRESSVPN_420?ed=2080
-    headers:
-      Host: VPS-WWW.SPEEDTEST.NET.ir-Taxi.net.sub420-MohamaD.OnlinE.
-- name: سرور های بیشتر customv2ray
-  type: vless
-  server: enthusiastic-century.oneeat.co
-  port: 80
-  uuid: edc0a710-b736-455a-a9f2-d26150e624b2
-  tls: false
-  network: ws
-  servername: enthusiastic-century.oneeat.co
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: enthusiastic-century.oneeat.co
-- name: Vip_Security_23
-  type: vless
-  server: www.speedtest.net
-  port: 80
-  uuid: aee7f4dd-1505-4efe-a081-199a3d9b7b97
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2?ed=2560
-    headers:
-      Host: pamchall.com.
-- name: DE_1
-  type: vless
-  server: 185.146.173.39
-  port: 8080
-  uuid: Parsashonam-Bot-3
-  tls: false
-  network: httpupgrade
-  servername: 185.146.173.39
-  skip-cert-verify: true
-- name: RELAY_1
-  type: vless
-  server: 104.16.194.204
-  port: 80
-  uuid: 6ff4726f-3650-4803-95eb-50b240f6ac75
-  tls: false
-  network: ws
-  servername: 104.16.194.204
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: red-math-7092-ppal03.mewoco2522.workers.dev
-- name: NpvV2rayFilTer
-  type: vless
-  server: 185.146.173.39
-  port: 8880
-  uuid: Parsashonam-302
-  tls: false
-  network: httpupgrade
-  servername: 185.146.173.39
-  skip-cert-verify: true
-- name: ShatakVPN 994403
-  type: vless
-  server: 104.17.147.22
-  port: 2095
-  uuid: '%6543%65c218-f19b-48f8-%61fbb-0d%65103c93018'
-  tls: false
-  network: httpupgrade
-  servername: 104.17.147.22
-  skip-cert-verify: true
-- name: spikevpn
-  type: vless
-  server: www.speedtest.net
-  port: 2086
-  uuid: b70bd623-4717-426f-a15f-753adbe607fd
-  tls: false
-  network: httpupgrade
-  servername: www.speedtest.net
-  skip-cert-verify: true
-- name: CaV2ray_3
-  type: vless
-  server: www.speedtest.net
-  port: 80
-  uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /TELEGRAM@MARAMBASHI_MARAMBASHI_MARAMBASHI/?ed=2560
-    headers:
-      Host: redfree8mahsang6.redfree8.ir
-- name: کانفیگ های بیشتر customv2ray_1
-  type: vless
-  server: 45.85.119.151
+  server: 104.16.86.73
   port: 8880
   uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
   tls: false
   network: ws
-  servername: 45.85.119.151
+  servername: 104.16.86.73
   skip-cert-verify: true
   ws-opts:
-    path: /6TvG8D6HimXKgdp2?ed=2560
+    path: /J5aLQOY1R9ONWYCM?ed=2560
     headers:
       Host: vngsupply.ip-ddns.com
-- name: DE_2
+- name: httpstmevip_vpn_2022
   type: vless
-  server: 63.141.128.23
-  port: 8080
-  uuid: 5fe68e53-f50f-4c1b-8107-39b1c0957dc6
-  tls: false
-  network: ws
-  servername: 63.141.128.23
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: b.jOin.zEdMoDeOn.oNl.
-- name: IRAN 104 Outline_Vpn free
-  type: vless
-  server: 104.24.56.187
+  server: 172.67.164.239
   port: 80
-  uuid: e6236ebc-7334-4bed-977f-0c20bcdfcc00
+  uuid: bbd2882a-c158-4ae6-b53a-5ae6be8dbcb0
   tls: false
   network: ws
-  servername: 104.24.56.187
+  servername: barayeiran.nastaranh.dpdns.org
   skip-cert-verify: true
   ws-opts:
-    path: /?ed=2560
+    path: /BaRAyeIran?ed=2560
     headers:
-      Host: a1.ghormehsabzi.dpdns.org
-- name: vpnclashfa_10
-  type: vless
-  server: 104.16.191.195
-  port: 80
-  uuid: f278037e-ce36-4634-9b4d-fca93e345a35
-  tls: false
-  network: ws
-  servername: 104.16.191.195
-  skip-cert-verify: true
-  ws-opts:
-    path: /JOKERRVPN_BIA_CHANEL@JOKERRVPN?ed=2560
-    headers:
-      Host: barayeiran.mahiozonboroon.qzz.io
-- name: RELAY_2
-  type: vless
-  server: 172.67.162.36
-  port: 8880
-  uuid: cca45b57-0f24-43c8-8911-f8dab5af1e10
-  tls: false
-  network: ws
-  servername: 172.67.162.36
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: 0522.yeyefeng.dpdns.org
-- name: ShatakVPN 946461
-  type: vless
-  server: 188.114.97.1
-  port: 80
-  uuid: 9662%65996-%61765-45d8-dbdd-b95560d29f7d
-  tls: false
-  network: ws
-  servername: 188.114.97.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY?ed=2560
-    headers:
-      Host: speeeDeio.xpnvip.ir.
-- name: CF   VLESS  lockey_vpn 15
+      Host: barayeiran.nastaranh.dpdns.org
+- name: confiig_hub
   type: vless
   server: www.speedtest.net
-  port: 8880
-  uuid: 560c46be-d15d-4083-8fb5-c7ad5f4f24fd
+  port: 2095
+  uuid: abd510b1-881c-4360-c633-84e1024c1386
   tls: false
   network: httpupgrade
   servername: www.speedtest.net
   skip-cert-verify: true
-- name: unlimiteddev-link2
+- name: Telegram_2
+  type: vless
+  server: 104.16.69.64
+  port: 8880
+  uuid: 02811288-9ef3-42ef-86db-d9b1399c1a59
+  tls: false
+  network: ws
+  servername: 104.16.69.64
+  skip-cert-verify: true
+  ws-opts:
+    path: /7YVyoVNnbaVzgl6D?ed=2560
+    headers:
+      Host: vghavi32.ip-ddns.com
+- name: Hope_Net-join-us-on-Telegram
+  type: vless
+  server: 104.17.147.22
+  port: 80
+  uuid: 3d197e15-d0bd-49dc-bb52-d615d88b63eb
+  tls: false
+  network: ws
+  servername: 104.17.147.22
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Daily_Cofnigs,@Daily_Cofnigs,@Daily_Cofnigs?ed=2560
+    headers:
+      Host: join-daily-configs.broken-dreams.ir
+- name: ghalagyann
   type: vless
   server: www.speedtest.net
-  port: 8080
-  uuid: f0ce50ac-f469-457d-c0d0-309391439014
+  port: 2086
+  uuid: 844df730-9b60-4f5f-a28f-d3fa9d456117
   tls: false
   network: ws
   servername: www.speedtest.net
   skip-cert-verify: true
   ws-opts:
-    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    path: /@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--
     headers:
-      Host: Unlimiteddev-join.paradoxone.ir
-- name: RELAY_3
+      Host: mahan.mmadvip8563.ir
+- name: Vip_Security_9
+  type: vless
+  server: 185.146.173.20
+  port: 2082
+  uuid: 24347e96-912c-4f53-9c67-9cc895fc6fdf
+  tls: false
+  network: ws
+  servername: 185.146.173.20
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: h5.xn--gmq282ekfhyys3gs.com.
+- name: vless-65
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 0c41105e-22b7-48e8-9f7f-81f1cd43c8ac
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: گاب
   type: vless
   server: 172.66.40.99
   port: 8080
-  uuid: 8d15b73e-da60-4d4e-a76f-cea00cc68085
+  uuid: 7c7f4fed-ae43-47cf-9897-144b2ae787f2
+  tls: false
+  network: httpupgrade
+  servername: 172.66.40.99
+  skip-cert-verify: true
+- name: mehrosaboran_1
+  type: vless
+  server: 63.141.128.16
+  port: 8080
+  uuid: e283e796-b140-4c2d-a8e5-bb27fd117e28
+  tls: false
+  network: ws
+  servername: 63.141.128.16
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: e.jOin.zEdMoDeOn.oNl.
+- name: RELAY
+  type: vless
+  server: obedient-detail.seotoolsforyou.co.uk
+  port: 80
+  uuid: 1dd49fb8-6570-4a2a-a236-f410b63159cf
+  tls: false
+  network: ws
+  servername: obedient-detail.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: obedient-detail.seotoolsforyou.co.uk
+- name: vpnclashfa_5
+  type: vless
+  server: 91.193.58.223
+  port: 8880
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  tls: false
+  network: ws
+  servername: 91.193.58.223
+  skip-cert-verify: true
+  ws-opts:
+    path: Telegram🇨🇳@WangCai2/?ed=2560
+    headers:
+      Host: sk.laoyoutiao.link
+- name: '2'
+  type: vless
+  server: evay_vpn.fast.hosting-ip.com
+  port: 80
+  uuid: f51667a2-c1e6-5321-9d51-f03be3fc8d02
+  tls: false
+  network: xhttp
+  servername: evay_vpn.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: IRAN 126 Outline_Vpn free
+  type: vless
+  server: 172.66.132.44
+  port: 80
+  uuid: 5459f68e-d914-4b31-93a3-ecdf638b7a5b
+  tls: false
+  network: ws
+  servername: 172.66.132.44
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: abcd.taraneh.dpdns.org
+- name: کانفیگ_1
+  type: vless
+  server: 104.21.112.1
+  port: 8080
+  uuid: 0518ca46-4313-45ce-df4d-5268c1b30cf2
+  tls: false
+  network: ws
+  servername: 104.21.112.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: shad.ir.fin.test.digicyber.click.
+- name: TELEGRAM-MARAMBASHI_MARAMBASHI_MARAMBASH
+  type: vless
+  server: 104.26.0.108
+  port: 443
+  uuid: 6780a3c0-a98c-4622-b894-8e34167f7b31
+  tls: false
+  network: tcp
+  servername: 104.26.0.108
+  skip-cert-verify: true
+- name: US_4
+  type: vless
+  server: viop.fast.hosting-ip.com
+  port: 80
+  uuid: f2806d75-82b6-4983-897e-29171592a589
+  tls: false
+  network: xhttp
+  servername: viop.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: Telegram_3
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: cab74092-fcab-4960-b14c-00da24a70830
   tls: false
   network: ws
   servername: 172.66.40.99
   skip-cert-verify: true
   ws-opts:
-    path: /telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE?ed=80
+    path: /Telegram@vpnjeyTelegram@vpnjeyTelegram@vpnjey
     headers:
-      Host: az88.mashkestan.com
-- name: Telegram_5
+      Host: www.speedtest.net.2.jey.cloudns.pro
+- name: V2RAYROZ
   type: vless
-  server: 185.146.173.39
-  port: 8880
-  uuid: Parsashonam-296
-  tls: false
-  network: httpupgrade
-  servername: 185.146.173.39
-  skip-cert-verify: true
-- name: VIPro
-  type: vless
-  server: 91.193.58.149
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  server: 104.18.14.19
+  port: 2082
+  uuid: 2e90c15f-3703-4426-acef-1f59a3990289
   tls: false
   network: ws
-  servername: 91.193.58.149
+  servername: 104.18.14.19
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: 0301.nooyfig.workers.dev
+- name: azadiiivpn⁴
+  type: vless
+  server: 172.66.40.99
+  port: 2052
+  uuid: 5dee6cfa-a6c2-48ec-b833-b072975c7177
+  tls: false
+  network: xhttp
+  servername: 172.66.40.99
+  skip-cert-verify: true
+- name: Telegram_4
+  type: vless
+  server: 104.16.3.5
+  port: 8880
+  uuid: 70465717-66ae-4756-b28a-ec5899e08b17
+  tls: false
+  network: ws
+  servername: 104.16.3.5
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2087
+    headers:
+      Host: 472cbdadc2dce946-472cbdadc2dce946472cbdadc2dce946.mObIlEGgaTTe.Ir
+- name: EXPRESSVPN_420_1
+  type: vless
+  server: expressvpn_420.fast.hosting-ip.com
+  port: 80
+  uuid: 503b59d2-8d11-4c3d-9e46-391f4b65134c
+  tls: false
+  network: xhttp
+  servername: expressvpn_420.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: Awlix_ir
+  type: vless
+  server: 172.67.199.19
+  port: 2082
+  uuid: 416f18ec-11f3-4648-9693-8c6480d0662d
+  tls: false
+  network: ws
+  servername: 172.67.199.19
   skip-cert-verify: true
   ws-opts:
     path: /
     headers:
-      Host: us.laoyoutiao.link
+      Host: SgTbRzSl18.sAlEaLaMoHtArAm.cOm
+- name: RELAY_1
+  type: vless
+  server: llc.v2sub.ir
+  port: 2082
+  uuid: 000f1ace-a4d6-44ea-93b0-d5d384fc9cd7
+  tls: false
+  network: xhttp
+  servername: llc.v2sub.ir
+  skip-cert-verify: true
+- name: v2ray313 کانالمون
+  type: vless
+  server: www.speedtest.net
+  port: 2095
+  uuid: 89ba9206-305a-4dbf-bd62-9144c1b0e0c4
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /hajmi?ed=2050
+    headers:
+      Host: dbe661d5a761ff6c.s-5HU09JDF-97SHS.WWWrubika.irto.xn--ls8haaaaaaaaaaaaaaaaaa.la.which.xn--ls8haaaaaaaaaaaaaaaaaa.xn-ls8faaaaaaaaaa.speedtest.net.google.com.eu.ir.nl.aparat.com.komak.IR.Nb-Fi.85858599.xYz.
+- name: bored_vpn
+  type: vless
+  server: 63.141.128.6
+  port: 80
+  uuid: bd9db693-edc9-46f4-a373-a4e8aeecd28b
+  tls: false
+  network: ws
+  servername: 63.141.128.6
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: a.joIn.zEdMoDeOn.oNl.
+- name: IRAN_V2RAY1
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: IRAN 491 Outline_Vpn free
+  type: vless
+  server: hopeful-appointment.seotoolsforyou.co.uk
+  port: 80
+  uuid: 491e4f76-42f0-43a7-a987-25072a68d5e4
+  tls: false
+  network: ws
+  servername: hopeful-appointment.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: hopeful-appointment.seotoolsforyou.co.uk
+- name: v2ray313
+  type: vless
+  server: obedient-detail.seotoolsforyou.co.uk
+  port: 80
+  uuid: 1dd49fb8-6570-4a2a-a236-f410b63159cf
+  tls: false
+  network: ws
+  servername: obedient-detail.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: obedient-detail.seotoolsforyou.co.uk
+- name: vmessorg
+  type: vless
+  server: www.speedtest.net
+  port: 2052
+  uuid: 06a69ade-0ebf-44dc-8f06-69dda39be844
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: Vmessorg.paradoxone.ir
+- name: bored_vpn_1
+  type: vless
+  server: 172.66.40.99
+  port: 2052
+  uuid: e71e9e5c-f27f-4b20-fbbe-acb7b6a62d23
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: vmessorg.joinbede.ir
 - name: ZedBaz_vpn
   type: vless
   server: www.speedtest.net
@@ -1583,721 +1006,90 @@ proxies:
     path: /@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--
     headers:
       Host: mahan.mmadvip8563.ir
-- name: vpnclashfa_11
-  type: vless
-  server: 102.177.189.29
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
-  tls: false
-  network: ws
-  servername: hk.laoyoutiao.link
-  skip-cert-verify: true
-  ws-opts:
-    path: /TelegramU0001F1E8U0001F1F3?---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---VITUREY---
-    headers:
-      Host: hk.laoyoutiao.link
-- name: VIPro_1
-  type: vless
-  server: 185.238.228.29
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
-  tls: false
-  network: ws
-  servername: hk.laoyoutiao.link
-  skip-cert-verify: true
-  ws-opts:
-    path: /TelegramU0001F1E8U0001F1F3
-    headers:
-      Host: hk.laoyoutiao.link
-- name: v2rayanv2rayan
-  type: vless
-  server: 172.67.73.163
-  port: 80
-  uuid: 48bd4d22-e42f-4749-af6a-85ecf716c823
-  tls: false
-  network: ws
-  servername: 172.67.73.163
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2048
-    headers:
-      Host: fkhamnei.kosnanatfilterchi.eu.org
-- name: v2rayng_fars_3
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: cdd2303d-25d4-41d8-b84c-1015ae266031
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: b.zedmodeon.ip-ddns.com
-- name: Maznet-46160-2
-  type: vless
-  server: 172.66.40.99
-  port: 2052
-  uuid: 9711af31-f687-4acf-9e97-2c45bf9b4d68
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: dAta.bAckup.hafeZejanEbi.scaptapsi.sNaPtripUppoRt.spaCe.
-- name: Vip_Security_24
-  type: vless
-  server: 188.114.99.0
-  port: 8880
-  uuid: e4a26a39-a95f-4840-8cd7-c7a7bf099d18
-  tls: false
-  network: ws
-  servername: 188.114.99.0
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: wRk-80-Eu-3.cLoUd-80.WoRkErS.DeV
-- name: IRAN 110 Outline_Vpn Free
-  type: vless
-  server: 104.17.148.22
-  port: 8880
-  uuid: 6ec52bc7-fcd7-4841-ab69-70d6e03a6eda
-  tls: false
-  network: ws
-  servername: 104.17.148.22
-  skip-cert-verify: true
-  ws-opts:
-    path: /TELEGRAM@MARAMBASHI_MARAMBASHI_MARAMBASHI/?ed=2560
-    headers:
-      Host: www.speedtest.net.zula.ir.cfp1.a2hdhjdxjbxjsjdjd.ddns-ip.nEt.
-- name: RELAY_4
-  type: vless
-  server: br.pouriau.com
-  port: 2052
-  uuid: 6880c016-63a3-4335-bafa-c180ffd3325f
-  tls: false
-  network: ws
-  servername: br.pouriau.com
-  skip-cert-verify: true
-  ws-opts:
-    path: /---ping---www.speedtest.net?ed=2080
-    headers:
-      Host: rosiassn.digikala.com.snnapfood.ir.varzesh3.com.shobb.ir.kdvhgkri558rvhnfjrdghriuygfkrdhihifjdfjssiedhfgjung2.bonyadedocker.ir.2.xziba.com.
-- name: Telegram_6
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: b376bbd9-9306-496f-8f19-ff438b21c100
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram@vpnjeyTelegram@vpnjeyTelegram@vpnjey
-    headers:
-      Host: www.speedtest.net.tax.gov.ir.aparat.com.a.2.jEy.dPdNs.org.
-- name: vpnclashfa_12
-  type: vless
-  server: 91.193.58.7
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
-  tls: false
-  network: ws
-  servername: us.laoyoutiao.link
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram🇨🇳
-    headers:
-      Host: us.laoyoutiao.link
-- name: CaV2ray_4
-  type: vless
-  server: 104.16.16.135
-  port: 80
-  uuid: b28eb861-1748-4200-ba72-278669edc33b
-  tls: false
-  network: ws
-  servername: coco.mahmoodchitooz.dpdns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: coco.mahmoodchitooz.dpdns.org
-- name: vpnclashfa_13
-  type: vless
-  server: 104.16.53.11
-  port: 8080
-  uuid: b299af7b-3098-4e8e-b7c4-359fa577b19b
-  tls: false
-  network: httpupgrade
-  servername: 104.16.53.11
-  skip-cert-verify: true
-- name: EuServer
-  type: vless
-  server: 172.67.208.49
-  port: 80
-  uuid: 6f690965-3be3-43bb-9331-3ead6efb20aa
-  tls: false
-  network: ws
-  servername: 172.67.208.49
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: sib.sibzamini.dpdns.org
-- name: ShatakVPN 667282
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: telegram-id-Arfilter
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /telegram-ArV2ray,telegram-ArV2ray,telegram-ArV2ray,telegram-ArV2ray,telegram-ArV2ray,telegram-ArV2ray,telegram-ArV2ray,telegram-ArV2ray,telegram-ArV2ray,telegram-ArV2ray,telegram-ArV2ray,telegram-ArV2ray?ed=2048
-    headers:
-      Host: 16ae.irblood.ir
-- name: IRAN 105 Outline_Vpn free
-  type: vless
-  server: 172.67.78.196
-  port: 80
-  uuid: dfdf1c0a-5e52-4746-88bd-19d4e4ac7853
-  tls: false
-  network: ws
-  servername: 172.67.78.196
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: tannaz.juveitaly.dpdns.org
-- name: CaV2ray_5
-  type: vless
-  server: www.speedtest.net
-  port: 80
-  uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /TELEGRAM@MARAMBASHI_MARAMBASHI_MARAMBASHI/?ed=2560
-    headers:
-      Host: redfree8mahsang6.redfree8.ir
-- name: Vip_Security_25
-  type: vless
-  server: www.speedtest.net
-  port: 80
-  uuid: 400f06ce-2b69-4444-a398-47b7166ccb54
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /olem/ws?ed=1024
-    headers:
-      Host: fin.channel.digicyber.click
-- name: vless-157
-  type: vless
-  server: www.speedtest.net
-  port: 8080
-  uuid: 01a79e57-5051-4b64-9774-8841c25bcecf
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420----@EXPRESSVPN_420
-    headers:
-      Host: s6.inFo.laLezaRanegomaNandish.suB420-mohaMad.online.
-- name: RELAY_5
-  type: vless
-  server: www.speedtest.net
-  port: 2095
-  uuid: 067c2305-53be-4f79-c212-aadd6ceb5f92
-  tls: false
-  network: httpupgrade
-  servername: www.speedtest.net
-  skip-cert-verify: true
-- name: capoit  VL-WS-NA  US 5ms
-  type: vless
-  server: 63.141.128.16
-  port: 80
-  uuid: 15f2b73d-9790-4092-bb4b-e38a4feb1b56
-  tls: false
-  network: ws
-  servername: 63.141.128.16
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: e.jOin.zEdMoDeOn.oNl.
-- name: Telegram---MTMVPNed512securitytlse
-  type: vless
-  server: 162.159.129.11
-  port: 2053
-  uuid: b1a8ceea-6601-45b5-a674-7e5b64ab6f6f
-  tls: false
-  network: tcp
-  servername: 162.159.129.11
-  skip-cert-verify: true
-- name: Vip_Security_26
-  type: vless
-  server: chat.openai.com
-  port: 8080
-  uuid: 0518ca46-4313-45ce-df4d-5268c1b30cf2
-  tls: false
-  network: ws
-  servername: chat.openai.com
-  skip-cert-verify: true
-  ws-opts:
-    path: /olem/ws?ed=1024
-    headers:
-      Host: shad.ir.fin.test.digicyber.click.
 - name: AYMH19کانالتلگرام
   type: vless
-  server: 45.159.218.154
+  server: 185.18.250.33
   port: 80
   uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
   tls: false
   network: ws
-  servername: 45.159.218.154
+  servername: 185.18.250.33
   skip-cert-verify: true
   ws-opts:
-    path: '/Telegram:'
+    path: '/Telegram🇮🇷Channel id: @ShadowProxy66 /?ed'
     headers:
       Host: reedfree8mahsang2.redorg.ir
-- name: vpnclashfa_14
-  type: vless
-  server: 104.16.52.146
-  port: 80
-  uuid: 3f5eba46-f9c9-4d49-985c-2a4345da4f5a
-  tls: false
-  network: ws
-  servername: 104.16.52.146
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: billowing-recipe-c066-ppal03.kerocel835.workers.dev
-- name: vless-164
-  type: vless
-  server: 8.47.69.4
-  port: 8080
-  uuid: f9a8a2ae-6daa-4437-a383-db49833992d4
-  tls: false
-  network: ws
-  servername: 8.47.69.4
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: ewedwdewed.farcadezero.ir
-- name: configLINE3
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: c8b7f8ad-4895-4aaa-9327-3b3076f169c5
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE?ed=2048
-    headers:
-      Host: az221.mashkestan.com
-- name: FreakConfig_4
-  type: vless
-  server: 172.66.40.99
-  port: 2052
-  uuid: bc3120d9-8b56-4caa-b868-a110fbdbbfeb
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: υρρσят-多言語-دعم.snaptripupport.space.
-- name: bored_vpn_1
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 9c9b8418-239a-4705-be72-31d332dd4272
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
-    headers:
-      Host: T.ubuntu-linuxmirror.ir
-- name: vpnclashfa_15
+- name: vless-91
   type: vless
   server: www.speedtest.net
   port: 2095
-  uuid: 41432d3a-da96-4dc4-9924-f87186e5c220
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /hajmi?ed=2050
-    headers:
-      Host: dbe661d5a761ff6c.s-5HU09JDF-97SHS.WWWrubika.irto.xn--ls8haaaaaaaaaaaaaaaaaa.la.which.xn--ls8haaaaaaaaaaaaaaaaaa.xn-ls8faaaaaaaaaa.speedtest.net.google.com.eu.ir.nl.aparat.com.komak.IR.Nb-De.85858599.xYz.
-- name: All_IRAN_V2RAY1
-  type: vless
-  server: grumpy-building.seotoolsforyou.co.uk
-  port: 80
-  uuid: 935c990a-9bcc-484b-86a2-2a402f9ad1d4
-  tls: false
-  network: ws
-  servername: grumpy-building.seotoolsforyou.co.uk
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: grumpy-building.seotoolsforyou.co.uk
-- name: unlimiteddev-link2_1
-  type: vless
-  server: www.speedtest.net
-  port: 8080
-  uuid: 73a6237b-4cdf-42e7-aab6-c80b5948eade
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
-    headers:
-      Host: bia-to-unlimiteddev.unlimiteddev-service.ir
-- name: سرورهایبیشتردرکانالprrofile_purple_1
-  type: vless
-  server: jquery.com
-  port: 2052
-  uuid: b5d99a97-ac4f-4509-9dc1-33d2a9a28148
-  tls: false
-  network: ws
-  servername: jquery.com
-  skip-cert-verify: true
-  ws-opts:
-    path: '@Rayan_Config'
-    headers:
-      Host: rAyAn-cOnFiG-TeLeGrAm-pRo-4.rAyAn-4.cLoUdNs.pRo
-- name: Telegram_7
-  type: vless
-  server: 185.146.173.39
-  port: 8880
-  uuid: Parsashonam-303
+  uuid: e163d9d4-5a03-4dde-bc26-42c5cb0c04c7
   tls: false
   network: httpupgrade
-  servername: 185.146.173.39
-  skip-cert-verify: true
-- name: vpnclashfa_16
-  type: vless
-  server: 162.159.135.249
-  port: 80
-  uuid: 7a5a4624-df8d-4955-bccc-b3fa6161411f
-  tls: false
-  network: ws
-  servername: 162.159.135.249
-  skip-cert-verify: true
-  ws-opts:
-    path: /Telegram/XV2ray?ed
-    headers:
-      Host: Csgo.XV2ray.xn--2b5b.127.0.0.1.Offline.Download.Down.Online.0.2.1.Tor.xn--g28h.dns-dynamic.net.
-- name: vless-174
-  type: vless
-  server: wonderful-degree.seotoolsforyou.co.uk
-  port: 80
-  uuid: 6192c1d9-5ae1-40ba-9cbb-cfacc2f8533c
-  tls: false
-  network: ws
-  servername: wonderful-degree.seotoolsforyou.co.uk
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: wonderful-degree.seotoolsforyou.co.uk
-- name: Join---MARAMBASHI---Join---MARAMBASHIed
-  type: vless
-  server: ipw.gfdv54cvghhgfhgj-njhgj64.info
-  port: 2096
-  uuid: 666a2803-43f2-4317-9661-dc978d869d47
-  tls: false
-  network: tcp
-  servername: ipw.gfdv54cvghhgfhgj-njhgj64.info
-  skip-cert-verify: true
-- name: سرورهایبیشتردرکانالprrofile_purple_2
-  type: vless
-  server: 63.141.128.31
-  port: 80
-  uuid: 00a87d0f-6eb9-4b10-9793-7b8bd4553617
-  tls: false
-  network: ws
-  servername: 63.141.128.31
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: e.jOin.zEdMoDeOn.oNl.
-- name: 𝗝𝗼𝗶𝗻ᴬᴸᴸ¹JKVPN
-  type: vless
-  server: www.speedtest.net
-  port: 80
-  uuid: COPE_AZ_JKVPN
-  tls: false
-  network: ws
   servername: www.speedtest.net
   skip-cert-verify: true
-  ws-opts:
-    path: /TELEGRAM_JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JkVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKvPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-jKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN?ed=2048
-    headers:
-      Host: joker.ahang-alpha.ir
-- name: CF   VLESS  ghalagyann 19
+- name: vpnclashfa_6
   type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: d8d5e5f5-8781-40b4-97d4-4986b622f4bc
+  server: 172.67.207.54
+  port: 8880
+  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
   tls: false
   network: ws
-  servername: 172.66.40.99
+  servername: 172.67.207.54
   skip-cert-verify: true
   ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
+    path: /34COh9NCiin5SJMk?ed=2560
     headers:
-      Host: υρρσят-多言語-دعم.snaptripupport.space.
-- name: FreakConfigvless92b022a6-67f3-440
+      Host: VngSuPpLY.IP-DdnS.com
+- name: Telegram_5
   type: vless
-  server: test.fast.hosting-ip.com
+  server: vioplex.fast.hosting-ip.com
   port: 80
-  uuid: TELEGRAM-CONFiGLiNE
+  uuid: bdb67bdd-9f24-4555-bdb4-b768567ae239
   tls: false
   network: xhttp
-  servername: test.fast.hosting-ip.com
+  servername: vioplex.fast.hosting-ip.com
   skip-cert-verify: true
-- name: Channel id ShadowProxy66
+- name: Telegram_6
   type: vless
-  server: www.visaeurope.ch
-  port: 2086
-  uuid: 3821b50f-4389-43d7-b08f-7b9e2861bb95
+  server: 104.18.14.19
+  port: 2082
+  uuid: 494aa0ff-4824-4d23-a75e-ea8c3c6709cd
   tls: false
   network: ws
-  servername: www.visaeurope.ch
-  skip-cert-verify: true
-  ws-opts:
-    path: '@ShadowProxy66'
-    headers:
-      Host: rAyAn-cOnFiG-TeLeGrAm-pRo-6.rAyAn-6.cLoUdNs.pRo
-- name: V2RAYNG_IP
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 31cffb7a-a6f1-422b-b156-4360613ff720
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: a.joIn.zEdMoDeOn.oNl.
-- name: کانفیگ_1
-  type: vless
-  server: 104.16.51.36
-  port: 80
-  uuid: 5459f68e-d914-4b31-93a3-ecdf638b7a5b
-  tls: false
-  network: ws
-  servername: 104.16.51.36
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: barayeiran-mahsang.taraneh.dpdns.org
-- name: FreakConfig_5
-  type: vless
-  server: small-meal.oneeat.co
-  port: 80
-  uuid: d1e44075-8c92-4698-9db0-e71d7015b757
-  tls: false
-  network: ws
-  servername: small-meal.oneeat.co
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: small-meal.oneeat.co
-- name: Alfred_Config
-  type: vless
-  server: zula.ir
-  port: 8880
-  uuid: 8aa48fb3-9429-4029-8dd4-4ba7fe15ad01
-  tls: false
-  network: httpupgrade
-  servername: zula.ir
-  skip-cert-verify: true
-- name: کان
-  type: vless
-  server: 104.18.26.90
-  port: 80
-  uuid: 6f690965-3be3-43bb-9331-3ead6efb20aa
-  tls: false
-  network: ws
-  servername: 104.18.26.90
+  servername: 104.18.14.19
   skip-cert-verify: true
   ws-opts:
     path: /?ed=2560
     headers:
-      Host: sib.sibzamini.dpdns.org
-- name: Digiv2ray-1_1
+      Host: 0127.4zsuplo0.workers.dev
+- name: Channel
   type: vless
-  server: www.speedtest.net
-  port: 2052
-  uuid: DIGIV2RAY
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /tm-Digiv2-__teldIGIv2__-DIGiv
-    headers:
-      Host: www.speedtest.net.ftp.debian.org.www.digikala.com.cloudflare.com.farsr0id.ir.
-- name: telegram  v2rayNG_Matsurivless49e
-  type: vless
-  server: 63.141.128.23
+  server: enthusiastic-century.oneeat.co
   port: 80
-  uuid: d59d49d3-a392-403a-8480-59934008431d
+  uuid: edc0a710-b736-455a-a9f2-d26150e624b2
   tls: false
   network: ws
-  servername: 63.141.128.23
+  servername: enthusiastic-century.oneeat.co
   skip-cert-verify: true
   ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    path: /
     headers:
-      Host: b.jOin.zEdMoDeOn.oNl.
-- name: Vip_Security_27
-  type: vless
-  server: avalpardakht.com
-  port: 80
-  uuid: e2dc0b52-1792-423e-d78e-c568b1498c67
-  tls: false
-  network: ws
-  servername: avalpardakht.com
-  skip-cert-verify: true
-  ws-opts:
-    path: /@v2rayNG_VPNN
-    headers:
-      Host: 5.arsalanv2.sbs
-- name: V2RAYROZ
-  type: vless
-  server: digitalocean.com
-  port: 8880
-  uuid: 9bd8537b-32cf-4a98-bc1a-d1d5a64e1164
-  tls: false
-  network: ws
-  servername: digitalocean.com
-  skip-cert-verify: true
-  ws-opts:
-    path: '@Rayan_Config'
-    headers:
-      Host: rAyAn-cOnFiG-TeLeGrAm-pRo-3.rAyAn-3.cLoUdNs.pRo
-- name: RELAY_6
-  type: vless
-  server: www.persia.my
-  port: 2095
-  uuid: 4b23c3ec-c25a-a91f-91f6-eb8a56c728d0
-  tls: false
-  network: httpupgrade
-  servername: www.persia.my
-  skip-cert-verify: true
-- name: bored_vpn_2
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 3c6f7783-e1e4-40b0-b227-1dede937d7b5
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE?ed=2048
-    headers:
-      Host: he10.motorbazan.cOm
-- name: mehrosaboran_5
-  type: vless
-  server: 104.17.148.22
-  port: 2095
-  uuid: a19a0922-24c6-4d61-f58d-44589eb1dbd0
-  tls: false
-  network: httpupgrade
-  servername: 104.17.148.22
-  skip-cert-verify: true
-- name: Maznet-46167-2
-  type: vless
-  server: 172.66.40.99
-  port: 2052
-  uuid: 7582fcae-775d-48bf-8f71-b733c98d5a97
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: υρρσят-多言語-دعم.snaptripupport.space.
-- name: bored_vpn_3
-  type: vless
-  server: 104.17.147.22
-  port: 8080
-  uuid: f6b0723c-bb28-45f2-9b7f-82fab9ef8640
-  tls: false
-  network: ws
-  servername: 104.17.147.22
-  skip-cert-verify: true
-  ws-opts:
-    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
-    headers:
-      Host: bia-to-unlimiteddev.unlimiteddev-service.ir
-- name: Telegram_8
+      Host: enthusiastic-century.oneeat.co
+- name: confiig_hub_1
   type: vless
   server: 172.66.40.99
   port: 80
-  uuid: dab94092-fcab-4960-b14c-00da24a70830
+  uuid: 639e663a-f454-4af5-a9fc-2933784714fe
   tls: false
   network: ws
   servername: 172.66.40.99
   skip-cert-verify: true
   ws-opts:
-    path: /Telegram@vpnjeyTelegram@vpnjeyTelegram@vpnjey
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
     headers:
-      Host: www.speedtest.net.tax.gov.ir.aparat.com.a.3.jEy.dPdNs.org.
-- name: meli_pro
-  type: vless
-  server: 104.16.53.11
-  port: 8080
-  uuid: 8bf5c07a-acd3-4360-b940-62d6b77699af
-  tls: false
-  network: httpupgrade
-  servername: 104.16.53.11
-  skip-cert-verify: true
-- name: Telegram_9
-  type: vless
-  server: 172.66.40.99
-  port: 8880
-  uuid: 3a7d48a2-b971-41da-b5e1-d4814923da46
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec
-    headers:
-      Host: inFo.laLezaRanegomaNandish.mdV.V2.onlineshopbb.org.
-- name: 𝐣𝐨𝐢𝐍-𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
+      Host: e.jOin.zEdMoDeOn.oNl.
+- name: 𝗝𝗼𝗶𝗻_1
   type: vless
   server: 104.16.69.64
   port: 8880
@@ -2310,589 +1102,283 @@ proxies:
     path: /7YVyoVNnbaVzgl6D?ed=2560
     headers:
       Host: vghavi32.ip-ddns.com
-- name: vpnclashfa_17
+- name: CaV2ray_2
   type: vless
-  server: 147.78.140.20
-  port: 8880
-  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  server: 104.21.72.109
+  port: 80
+  uuid: 9391d3bc-95e3-469c-b371-1a7e493a6404
   tls: false
   network: ws
-  servername: us.laoyoutiao.link
+  servername: pAmchALL.COm.
   skip-cert-verify: true
   ws-opts:
-    path: /
+    path: /ELiV2-RaY---ELiV2-RaY---ELiV2-RaY---ELiV2-RaY?ed=2560
     headers:
-      Host: us.laoyoutiao.link
-- name: confiig_hub---confiig_hub---confiig__2
+      Host: pamchall.com.
+- name: CF   VLESS  config_proxy 50
   type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: d92b3c97-8423-4aec-a2c2-209bf1be2b09
-  tls: false
-  network: tcp
-  servername: 172.66.40.99
-  skip-cert-verify: true
-- name: confiig_hub---confiig_hub---confiig__3
-  type: vless
-  server: 63.141.128.32
-  port: 8080
-  uuid: 6e33a2c0-85f4-4c66-99f4-421636868a83
-  tls: false
-  network: tcp
-  servername: 63.141.128.32
-  skip-cert-verify: true
-- name: Vip_Security_28
-  type: vless
-  server: 151.101.3.8
+  server: tgju.org
   port: 80
-  uuid: 9250768c-7961-4956-8882-78cb05e97494
-  tls: false
-  network: xhttp
-  servername: 151.101.3.8
-  skip-cert-verify: true
-- name: Vip_Security_29
-  type: vless
-  server: www.speedtest.net
-  port: 80
-  uuid: 400f06ce-2b69-4444-a398-47b7166ccb54
+  uuid: d81a5ac7-b2b9-4445-a364-1c6233ac686f
   tls: false
   network: ws
-  servername: www.speedtest.net
+  servername: tgju.org
   skip-cert-verify: true
   ws-opts:
     path: /olem/ws?ed=1024
     headers:
       Host: fin.channel.digicyber.click
-- name: Vip_Security_30
-  type: vless
-  server: 185.146.173.39
-  port: 8880
-  uuid: Parsashonam-305
-  tls: false
-  network: httpupgrade
-  servername: 185.146.173.39
-  skip-cert-verify: true
-- name: Vip_Security_31
-  type: vless
-  server: 188.114.97.1
-  port: 80
-  uuid: 37d04b77-d08c-4f34-958d-d9f2ff9cc32%61
-  tls: false
-  network: ws
-  servername: 188.114.97.1
-  skip-cert-verify: true
-  ws-opts:
-    path: /telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY?ed=2560
-    headers:
-      Host: binextv.iransheep.web.tr.
-- name: vpnclashfa_18
-  type: vless
-  server: 172.64.69.98
-  port: 80
-  uuid: 243ff879-b317-4430-894e-767a131db2ca
-  tls: false
-  network: ws
-  servername: tr1-vless.ctunnel.xyz
-  skip-cert-verify: true
-  ws-opts:
-    path: /vless#t-me-DarkVPNpro-t-me-DarkVPNpro-t-me-DarkVPNprot-me-DarkVPNprot-me-DarkVPNprot-me-DarkVPNprot-me-DarkVPNprot-me-DarkVPNpro?ed=2048
-    headers:
-      Host: www.iranserver.com.127.0.0.1.востейcontrol.農達懲.wonkacapitano.buzz.
-- name: vpnclashfa_19
-  type: vless
-  server: 185.146.173.39
-  port: 8880
-  uuid: Parsashonam-304
-  tls: false
-  network: httpupgrade
-  servername: 185.146.173.39
-  skip-cert-verify: true
-- name: Vip_Security_32
-  type: vless
-  server: 104.21.72.109
-  port: 80
-  uuid: 6799df1d-8c4b-4b01-bd82-%659c%61c3%61c%615c7
-  tls: false
-  network: ws
-  servername: 104.21.72.109
-  skip-cert-verify: true
-  ws-opts:
-    path: /Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2?ed=2560
-    headers:
-      Host: paMchall.cOm.
-- name: V2rayNG3
-  type: vless
-  server: 104.18.32.69
-  port: 2095
-  uuid: 33039dbe-8889-42f1-9aeb-ecfbfa2a1640
-  tls: false
-  network: ws
-  servername: 104.18.32.69
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2560
-    headers:
-      Host: 21tg.459tj345.workers.dev
-- name: Vip_Security_33
-  type: vless
-  server: www.speedtest.net
-  port: 2052
-  uuid: DIGIV2RAy
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /tm-Digiv2-__teldIGIv2__-DIGiv
-    headers:
-      Host: www.speedtest.net.ftp.debian.org.www.digikala.com.cloudflare.com.farsr0id.ir.
-- name: vpnclashfa_20
-  type: vless
-  server: senator.cdniran.info
-  port: 80
-  uuid: 43c09ea2-72de-4b63-8da4-d5d4be7819ad
-  tls: false
-  network: ws
-  servername: senator.cdniran.info
-  skip-cert-verify: true
-  ws-opts:
-    path: /?ed=2048
-    headers:
-      Host: SeNaToRNoTLS-05.FligHtbEaN24.Com
-- name: vless-212
-  type: vless
-  server: www.speedtest.net
-  port: 2095
-  uuid: 54a95168-04c2-48a6-9370-1b67f4987706
-  tls: false
-  network: httpupgrade
-  servername: www.speedtest.net
-  skip-cert-verify: true
-- name: azadiiivpn⁴
-  type: vless
-  server: 172.66.40.99
-  port: 2052
-  uuid: 5dee6cfa-a6c2-48ec-b833-b072975c7177
-  tls: false
-  network: xhttp
-  servername: 172.66.40.99
-  skip-cert-verify: true
-- name: کانفیگ_2
-  type: vless
-  server: 172.66.40.99
-  port: 80
-  uuid: 54922e97-046b-40dc-a062-c525eb14540c
-  tls: false
-  network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: dash.srv2.quest
-- name: bored_vpn_4
-  type: vless
-  server: 104.17.148.22
-  port: 2052
-  uuid: 78e3cff7-75e1-4418-9db0-b3a00aece703
-  tls: false
-  network: ws
-  servername: 104.17.148.22
-  skip-cert-verify: true
-  ws-opts:
-    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
-    headers:
-      Host: Vmessorg.paradoxone.ir
-- name: mehrosaboran_6
-  type: vless
-  server: 63.141.128.16
-  port: 8080
-  uuid: e283e796-b140-4c2d-a8e5-bb27fd117e28
-  tls: false
-  network: ws
-  servername: 63.141.128.16
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: e.jOin.zEdMoDeOn.oNl.
-- name: AblNet7
-  type: vless
-  server: 185.146.173.39
-  port: 8080
-  uuid: Parsashonam-Bot-12
-  tls: false
-  network: httpupgrade
-  servername: 185.146.173.39
-  skip-cert-verify: true
-- name: vpn_ioss  عضو شو
-  type: vless
-  server: 45.85.119.151
-  port: 8880
-  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
-  tls: false
-  network: ws
-  servername: 45.85.119.151
-  skip-cert-verify: true
-  ws-opts:
-    path: /6TvG8D6HimXKgdp2?ed=2560
-    headers:
-      Host: vngsupply.ip-ddns.com
-- name: Vip_Security_34
-  type: vless
-  server: nufilter.fast.hosting-ip.com
-  port: 80
-  uuid: TELEGRAM-CONFiGLiNE
-  tls: false
-  network: xhttp
-  servername: nufilter.fast.hosting-ip.com
-  skip-cert-verify: true
-- name: کانال
+- name: vless-100
   type: vless
   server: 104.18.26.90
   port: 80
-  uuid: 6f690965-3be3-43bb-9331-3ead6efb20aa
+  uuid: 41d4e11b-1e7c-40ce-b7f8-abedb994ca6c
   tls: false
   network: ws
   servername: 104.18.26.90
   skip-cert-verify: true
   ws-opts:
-    path: /?ed
+    path: /telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420,telegram-EXPRESSVPN_420?ed=80
     headers:
-      Host: sib.sibzamini.dpdns.org
-- name: US_1
+      Host: Kk78.4qwertyuiopasdfGhjklzxcvbnmmnbvccjzlkjhgfdsapoiuytre010751.Academigroup.iR.
+- name: VIPro_1
   type: vless
-  server: 188.114.96.2
-  port: 80
-  uuid: 228bf403-6198-4dc1-bc98-65ee1792d772
-  tls: false
-  network: ws
-  servername: 188.114.96.2
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: bia-to-channel4.unlimiteddev.shop
-- name: Vip_Security_35
-  type: vless
-  server: gleeful-error.seotoolsforyou.co.uk
-  port: 80
-  uuid: 9a37131b-2b68-427f-a2fc-cc7381c2d575
-  tls: false
-  network: ws
-  servername: gleeful-error.seotoolsforyou.co.uk
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: gleeful-error.seotoolsforyou.co.uk
-- name: Channel id ShadowProxy66_1
-  type: vless
-  server: 69.84.182.90
+  server: 46.254.92.29
   port: 8880
-  uuid: 65b71cc5-a34d-4efa-8af8-7a0d9bedd240
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  tls: false
+  network: ws
+  servername: 46.254.92.29
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram🇨🇳 @MxlShare @WangCai2 /?ed=2560
+    headers:
+      Host: hk.laoyoutiao.link
+- name: RU
+  type: vless
+  server: svnteam.fast.hosting-ip.com
+  port: 80
+  uuid: 987b346f-113c-49e8-9622-f5d41b6de779
+  tls: false
+  network: ws
+  servername: svnteam.fast.hosting-ip.com
+  skip-cert-verify: true
+  ws-opts:
+    path: /@SvnProBot?ed=2560
+    headers:
+      Host: Aeza.net
+- name: ogsvpnbot
+  type: vless
+  server: cumhuriyet.com.tr
+  port: 80
+  uuid: 52bb1620-f57a-432d-b8fc-4db175ff3f63
+  tls: false
+  network: ws
+  servername: cumhuriyet.com.tr
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: join-to-Vmessorg.sabadyt.ir
+- name: vpnclashfa_7
+  type: vless
+  server: www.fast.hosting-ip.com
+  port: 80
+  uuid: 01abdb29-cca0-47c6-844d-9f4e29f21c56
+  tls: false
+  network: xhttp
+  servername: www.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: Golestan_VPN - J
+  type: vless
+  server: 45.142.120.134
+  port: 80
+  uuid: 89b3cbba-e6ac-485a-9481-976a0415eab9
+  tls: false
+  network: ws
+  servername: 45.142.120.134
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: uuhUHYygEsdFGH.UYHJHGvgFcjGUJhbUIlbVFDxDxM.xyz
+- name: vpnclashfa_8
+  type: vless
+  server: br.pouriau.com
+  port: 2052
+  uuid: 6880c016-63a3-4335-bafa-c180ffd3325f
+  tls: false
+  network: ws
+  servername: br.pouriau.com
+  skip-cert-verify: true
+  ws-opts:
+    path: /---ping---www.speedtest.net?ed=2080
+    headers:
+      Host: rosiassn.digikala.com.snnapfood.ir.varzesh3.com.shobb.ir.kdvhgkri558rvhnfjrdghriuygfkrdhihifjdfjssiedhfgjung2.bonyadedocker.ir.2.xziba.com.
+- name: vless-107
+  type: vless
+  server: 198.41.216.98
+  port: 8080
+  uuid: 5c9c8b29-3dd5-4ce0-ac80-dfd812472354
   tls: false
   network: httpupgrade
-  servername: 69.84.182.90
+  servername: 198.41.216.98
   skip-cert-verify: true
-- name: RELAY_7
-  type: trojan
-  server: 172.67.181.173
-  port: 443
-  password: f282b878-8711-45a1-8c69-5564172123c1
-  sni: vpn.stupidworld.web.id
+- name: RELAY_2
+  type: vless
+  server: brainy-party.seotoolsforyou.co.uk
+  port: 80
+  uuid: 34797f17-09a1-400c-9f4b-275718d62a0f
+  tls: false
+  network: ws
+  servername: brainy-party.seotoolsforyou.co.uk
   skip-cert-verify: true
-- name: RU_speednode_0035
-  type: trojan
-  server: 185.59.218.195
-  port: 2096
-  password: slch2024
-  sni: ocost-dy.wmlefl.cc
+  ws-opts:
+    path: /
+    headers:
+      Host: brainy-party.seotoolsforyou.co.uk
+- name: Gp_Config  گروه کانفیگ
+  type: vless
+  server: 185.146.173.39
+  port: 8080
+  uuid: Parsashonam-Bot-9
+  tls: false
+  network: httpupgrade
+  servername: 185.146.173.39
   skip-cert-verify: true
-- name: HiByeVPNN
-  type: trojan
-  server: kfjdi.pages.dev
-  port: 443
-  password: er668
-  sni: kfjdi.pages.dev
+- name: Vip_Security_10
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
   skip-cert-verify: true
-- name: vpnclashfa_21
-  type: trojan
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: سرور_1
+  type: vless
+  server: expressvpn_420.fast.hosting-ip.com
+  port: 80
+  uuid: 2dac3536-244a-4558-9ab9-ab9ae34638c1
+  tls: false
+  network: xhttp
+  servername: expressvpn_420.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: vless-112
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: f02fea45-a5bb-4d8f-9a60-874ad0b4439c
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: FI
+  type: vless
   server: 104.17.147.22
-  port: 443
-  password: bpb-trojan
-  sni: 10-bpb-wORkER-paNel.pAGEs.DeV
-  skip-cert-verify: true
-- name: trojan-389
-  type: trojan
-  server: 104.21.83.113
-  port: 443
-  password: 4a3ee276-f50f-46f6-ba4d-13571732ab70
-  sni: SxcDe3.859886.XYz
-  skip-cert-verify: true
-- name: RELAY-1951344195-0594
-  type: trojan
-  server: 195.13.44.195
-  port: 2096
-  password: slch2024
-  sni: ocost-dy.wmlefl.cc
-  skip-cert-verify: true
-- name: mhmdreza_it
-  type: trojan
-  server: 172.67.181.173
-  port: 443
-  password: f282b878-8711-45a1-8c69-5564172123c1
-  sni: vpn.stupidworld.web.id
-  skip-cert-verify: true
-- name: openproxylistcom
-  type: trojan
-  server: 192.0.63.195
-  port: 2096
-  password: slch2024
-  sni: ocost-dy.wmlefl.cc
-  skip-cert-verify: true
-- name: Luxembourg - NA  TR-WS-TLS 4
-  type: trojan
-  server: 188.42.145.195
-  port: 2096
-  password: slch2024
-  sni: ocost-dy.wmlefl.cc
-  skip-cert-verify: true
-- name: RELAY-18816415987-0662
-  type: trojan
-  server: 188.164.159.87
-  port: 2096
-  password: slch2024
-  sni: ocost-dy.wmlefl.cc
-  skip-cert-verify: true
-- name: RELAY_8
-  type: trojan
-  server: 104.16.83.8
-  port: 443
-  password: Ng35283528
-  sni: c2.validbv3528.eu.org
-  skip-cert-verify: true
-- name: v2raying
-  type: trojan
-  server: 104.21.72.109
-  port: 443
-  password: f282b878-8711-45a1-8c69-5564172123c1
-  sni: vpn.stupidworld.web.id
-  skip-cert-verify: true
-- name: Vip_Security_36
-  type: trojan
-  server: 194.76.18.195
-  port: 2096
-  password: slch2024
-  sni: ocost-dy.wmlefl.cc
-  skip-cert-verify: true
-- name: vpnclashfa_22
-  type: trojan
-  server: 199.68.156.195
-  port: 2096
-  password: slch2024
-  sni: ocost-dy.wmlefl.cc
-  skip-cert-verify: true
-- name: Vip_Security_37
-  type: trojan
-  server: 103.160.204.1
-  port: 443
-  password: amclubs
-  sni: tran.amclubstest.nyc.mn
-  skip-cert-verify: true
-- name: Vip_Security_38
-  type: trojan
-  server: aio.proxybox.dpdns.org
-  port: 443
-  password: 318cab24-ec99-40a6-a54a-0db9c661a3d0
-  sni: aio.proxybox.dpdns.org
-  skip-cert-verify: true
-- name: United States - NA  TR-WS-TLS 4
-  type: trojan
-  server: 198.71.191.195
-  port: 2096
-  password: slch2024
-  sni: ocost-dy.wmlefl.cc
-  skip-cert-verify: true
-- name: VIProxys_1
-  type: trojan
-  server: 172.66.45.2
-  port: 443
-  password: auto
-  sni: dcf741e8.epeius-2gy.pages.dev
-  skip-cert-verify: true
-- name: RELAY_9
-  type: trojan
-  server: 104.16.190.131
-  port: 8443
-  password: 9d5e7586-64e1-4c29-9d47-6cbbd57fe8d1
-  sni: pardazeshvpn-tg48.pages.dev
-  skip-cert-verify: true
-- name: RELAY_10
-  type: trojan
-  server: 172.66.47.151
-  port: 443
-  password: a64f0cea-ca89-40e6-b316-b3badff1eb90
-  sni: iSaA1.paGes.DEv
-  skip-cert-verify: true
-- name: US_speednode_0048
-  type: trojan
-  server: 185.148.104.195
-  port: 2096
-  password: slch2024
-  sni: ocost-dy.wmlefl.cc
-  skip-cert-verify: true
-- name: Hope_Net-join-us-on-Telegram_1
-  type: trojan
-  server: 141.101.113.119
-  port: 443
-  password: bpb-trojan
-  sni: fcspring.ggff.net
-  skip-cert-verify: true
-- name: VIPro_2
-  type: trojan
-  server: 91.193.58.0
-  port: 443
-  password: trojan
-  sni: wahaha.yingyangkuaixian.dpdns.org
-  skip-cert-verify: true
-- name: trojan-409
-  type: trojan
-  server: 162.159.153.209
-  port: 443
-  password: 6884d714-d3c4-4b49-aa20-767ea92837d6
-  sni: icecream.955850.xyz
-  skip-cert-verify: true
-- name: US15614638168-4433195ms
-  type: ss
-  server: 156.146.38.168
-  port: 443
-  cipher: aes-128-gcm
-  password: shadowsocks
-- name: RELAY18811497171-443157ms
-  type: ss
-  server: 188.114.97.171
-  port: 443
-  cipher: "ß\x9Döß\x9Fxõç¶áý"
-  password: iíxß^<o¯yÓ­µ
-- name: VIProxys_4
-  type: ss
-  server: 172.66.177.129
-  port: 80
-  cipher: "u÷_ÕÍ\x1Aåîvã¾"
-  password: "óÆÝ××x{\x86\x9CïÎw"
-- name: Hope_
-  type: ss
-  server: 172.67.160.69
-  port: 443
-  cipher: chacha20-ietf-poly1305
-  password: W74XFALLLuw6m5IA
-- name: v2rayfast_7
-  type: vless
-  server: www.speedtest.net
   port: 8080
-  uuid: ac0c4fec-48b6-42e5-93c0-df0940a0cc94
+  uuid: Parsashonam-Bot-19
   tls: false
   network: ws
-  servername: www.speedtest.net
+  servername: 104.17.147.22
   skip-cert-verify: true
   ws-opts:
-    path: /@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7?ed=2048
+    path: /Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam-Parsashonam?ed=2056
     headers:
-      Host: ARM1.dollardoon.com
-- name: v2rayfast_7_1
+      Host: Fi.Parsashonam.CfD.
+- name: RELAY_3
   type: vless
-  server: www.speedtest.net
-  port: 8880
-  uuid: 7e91c270-c067-4c9c-9231-9208471487ce
-  tls: false
-  network: httpupgrade
-  servername: www.speedtest.net
-  skip-cert-verify: true
-- name: DE_7
-  type: vless
-  server: 104.16.1.106
-  port: 80
-  uuid: a47d00c8-73de-45cb-f33d-69f2de72df13
-  tls: false
-  network: ws
-  servername: 104.16.1.106
-  skip-cert-verify: true
-  ws-opts:
-    path: /FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM?ed=2048
-    headers:
-      Host: eng.vinamarketcenter.ir
-- name: vless-484
-  type: vless
-  server: 188.114.98.68
-  port: 80
-  uuid: af38c6b0-8a1b-407d-9617-f178ac20752e
-  tls: false
-  network: httpupgrade
-  servername: 188.114.98.68
-  skip-cert-verify: true
-- name: confiig_hub---confiig_hub---confiig__4
-  type: vless
-  server: numberland.ir
+  server: cafearz.com
   port: 8080
-  uuid: b9324288-d1b9-431a-e851-fdbfeecc5fe8
-  tls: false
-  network: tcp
-  servername: numberland.ir
-  skip-cert-verify: true
-- name: Maznet-46161-1
-  type: vless
-  server: 172.66.40.99
-  port: 8080
-  uuid: 46fc67a5-a457-46cc-8b78-f6253f187962
+  uuid: e7ef2316-2ff9-4266-8d09-acbf90fbd0e4
   tls: false
   network: ws
-  servername: 172.66.40.99
-  skip-cert-verify: true
-  ws-opts:
-    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
-    headers:
-      Host: inFo.laLezaRanegomaNandish.sNap.ir.sNaPtripUppoRt.spaCe.
-- name: bored_vpn_5
-  type: vless
-  server: 63.141.128.23
-  port: 8080
-  uuid: 174a3caa-5aa0-4eb7-bdd2-d91ae62d91d1
-  tls: false
-  network: ws
-  servername: 63.141.128.23
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
-    headers:
-      Host: b.jOin.zEdMoDeOn.oNl.
-- name: httpstmevip_vpn_2022
-  type: vless
-  server: www.speedtest.net
-  port: 80
-  uuid: 0cb04571-7ead-42b6-af3a-9fbb4ebc6847
-  tls: false
-  network: ws
-  servername: www.speedtest.net
-  skip-cert-verify: true
-  ws-opts:
-    path: /Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2?ed=2560
-    headers:
-      Host: pamchall.com
-- name: vpnclashfa_29
-  type: vless
-  server: chat.deepseek.com
-  port: 80
-  uuid: d5ad5040-00fb-4858-df1d-a1a10112189b
-  tls: false
-  network: ws
-  servername: chat.deepseek.com
+  servername: cafearz.com
   skip-cert-verify: true
   ws-opts:
     path: /olem/ws?ed=1024
     headers:
-      Host: fin.channel.digicyber.click
-- name: IRAN 302 Outline_Vpn free
+      Host: shad.ir.fin.test.digicyber.click.
+- name: confiig_hub---confiig_hub---confiig_
+  type: vless
+  server: 172.66.40.99
+  port: 443
+  uuid: telegram-id-Arfilter
+  tls: false
+  network: tcp
+  servername: 172.66.40.99
+  skip-cert-verify: true
+- name: Alfred_Config
+  type: vless
+  server: www.speedtest.net
+  port: 8880
+  uuid: 02e73377-1938-4222-d246-23a128272c70
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: CF   VLESS  kurdvpn1 2
+  type: vless
+  server: www.speedtest.net
+  port: 2052
+  uuid: DIGIV2RAy
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: Telegram_7
+  type: vless
+  server: 172.66.40.99
+  port: 2052
+  uuid: f1d54019-15f6-4881-b0f4-c31bdeccfc1c
+  tls: false
+  network: xhttp
+  servername: 172.66.40.99
+  skip-cert-verify: true
+- name: ogsvpnbot_1
+  type: vless
+  server: cumhuriyet.com.tr
+  port: 80
+  uuid: b243c2ae-83cf-4721-f777-72895c68183d
+  tls: false
+  network: ws
+  servername: cumhuriyet.com.tr
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: join-to-Vmessorg.sabadyt.ir
+- name: vpnclashfa_9
+  type: vless
+  server: 156.238.18.28
+  port: 8880
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  tls: false
+  network: ws
+  servername: 156.238.18.28
+  skip-cert-verify: true
+  ws-opts:
+    path: /TelegramрЯЗ®рЯЗ≥
+    headers:
+      Host: us.laoyoutiao.link
+- name: IRAN 170 Outline_Vpn free
+  type: vless
+  server: 172.67.67.92
+  port: 80
+  uuid: f78ce1bb-0fa6-4ef4-b4c9-b91014a7055d
+  tls: false
+  network: ws
+  servername: 172.67.67.92
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: delam.ahaysiahzangi.dpdns.org
+- name: IRAN 307 Outline_Vpn free
   type: vless
   server: 141.101.121.108
   port: 8080
@@ -2905,52 +1391,59 @@ proxies:
     path: /?ed=2048
     headers:
       Host: 1750293123492.china.baidu.bilibili.china.aeko.cn
-- name: mehrosaboranXX
-  type: vless
-  server: 69.84.182.140
-  port: 2095
-  uuid: '%6119%610922-24c6-4d61-f58d-44589%65b1dbd0'
-  tls: false
-  network: httpupgrade
-  servername: 69.84.182.140
-  skip-cert-verify: true
-- name: VIProxys_10
-  type: ss
-  server: 159.112.235.174
-  port: 2082
-  cipher: ã·½kG[çG
-  password: "ã\x9D¶óÍ}çM\x9Cç\x96ôé×^"
-- name: vpnclashfa_30
-  type: vless
-  server: 188.114.98.224
-  port: 8080
-  uuid: Telegram_VPNCUSTOMIZE
-  tls: false
-  network: ws
-  servername: 188.114.98.224
-  skip-cert-verify: true
-  ws-opts:
-    path: /Join--VPNCUSTOMIZE.V2ray.re?ed=8080
-    headers:
-      Host: VPNCUSTOMIZE.V2ray.Community.
-- name: vpnclashfa_32
-  type: vless
-  server: 104.16.51.36
-  port: 80
-  uuid: 5459f68e-d914-4b31-93a3-ecdf638b7a5b
-  tls: false
-  network: ws
-  servername: barayeiran-mahsang.taraneh.dpdns.org
-  skip-cert-verify: true
-  ws-opts:
-    path: /
-    headers:
-      Host: barayeiran-mahsang.taraneh.dpdns.org
-- name: Maznet-46170-2
+- name: Telegram_8
   type: vless
   server: 172.66.40.99
-  port: 2052
-  uuid: 0ada1e8a-0d4b-481c-96e5-f0d2331b6a2a
+  port: 8880
+  uuid: 3a7d48a2-b971-41da-b5e1-d4814923da46
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec
+    headers:
+      Host: inFo.laLezaRanegomaNandish.mdV.V2.onlineshopbb.org.
+- name: v2ray313_1
+  type: vless
+  server: digitalocean.com
+  port: 8880
+  uuid: 9bd8537b-32cf-4a98-bc1a-d1d5a64e1164
+  tls: false
+  network: ws
+  servername: digitalocean.com
+  skip-cert-verify: true
+  ws-opts:
+    path: '@Rayan_Config'
+    headers:
+      Host: rAyAn-cOnFiG-TeLeGrAm-pRo-3.rAyAn-3.cLoUdNs.pRo
+- name: vpnclashfa_10
+  type: vless
+  server: 199.232.208.19
+  port: 80
+  uuid: 0d2b6505-c554-43db-95f0-0b51bac41f48
+  tls: false
+  network: xhttp
+  servername: 199.232.208.19
+  skip-cert-verify: true
+- name: IRAN 60 Outline_Vpn free
+  type: vless
+  server: 104.17.147.22
+  port: 80
+  uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
+  tls: false
+  network: ws
+  servername: 104.17.147.22
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram@V2ray_Alpha/?ed=2560
+    headers:
+      Host: redfree8mahsang6.redfree8.ir
+- name: Maznet-46169-1
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: f6ec9d7a-ab86-4ac7-9cea-cb55ba5cf0d9
   tls: false
   network: ws
   servername: 172.66.40.99
@@ -2959,549 +1452,2505 @@ proxies:
     path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
     headers:
       Host: υρρσят-多言語-دعم.snaptripupport.space.
+- name: VIPro_2
+  type: vless
+  server: 104.16.108.43
+  port: 80
+  uuid: 948f6596-66f9-4707-aa92-3107a214ce53
+  tls: false
+  network: ws
+  servername: oops.shalamshorba.dpdns.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: oops.shalamshorba.dpdns.org
+- name: RELAY_4
+  type: vless
+  server: jealous-competition.seotoolsforyou.co.uk
+  port: 80
+  uuid: 7094df26-af60-41c4-afac-857060d1bab0
+  tls: false
+  network: ws
+  servername: jealous-competition.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: jealous-competition.seotoolsforyou.co.uk
+- name: FreakConfig_3
+  type: vless
+  server: 104.17.148.22
+  port: 2095
+  uuid: 0f22bee9-2890-4307-8f41-431a1e9c7863
+  tls: false
+  network: httpupgrade
+  servername: 104.17.148.22
+  skip-cert-verify: true
+- name: ogsvpnbot_2
+  type: vless
+  server: cumhuriyet.com.tr
+  port: 80
+  uuid: cf0e2b73-088d-4d2e-c95d-3a4002216831
+  tls: false
+  network: ws
+  servername: cumhuriyet.com.tr
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: join-to-Vmessorg.sabadyt.ir
+- name: 𝐣𝐨𝐢𝐍-𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
+  type: vless
+  server: 159.246.55.6
+  port: 8880
+  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
+  tls: false
+  network: ws
+  servername: 159.246.55.6
+  skip-cert-verify: true
+  ws-opts:
+    path: 𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
+    headers:
+      Host: VngSuPpLY.IP-DdnS.com
+- name: mehrosaboran_2
+  type: vless
+  server: 63.141.128.31
+  port: 80
+  uuid: 639e663a-f454-4af5-a9fc-2933784714fe
+  tls: false
+  network: ws
+  servername: 63.141.128.31
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: e.jOin.zEdMoDeOn.oNl.
+- name: Vip_Security_11
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 3c6f7783-%651%654-40b0-b227-1d%65d%65937d7b5
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE?ed=2048
+    headers:
+      Host: he10.motorbazan.cOm
+- name: Vip_Security_12
+  type: vless
+  server: chat.deepseek.com
+  port: 80
+  uuid: 400f06ce-2b69-4444-a398-47b7166ccb54
+  tls: false
+  network: ws
+  servername: chat.deepseek.com
+  skip-cert-verify: true
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: fin.channel.digicyber.click
+- name: spikevpn
+  type: vless
+  server: www.speedtest.net
+  port: 2086
+  uuid: 03d73724-1dce-470d-d5fc-237ecf71368e
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: FreakConfig_4
+  type: vless
+  server: compose.fast.hosting-ip.com
+  port: 80
+  uuid: ab80613b-e04b-4af5-bad9-9ca5c448266e
+  tls: false
+  network: xhttp
+  servername: compose.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: Hddify
+  type: vless
+  server: 104.16.3.5
+  port: 8880
+  uuid: 70465717-66ae-4756-b28a-ec5899e08b17
+  tls: false
+  network: ws
+  servername: 104.16.3.5
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2087
+    headers:
+      Host: 472cbdadc2dce946-472cbdadc2dce946472cbdadc2dce946.mObIlEGgaTTe.Ir
+- name: mehrosaboran_3
+  type: vless
+  server: 63.141.128.2
+  port: 80
+  uuid: 89543041-c4e3-4213-8842-7e2db8327295
+  tls: false
+  network: ws
+  servername: 63.141.128.2
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: b.jOin.zEdMoDeOn.oNl.
+- name: vless-140
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: bcfd81cf-99b7-4863-b0fe-40b031ec590c
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: RELAY_5
+  type: vless
+  server: 185.146.173.39
+  port: 2052
+  uuid: aec7d79a-8b42-43ad-ab44-23062a1a430b
+  tls: false
+  network: ws
+  servername: 185.146.173.39
+  skip-cert-verify: true
+  ws-opts:
+    path: /wsmmad
+    headers:
+      Host: De.lemoex.ir.
+- name: Evay_vpn
+  type: vless
+  server: www.speedtest.net
+  port: 2095
+  uuid: c016605b-dd24-4aa0-8f44-369d93b084ac
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /hajmi?ed=2050/?@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn----@Evay_vpn
+    headers:
+      Host: dbe661d5a761ff6c.s-5HU09JDF-97SHS.WWWrubika.irto.xn--ls8haaaaaaaaaaaaaaaaaa.la.which.xn--ls8haaaaaaaaaaaaaaaaaa.xn-ls8faaaaaaaaaa.speedtest.net.google.com.eu.ir.nl.aparat.com.komak.IR.Nb-Us.85858599.xYz.
+- name: FR
+  type: vless
+  server: 63.141.128.14
+  port: 8080
+  uuid: a976e0dd-6d59-467d-ba67-fb66596ce010
+  tls: false
+  network: ws
+  servername: 63.141.128.14
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: a.joIn.zEdMoDeOn.oNl.
+- name: Vip_Security_13
+  type: vless
+  server: ipb-alphaomega-company.1alphaomega.org
+  port: 80
+  uuid: 3f08ce80-d718-4e56-a0d0-a27bb00437cc
+  tls: false
+  network: httpupgrade
+  servername: ipb-alphaomega-company.1alphaomega.org
+  skip-cert-verify: true
+- name: vmessorgXX
+  type: vless
+  server: numberland.ir
+  port: 2052
+  uuid: 78e3cff7-75e1-4418-9db0-b3a00aece703
+  tls: false
+  network: ws
+  servername: numberland.ir
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: Vmessorg.paradoxone.ir
+- name: Selinc
+  type: vless
+  server: 104.21.96.1
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 104.21.96.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: ShatakVPN 222293
+  type: vless
+  server: 104.26.5.112
+  port: 2052
+  uuid: 95260b6%61-%65711-455c-d273-3439c%61210d44
+  tls: false
+  network: ws
+  servername: 104.26.5.112
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: Vmessorg.paradoxone.ir
+- name: ogsvpnbot_3
+  type: vless
+  server: opening-hours.nz
+  port: 80
+  uuid: 39ef56cc-5cd3-4d78-f095-25b216498736
+  tls: false
+  network: ws
+  servername: opening-hours.nz
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: join-to-Vmessorg.sabadyt.ir
+- name: Vip_Security_14
+  type: vless
+  server: speedtest.net
+  port: 80
+  uuid: ba3797e0-31a5-4510-ea35-6e409c4953e5
+  tls: false
+  network: ws
+  servername: speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: foffmelo.com
+- name: mehrosaboran_4
+  type: vless
+  server: 63.141.128.32
+  port: 8080
+  uuid: 6e33a2c0-85f4-4c66-99f4-421636868a83
+  tls: false
+  network: ws
+  servername: 63.141.128.32
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: f.jOin.zEdMoDeOn.oNl.
+- name: تلگرامعضوبشیدEuServer2ssY2hh
+  type: vless
+  server: www.speedtest.net
+  port: 80
+  uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /re5IzbZ9IZZMddtw?ed=2560/?JOKERRVPNJoin_Bade_Channel@JOKERRVPN
+    headers:
+      Host: ipsycho.suex12.ir
+- name: vpnclashfa_11
+  type: vless
+  server: aio.loophole.biz.id
+  port: 80
+  uuid: f282b878-8711-45a1-8c69-5564172123c1
+  tls: false
+  network: ws
+  servername: aio.loophole.biz.id
+  skip-cert-verify: true
+  ws-opts:
+    path: /aioproxybot/129.150.49.58-18650
+    headers:
+      Host: aio.loophole.biz.id
+- name: Vip_Security_15
+  type: vless
+  server: www.speedtest.net
+  port: 2095
+  uuid: aa81d044-0e0a-5b01-a6d7-3981ed218497
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: at1.vless.Sitespeedtest.net.
+- name: Vip_Security_16
+  type: vless
+  server: mtn.ivy-net.ir
+  port: 80
+  uuid: b055036a-2d81-4d46-ab18-4e1898b58cec
+  tls: false
+  network: ws
+  servername: mtn.ivy-net.ir
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed
+    headers:
+      Host: feArLESS-cHANge.oNEEat.CO.
+- name: VIProxys_1
+  type: vless
+  server: 104.25.138.53
+  port: 80
+  uuid: 948f6596-66f9-4707-aa92-3107a214ce53
+  tls: false
+  network: ws
+  servername: 104.25.138.53
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560/?BIA_CHANEL@JOKERRVPN
+    headers:
+      Host: oops.shalamshorba.dpdns.org
+- name: RELAY_6
+  type: vless
+  server: 104.18.14.19
+  port: 2082
+  uuid: 2e90c15f-3703-4426-acef-1f59a3990289
+  tls: false
+  network: ws
+  servername: 104.18.14.19
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: 0301.nooyfig.workers.dev
+- name: vpnclashfa_12
+  type: vless
+  server: 199.232.0.100
+  port: 80
+  uuid: 89b3cbba-e6ac-485a-9481-976a0415eab9
+  tls: false
+  network: ws
+  servername: IRANINGOAT.IR
+  skip-cert-verify: true
+  ws-opts:
+    path: /7qJzyVWj0ybhGdPg
+    headers:
+      Host: IRANINGOAT.IR
+- name: 𝗝𝗼𝗶𝗻_2
+  type: vless
+  server: 104.16.3.5
+  port: 8880
+  uuid: 70465717-66ae-4756-b28a-ec5899e08b17
+  tls: false
+  network: ws
+  servername: 104.16.3.5
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2087
+    headers:
+      Host: 472cbdadc2dce946-472cbdadc2dce946472cbdadc2dce946.mObIlEGgaTTe.Ir
+- name: ghalagyann_1
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: fcbcca00-44c2-4330-a072-bd0ba626eb0f
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
+    headers:
+      Host: T.ubuntu-linuxmirror.ir
+- name: Vip_Security_17
+  type: vless
+  server: www.speedtest.net
+  port: 2052
+  uuid: a3b7ff51-768a-4360-b44d-804d97f06e65
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: vpnclashfa_13
+  type: vless
+  server: 45.131.7.93
+  port: 80
+  uuid: 6f183280-b258-437a-a216-e83f7dece776
+  tls: false
+  network: ws
+  servername: 901.dbodanwi.workers.dev
+  skip-cert-verify: true
+  ws-opts:
+    path: Telegram@WangCai2/?ed
+    headers:
+      Host: 901.dbodanwi.workers.dev
+- name: قطع
+  type: vless
+  server: 151.101.67.8
+  port: 80
+  uuid: hqV2rayNG
+  tls: false
+  network: xhttp
+  servername: 151.101.67.8
+  skip-cert-verify: true
+- name: v2rayng_fars
+  type: vless
+  server: 172.66.40.99
+  port: 8880
+  uuid: 76321d45-9023-4b87-b070-bf3ce332024e
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec----@MdVpnSec
+    headers:
+      Host: inFo.laLezaRanegomaNandish.mdV.V2.onlineshopbb.org.
+- name: vipV2rayNGnp_1
+  type: vless
+  server: www.speedtest.net
+  port: 2086
+  uuid: d846541c-519b-48c0-9c8a-d52b2e8e8330
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--
+    headers:
+      Host: mahan.mmadvip8563.ir
+- name: Vip_Security_18
+  type: vless
+  server: 104.21.59.125
+  port: 80
+  uuid: e1a928be-e289-4aef-b92e-4106fabdf42f
+  tls: false
+  network: ws
+  servername: 104.21.59.125
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2048
+    headers:
+      Host: mahi.kosnanatfilterchi.eu.org
+- name: unlimiteddev-link2
+  type: vless
+  server: www.speedtest.net
+  port: 8080
+  uuid: 02151ca0-a1d5-437c-d818-ffa739176fab
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: Unlimiteddev-join.paradoxone.ir
+- name: singbox1
+  type: vless
+  server: test.fast.hosting-ip.com
+  port: 80
+  uuid: 0dcfdeb5-bd7e-498a-acc8-cf76839ceb01
+  tls: false
+  network: xhttp
+  servername: test.fast.hosting-ip.com
+  skip-cert-verify: true
+- name: Vip_Security_19
+  type: vless
+  server: speedtest.net
+  port: 80
+  uuid: 53503fd1-275c-4623-d426-601a652ca3fc
+  tls: false
+  network: ws
+  servername: speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: foffmelo.com
+- name: confiig_hub_2
+  type: vless
+  server: 151.101.3.8
+  port: 80
+  uuid: 1dc37b8f-49a9-478f-91e1-147f0a1249f8
+  tls: false
+  network: xhttp
+  servername: 151.101.3.8
+  skip-cert-verify: true
+- name: bored_vpn_2
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: e5a91065-6515-4b1d-8fb0-55f80975d464
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram_configMs_Telegram_configMs_Telegram_configMs?ed=2048
+    headers:
+      Host: K.mangoap.org
+- name: mehrosaboran_5
+  type: vless
+  server: 104.21.72.109
+  port: 80
+  uuid: 67b0fe25-1344-4e93-90a7-19613b195115
+  tls: false
+  network: ws
+  servername: 104.21.72.109
+  skip-cert-verify: true
+  ws-opts:
+    path: /Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2?ed=2560
+    headers:
+      Host: mosiv2.cloudns.pro.
+- name: سرورهایبیشتردرکانالprrofile_purple
+  type: vless
+  server: jquery.com
+  port: 2052
+  uuid: b5d99a97-ac4f-4509-9dc1-33d2a9a28148
+  tls: false
+  network: ws
+  servername: jquery.com
+  skip-cert-verify: true
+  ws-opts:
+    path: ?ed=2048@v2ray_configs_pools
+    headers:
+      Host: rAyAn-cOnFiG-TeLeGrAm-pRo-4.rAyAn-4.cLoUdNs.pRo
+- name: capoit  VL-WS-NA  US 5ms
+  type: vless
+  server: 63.141.128.16
+  port: 8080
+  uuid: e283e796-b140-4c2d-a8e5-bb27fd117e28
+  tls: false
+  network: ws
+  servername: 63.141.128.16
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: e.jOin.zEdMoDeOn.oNl.
+- name: Vip_Security_20
+  type: vless
+  server: 104.21.72.109
+  port: 80
+  uuid: 85bf8959-34%61%61-4b84-828f-c%61891380b7ff
+  tls: false
+  network: ws
+  servername: dfgopee-workers.dev
+  skip-cert-verify: true
+  ws-opts:
+    path: /Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2?ed=2560
+    headers:
+      Host: dfgopee-workers.dev.
+- name: TELEGRAM-MARAMBASHI_MARAMBASHI_MARAMBAS
+  type: vless
+  server: malaysia.com
+  port: 443
+  uuid: c4587bda-09fc-4b3b-8221-4450fccc33d1
+  tls: false
+  network: tcp
+  servername: malaysia.com
+  skip-cert-verify: true
+- name: 𝗝𝗼𝗶𝗻_3
+  type: vless
+  server: jealous-competition.seotoolsforyou.co.uk
+  port: 80
+  uuid: 7094df26-af60-41c4-afac-857060d1bab0
+  tls: false
+  network: ws
+  servername: jealous-competition.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2048@V2Gatee--V2Gatee--V2Gatee--V2Gatee-V2Gatee--V2Gatee--V2Gatee--V2Gatee--V2Gatee--V2Gatee--V2Gatee--V2Gatee--V2Gatee--V2Gatee--V2Gatee
+    headers:
+      Host: jealous-competition.seotoolsforyou.co.uk
+- name: Telegram Canfing_VPNCanfing_VPN
+  type: vless
+  server: beloved-failure.seotoolsforyou.co.uk
+  port: 80
+  uuid: 3cad733b-3526-476b-adf5-b7cbdd33dc6c
+  tls: false
+  network: ws
+  servername: beloved-failure.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: beloved-failure.seotoolsforyou.co.uk
+- name: Vip_Security_21
+  type: vless
+  server: br.pouriau.com
+  port: 2052
+  uuid: 6880c016-63a3-4335-bafa-c180ffd3325f
+  tls: false
+  network: ws
+  servername: br.pouriau.com
+  skip-cert-verify: true
+  ws-opts:
+    path: /---ping---www.speedtest.net?ed=2080
+    headers:
+      Host: rosiassn.digikala.com.snnapfood.ir.varzesh3.com.shobb.ir.kdvhgkri558rvhnfjrdghriuygfkrdhihifjdfjssiedhfgjung2.bonyadedocker.ir.2.xziba.com.
+- name: spikevpn_1
+  type: vless
+  server: www.speedtest.net
+  port: 2082
+  uuid: 1007c874-0799-4ce2-9dbd-c22408fe4453
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /@spikevpn-@spikevpn-@spikevpn-@spikevpn-@spikevpn-@spikevpn?ed=2082
+    headers:
+      Host: novinsoft.ir.oradoshop.com.persiangsm.ir.digikala.com.abadis.ir.shad.ir.divar.ir.downloadly.com.aparat.com.cafebazar.ir.varzesh3.com.ninisite.com.abadis.ir.bama.ir.p30download.ir.telewebion.bmi.ir.shad.ir.mayket.com.ninisite.top.
+- name: RELAY_7
+  type: vless
+  server: elegant-corporation.seotoolsforyou.co.uk
+  port: 80
+  uuid: d03d8815-a06f-408f-a62f-6c84869b96a9
+  tls: false
+  network: ws
+  servername: elegant-corporation.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: elegant-corporation.seotoolsforyou.co.uk
+- name: bored_vpn_3
+  type: vless
+  server: 104.17.147.22
+  port: 8080
+  uuid: d8b86bc9-822a-4030-d898-c923a30fa39c
+  tls: false
+  network: ws
+  servername: 104.17.147.22
+  skip-cert-verify: true
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: bia-to-unlimiteddev.unlimiteddev-service.ir
+- name: FASTSHOVPN
+  type: vless
+  server: 104.16.1.106
+  port: 80
+  uuid: 81150a61-42ce-4b90-f995-03950ef627c3
+  tls: false
+  network: ws
+  servername: 104.16.1.106
+  skip-cert-verify: true
+  ws-opts:
+    path: /FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM-FASTSHOVPNTELEGRAM?ed=2048
+    headers:
+      Host: eng.vinamarketcenter.ir
+- name: RELAY_8
+  type: vless
+  server: www.speedtest.net
+  port: 2095
+  uuid: 89ba9206-305a-4dbf-bd62-9144c1b0e0c4
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /hajmi?ed=2050
+    headers:
+      Host: dbe661d5a761ff6c.s-5HU09JDF-97SHS.WWWrubika.irto.xn--ls8haaaaaaaaaaaaaaaaaa.la.which.xn--ls8haaaaaaaaaaaaaaaaaa.xn-ls8faaaaaaaaaa.speedtest.net.google.com.eu.ir.nl.aparat.com.komak.IR.Nb-De.85858599.xYz.
+- name: Channel_1
+  type: vless
+  server: 69.84.182.90
+  port: 8880
+  uuid: 9455a3a8-bc7b-4577-bef5-7a8757fdda13
+  tls: false
+  network: httpupgrade
+  servername: 69.84.182.90
+  skip-cert-verify: true
+- name: Maznet-46178-1
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: cb7e4a6b-b510-4c6c-b5db-005a4b5d0e87
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
+    headers:
+      Host: υρρσят-多言語-دعم.snaptripupport.space.
+- name: spikevpn_2
+  type: vless
+  server: www.speedtest.net
+  port: 2082
+  uuid: 4c553608-7c50-4c5a-99a6-3802aeae45e7
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /@spikevpn-@spikevpn-@spikevpn-@spikevpn-@spikevpn-@spikevpn?ed=2082
+    headers:
+      Host: novinsoft.ir.oradoshop.com.persiangsm.ir.digikala.com.abadis.ir.shad.ir.divar.ir.downloadly.com.aparat.com.cafebazar.ir.varzesh3.com.ninisite.com.abadis.ir.bama.ir.p30download.ir.telewebion.bmi.ir.shad.ir.mayket.com.ninisite.top.
+- name: ghalagyann_2
+  type: vless
+  server: www.speedtest.net
+  port: 2086
+  uuid: 54e38a27-7ee9-4d83-a2de-bdb9dc123a4e
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--@ZedBaz_vpn--
+    headers:
+      Host: mahan.mmadvip8563.ir
+- name: vpnclashfa_14
+  type: vless
+  server: creative-computer.oneeat.co
+  port: 80
+  uuid: f1fe4963-66f7-4f71-a038-9e07ea6cf20f
+  tls: false
+  network: ws
+  servername: creative-computer.oneeat.co
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: creative-computer.oneeat.co
+- name: Vip_Security_22
+  type: vless
+  server: www.speedtest.net
+  port: 2095
+  uuid: 94a0692e-4ce0-479c-d0b6-4ea3da2a3b02
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: JOIN---V2RAYNG_FARS---V2RAYNG_FARS---V2R
+  type: vless
+  server: 172.67.74.133
+  port: 443
+  uuid: 6780a3c0-a98c-4622-b894-8e34167f7b31
+  tls: false
+  network: tcp
+  servername: 172.67.74.133
+  skip-cert-verify: true
+- name: NETMelliAnti
+  type: vless
+  server: 104.16.53.11
+  port: 8080
+  uuid: 1343298e-2118-435d-9dcc-9f8c3fd60cef
+  tls: false
+  network: httpupgrade
+  servername: 104.16.53.11
+  skip-cert-verify: true
+- name: Telegram_9
+  type: vless
+  server: 104.17.147.22
+  port: 2095
+  uuid: e937755f-3276-421c-9127-bba09cac67f6
+  tls: false
+  network: httpupgrade
+  servername: 104.17.147.22
+  skip-cert-verify: true
+- name: RELAY_9
+  type: vless
+  server: dedicated-development.seotoolsforyou.co.uk
+  port: 80
+  uuid: 2054405e-70ff-40a2-ae27-16b63d72390a
+  tls: false
+  network: ws
+  servername: dedicated-development.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: dedicated-development.seotoolsforyou.co.uk
+- name: All net telegram ultrasurf_12
+  type: vless
+  server: 104.17.1.197
+  port: 8880
+  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
+  tls: false
+  network: ws
+  servername: 104.17.1.197
+  skip-cert-verify: true
+  ws-opts:
+    path: /1ycR2zb3KeELWRha?ed=2560
+    headers:
+      Host: VngSuPpLY.IP-DdnS.com
+- name: Vip_Security_23
+  type: vless
+  server: avalpardakht.com
+  port: 80
+  uuid: e2dc0b52-1792-423e-d78e-c568b1498c67
+  tls: false
+  network: ws
+  servername: avalpardakht.com
+  skip-cert-verify: true
+  ws-opts:
+    path: /@v2rayNG_VPNN
+    headers:
+      Host: 5.arsalanv2.sbs
+- name: ᴬᴸᴸ²JKVPN
+  type: vless
+  server: www.zula.ir
+  port: 80
+  uuid: 45460cd2-114b-416a-aefa-93250f9718da
+  tls: false
+  network: ws
+  servername: www.zula.ir
+  skip-cert-verify: true
+  ws-opts:
+    path: /TELEGRAM_JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JkVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKvPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-jKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN-JKVPN?ed=2048
+    headers:
+      Host: joker.ahang-alpha.ir
+- name: SE   VLESS  v2rayngseven 12
+  type: vless
+  server: 185.146.173.39
+  port: 8880
+  uuid: Parsashonam-296
+  tls: false
+  network: httpupgrade
+  servername: 185.146.173.39
+  skip-cert-verify: true
+- name: HiByeVPNN
+  type: vless
+  server: beloved-failure.seotoolsforyou.co.uk
+  port: 80
+  uuid: 3cad733b-3526-476b-adf5-b7cbdd33dc6c
+  tls: false
+  network: ws
+  servername: beloved-failure.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2048@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN
+    headers:
+      Host: beloved-failure.seotoolsforyou.co.uk
+- name: Vip_Security_24
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 6b6c9ce9-0a23-4b1b-cd03-35493c801007
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Hddify----@Hddify-----@Hddify----@Hddify----@Hddify----@Hddify?ed=2480
+    headers:
+      Host: join-to-unlimiteddev.sabadyt.ir
+- name: کانفیگ_2
+  type: vless
+  server: tgju.org
+  port: 80
+  uuid: d5ad5040-00fb-4858-df1d-a1a10112189b
+  tls: false
+  network: ws
+  servername: tgju.org
+  skip-cert-verify: true
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: fin.channel.digicyber.click
+- name: bored_vpn_4
+  type: vless
+  server: 172.66.40.99
+  port: 80
+  uuid: 1f21f605-917a-4b31-8415-cad059b4aea4
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /@vmessorg----@vmessorg-----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg----@vmessorg?ed=2480
+    headers:
+      Host: Vmessorg.paradoxone.ir
+- name: Vip_Security_25
+  type: vless
+  server: communal-loss.oneeat.co
+  port: 80
+  uuid: a2af50d9-09c7-4a44-90d0-42da35923e9e
+  tls: false
+  network: ws
+  servername: communal-loss.oneeat.co
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: communal-loss.oneeat.co
+- name: Channel id ShadowProxy66
+  type: vless
+  server: 162.159.152.4
+  port: 2095
+  uuid: 5c9d0b1b-4075-40d0-baf0-85cb03722586
+  tls: false
+  network: ws
+  servername: 162.159.152.4
+  skip-cert-verify: true
+  ws-opts:
+    path: '@Rayan_Config'
+    headers:
+      Host: rAyAn-cOnFiG-TeLeGrAm-cLuB-1.RaYaN-1.ClOuDnS.ClUb
+- name: capoit  VL-WS-NA  US 6ms
+  type: vless
+  server: 63.141.128.22
+  port: 8080
+  uuid: 526daa5c-0621-4522-a945-359de47d8ba2
+  tls: false
+  network: ws
+  servername: 63.141.128.22
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: f.jOin.zEdMoDeOn.oNl.
+- name: vpnclashfa_15
+  type: vless
+  server: 104.24.56.187
+  port: 80
+  uuid: e6236ebc-7334-4bed-977f-0c20bcdfcc00
+  tls: false
+  network: ws
+  servername: 104.24.56.187
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: a1.ghormehsabzi.dpdns.org
+- name: vpnclashfa_16
+  type: vless
+  server: 104.17.148.22
+  port: 8880
+  uuid: 6ec52bc7-fcd7-4841-ab69-70d6e03a6eda
+  tls: false
+  network: ws
+  servername: 104.17.148.22
+  skip-cert-verify: true
+  ws-opts:
+    path: '@V2ray_God'
+    headers:
+      Host: www.speedtest.net.zula.ir.cfp1.a2hdhjdxjbxjsjdjd.ddns-ip.nEt.
+- name: VIPro_3
+  type: vless
+  server: 156.238.18.96
+  port: 8880
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  tls: false
+  network: ws
+  servername: yd.laoyoutiao.link
+  skip-cert-verify: true
+  ws-opts:
+    path: /Telegram
+    headers:
+      Host: yd.laoyoutiao.link
+- name: Telegram_10
+  type: vless
+  server: beloved-failure.seotoolsforyou.co.uk
+  port: 80
+  uuid: 3cad733b-3526-476b-adf5-b7cbdd33dc6c
+  tls: false
+  network: ws
+  servername: beloved-failure.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: beloved-failure.seotoolsforyou.co.uk
+- name: vpnclashfa_17
+  type: vless
+  server: lopo.mciickoir.ir
+  port: 2082
+  uuid: 536b4499-005d-4b60-a268-d487babb5424
+  tls: false
+  network: ws
+  servername: lopo.mciickoir.ir
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: netha893rkmwqf.mciickoir.ir.
+- name: mehrosaboran_6
+  type: vless
+  server: 63.141.128.14
+  port: 80
+  uuid: 024f9b24-42c3-4c32-ba0a-3d7b5a6de162
+  tls: false
+  network: ws
+  servername: 63.141.128.14
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: a.joIn.zEdMoDeOn.oNl.
+- name: RELAY_10
+  type: vless
+  server: 104.24.175.2
+  port: 80
+  uuid: 3487ce43-b803-4770-97ff-f75880d7f9b4
+  tls: false
+  network: ws
+  servername: 104.24.175.2
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: rough-mud-93b4-ppal03.wedane7745.workers.dev
+- name: Vip_Security_26
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 6b6c9c%659-0%6123-4b1b-cd03-35493c801007
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: join-to-unlimiteddev.sabadyt.ir
+- name: RELAY_11
+  type: vless
+  server: grounded-brother.seotoolsforyou.co.uk
+  port: 80
+  uuid: 52adc6ba-b1c7-4541-a594-08fc698be640
+  tls: false
+  network: ws
+  servername: grounded-brother.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: grounded-brother.seotoolsforyou.co.uk
+- name: V2rayNGVPNکانفیگرایگان
+  type: vless
+  server: 104.16.53.11
+  port: 8080
+  uuid: 8bf5c07a-acd3-4360-b940-62d6b77699af
+  tls: false
+  network: httpupgrade
+  servername: 104.16.53.11
+  skip-cert-verify: true
+- name: Hope_Net-join-us-on-Telegram_1
+  type: vless
+  server: 104.17.147.22
+  port: 2082
+  uuid: 87ef1bee-c334-44ad-c33d-d007e623a63d
+  tls: false
+  network: ws
+  servername: 104.17.147.22
+  skip-cert-verify: true
+  ws-opts:
+    path: /@spikevpn-@spikevpn-@spikevpn-@spikevpn-@spikevpn?ed=1024
+    headers:
+      Host: www.speedtest.net.zula.ir.Shad.ir.sHaparak.ir.torob.com.namaSha.com.namnak.com.filiMo.com.Rokna.net.teleweBion.com.iraNikala.toP.
+- name: Vip_Security_27
+  type: vless
+  server: narrow-passenger.oneeat.co
+  port: 80
+  uuid: 5a12794b-2125-46d7-a748-927a989faa04
+  tls: false
+  network: ws
+  servername: narrow-passenger.oneeat.co
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: narrow-passenger.oneeat.co
+- name: Golestan_VPN
+  type: vless
+  server: 5.10.214.180
+  port: 8880
+  uuid: 53fa8faf-ba4b-4322-9c69-a3e5b1555049
+  tls: false
+  network: ws
+  servername: reedfree8mahsang2.redorg.ir
+  skip-cert-verify: true
+  ws-opts:
+    path: /TelegramU0001F1E8U0001F1F3
+    headers:
+      Host: reedfree8mahsang2.redorg.ir
+- name: vless-218
+  type: vless
+  server: www.speedtest.net
+  port: 2095
+  uuid: e43ec218-f19b-48f8-afbb-0de103c93018
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: FreakConfig_5
+  type: vless
+  server: www.speedtest.net
+  port: 2082
+  uuid: 03-TELEGRAM-ID-free_vpn0088
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: 565c3be3-7779-46a6-9f6b-4bea859c1858.teleconomiser.sbs
+- name: vpnclashfa_18
+  type: vless
+  server: www.speedtest.net
+  port: 8880
+  uuid: 9455a3a8-bc7b-4577-bef5-7a8757fdda13
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: vless-221
+  type: vless
+  server: www.crehistory.org
+  port: 2095
+  uuid: ac4c87df-f112-9469-2025-5eb79b227878
+  tls: false
+  network: httpupgrade
+  servername: www.crehistory.org
+  skip-cert-verify: true
+- name: vpn_ioss  عضو شو_1
+  type: vless
+  server: 172.67.65.158
+  port: 8880
+  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
+  tls: false
+  network: ws
+  servername: 172.67.65.158
+  skip-cert-verify: true
+  ws-opts:
+    path: /Etb1L6YUdZFZuTOr?ed=2560
+    headers:
+      Host: VngSuPpLY.IP-DdnS.com
+- name: مورق
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: 4d4cccc7-db3c-42eb-85ac-ddd23931ad98
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE,telegram-CONFiGLiNE?ed=80
+    headers:
+      Host: asr-bekheir.motorphrotan.ir.
+- name: Vip_Security_28
+  type: vless
+  server: 104.18.26.90
+  port: 80
+  uuid: telegram-id-ArV2ray
+  tls: false
+  network: ws
+  servername: 104.18.26.90
+  skip-cert-verify: true
+  ws-opts:
+    path: /-Arfilter@Arfilter-TEL--@Arfilter-TEL--@Arfilter-TEL--@Arfilter-JOIN-@Arfilter-TEL--@Arfilter-JOIN-@Arfilter-TEL-@Arfilter-TEL--@Arfilter-JOIN-@Arfilter-TEL--@Arfilter?ed=80
+    headers:
+      Host: www.speedtest.net.a.3.speedtest2029.com.
+- name: Channel id ShadowProxy66_1
+  type: trojan
+  server: 172.67.181.173
+  port: 443
+  password: f282b878-8711-45a1-8c69-5564172123c1
+  sni: vpn.stupidworld.web.id
+  skip-cert-verify: true
+- name: ES西班牙
+  type: trojan
+  server: 185.18.250.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: Vip_Security_29
+  type: trojan
+  server: 172.67.181.173
+  port: 443
+  password: f282b878-8711-45a1-8c69-5564172123c1
+  sni: vpn.stupidworld.web.id
+  skip-cert-verify: true
+- name: Vip_Security_30
+  type: trojan
+  server: 185.221.160.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: US-19205487-0655
+  type: trojan
+  server: 192.0.54.87
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: Telegram_11
+  type: trojan
+  server: 194.76.18.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: soskeynet  TR-WS-NA  US 5ms
+  type: trojan
+  server: 172.67.181.173
+  port: 443
+  password: f282b878-8711-45a1-8c69-5564172123c1
+  sni: vpn.stupidworld.web.id
+  skip-cert-verify: true
+- name: RELAY-1981775787-0620
+  type: trojan
+  server: 198.177.57.87
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: Vip_Security_31
+  type: trojan
+  server: 104.18.34.21
+  port: 2053
+  password: bpb-trojan
+  sni: bpB-worKER-paneL1-e4p.pAGes.dEV
+  skip-cert-verify: true
+- name: vpnclashfa_19
+  type: trojan
+  server: 185.148.107.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: V2rayNGVPN
+  type: trojan
+  server: kfjdi.pages.dev
+  port: 443
+  password: er668
+  sni: kfjdi.pages.dev
+  skip-cert-verify: true
+- name: vpnclashfa_20
+  type: trojan
+  server: 198.41.204.192
+  port: 443
+  password: bpb-trojan
+  sni: fcspring.ggff.net
+  skip-cert-verify: true
+- name: V2rayNGVPN_1
+  type: trojan
+  server: 194.76.18.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: US_speednode_0047
+  type: trojan
+  server: 192.200.160.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: Channel id ShadowProxy66_2
+  type: trojan
+  server: 198.62.62.67
+  port: 443
+  password: tg-fq521free
+  sni: torjan.xn--xhq44j.eu.org
+  skip-cert-verify: true
+- name: trojan-392
+  type: trojan
+  server: 104.21.34.159
+  port: 443
+  password: 15b24b56-d667-4fa8-b548-f3dc942fb461
+  sni: 2qwert.2031.pp.ua
+  skip-cert-verify: true
+- name: Channel id ShadowProxy66_3
+  type: trojan
+  server: 45.131.4.216
+  port: 2096
+  password: ttfang
+  sni: ttfang.fange.me
+  skip-cert-verify: true
+- name: tmeRaiv2mmr
+  type: trojan
+  server: 192.169.220.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: United States - NA  TR-WS-TLS 4
+  type: trojan
+  server: 195.13.44.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: Switzerland - NA  TR-WS-TLS 4
+  type: trojan
+  server: 185.18.250.195
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: trojan-397
+  type: trojan
+  server: 172.67.153.179
+  port: 443
+  password: 2734c14b-e4ce-48b3-b3de-f80788cb4c47
+  sni: XScd45.wWW890604.DpdNS.orG
+  skip-cert-verify: true
+- name: trojan-398
+  type: trojan
+  server: 217.163.76.227
+  port: 443
+  password: 6884d714-d3c4-4b49-aa20-767ea92837d6
+  sni: icecream.955850.xyz
+  skip-cert-verify: true
+- name: vpnclashfa_21
+  type: trojan
+  server: 190.93.245.69
+  port: 443
+  password: bpb-trojan
+  sni: fcspring.ggff.net
+  skip-cert-verify: true
+- name: Vip_Security_32
+  type: trojan
+  server: aio.zipzap.biz.id
+  port: 443
+  password: f282b878-8711-45a1-8c69-5564172123c1
+  sni: aio.zipzap.biz.id
+  skip-cert-verify: true
+- name: US-209949087-0610
+  type: trojan
+  server: 209.94.90.87
+  port: 2096
+  password: slch2024
+  sni: ocost-dy.wmlefl.cc
+  skip-cert-verify: true
+- name: JoinTelegramFarah_VPNCountry
+  type: ss
+  server: 151.101.3.8
+  port: 80
+  cipher: "õ­\x9A÷ÎµsÇ\x9Bã\x7FziÎ´ëß7y®"
+  password: "{\x8Fx"
+- name: US-19959243228-7886
+  type: ss
+  server: fr01.proxysocks.xyz
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: N2Y5Y
+- name: ahwazigamingshop  VL-WS-NA  US 5ms
+  type: ss
+  server: 151.101.3.8
+  port: 80
+  cipher: "ç\x9F"
+  password: "sf½sÝ\x9CãÞøõ¾ôq®8ëm\x9CéÏ\x1C"
+- name: US_5
+  type: ss
+  server: test.fast.hosting-ip.com
+  port: 80
+  cipher: "Ó¿<\x7FÞ4mÎýã\x8Dü÷\x9EwiÎ"
+  password: ÷Î8ã¯]
+- name: RELAY_12
+  type: ss
+  server: 185.146.173.39
+  port: 2052
+  cipher: "iç;w¿Zñ¾6ãv\x9Di¾8Û}"
+  password: "Ù­Zã}\e"
+- name: RELAY18811497202-8443162ms
+  type: ss
+  server: 188.114.97.202
+  port: 8443
+  cipher: "sgµï·x{­tá¦Ýó\x97\x1DÕ¯"
+  password: õÝyó¾u
+- name: RELAY_14
+  type: ss
+  server: deep-radio.seotoolsforyou.co.uk
+  port: 80
+  cipher: "ç]ýiÿyk\x8Ewã§"
+  password: "ó}Zk\x9Döo¦ù×}9"
+- name: Telegram_13
+  type: ss
+  server: www.speedtest.net
+  port: 8880
+  cipher: Óg»ß~û×Ýüãm¶wn
+  password: ÛvµÛÍ»ÙÎô
+- name: RELAY_16
+  type: ss
+  server: 172.66.40.99
+  port: 8080
+  cipher: "ñÝyo½Þu®´áÞ\x1Ek¾\x9Fqæ´ÑÇ"
+  password: óO9
+- name: awlix_ir
+  type: vless
+  server: 172.67.70.123
+  port: 2052
+  uuid: dfc1a9ab-6241-4b73-92f7-b299fc6b7751
+  tls: false
+  network: ws
+  servername: 172.67.70.123
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=1080Telegram_V2ray_Alpha
+    headers:
+      Host: hit.ir.google.com.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.trepaspeedtest.betrat.com.eu.com.sh847.ir.xn--cr8haaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.fffffffff.ddns-ip.net.
+- name: FreakConfig_7
+  type: vless
+  server: numberland.ir
+  port: 8080
+  uuid: dc947c58-c4d7-445a-fede-6642abfd3e30
+  tls: false
+  network: ws
+  servername: numberland.ir
+  skip-cert-verify: true
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: bia-to-unlimiteddev.unlimiteddev-service.ir
+- name: httpstmevip_vpn_2022_1
+  type: vless
+  server: www.speedtest.net
+  port: 8880
+  uuid: TELEGRAM-NUFiLTER
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: Vip_Security_34
+  type: vless
+  server: 104.26.11.194
+  port: 8080
+  uuid: 6b6c9c%659-0%6123-4b1b-cd03-35493c801007
+  tls: false
+  network: ws
+  servername: 104.26.11.194
+  skip-cert-verify: true
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: join-to-unlimiteddev.sabadyt.ir
+- name: ShatakVPN 386858
+  type: vless
+  server: 172.67.68.168
+  port: 80
+  uuid: 52adc6ba-b1c7-4541-a594-08fc698be640
+  tls: false
+  network: ws
+  servername: 172.67.68.168
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: 172.67.68.168
+- name: Vip_Security_35
+  type: vless
+  server: 104.16.85.3
+  port: 8880
+  uuid: 67f%65%618d3-%61217-4%6551-8703-906%617d1c793%65
+  tls: false
+  network: httpupgrade
+  servername: 104.16.85.3
+  skip-cert-verify: true
+- name: vpnclashfa_25
+  type: vless
+  server: 172.64.155.249
+  port: 80
+  uuid: Telegram-Ernoxin-Shop
+  tls: false
+  network: ws
+  servername: 172.64.155.249
+  skip-cert-verify: true
+  ws-opts:
+    path: /telegram-ErnoxinShop,telegram-ErnoxinShop,telegram-ErnoxinShop,telegram-ErnoxinShop,telegram-ErnoxinShop,telegram-ErnoxinShop,telegram-ErnoxinShop,telegram-ErnoxinShop,telegram-ErnoxinShop,telegram-ErnoxinShop,telegram-ErnoxinShop,telegram-ErnoxinShop?ed=2048
+    headers:
+      Host: 1.V.v.V.v.V.v.V.v.V-_-_-V2ray-_-_-v.V.xn--9iqtb0z3kmg58ejur6wfbwf9muugk7rck30b0frbqkvk2bye0bm1a.abolfazl.shop.
+- name: NETMelliAnti_1
+  type: vless
+  server: 104.16.53.11
+  port: 8080
+  uuid: 1a719865-dc7d-43eb-9e01-44bbcb6c7205
+  tls: false
+  network: httpupgrade
+  servername: 104.16.53.11
+  skip-cert-verify: true
+- name: vpnclashfa_26
+  type: vless
+  server: 45.131.209.36
+  port: 8880
+  uuid: e9979910-79d1-4621-a93c-b2a579c44ba7
+  tls: false
+  network: ws
+  servername: 45.131.209.36
+  skip-cert-verify: true
+  ws-opts:
+    path: '/telegram: @Eternal_Connect - telegram: @Eternal_Connect - telegram: @Eternal_Connect
+      - telegram: @Eternal_Connect'
+    headers:
+      Host: vngsupply.ip-ddns.com
+- name: tmlightning6
+  type: vless
+  server: 172.66.40.99
+  port: 8080
+  uuid: feaebb2d-5a0a-4dc7-9e25-f93639a60ff8
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /-LiV2ry@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL-@LIGHTNING6-TEL--@LIGHTNING6-JOIN-@LIGHTNING6-TEL--@LIGHTNING6?ed=2048
+    headers:
+      Host: T.ubuntu-linuxmirror.ir
+- name: vless-463
+  type: vless
+  server: brainy-party.seotoolsforyou.co.uk
+  port: 80
+  uuid: 34797f17-09a1-400c-9f4b-275718d62a0f
+  tls: false
+  network: ws
+  servername: brainy-party.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: brainy-party.seotoolsforyou.co.uk
+- name: v2ray_configs_poolCanadaToront
+  type: vless
+  server: azizisearch.com
+  port: 2095
+  uuid: 9abe19f4-a3ea-4a00-bb52-121c0da7a33a
+  tls: false
+  network: httpupgrade
+  servername: azizisearch.com
+  skip-cert-verify: true
+- name: flyv2rayXX
+  type: vless
+  server: cafearz.com
+  port: 8080
+  uuid: 4c266f5d-5836-4417-d5ab-f253ca9de933
+  tls: false
+  network: ws
+  servername: cafearz.com
+  skip-cert-verify: true
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: shad.ir.fin.test.digicyber.click.
+- name: vipV2rayNGnp_2
+  type: vless
+  server: 63.141.128.16
+  port: 80
+  uuid: 9d0f4677-d396-4291-a371-abd3d2e7e462
+  tls: false
+  network: ws
+  servername: 63.141.128.16
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: e.jOin.zEdMoDeOn.oNl.
+- name: IRAN_V2RAY1_1
+  type: vless
+  server: communal-loss.oneeat.co
+  port: 80
+  uuid: a2af50d9-09c7-4a44-90d0-42da35923e9e
+  tls: false
+  network: ws
+  servername: communal-loss.oneeat.co
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: communal-loss.oneeat.co
+- name: Maznet-46157-2
+  type: vless
+  server: 172.66.40.99
+  port: 2052
+  uuid: 01e6edb4-245b-4a3f-8617-c288c5d2a4cc
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
+    headers:
+      Host: dAta.bAckup.hafeZejanEbi.scaptapsi.sNaPtripUppoRt.spaCe.
+- name: mehrosaboran_7
+  type: vless
+  server: 63.141.128.29
+  port: 80
+  uuid: e77f6cd0-b8c9-4d4b-b621-e36d177f71c8
+  tls: false
+  network: ws
+  servername: 63.141.128.29
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: f.jOin.zEdMoDeOn.oNl.
+- name: Gp_Config  رایگان vpn منبع
+  type: vless
+  server: zula.ir
+  port: 8880
+  uuid: 8aa48fb3-9429-4029-8dd4-4ba7fe15ad01
+  tls: false
+  network: httpupgrade
+  servername: zula.ir
+  skip-cert-verify: true
+- name: VIPro_5
+  type: vless
+  server: 66.235.200.29
+  port: 8880
+  uuid: fab7bf9c-ddb9-4563-8a04-fb01ce6c0fbf
+  tls: false
+  network: ws
+  servername: 66.235.200.29
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: hk.laoyoutiao.link
+- name: mehrosaboran_8
+  type: vless
+  server: 104.17.147.22
+  port: 8080
+  uuid: dc947c58-c4d7-445a-fede-6642abfd3e30
+  tls: false
+  network: ws
+  servername: 104.17.147.22
+  skip-cert-verify: true
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: bia-to-unlimiteddev.unlimiteddev-service.ir
+- name: Mrconfig_Channel
+  type: vless
+  server: 104.16.104.151
+  port: 80
+  uuid: 1f431db3-1918-4e7b-a855-c93485e11694
+  tls: false
+  network: ws
+  servername: 104.16.104.151
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: pari.parinazz.dpdns.org
+- name: Gp_Config  گروه کانفیگ_1
+  type: vless
+  server: 45.131.4.85
+  port: 80
+  uuid: 2036e2c3-18a5-4eed-9db4-f91a7f02c7d5
+  tls: false
+  network: ws
+  servername: 45.131.4.85
+  skip-cert-verify: true
+  ws-opts:
+    path: /193.123.81.105=443
+    headers:
+      Host: zoomgov.vipren.biz.id
+- name: v2rayfast_7
+  type: vless
+  server: www.speedtest.net
+  port: 8080
+  uuid: cb1aa6c3-c719-4579-b663-295003103fd0
+  tls: false
+  network: ws
+  servername: www.speedtest.net
+  skip-cert-verify: true
+  ws-opts:
+    path: /@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7@V2RAYFAST_7?ed=2048
+    headers:
+      Host: WWW.dollardoon.com
+- name: Vip_Security_36
+  type: vless
+  server: chat.deepseek.com
+  port: 80
+  uuid: e8346e35-2be3-4743-d80b-95e460e7e86b
+  tls: false
+  network: ws
+  servername: chat.deepseek.com
+  skip-cert-verify: true
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: fin.channel.digicyber.click
+- name: HiByeVPNN_1
+  type: vless
+  server: gleeful-error.seotoolsforyou.co.uk
+  port: 80
+  uuid: 9a37131b-2b68-427f-a2fc-cc7381c2d575
+  tls: false
+  network: ws
+  servername: gleeful-error.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2048@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN--@HiByeVPNN
+    headers:
+      Host: gleeful-error.seotoolsforyou.co.uk
+- name: mehrosaboran_9
+  type: vless
+  server: 188.114.97.1
+  port: 80
+  uuid: 9662e996-a765-45d8-dbdd-b95560d29f7d
+  tls: false
+  network: ws
+  servername: 188.114.97.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY-telegram,@BINEXTIFY?ed=2560
+    headers:
+      Host: speeeDeio.xpnvip.ir.
+- name: DE
+  type: vless
+  server: 104.16.1.106
+  port: 80
+  uuid: de7e69b8-c4e7-4461-f061-12f42115b51b
+  tls: false
+  network: ws
+  servername: 104.16.1.106
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: eng.vinamarketcenter.ir
+- name: telegramproxy_mtm
+  type: vless
+  server: 104.31.16.160
+  port: 80
+  uuid: e4a52f75-474e-449e-bcd2-05ea177f1403
+  tls: false
+  network: ws
+  servername: 104.31.16.160
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: 59.维子足球19.tech
+- name: Vip_Security_37
+  type: vless
+  server: 172.66.40.99
+  port: 80
+  uuid: 21%656d7f3-08bd-4dbc-%61bf5-8012d9838%61f5
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2---Mosiv2--Mosiv2?ed=2560
+    headers:
+      Host: dfgopee-workers.dev.
+- name: Namibia - NA  VL-WS-NONE 4
+  type: vless
+  server: 172.66.156.81
+  port: 80
+  uuid: 7e74ff43-3a90-48b3-8372-7d92a045c2d4
+  tls: false
+  network: ws
+  servername: 172.66.156.81
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: light-presence.oneeat.co
+- name: Vip_Security_38
+  type: vless
+  server: 172.66.40.99
+  port: 80
+  uuid: 78e44a74-6f33-4289-81d2-df98075bd959
+  tls: false
+  network: ws
+  servername: 172.66.40.99
+  skip-cert-verify: true
+  ws-opts:
+    path: /Join-ZEDMODEON-ZEDMODEON-bia-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON-ZEDMODEON
+    headers:
+      Host: status.srv2.quest
+- name: Namibia - NA  VL-WS-NONE 4_1
+  type: vless
+  server: 104.20.43.81
+  port: 80
+  uuid: 7e74ff43-3a90-48b3-8372-7d92a045c2d4
+  tls: false
+  network: ws
+  servername: 104.20.43.81
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: light-presence.oneeat.co
+- name: IRAN 425 Outline_Vpn free
+  type: vless
+  server: brainy-party.seotoolsforyou.co.uk
+  port: 80
+  uuid: 34797f17-09a1-400c-9f4b-275718d62a0f
+  tls: false
+  network: ws
+  servername: brainy-party.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: brainy-party.seotoolsforyou.co.uk
+- name: mehrosaboranXX
+  type: vless
+  server: www.speedtest.net
+  port: 2095
+  uuid: '%6543%65c218-f19b-48f8-%61fbb-0d%65103c93018'
+  tls: false
+  network: httpupgrade
+  servername: www.speedtest.net
+  skip-cert-verify: true
+- name: RELAY_17
+  type: vless
+  server: bewildered-poem.seotoolsforyou.co.uk
+  port: 80
+  uuid: 0f4865d9-9405-4703-a282-46e326e6d9e7
+  tls: false
+  network: ws
+  servername: bewildered-poem.seotoolsforyou.co.uk
+  skip-cert-verify: true
+  ws-opts:
+    path: /
+    headers:
+      Host: bewildered-poem.seotoolsforyou.co.uk
+- name: Vip_Security_39
+  type: vless
+  server: kafshu.ir
+  port: 8080
+  uuid: 88d6a1c5-d970-4236-88ff-ca0bb28f68cd
+  tls: false
+  network: ws
+  servername: kafshu.ir
+  skip-cert-verify: true
+  ws-opts:
+    path: /@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet--@Maznet
+    headers:
+      Host: inFo.laLezaRanegomaNandish.sNap.ir.snapfoodsuppoRt.onlIne.
+- name: mehrosaboran_10
+  type: vless
+  server: 104.26.5.112
+  port: 8080
+  uuid: b37596da-6f80-4dcd-f75c-c3c7b25922da
+  tls: false
+  network: ws
+  servername: 104.26.5.112
+  skip-cert-verify: true
+  ws-opts:
+    path: /@unlimiteddev----@unlimiteddev-----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimiteddev----@unlimitedev----@unlimitedev----@unlimiteddev----@unlimiteddev?ed=2480
+    headers:
+      Host: Unlimiteddev-join.paradoxone.IR
+- name: VIPro_7
+  type: vless
+  server: 172.64.157.124
+  port: 80
+  uuid: 1ae17c7d-6074-41e2-894b-478c9fcf5715
+  tls: false
+  network: ws
+  servername: 172.64.157.124
+  skip-cert-verify: true
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: rough-hill-2959-ppal03.fawik58803.workers.dev
+- name: ShatakVPN 535300
+  type: vless
+  server: 104.21.16.1
+  port: 8080
+  uuid: 4c266f5d-5836-4417-d5ab-f253ca9de933
+  tls: false
+  network: ws
+  servername: 104.21.16.1
+  skip-cert-verify: true
+  ws-opts:
+    path: /olem/ws?ed=1024
+    headers:
+      Host: shad.ir.fin.test.digicyber.click.
 proxy-groups:
 - name: V2V-Auto
   type: url-test
   proxies:
-  - meli_proxyy
-  - این کانفیگ تستیه کانفیگ اصلی رو بردار
-  - Vip_Security
-  - vpnclashfa
-  - oxnet_ir  VL-WS-NA  US 26ms
-  - vipV2rayNGnp
-  - Vip_Security_1
-  - vpnclashfa_1
-  - tmeentryNETconfig1842542042382654
   - US
-  - XpnTeam-k9f4ny3x7
-  - Telegram
-  - CaV2ray
-  - CaV2ray_1
-  - Vip_Security_2
-  - tmlightning6
-  - configLINE4
-  - configLINE2
-  - tmlightning6_1
-  - configx2ray  VL-XHTTP-NA  US 117ms
-  - vpnclashfa_2
-  - confiig_hub
-  - Telegram_1
-  - v2rayng_fars
-  - configLINE
-  - Vip_Security_3
-  - configLINE_1
-  - Vip_Security_4
-  - vless-28
-  - confegraigan
-  - vless-30
-  - Vip_Security_5
-  - Vip_Security_6
-  - Vip_Security_7
-  - FreakConfig
-  - FreakConfig_1
-  - US   VLESS  komail315 2
-  - configx2ray  VL-XHTTP-NA  US 21ms
-  - Vip_Security_8
-  - Vip_Security_9
-  - 6xzx-Fr33C0nfig  کانفیگ رایگان
-  - Vip_Security_10
-  - mehrosaboran
-  - All-IRAN_V2RAY1
-  - Vip_Security_11
-  - IRAN 206 Outline_Vpn free
-  - securitytlsalpnh2http11encryp
-  - bored_vpn
-  - FreakConfig_2
-  - Vip_Security_12
-  - mehrosaboran_1
-  - کانفیگ های بیشتر customv2ray
-  - PersianGulf 70 Outline_Vpn
-  - RELAY
-  - Vip_Security_13
-  - Telegram_2
-  - CF   VLESS  netmellianti 17
-  - v2rayng
-  - Channel
-  - CF   VLESS  expressvpn_420 28
-  - CaV2ray_2
-  - vpnclashfa_3
-  - vless-62
-  - vpnclashfa_4
-  - vpnclashfa_5
-  - IRAN 417 Outline_Vpn free
-  - V2rayBaaz
-  - mehrosaboran_2
-  - Vip_Security_14
-  - vless-69
-  - vless-70
-  - vpnclashfa_6
-  - confiig_hub---confiig_hub---confiig_
-  - mehrosaboran_3
-  - IRAN 65 Outline_Vpn free
-  - vpnclashfa_7
-  - vmesskhodam
-  - mehrosaboran_4
-  - soskeynet  VL-WS-NA  SE 5ms
-  - v2rayng_fars_1
-  - Vip_Security_15
-  - Gp_Config  رایگان vpn منبع
-  - Vip_Security_16
-  - Vip_Security_17
-  - Vip_Security_18
-  - VIProxys
-  - کانفیگ
-  - vless-87
-  - DE
-  - vless-89
-  - Channel-iSpeedTopVPN
-  - vpnclashfa_8
-  - Vip_Security_19
-  - FR
-  - CF   VLESS  vpn_zvpn 13
-  - Telegram_3
-  - v2rayng_fars_2
-  - vpnclashfa_9
-  - vless-98
-  - Digiv2ray-1
-  - Vip_Security_20
-  - FreakConfig_3
-  - V2ray_cartel
-  - Vip_Security_21
-  - Vip_Security_22
-  - unlimiteddev-link1
-  - confiig_hub---confiig_hub---confiig__1
-  - NETMelliAnti
-  - v2ray313 کانالمون
-  - FASTSHOVPN
-  - Telegram_4
-  - PersianGulf 73 Outline_Vpn
-  - ae_proxy
-  - Maznet-46179-1
-  - Telegram Canfing_VPNCanfing_VPN
-  - Hope_Net-join-us-on-Telegram
-  - Golestan_VPN - JOIN
-  - سرورهایبیشتردرکانالprrofile_purple
-  - این کانفیگ تستیه کانفیگ اصلی رو بردار_1
-  - vless-119
+  - vless-1
+  - fr33c0nfig  VL-XHTTP-NA  US 20ms
   - سرور های بیشتر customv2ray
-  - Vip_Security_23
-  - DE_1
-  - RELAY_1
-  - NpvV2rayFilTer
-  - ShatakVPN 994403
-  - spikevpn
-  - CaV2ray_3
-  - کانفیگ های بیشتر customv2ray_1
-  - DE_2
-  - IRAN 104 Outline_Vpn free
-  - vpnclashfa_10
-  - RELAY_2
-  - ShatakVPN 946461
-  - CF   VLESS  lockey_vpn 15
-  - unlimiteddev-link2
-  - RELAY_3
-  - Telegram_5
+  - vpnclashfa
+  - All
+  - Digiv2ray
+  - Telegram
+  - Vip_Security
+  - vless-9
+  - vless-10
+  - configLINEتست
+  - vless-12
+  - Telegram_1
+  - Vip_Security_1
+  - vless-15
+  - vpnclashfa_1
+  - US_1
+  - US_2
+  - US   VLESS  arv2ray 18
+  - 𝗝𝗼𝗶𝗻
+  - Vip_Security_2
+  - Vip_Security_3
+  - vipV2rayNGnp
+  - FreakConfig
+  - confegraigan
+  - Confiig_hub
+  - US_3
+  - Vip_Security_4
+  - v2ray_configs_poolCanadaMontre
+  - configLINE
+  - vless-31
+  - vless-32
+  - vpnclashfa_2
+  - ShatakVPN 207570
+  - ogsvpnbotخرید
+  - v2raying
+  - Vip_Security_5
+  - سرور های بیشتر customv2ray_1
+  - سرور
+  - FreakConfig_1
+  - EXPRESSVPN_420
+  - vless-42
+  - Vip_Security_6
+  - کانفیگ
+  - vless-45
+  - GB
+  - FreakConfig_2
+  - VIProxys
+  - CaV2ray
+  - mehrosaboran
+  - vpnclashfa_3
+  - Vip_Security_7
   - VIPro
-  - ZedBaz_vpn
-  - vpnclashfa_11
-  - VIPro_1
-  - v2rayanv2rayan
-  - v2rayng_fars_3
-  - Maznet-46160-2
-  - Vip_Security_24
-  - IRAN 110 Outline_Vpn Free
-  - RELAY_4
-  - Telegram_6
-  - vpnclashfa_12
-  - CaV2ray_4
-  - vpnclashfa_13
-  - EuServer
-  - ShatakVPN 667282
-  - IRAN 105 Outline_Vpn free
-  - CaV2ray_5
-  - Vip_Security_25
-  - vless-157
-  - RELAY_5
-  - capoit  VL-WS-NA  US 5ms
-  - Telegram---MTMVPNed512securitytlse
-  - Vip_Security_26
-  - AYMH19کانالتلگرام
-  - vpnclashfa_14
-  - vless-164
-  - configLINE3
-  - FreakConfig_4
-  - bored_vpn_1
-  - vpnclashfa_15
-  - All_IRAN_V2RAY1
-  - unlimiteddev-link2_1
-  - سرورهایبیشتردرکانالprrofile_purple_1
-  - Telegram_7
-  - vpnclashfa_16
-  - vless-174
-  - Join---MARAMBASHI---Join---MARAMBASHIed
-  - سرورهایبیشتردرکانالprrofile_purple_2
-  - 𝗝𝗼𝗶𝗻ᴬᴸᴸ¹JKVPN
-  - CF   VLESS  ghalagyann 19
-  - FreakConfigvless92b022a6-67f3-440
-  - Channel id ShadowProxy66
-  - V2RAYNG_IP
+  - vpnclashfa_4
+  - CaV2ray_1
+  - FreakCon
+  - Vip_Security_8
+  - vpn_ioss  عضو شو
+  - httpstmevip_vpn_2022
+  - confiig_hub
+  - Telegram_2
+  - Hope_Net-join-us-on-Telegram
+  - ghalagyann
+  - Vip_Security_9
+  - vless-65
+  - گاب
+  - mehrosaboran_1
+  - RELAY
+  - vpnclashfa_5
+  - '2'
+  - IRAN 126 Outline_Vpn free
   - کانفیگ_1
-  - FreakConfig_5
-  - Alfred_Config
-  - کان
-  - Digiv2ray-1_1
-  - telegram  v2rayNG_Matsurivless49e
-  - Vip_Security_27
+  - TELEGRAM-MARAMBASHI_MARAMBASHI_MARAMBASH
+  - US_4
+  - Telegram_3
   - V2RAYROZ
+  - azadiiivpn⁴
+  - Telegram_4
+  - EXPRESSVPN_420_1
+  - Awlix_ir
+  - RELAY_1
+  - v2ray313 کانالمون
+  - bored_vpn
+  - IRAN_V2RAY1
+  - IRAN 491 Outline_Vpn free
+  - v2ray313
+  - vmessorg
+  - bored_vpn_1
+  - ZedBaz_vpn
+  - AYMH19کانالتلگرام
+  - vless-91
+  - vpnclashfa_6
+  - Telegram_5
+  - Telegram_6
+  - Channel
+  - confiig_hub_1
+  - 𝗝𝗼𝗶𝗻_1
+  - CaV2ray_2
+  - CF   VLESS  config_proxy 50
+  - vless-100
+  - VIPro_1
+  - RU
+  - ogsvpnbot
+  - vpnclashfa_7
+  - Golestan_VPN - J
+  - vpnclashfa_8
+  - vless-107
+  - RELAY_2
+  - Gp_Config  گروه کانفیگ
+  - Vip_Security_10
+  - سرور_1
+  - vless-112
+  - FI
+  - RELAY_3
+  - confiig_hub---confiig_hub---confiig_
+  - Alfred_Config
+  - CF   VLESS  kurdvpn1 2
+  - Telegram_7
+  - ogsvpnbot_1
+  - vpnclashfa_9
+  - IRAN 170 Outline_Vpn free
+  - IRAN 307 Outline_Vpn free
+  - Telegram_8
+  - v2ray313_1
+  - vpnclashfa_10
+  - IRAN 60 Outline_Vpn free
+  - Maznet-46169-1
+  - VIPro_2
+  - RELAY_4
+  - FreakConfig_3
+  - ogsvpnbot_2
+  - 𝐣𝐨𝐢𝐍-𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
+  - mehrosaboran_2
+  - Vip_Security_11
+  - Vip_Security_12
+  - spikevpn
+  - FreakConfig_4
+  - Hddify
+  - mehrosaboran_3
+  - vless-140
+  - RELAY_5
+  - Evay_vpn
+  - FR
+  - Vip_Security_13
+  - vmessorgXX
+  - Selinc
+  - ShatakVPN 222293
+  - ogsvpnbot_3
+  - Vip_Security_14
+  - mehrosaboran_4
+  - تلگرامعضوبشیدEuServer2ssY2hh
+  - vpnclashfa_11
+  - Vip_Security_15
+  - Vip_Security_16
+  - VIProxys_1
   - RELAY_6
+  - vpnclashfa_12
+  - 𝗝𝗼𝗶𝗻_2
+  - ghalagyann_1
+  - Vip_Security_17
+  - vpnclashfa_13
+  - قطع
+  - v2rayng_fars
+  - vipV2rayNGnp_1
+  - Vip_Security_18
+  - unlimiteddev-link2
+  - singbox1
+  - Vip_Security_19
+  - confiig_hub_2
   - bored_vpn_2
   - mehrosaboran_5
-  - Maznet-46167-2
+  - سرورهایبیشتردرکانالprrofile_purple
+  - capoit  VL-WS-NA  US 5ms
+  - Vip_Security_20
+  - TELEGRAM-MARAMBASHI_MARAMBASHI_MARAMBAS
+  - 𝗝𝗼𝗶𝗻_3
+  - Telegram Canfing_VPNCanfing_VPN
+  - Vip_Security_21
+  - spikevpn_1
+  - RELAY_7
   - bored_vpn_3
-  - Telegram_8
-  - meli_pro
+  - FASTSHOVPN
+  - RELAY_8
+  - Channel_1
+  - Maznet-46178-1
+  - spikevpn_2
+  - ghalagyann_2
+  - vpnclashfa_14
+  - Vip_Security_22
+  - JOIN---V2RAYNG_FARS---V2RAYNG_FARS---V2R
+  - NETMelliAnti
   - Telegram_9
-  - 𝐣𝐨𝐢𝐍-𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
-  - vpnclashfa_17
-  - confiig_hub---confiig_hub---confiig__2
-  - confiig_hub---confiig_hub---confiig__3
-  - Vip_Security_28
-  - Vip_Security_29
-  - Vip_Security_30
-  - Vip_Security_31
-  - vpnclashfa_18
-  - vpnclashfa_19
-  - Vip_Security_32
-  - V2rayNG3
-  - Vip_Security_33
-  - vpnclashfa_20
-  - vless-212
-  - azadiiivpn⁴
+  - RELAY_9
+  - All net telegram ultrasurf_12
+  - Vip_Security_23
+  - ᴬᴸᴸ²JKVPN
+  - SE   VLESS  v2rayngseven 12
+  - HiByeVPNN
+  - Vip_Security_24
   - کانفیگ_2
   - bored_vpn_4
+  - Vip_Security_25
+  - Channel id ShadowProxy66
+  - capoit  VL-WS-NA  US 6ms
+  - vpnclashfa_15
+  - vpnclashfa_16
+  - VIPro_3
+  - Telegram_10
+  - vpnclashfa_17
   - mehrosaboran_6
-  - AblNet7
-  - vpn_ioss  عضو شو
-  - Vip_Security_34
-  - کانال
-  - US_1
-  - Vip_Security_35
-  - Channel id ShadowProxy66_1
-  - RELAY_7
-  - RU_speednode_0035
-  - HiByeVPNN
-  - vpnclashfa_21
-  - trojan-389
-  - RELAY-1951344195-0594
-  - mhmdreza_it
-  - openproxylistcom
-  - Luxembourg - NA  TR-WS-TLS 4
-  - RELAY-18816415987-0662
-  - RELAY_8
-  - v2raying
-  - Vip_Security_36
-  - vpnclashfa_22
-  - Vip_Security_37
-  - Vip_Security_38
-  - United States - NA  TR-WS-TLS 4
-  - VIProxys_1
-  - RELAY_9
   - RELAY_10
-  - US_speednode_0048
+  - Vip_Security_26
+  - RELAY_11
+  - V2rayNGVPNکانفیگرایگان
   - Hope_Net-join-us-on-Telegram_1
-  - VIPro_2
-  - trojan-409
-  - US15614638168-4433195ms
-  - RELAY18811497171-443157ms
-  - VIProxys_4
-  - Hope_
+  - Vip_Security_27
+  - Golestan_VPN
+  - vless-218
+  - FreakConfig_5
+  - vpnclashfa_18
+  - vless-221
+  - vpn_ioss  عضو شو_1
+  - مورق
+  - Vip_Security_28
+  - Channel id ShadowProxy66_1
+  - ES西班牙
+  - Vip_Security_29
+  - Vip_Security_30
+  - US-19205487-0655
+  - Telegram_11
+  - soskeynet  TR-WS-NA  US 5ms
+  - RELAY-1981775787-0620
+  - Vip_Security_31
+  - vpnclashfa_19
+  - V2rayNGVPN
+  - vpnclashfa_20
+  - V2rayNGVPN_1
+  - US_speednode_0047
+  - Channel id ShadowProxy66_2
+  - trojan-392
+  - Channel id ShadowProxy66_3
+  - tmeRaiv2mmr
+  - United States - NA  TR-WS-TLS 4
+  - Switzerland - NA  TR-WS-TLS 4
+  - trojan-397
+  - trojan-398
+  - vpnclashfa_21
+  - Vip_Security_32
+  - US-209949087-0610
+  - JoinTelegramFarah_VPNCountry
+  - US-19959243228-7886
+  - ahwazigamingshop  VL-WS-NA  US 5ms
+  - US_5
+  - RELAY_12
+  - RELAY18811497202-8443162ms
+  - RELAY_14
+  - Telegram_13
+  - RELAY_16
+  - awlix_ir
+  - FreakConfig_7
+  - httpstmevip_vpn_2022_1
+  - Vip_Security_34
+  - ShatakVPN 386858
+  - Vip_Security_35
+  - vpnclashfa_25
+  - NETMelliAnti_1
+  - vpnclashfa_26
+  - tmlightning6
+  - vless-463
+  - v2ray_configs_poolCanadaToront
+  - flyv2rayXX
+  - vipV2rayNGnp_2
+  - IRAN_V2RAY1_1
+  - Maznet-46157-2
+  - mehrosaboran_7
+  - Gp_Config  رایگان vpn منبع
+  - VIPro_5
+  - mehrosaboran_8
+  - Mrconfig_Channel
+  - Gp_Config  گروه کانفیگ_1
   - v2rayfast_7
-  - v2rayfast_7_1
-  - DE_7
-  - vless-484
-  - confiig_hub---confiig_hub---confiig__4
-  - Maznet-46161-1
-  - bored_vpn_5
-  - httpstmevip_vpn_2022
-  - vpnclashfa_29
-  - IRAN 302 Outline_Vpn free
+  - Vip_Security_36
+  - HiByeVPNN_1
+  - mehrosaboran_9
+  - DE
+  - telegramproxy_mtm
+  - Vip_Security_37
+  - Namibia - NA  VL-WS-NONE 4
+  - Vip_Security_38
+  - Namibia - NA  VL-WS-NONE 4_1
+  - IRAN 425 Outline_Vpn free
   - mehrosaboranXX
-  - VIProxys_10
-  - vpnclashfa_30
-  - vpnclashfa_32
-  - Maznet-46170-2
+  - RELAY_17
+  - Vip_Security_39
+  - mehrosaboran_10
+  - VIPro_7
+  - ShatakVPN 535300
   url: http://www.gstatic.com/generate_204
   interval: 300
 - name: V2V-Proxies
   type: select
   proxies:
   - V2V-Auto
-  - meli_proxyy
-  - این کانفیگ تستیه کانفیگ اصلی رو بردار
-  - Vip_Security
-  - vpnclashfa
-  - oxnet_ir  VL-WS-NA  US 26ms
-  - vipV2rayNGnp
-  - Vip_Security_1
-  - vpnclashfa_1
-  - tmeentryNETconfig1842542042382654
   - US
-  - XpnTeam-k9f4ny3x7
-  - Telegram
-  - CaV2ray
-  - CaV2ray_1
-  - Vip_Security_2
-  - tmlightning6
-  - configLINE4
-  - configLINE2
-  - tmlightning6_1
-  - configx2ray  VL-XHTTP-NA  US 117ms
-  - vpnclashfa_2
-  - confiig_hub
-  - Telegram_1
-  - v2rayng_fars
-  - configLINE
-  - Vip_Security_3
-  - configLINE_1
-  - Vip_Security_4
-  - vless-28
-  - confegraigan
-  - vless-30
-  - Vip_Security_5
-  - Vip_Security_6
-  - Vip_Security_7
-  - FreakConfig
-  - FreakConfig_1
-  - US   VLESS  komail315 2
-  - configx2ray  VL-XHTTP-NA  US 21ms
-  - Vip_Security_8
-  - Vip_Security_9
-  - 6xzx-Fr33C0nfig  کانفیگ رایگان
-  - Vip_Security_10
-  - mehrosaboran
-  - All-IRAN_V2RAY1
-  - Vip_Security_11
-  - IRAN 206 Outline_Vpn free
-  - securitytlsalpnh2http11encryp
-  - bored_vpn
-  - FreakConfig_2
-  - Vip_Security_12
-  - mehrosaboran_1
-  - کانفیگ های بیشتر customv2ray
-  - PersianGulf 70 Outline_Vpn
-  - RELAY
-  - Vip_Security_13
-  - Telegram_2
-  - CF   VLESS  netmellianti 17
-  - v2rayng
-  - Channel
-  - CF   VLESS  expressvpn_420 28
-  - CaV2ray_2
-  - vpnclashfa_3
-  - vless-62
-  - vpnclashfa_4
-  - vpnclashfa_5
-  - IRAN 417 Outline_Vpn free
-  - V2rayBaaz
-  - mehrosaboran_2
-  - Vip_Security_14
-  - vless-69
-  - vless-70
-  - vpnclashfa_6
-  - confiig_hub---confiig_hub---confiig_
-  - mehrosaboran_3
-  - IRAN 65 Outline_Vpn free
-  - vpnclashfa_7
-  - vmesskhodam
-  - mehrosaboran_4
-  - soskeynet  VL-WS-NA  SE 5ms
-  - v2rayng_fars_1
-  - Vip_Security_15
-  - Gp_Config  رایگان vpn منبع
-  - Vip_Security_16
-  - Vip_Security_17
-  - Vip_Security_18
-  - VIProxys
-  - کانفیگ
-  - vless-87
-  - DE
-  - vless-89
-  - Channel-iSpeedTopVPN
-  - vpnclashfa_8
-  - Vip_Security_19
-  - FR
-  - CF   VLESS  vpn_zvpn 13
-  - Telegram_3
-  - v2rayng_fars_2
-  - vpnclashfa_9
-  - vless-98
-  - Digiv2ray-1
-  - Vip_Security_20
-  - FreakConfig_3
-  - V2ray_cartel
-  - Vip_Security_21
-  - Vip_Security_22
-  - unlimiteddev-link1
-  - confiig_hub---confiig_hub---confiig__1
-  - NETMelliAnti
-  - v2ray313 کانالمون
-  - FASTSHOVPN
-  - Telegram_4
-  - PersianGulf 73 Outline_Vpn
-  - ae_proxy
-  - Maznet-46179-1
-  - Telegram Canfing_VPNCanfing_VPN
-  - Hope_Net-join-us-on-Telegram
-  - Golestan_VPN - JOIN
-  - سرورهایبیشتردرکانالprrofile_purple
-  - این کانفیگ تستیه کانفیگ اصلی رو بردار_1
-  - vless-119
+  - vless-1
+  - fr33c0nfig  VL-XHTTP-NA  US 20ms
   - سرور های بیشتر customv2ray
-  - Vip_Security_23
-  - DE_1
-  - RELAY_1
-  - NpvV2rayFilTer
-  - ShatakVPN 994403
-  - spikevpn
-  - CaV2ray_3
-  - کانفیگ های بیشتر customv2ray_1
-  - DE_2
-  - IRAN 104 Outline_Vpn free
-  - vpnclashfa_10
-  - RELAY_2
-  - ShatakVPN 946461
-  - CF   VLESS  lockey_vpn 15
-  - unlimiteddev-link2
-  - RELAY_3
-  - Telegram_5
+  - vpnclashfa
+  - All
+  - Digiv2ray
+  - Telegram
+  - Vip_Security
+  - vless-9
+  - vless-10
+  - configLINEتست
+  - vless-12
+  - Telegram_1
+  - Vip_Security_1
+  - vless-15
+  - vpnclashfa_1
+  - US_1
+  - US_2
+  - US   VLESS  arv2ray 18
+  - 𝗝𝗼𝗶𝗻
+  - Vip_Security_2
+  - Vip_Security_3
+  - vipV2rayNGnp
+  - FreakConfig
+  - confegraigan
+  - Confiig_hub
+  - US_3
+  - Vip_Security_4
+  - v2ray_configs_poolCanadaMontre
+  - configLINE
+  - vless-31
+  - vless-32
+  - vpnclashfa_2
+  - ShatakVPN 207570
+  - ogsvpnbotخرید
+  - v2raying
+  - Vip_Security_5
+  - سرور های بیشتر customv2ray_1
+  - سرور
+  - FreakConfig_1
+  - EXPRESSVPN_420
+  - vless-42
+  - Vip_Security_6
+  - کانفیگ
+  - vless-45
+  - GB
+  - FreakConfig_2
+  - VIProxys
+  - CaV2ray
+  - mehrosaboran
+  - vpnclashfa_3
+  - Vip_Security_7
   - VIPro
-  - ZedBaz_vpn
-  - vpnclashfa_11
-  - VIPro_1
-  - v2rayanv2rayan
-  - v2rayng_fars_3
-  - Maznet-46160-2
-  - Vip_Security_24
-  - IRAN 110 Outline_Vpn Free
-  - RELAY_4
-  - Telegram_6
-  - vpnclashfa_12
-  - CaV2ray_4
-  - vpnclashfa_13
-  - EuServer
-  - ShatakVPN 667282
-  - IRAN 105 Outline_Vpn free
-  - CaV2ray_5
-  - Vip_Security_25
-  - vless-157
-  - RELAY_5
-  - capoit  VL-WS-NA  US 5ms
-  - Telegram---MTMVPNed512securitytlse
-  - Vip_Security_26
-  - AYMH19کانالتلگرام
-  - vpnclashfa_14
-  - vless-164
-  - configLINE3
-  - FreakConfig_4
-  - bored_vpn_1
-  - vpnclashfa_15
-  - All_IRAN_V2RAY1
-  - unlimiteddev-link2_1
-  - سرورهایبیشتردرکانالprrofile_purple_1
-  - Telegram_7
-  - vpnclashfa_16
-  - vless-174
-  - Join---MARAMBASHI---Join---MARAMBASHIed
-  - سرورهایبیشتردرکانالprrofile_purple_2
-  - 𝗝𝗼𝗶𝗻ᴬᴸᴸ¹JKVPN
-  - CF   VLESS  ghalagyann 19
-  - FreakConfigvless92b022a6-67f3-440
-  - Channel id ShadowProxy66
-  - V2RAYNG_IP
+  - vpnclashfa_4
+  - CaV2ray_1
+  - FreakCon
+  - Vip_Security_8
+  - vpn_ioss  عضو شو
+  - httpstmevip_vpn_2022
+  - confiig_hub
+  - Telegram_2
+  - Hope_Net-join-us-on-Telegram
+  - ghalagyann
+  - Vip_Security_9
+  - vless-65
+  - گاب
+  - mehrosaboran_1
+  - RELAY
+  - vpnclashfa_5
+  - '2'
+  - IRAN 126 Outline_Vpn free
   - کانفیگ_1
-  - FreakConfig_5
-  - Alfred_Config
-  - کان
-  - Digiv2ray-1_1
-  - telegram  v2rayNG_Matsurivless49e
-  - Vip_Security_27
+  - TELEGRAM-MARAMBASHI_MARAMBASHI_MARAMBASH
+  - US_4
+  - Telegram_3
   - V2RAYROZ
+  - azadiiivpn⁴
+  - Telegram_4
+  - EXPRESSVPN_420_1
+  - Awlix_ir
+  - RELAY_1
+  - v2ray313 کانالمون
+  - bored_vpn
+  - IRAN_V2RAY1
+  - IRAN 491 Outline_Vpn free
+  - v2ray313
+  - vmessorg
+  - bored_vpn_1
+  - ZedBaz_vpn
+  - AYMH19کانالتلگرام
+  - vless-91
+  - vpnclashfa_6
+  - Telegram_5
+  - Telegram_6
+  - Channel
+  - confiig_hub_1
+  - 𝗝𝗼𝗶𝗻_1
+  - CaV2ray_2
+  - CF   VLESS  config_proxy 50
+  - vless-100
+  - VIPro_1
+  - RU
+  - ogsvpnbot
+  - vpnclashfa_7
+  - Golestan_VPN - J
+  - vpnclashfa_8
+  - vless-107
+  - RELAY_2
+  - Gp_Config  گروه کانفیگ
+  - Vip_Security_10
+  - سرور_1
+  - vless-112
+  - FI
+  - RELAY_3
+  - confiig_hub---confiig_hub---confiig_
+  - Alfred_Config
+  - CF   VLESS  kurdvpn1 2
+  - Telegram_7
+  - ogsvpnbot_1
+  - vpnclashfa_9
+  - IRAN 170 Outline_Vpn free
+  - IRAN 307 Outline_Vpn free
+  - Telegram_8
+  - v2ray313_1
+  - vpnclashfa_10
+  - IRAN 60 Outline_Vpn free
+  - Maznet-46169-1
+  - VIPro_2
+  - RELAY_4
+  - FreakConfig_3
+  - ogsvpnbot_2
+  - 𝐣𝐨𝐢𝐍-𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
+  - mehrosaboran_2
+  - Vip_Security_11
+  - Vip_Security_12
+  - spikevpn
+  - FreakConfig_4
+  - Hddify
+  - mehrosaboran_3
+  - vless-140
+  - RELAY_5
+  - Evay_vpn
+  - FR
+  - Vip_Security_13
+  - vmessorgXX
+  - Selinc
+  - ShatakVPN 222293
+  - ogsvpnbot_3
+  - Vip_Security_14
+  - mehrosaboran_4
+  - تلگرامعضوبشیدEuServer2ssY2hh
+  - vpnclashfa_11
+  - Vip_Security_15
+  - Vip_Security_16
+  - VIProxys_1
   - RELAY_6
+  - vpnclashfa_12
+  - 𝗝𝗼𝗶𝗻_2
+  - ghalagyann_1
+  - Vip_Security_17
+  - vpnclashfa_13
+  - قطع
+  - v2rayng_fars
+  - vipV2rayNGnp_1
+  - Vip_Security_18
+  - unlimiteddev-link2
+  - singbox1
+  - Vip_Security_19
+  - confiig_hub_2
   - bored_vpn_2
   - mehrosaboran_5
-  - Maznet-46167-2
+  - سرورهایبیشتردرکانالprrofile_purple
+  - capoit  VL-WS-NA  US 5ms
+  - Vip_Security_20
+  - TELEGRAM-MARAMBASHI_MARAMBASHI_MARAMBAS
+  - 𝗝𝗼𝗶𝗻_3
+  - Telegram Canfing_VPNCanfing_VPN
+  - Vip_Security_21
+  - spikevpn_1
+  - RELAY_7
   - bored_vpn_3
-  - Telegram_8
-  - meli_pro
+  - FASTSHOVPN
+  - RELAY_8
+  - Channel_1
+  - Maznet-46178-1
+  - spikevpn_2
+  - ghalagyann_2
+  - vpnclashfa_14
+  - Vip_Security_22
+  - JOIN---V2RAYNG_FARS---V2RAYNG_FARS---V2R
+  - NETMelliAnti
   - Telegram_9
-  - 𝐣𝐨𝐢𝐍-𝐅𝐑𝐄𝐄𝐕𝟐𝐑𝐍𝐆
-  - vpnclashfa_17
-  - confiig_hub---confiig_hub---confiig__2
-  - confiig_hub---confiig_hub---confiig__3
-  - Vip_Security_28
-  - Vip_Security_29
-  - Vip_Security_30
-  - Vip_Security_31
-  - vpnclashfa_18
-  - vpnclashfa_19
-  - Vip_Security_32
-  - V2rayNG3
-  - Vip_Security_33
-  - vpnclashfa_20
-  - vless-212
-  - azadiiivpn⁴
+  - RELAY_9
+  - All net telegram ultrasurf_12
+  - Vip_Security_23
+  - ᴬᴸᴸ²JKVPN
+  - SE   VLESS  v2rayngseven 12
+  - HiByeVPNN
+  - Vip_Security_24
   - کانفیگ_2
   - bored_vpn_4
+  - Vip_Security_25
+  - Channel id ShadowProxy66
+  - capoit  VL-WS-NA  US 6ms
+  - vpnclashfa_15
+  - vpnclashfa_16
+  - VIPro_3
+  - Telegram_10
+  - vpnclashfa_17
   - mehrosaboran_6
-  - AblNet7
-  - vpn_ioss  عضو شو
-  - Vip_Security_34
-  - کانال
-  - US_1
-  - Vip_Security_35
-  - Channel id ShadowProxy66_1
-  - RELAY_7
-  - RU_speednode_0035
-  - HiByeVPNN
-  - vpnclashfa_21
-  - trojan-389
-  - RELAY-1951344195-0594
-  - mhmdreza_it
-  - openproxylistcom
-  - Luxembourg - NA  TR-WS-TLS 4
-  - RELAY-18816415987-0662
-  - RELAY_8
-  - v2raying
-  - Vip_Security_36
-  - vpnclashfa_22
-  - Vip_Security_37
-  - Vip_Security_38
-  - United States - NA  TR-WS-TLS 4
-  - VIProxys_1
-  - RELAY_9
   - RELAY_10
-  - US_speednode_0048
+  - Vip_Security_26
+  - RELAY_11
+  - V2rayNGVPNکانفیگرایگان
   - Hope_Net-join-us-on-Telegram_1
-  - VIPro_2
-  - trojan-409
-  - US15614638168-4433195ms
-  - RELAY18811497171-443157ms
-  - VIProxys_4
-  - Hope_
+  - Vip_Security_27
+  - Golestan_VPN
+  - vless-218
+  - FreakConfig_5
+  - vpnclashfa_18
+  - vless-221
+  - vpn_ioss  عضو شو_1
+  - مورق
+  - Vip_Security_28
+  - Channel id ShadowProxy66_1
+  - ES西班牙
+  - Vip_Security_29
+  - Vip_Security_30
+  - US-19205487-0655
+  - Telegram_11
+  - soskeynet  TR-WS-NA  US 5ms
+  - RELAY-1981775787-0620
+  - Vip_Security_31
+  - vpnclashfa_19
+  - V2rayNGVPN
+  - vpnclashfa_20
+  - V2rayNGVPN_1
+  - US_speednode_0047
+  - Channel id ShadowProxy66_2
+  - trojan-392
+  - Channel id ShadowProxy66_3
+  - tmeRaiv2mmr
+  - United States - NA  TR-WS-TLS 4
+  - Switzerland - NA  TR-WS-TLS 4
+  - trojan-397
+  - trojan-398
+  - vpnclashfa_21
+  - Vip_Security_32
+  - US-209949087-0610
+  - JoinTelegramFarah_VPNCountry
+  - US-19959243228-7886
+  - ahwazigamingshop  VL-WS-NA  US 5ms
+  - US_5
+  - RELAY_12
+  - RELAY18811497202-8443162ms
+  - RELAY_14
+  - Telegram_13
+  - RELAY_16
+  - awlix_ir
+  - FreakConfig_7
+  - httpstmevip_vpn_2022_1
+  - Vip_Security_34
+  - ShatakVPN 386858
+  - Vip_Security_35
+  - vpnclashfa_25
+  - NETMelliAnti_1
+  - vpnclashfa_26
+  - tmlightning6
+  - vless-463
+  - v2ray_configs_poolCanadaToront
+  - flyv2rayXX
+  - vipV2rayNGnp_2
+  - IRAN_V2RAY1_1
+  - Maznet-46157-2
+  - mehrosaboran_7
+  - Gp_Config  رایگان vpn منبع
+  - VIPro_5
+  - mehrosaboran_8
+  - Mrconfig_Channel
+  - Gp_Config  گروه کانفیگ_1
   - v2rayfast_7
-  - v2rayfast_7_1
-  - DE_7
-  - vless-484
-  - confiig_hub---confiig_hub---confiig__4
-  - Maznet-46161-1
-  - bored_vpn_5
-  - httpstmevip_vpn_2022
-  - vpnclashfa_29
-  - IRAN 302 Outline_Vpn free
+  - Vip_Security_36
+  - HiByeVPNN_1
+  - mehrosaboran_9
+  - DE
+  - telegramproxy_mtm
+  - Vip_Security_37
+  - Namibia - NA  VL-WS-NONE 4
+  - Vip_Security_38
+  - Namibia - NA  VL-WS-NONE 4_1
+  - IRAN 425 Outline_Vpn free
   - mehrosaboranXX
-  - VIProxys_10
-  - vpnclashfa_30
-  - vpnclashfa_32
-  - Maznet-46170-2
+  - RELAY_17
+  - Vip_Security_39
+  - mehrosaboran_10
+  - VIPro_7
+  - ShatakVPN 535300
 rules:
 - MATCH,V2V-Proxies
