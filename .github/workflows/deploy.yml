@@ -1,9 +1,9 @@
-Name: Deploy Cloudflare Worker
+name: Deploy Cloudflare Worker
 
 on:
   push:
     branches:
-      - main # or your default branch if it's not 'main'
+      - main
 
 jobs:
   deploy:
@@ -18,5 +18,3 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
- 
