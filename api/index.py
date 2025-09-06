@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-import os, uuid, json, base64, requests, yaml, re
+import os, uuid, json, base64, requests, yaml, re, socket
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from redis import Redis
 from urllib.parse import urlparse, parse_qsl, unquote
+from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 CORS(app) 
@@ -12,10 +13,51 @@ try:
     redis_client = Redis.from_url(os.environ.get("KV_URL"))
 except Exception as e:
     redis_client = None
-    print(f"CRITICAL: Could not connect to Vercel KV. API will not work. Error: {e}")
+    print(f"CRITICAL: Could not connect to Vercel KV. Error: {e}")
 
 LIVE_CONFIGS_URL = os.environ.get("LIVE_CONFIGS_URL")
 if not LIVE_CONFIGS_URL: print("CRITICAL: LIVE_CONFIGS_URL environment variable is not set!")
+
+# --- START: New TCP Ping Functionality (Python version of ping.js) ---
+def _parse_config_for_ping(config):
+    try:
+        url = urlparse(config)
+        return url.hostname, url.port
+    except Exception:
+        return None, None
+
+def _test_tcp_connection(config):
+    hostname, port = _parse_config_for_ping(config)
+    if not hostname or not port:
+        return {'config': config, 'ping': None}
+    
+    try:
+        start_time = time.time()
+        with socket.create_connection((hostname, int(port)), timeout=2.5) as sock:
+            end_time = time.time()
+            latency = int((end_time - start_time) * 1000)
+            return {'config': config, 'ping': latency}
+    except (socket.error, socket.timeout, ValueError):
+        return {'config': config, 'ping': None}
+
+@app.route('/api/ping', methods=['POST'])
+def tcp_ping_handler():
+    try:
+        data = request.get_json()
+        configs = data.get('configs')
+        if not isinstance(configs, list):
+            return jsonify({'error': 'Invalid request: "configs" must be an array.'}), 400
+        
+        # Use a thread pool to test connections in parallel for better performance
+        with ThreadPoolExecutor(max_workers=30) as executor:
+            ping_results = list(executor.map(_test_tcp_connection, configs))
+            
+        return jsonify(ping_results), 200
+    except Exception as e:
+        print(f"ERROR in tcp_ping_handler: {e}")
+        return jsonify({'error': 'Error processing request.'}), 500
+# --- END: New TCP Ping Functionality ---
+
 
 # --- Helper Functions (Mirrored from scraper.py for consistency) ---
 def _decode_padded_b64(encoded_str: str) -> str:
@@ -79,6 +121,30 @@ def generate_clash_config(configs: list) -> str | None:
     return yaml.dump(clash_config, allow_unicode=True, sort_keys=False, indent=2)
 
 # --- API Endpoints ---
+@app.route('/api/subscribe', methods=['POST'])
+def create_subscription():
+    if not redis_client: return jsonify({"error": "Database connection error."}), 503
+    try:
+        selected_configs = request.json.get('configs')
+        sub_type = request.json.get('type', 'standard')
+        if not isinstance(selected_configs, list) or not selected_configs:
+            return jsonify({"error": "Invalid input. 'configs' must be a non-empty list."}), 400
+        
+        sub_uuid = str(uuid.uuid4())
+        key = f"sub:{sub_uuid}"
+        redis_client.set(key, json.dumps(selected_configs))
+        redis_client.expire(key, 30 * 24 * 60 * 60)
+        
+        host_url = request.host_url.replace("http://", "https://")
+        if sub_type == "clash":
+            subscription_url = f"{host_url}sub/clash/{sub_uuid}"
+        else:
+            subscription_url = f"{host_url}sub/{sub_uuid}"
+        return jsonify({"subscription_url": subscription_url, "uuid": sub_uuid})
+    except Exception as e:
+        print(f"ERROR in create_subscription: {e}")
+        return jsonify({"error": "Internal server error during subscription creation."}), 500
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):
@@ -128,28 +194,3 @@ def get_subscription(sub_uuid, sub_type):
     else:
         final_configs_str = "\n".join(healed_configs)
         return base64.b64encode(final_configs_str.encode("utf-8")).decode("utf-8")
-
-@app.route('/api/subscribe', methods=['POST'])
-def create_subscription():
-    if not redis_client: return jsonify({"error": "Database connection error."}), 503
-    try:
-        selected_configs = request.json.get('configs')
-        sub_type = request.json.get('type', 'standard')
-        if not isinstance(selected_configs, list) or not selected_configs:
-            return jsonify({"error": "Invalid input. 'configs' must be a non-empty list."}), 400
-        
-        sub_uuid = str(uuid.uuid4())
-        key = f"sub:{sub_uuid}"
-        redis_client.set(key, json.dumps(selected_configs))
-        redis_client.expire(key, 30 * 24 * 60 * 60)
-        
-        host_url = request.host_url.replace("http://", "https://")
-        if sub_type == "clash":
-            subscription_url = f"{host_url}sub/clash/{sub_uuid}"
-        else:
-            subscription_url = f"{host_url}sub/{sub_uuid}"
-        return jsonify({"subscription_url": subscription_url, "uuid": sub_uuid})
-    except Exception as e:
-        print(f"ERROR in create_subscription: {e}")
-        return jsonify({"error": "Internal server error during subscription creation."}), 500
-
