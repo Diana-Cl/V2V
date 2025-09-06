@@ -12,7 +12,12 @@
       "dest": "api/index.py"
     },
     {
-      "handle": "filesystem"
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|json|ico|txt))",
+      "dest": "/$1"
     },
     {
       "src": "/(.*)",
