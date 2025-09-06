@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "python3.9"
+    },
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+        "source": "/sub/(.*)",
+        "destination": "/api/index.py"
+    }
+  ]
+}
