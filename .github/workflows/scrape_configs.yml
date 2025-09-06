@@ -87,7 +87,6 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # First, check if the main output file exists before proceeding
           if [ ! -f "all_live_configs.json" ]; then
             echo "all_live_configs.json not found, skipping commit."
             exit 0
@@ -98,8 +97,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No new changes to commit."
           else
-            # Before pushing, pull the latest changes with rebase
-            git pull --rebase
             git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
+            git pull --rebase
             git push
           fi
