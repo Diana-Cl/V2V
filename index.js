@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_BASE_URL = ''; // Vercel API is on the same domain
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
-    const PING_URL = 'https://v2v-final.vercel.app/'; // Root of the API returns a quick response
+    const PING_URL = '/'; // CORRECTED: Root of the API returns a quick response
     const AUTO_SELECT_COUNT = 30;
 
     // --- DOM ELEMENTS ---
