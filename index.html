@@ -70,7 +70,7 @@
         <div class="bottom-links" id="footer-links">
              <a href="https://v2v-vercel.vercel.app/" target="_blank">ورسل</a>
              <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank">ابر آروان</a>
-             <a href="https://github.com/SMBCRYP/V2V" target="_blank">گیت‌هاب</a>
+             <a href="https://smbcryp.github.io/V2V/" target="_blank">گیت‌هاب</a>
         </div>
     </div>
     <div id="qr-code-modal">
@@ -86,13 +86,14 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const API_BASE_URL = 'https://v2v-vercel.vercel.app';
+            // ⬇️ **مسیرهای API جدید برای تست پینگ**
+            const CF_PING_ENDPOINT = 'https://your-cloudflare-worker.workers.dev/ping'; // ** آدرس ورکر کلادفلر خود را جایگزین کنید **
+            const VERCEL_PING_ENDPOINT = `${API_BASE_URL}/api/ping`; // ** مسیر سرورلس فانکشن ورسل **
+            
             const DATA_URL = 'all_live_configs.json';
             const CACHE_URL = 'cache_version.txt';
-            const PING_TARGETS = [
-                'https://v2v-vercel.vercel.app/',
-                'https://rapid-scene-1da6.mbrgh87.workers.dev' // Your Cloudflare Worker
-            ];
             const AUTO_SELECT_COUNT = 30;
+
             const statusBar = document.getElementById('status-bar');
             const xrayWrapper = document.getElementById('xray-content-wrapper');
             const singboxWrapper = document.getElementById('singbox-content-wrapper');
@@ -126,33 +127,19 @@
                 qrModal.style.display = 'flex';
             };
             window.toggleGroup = (groupId) => document.getElementById(groupId)?.parentNode.classList.toggle('open');
-            const getUserPing = async (timeout = 3000) => {
-                const fetchWithTimeout = (url) => new Promise(async (resolve, reject) => {
-                    const controller = new AbortController();
-                    const timer = setTimeout(() => { controller.abort(); reject(new Error('Timeout')); }, timeout);
-                    try {
-                        const startTime = performance.now();
-                        await fetch(`${url}?t=${Date.now()}`, { signal: controller.signal, cache: 'no-store', mode: 'no-cors' });
-                        resolve(Math.round(performance.now() - startTime));
-                    } catch (e) { reject(e); } 
-                    finally { clearTimeout(timer); }
-                });
-                try {
-                    return await Promise.any(PING_TARGETS.map(url => fetchWithTimeout(url)));
-                } catch (error) { return null; }
-            };
             
             async function fetchData() {
                 try {
-                    const versionRes = await fetch(`${CACHE_URL}?t=${Date.now()}`, { cache: 'no-store' });
+                    const versionRes = await fetch(`${API_BASE_URL}/${CACHE_URL}?t=${Date.now()}`, { cache: 'no-store' });
                     if (versionRes.ok) statusBar.textContent = `آخرین بروزرسانی: ${toShamsi((await versionRes.text()).trim())}`;
-                } catch (e) {}
+                } catch (e) { console.error("Failed to fetch cache version:", e); }
                 try {
-                    const dataRes = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
+                    const dataRes = await fetch(`${API_BASE_URL}/${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
                     if (!dataRes.ok) throw new Error(`Status: ${dataRes.status}`);
                     return await dataRes.json();
                 } catch (error) {
                     statusBar.textContent = 'خطا در بارگذاری';
+                    console.error("Failed to fetch main data:", error);
                     throw new Error('All data sources failed.');
                 }
             }
@@ -161,12 +148,27 @@
                 const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
                 wrapper.innerHTML = ''; 
                 const actionsContainer = document.createElement('div');
-                actionsContainer.innerHTML = `<button class="test-button" id="${core}-test-btn">اجرای تست سرعت ترکیبی</button><div class="action-group"><h4 class="action-group-title">اشتراک شخصی (Standard)</h4><div class="action-buttons"><button class="action-button" onclick="window.v2v.createSubscription('${core}', 'standard', 'url', event)">کپی لینک UUID</button><button class="action-button" onclick="window.v2v.createSubscription('${core}', 'standard', 'qr', event)">QR Code لینک</button></div></div>`;
+                // ⬇️ **اصلاح `event` در `onclick`**
+                actionsContainer.innerHTML = `<button class="test-button" id="${core}-test-btn">اجرای تست سرعت دقیق</button>
+                    <div class="action-group">
+                        <h4 class="action-group-title">اشتراک شخصی (Standard)</h4>
+                        <div class="action-buttons">
+                            <button class="action-button" onclick="window.v2v.createSubscription('${core}', 'standard', 'url', event)">کپی لینک UUID</button>
+                            <button class="action-button" onclick="window.v2v.createSubscription('${core}', 'standard', 'qr', event)">QR Code لینک</button>
+                        </div>
+                    </div>`;
                 if (core === 'xray') {
-                    actionsContainer.innerHTML += `<div class="action-group"><h4 class="action-group-title">اشتراک شخصی (Clash)</h4><div class="action-buttons"><button class="action-button" onclick="window.v2v.createSubscription('${core}', 'clash', 'url', event)">کپی لینک Clash</button><button class="action-button" onclick="window.v2v.downloadClashFile('${core}', event)">دانلود فایل Clash</button></div></div>`;
+                    actionsContainer.innerHTML += `<div class="action-group">
+                        <h4 class="action-group-title">اشتراک شخصی (Clash)</h4>
+                        <div class="action-buttons">
+                            <button class="action-button" onclick="window.v2v.createSubscription('${core}', 'clash', 'url', event)">کپی لینک Clash</button>
+                            <button class="action-button" onclick="window.v2v.downloadClashFile('${core}', event)">دانلود فایل Clash</button>
+                        </div>
+                    </div>`;
                 }
                 wrapper.appendChild(actionsContainer);
-                document.getElementById(`${core}-test-btn`).addEventListener('click', () => runHybridSpeedTest(core));
+                document.getElementById(`${core}-test-btn`).addEventListener('click', () => runRealPingTest(core));
+
                 if (!configs || configs.length === 0) {
                     wrapper.insertAdjacentHTML('beforeend', '<div class="alert">هیچ کانفیگ سالمی برای این هسته یافت نشد.</div>');
                     return;
@@ -177,6 +179,7 @@
                     acc[proto].push(item);
                     return acc;
                 }, {});
+
                 for (const protocol in grouped) {
                     const protocolGroupId = `${protocol}-${core}`;
                     const protocolGroup = document.createElement('div');
@@ -187,44 +190,93 @@
                         const li = document.createElement('li');
                         li.className = 'config-item';
                         li.dataset.config = configObj.config;
-                        li.dataset.backendPing = configObj.ping;
                         try {
                             const serverName = configObj.config.includes('#') ? decodeURIComponent(configObj.config.split('#')[1]) : new URL(configObj.config).hostname;
                             li.innerHTML = `<input type="checkbox" class="config-checkbox"><div class="config-details"><span class="server">${serverName}</span><span class="ping-result"></span></div><div class="copy-button-container"><button class="copy-btn" onclick="window.v2v.copyConfig(event)">کپی</button><button class="copy-btn" onclick="window.v2v.showConfigQr(event)">QR</button></div>`;
                             configList.appendChild(li);
-                        } catch(e) {}
+                        } catch(e) { console.error("Error parsing config for display:", configObj.config, e); }
                     });
                     wrapper.appendChild(protocolGroup);
                 }
             }
-
-            async function runHybridSpeedTest(core) {
+            
+            // ⬇️ **تابع تست پینگ کاملا بازنویسی شده**
+            async function runRealPingTest(core) {
                 const testButton = document.getElementById(`${core}-test-btn`);
                 if (testButton.disabled) return;
                 testButton.disabled = true;
-                testButton.textContent = 'درحال تست...';
-                const userPing = await getUserPing();
-                if (userPing === null) {
-                    alert('تست پینگ کاربر با شکست مواجه شد. لطفاً اتصال خود را بررسی کنید.');
-                    testButton.disabled = false; testButton.textContent = 'اجرای مجدد تست'; return;
+                testButton.textContent = 'درحال تست... (مرحله ۱ از ۲)';
+
+                const allConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-item`)).map(item => item.dataset.config);
+                if (allConfigs.length === 0) {
+                    alert('هیچ کانفیگی برای تست وجود ندارد.');
+                    testButton.disabled = false; testButton.textContent = 'اجرای تست سرعت دقیق';
+                    return;
                 }
+
+                const fetchWithTimeout = async (url, configs, timeout = 4000) => {
+                    const controller = new AbortController();
+                    const timer = setTimeout(() => controller.abort(), timeout);
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ configs }),
+                            signal: controller.signal
+                        });
+                        if (!response.ok) throw new Error(`Status: ${response.status}`);
+                        return await response.json();
+                    } finally {
+                        clearTimeout(timer);
+                    }
+                };
+
+                let pingResults;
+                try {
+                    // **تلاش اول: کلادفلر**
+                    testButton.textContent = 'درحال تست از نزدیک‌ترین سرور...';
+                    pingResults = await fetchWithTimeout(CF_PING_ENDPOINT, allConfigs);
+                    console.log('Ping test successful via Cloudflare.');
+                } catch (error) {
+                    console.warn('Cloudflare ping failed, falling back to Vercel.', error);
+                    try {
+                        // **نقشه دوم: ورسل**
+                        testButton.textContent = 'خطا! تلاش مجدد از سرور پشتیبان...';
+                        pingResults = await fetchWithTimeout(VERCEL_PING_ENDPOINT, allConfigs, 8000); // Timeout طولانی‌تر برای سرور پشتیبان
+                        console.log('Ping test successful via Vercel (fallback).');
+                    } catch (fallbackError) {
+                        console.error('All ping tests failed.', fallbackError);
+                        alert('تست پینگ با شکست کامل مواجه شد. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.');
+                        testButton.disabled = false; testButton.textContent = 'اجرای مجدد تست';
+                        return;
+                    }
+                }
+
+                // **پردازش و نمایش نتایج**
+                const pingMap = new Map(pingResults.map(p => [p.config, p.ping]));
                 const items = document.querySelectorAll(`#${core}-section .config-item`);
+
                 items.forEach(item => {
+                    const ping = pingMap.get(item.dataset.config);
                     const pingEl = item.querySelector('.ping-result');
-                    const backendPing = parseInt(item.dataset.backendPing, 10);
-                    const finalScore = userPing + backendPing;
-                    let pingColor = 'var(--ping-good)';
-                    if (finalScore > 800) pingColor = 'var(--ping-medium)';
-                    if (finalScore > 1600) pingColor = 'var(--ping-bad)';
-                    item.dataset.finalScore = finalScore;
-                    pingEl.innerHTML = `امتیاز نهایی: <strong style="color:${pingColor};">${finalScore}</strong>`;
+                    if (ping !== undefined && ping !== null && ping > 0) {
+                        let pingColor = 'var(--ping-good)';
+                        if (ping > 600) pingColor = 'var(--ping-medium)';
+                        if (ping > 1200) pingColor = 'var(--ping-bad)';
+                        item.dataset.finalScore = ping;
+                        pingEl.innerHTML = `پینگ: <strong style="color:${pingColor};">${ping}ms</strong>`;
+                    } else {
+                        item.dataset.finalScore = 9999;
+                        pingEl.textContent = 'پینگ: N/A';
+                    }
                 });
-                document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => { 
-                    const list = group.querySelector('.config-list'); 
-                    const items = Array.from(list.children); 
-                    items.sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999)); 
-                    items.forEach(item => list.appendChild(item)); 
+
+                document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => {
+                    const list = group.querySelector('.config-list');
+                    const sortedItems = Array.from(list.children).sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999));
+                    sortedItems.forEach(item => list.appendChild(item));
                 });
+
                 testButton.disabled = false;
                 testButton.textContent = 'اجرای مجدد تست سرعت';
             }
@@ -242,10 +294,11 @@
                     let selected = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
                     if (selected.length === 0) {
                         alert(`هیچ کانفیگی انتخاب نشده. ${AUTO_SELECT_COUNT} عدد از بهترین کانفیگ‌ها به صورت خودکار انتخاب می‌شوند.`);
-                        selected = Array.from(document.querySelectorAll(`#${core}-section .config-item`)).sort((a, b) => (a.dataset.finalScore || parseInt(a.dataset.backendPing, 10)) - (b.dataset.finalScore || parseInt(b.dataset.backendPing, 10))).slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
+                        selected = Array.from(document.querySelectorAll(`#${core}-section .config-item`)).sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999)).slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
                     }
                     return selected;
                 },
+                // ⬇️ **اصلاح `event` در پارامتر تابع**
                 createSubscription: async (core, type, action, event) => {
                     const configs = window.v2v.getSelectedConfigs(core);
                     if (configs.length === 0) return alert('هیچ کانفیگی برای ساخت لینک وجود ندارد.');
@@ -256,7 +309,7 @@
                         const response = await fetch(`${API_BASE_URL}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs, type }) });
                         if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
                         const data = await response.json();
-                        if (action === 'url') { copyToClipboard(data.subscription_url, 'لینک اشتراک UUID کپی شد!'); } 
+                        if (action === 'url') { copyToClipboard(data.subscription_url, 'لینک اشتراک کپی شد!'); } 
                         else if (action === 'qr') { showQrCode(event, data.subscription_url); }
                     } catch (error) {
                         alert('خطا در ساخت لینک اشتراک. لطفاً دوباره تلاش کنید.');
@@ -274,7 +327,8 @@
                             if (configStr.startsWith('vmess://')) { const d = JSON.parse(atob(configStr.replace('vmess://', ''))); proxy = {...proxy, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: d.aid, cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net || 'tcp', 'skip-cert-verify': true, servername: d.sni || d.add }; if (proxy.network === 'ws') proxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add } }; } 
                             else if (configStr.startsWith('vless://')) { const u = new URL(configStr); const p = new URLSearchParams(u.search); proxy = {...proxy, type: 'vless', server: u.hostname, port: parseInt(u.port), uuid: u.username, tls: p.get('security') === 'tls', network: p.get('type') || 'tcp', servername: p.get('sni') || u.hostname, 'skip-cert-verify': true}; if (proxy.network === 'ws') proxy['ws-opts'] = { path: p.get('path') || '/', headers: { Host: p.get('host') || u.hostname } }; } 
                             else if (configStr.startsWith('trojan://')) { const u = new URL(configStr); const p = new URLSearchParams(u.search); proxy = {...proxy, type: 'trojan', server: u.hostname, port: parseInt(u.port), password: u.username, sni: p.get('sni') || u.hostname, 'skip-cert-verify': true }; } 
-                            else if (configStr.startsWith('ss://')) { const u = new URL(configStr); const [cipher, password] = atob(decodeURIComponent(u.username)).split(':'); proxy = {...proxy, type: 'ss', server: u.hostname, port: parseInt(u.port), cipher, password}; } 
+                            // ⬇️ **اصلاح باگ `ss://`**
+                            else if (configStr.startsWith('ss://')) { const u = new URL(configStr); const [cipher, password] = atob(u.username).split(':'); proxy = {...proxy, type: 'ss', server: u.hostname, port: parseInt(u.port), cipher, password}; } 
                             else { return null; } 
                             return proxy; 
                         } catch { return null; } 
