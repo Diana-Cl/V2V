@@ -36,7 +36,8 @@
         .config-item { padding: 8px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
         .config-checkbox { flex-shrink: 0; transform: scale(1.2); margin-left: 8px; accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
-        .config-details .server { font-weight: bold; word-break: break-all; font-size: 0.9em; }
+        .config-details .server { font-weight: bold; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .flag { margin-left: 8px; font-size: 1.1em; vertical-align: middle; }
         .ping-result { font-size: 0.85em; }
         .copy-button-container { display: flex; gap: 6px; }
         .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
@@ -86,7 +87,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const API_BASE_URL = 'https://v2v-vercel.vercel.app';
-            // ⬇️ **مسیرهای API تست پینگ**
             const CF_PING_ENDPOINT = 'https://rapid-scene-1da6.mbrgh87.workers.dev'; 
             const VERCEL_PING_ENDPOINT = `${API_BASE_URL}/api/ping`; 
             
@@ -100,6 +100,20 @@
             const qrModal = document.getElementById('qr-code-modal');
             const qrContainer = document.getElementById('qr-code-container');
             const qrDownloadBtn = document.getElementById('qr-download-btn');
+            
+            const parseAndFormatName = (fullName) => {
+                const flagRegex = /^([\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF])/;
+                let flag = '';
+                let cleanName = fullName;
+
+                const match = fullName.match(flagRegex);
+                if (match) {
+                    flag = match[1];
+                    cleanName = fullName.replace(flagRegex, '').trim();
+                }
+                
+                return { flag: flag || '🏳️', name: cleanName };
+            };
             
             const toShamsi = (timestamp) => {
                 try {
@@ -190,8 +204,20 @@
                         li.className = 'config-item';
                         li.dataset.config = configObj.config;
                         try {
-                            const serverName = configObj.config.includes('#') ? decodeURIComponent(configObj.config.split('#')[1]) : new URL(configObj.config).hostname;
-                            li.innerHTML = `<input type="checkbox" class="config-checkbox"><div class="config-details"><span class="server">${serverName}</span><span class="ping-result"></span></div><div class="copy-button-container"><button class="copy-btn" onclick="window.v2v.copyConfig(event)">کپی</button><button class="copy-btn" onclick="window.v2v.showConfigQr(event)">QR</button></div>`;
+                            const rawName = configObj.config.includes('#') ? decodeURIComponent(configObj.config.split('#')[1]) : new URL(configObj.config).hostname;
+                            const { flag, name } = parseAndFormatName(rawName);
+                            li.innerHTML = `
+                                <input type="checkbox" class="config-checkbox">
+                                <div class="config-details">
+                                    <span class="server" title="${name}">
+                                        <span class="flag">${flag}</span> ${name}
+                                    </span>
+                                    <span class="ping-result"></span>
+                                </div>
+                                <div class="copy-button-container">
+                                    <button class="copy-btn" onclick="window.v2v.copyConfig(event)">کپی</button>
+                                    <button class="copy-btn" onclick="window.v2v.showConfigQr(event)">QR</button>
+                                </div>`;
                             configList.appendChild(li);
                         } catch(e) { console.error("Error parsing config for display:", configObj.config, e); }
                     });
@@ -204,42 +230,30 @@
                 if (testButton.disabled) return;
                 testButton.disabled = true;
                 testButton.textContent = 'درحال تست... (مرحله ۱ از ۲)';
-
                 const allConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-item`)).map(item => item.dataset.config);
                 if (allConfigs.length === 0) {
                     alert('هیچ کانفیگی برای تست وجود ندارد.');
                     testButton.disabled = false; testButton.textContent = 'اجرای تست سرعت دقیق';
                     return;
                 }
-
                 const fetchWithTimeout = async (url, configs, timeout = 4000) => {
                     const controller = new AbortController();
                     const timer = setTimeout(() => controller.abort(), timeout);
                     try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ configs }),
-                            signal: controller.signal
-                        });
+                        const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs }), signal: controller.signal });
                         if (!response.ok) throw new Error(`Status: ${response.status}`);
                         return await response.json();
-                    } finally {
-                        clearTimeout(timer);
-                    }
+                    } finally { clearTimeout(timer); }
                 };
-
                 let pingResults;
                 try {
                     testButton.textContent = 'درحال تست از نزدیک‌ترین سرور...';
                     pingResults = await fetchWithTimeout(CF_PING_ENDPOINT, allConfigs);
-                    console.log('Ping test successful via Cloudflare.');
                 } catch (error) {
                     console.warn('Cloudflare ping failed, falling back to Vercel.', error);
                     try {
                         testButton.textContent = 'خطا! تلاش مجدد از سرور پشتیبان...';
                         pingResults = await fetchWithTimeout(VERCEL_PING_ENDPOINT, allConfigs, 8000);
-                        console.log('Ping test successful via Vercel (fallback).');
                     } catch (fallbackError) {
                         console.error('All ping tests failed.', fallbackError);
                         alert('تست پینگ با شکست کامل مواجه شد. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.');
@@ -247,10 +261,8 @@
                         return;
                     }
                 }
-
                 const pingMap = new Map(pingResults.map(p => [p.config, p.ping]));
                 const items = document.querySelectorAll(`#${core}-section .config-item`);
-
                 items.forEach(item => {
                     const ping = pingMap.get(item.dataset.config);
                     const pingEl = item.querySelector('.ping-result');
@@ -265,13 +277,11 @@
                         pingEl.textContent = 'پینگ: N/A';
                     }
                 });
-
                 document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => {
                     const list = group.querySelector('.config-list');
                     const sortedItems = Array.from(list.children).sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999));
                     sortedItems.forEach(item => list.appendChild(item));
                 });
-
                 testButton.disabled = false;
                 testButton.textContent = 'اجرای مجدد تست سرعت';
             }
@@ -310,32 +320,101 @@
                         console.error("Subscription creation failed:", error);
                     } finally { btn.disabled = false; btn.textContent = originalText; }
                 },
+                
+                // START: Updated downloadClashFile Function
                 downloadClashFile: (core, event) => {
                     const configs = window.v2v.getSelectedConfigs(core);
-                    if (configs.length === 0) return alert('هیچ کانفیگی برای ساخت فایل وجود ندارد.');
+                    if (configs.length === 0) {
+                        alert('هیچ کانفیگی برای ساخت فایل وجود ندارد.');
+                        return;
+                    }
+
+                    const usedNames = new Set(); // To handle duplicate names
                     const proxies = configs.map(configStr => {
                         try {
                             if (configStr.includes('reality')) return null;
-                            const name = configStr.includes('#') ? decodeURIComponent(configStr.split('#')[1]) : new URL(configStr).hostname;
+
+                            let rawName = new URL(configStr).hostname; // Default name
+                            if (configStr.includes('#')) {
+                                rawName = decodeURIComponent(configStr.split('#')[1]);
+                            }
+
+                            // --- Ensure name is unique to prevent Clash errors ---
+                            let name = rawName;
+                            let counter = 1;
+                            while (usedNames.has(name)) {
+                                name = `${rawName} (${++counter})`;
+                            }
+                            usedNames.add(name);
+                            // --- End of uniqueness logic ---
+
                             let proxy = { name };
-                            if (configStr.startsWith('vmess://')) { const d = JSON.parse(atob(configStr.replace('vmess://', ''))); proxy = {...proxy, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: d.aid, cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net || 'tcp', 'skip-cert-verify': true, servername: d.sni || d.add }; if (proxy.network === 'ws') proxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add } }; } 
-                            else if (configStr.startsWith('vless://')) { const u = new URL(configStr); const p = new URLSearchParams(u.search); proxy = {...proxy, type: 'vless', server: u.hostname, port: parseInt(u.port), uuid: u.username, tls: p.get('security') === 'tls', network: p.get('type') || 'tcp', servername: p.get('sni') || u.hostname, 'skip-cert-verify': true}; if (proxy.network === 'ws') proxy['ws-opts'] = { path: p.get('path') || '/', headers: { Host: p.get('host') || u.hostname } }; } 
-                            else if (configStr.startsWith('trojan://')) { const u = new URL(configStr); const p = new URLSearchParams(u.search); proxy = {...proxy, type: 'trojan', server: u.hostname, port: parseInt(u.port), password: u.username, sni: p.get('sni') || u.hostname, 'skip-cert-verify': true }; } 
-                            else if (configStr.startsWith('ss://')) { const u = new URL(configStr); const [cipher, password] = atob(u.username).split(':'); proxy = {...proxy, type: 'ss', server: u.hostname, port: parseInt(u.port), cipher, password}; } 
-                            else { return null; } 
-                            return proxy; 
-                        } catch { return null; } 
+                            if (configStr.startsWith('vmess://')) {
+                                const d = JSON.parse(atob(configStr.replace('vmess://', '')));
+                                proxy = { ...proxy, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: d.aid, cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net || 'tcp', 'skip-cert-verify': true, servername: d.sni || d.host || d.add };
+                                if (proxy.network === 'ws') proxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add } };
+                            } else if (configStr.startsWith('vless://')) {
+                                const u = new URL(configStr);
+                                const p = new URLSearchParams(u.search);
+                                proxy = { ...proxy, type: 'vless', server: u.hostname, port: parseInt(u.port), uuid: u.username, tls: p.get('security') === 'tls', network: p.get('type') || 'tcp', servername: p.get('sni') || u.hostname, 'skip-cert-verify': true, client-fingerprint: 'chrome' };
+                                if (proxy.network === 'ws') {
+                                    proxy['ws-opts'] = { path: p.get('path') || '/', headers: { Host: p.get('host') || u.hostname } };
+                                } else if (proxy.network === 'grpc') {
+                                    proxy['grpc-opts'] = { 'grpc-service-name': p.get('serviceName') || '' };
+                                }
+                            } else if (configStr.startsWith('trojan://')) {
+                                const u = new URL(configStr);
+                                const p = new URLSearchParams(u.search);
+                                proxy = { ...proxy, type: 'trojan', server: u.hostname, port: parseInt(u.port), password: u.username, sni: p.get('sni') || u.hostname, 'skip-cert-verify': true };
+                            } else if (configStr.startsWith('ss://')) {
+                                const u = new URL(configStr);
+                                const [cipher, password] = atob(u.username).split(':');
+                                proxy = { ...proxy, type: 'ss', server: u.hostname, port: parseInt(u.port), cipher, password };
+                            } else {
+                                return null;
+                            }
+                            return proxy;
+                        } catch (e) {
+                            console.warn("Skipping invalid or unsupported config for Clash:", configStr, e);
+                            return null;
+                        }
                     }).filter(p => p);
-                    if (proxies.length === 0) { alert('کانفیگ‌های انتخاب شده با کلش سازگار نیستند.'); return; }
-                    const clashConfig = { proxies, 'proxy-groups': [{'name': 'V2V-Personal-Auto', 'type': 'url-test', 'proxies': proxies.map(p => p.name), 'url': 'http://www.gstatic.com/generate_204', 'interval': 300}, {'name': 'V2V-Personal', 'type': 'select','proxies': ['V2V-Personal-Auto', ...proxies.map(p => p.name)]}], 'rules': ['MATCH,V2V-Personal'] }; 
-                    const yamlConfig = jsyaml.dump(clashConfig, { indent: 2, sortKeys: false }); 
-                    const blob = new Blob([yamlConfig], { type: 'text/yaml' }); 
-                    const link = document.createElement('a'); 
-                    link.href = URL.createObjectURL(blob); 
-                    link.download = 'v2v-clash-personal.yaml'; 
-                    link.click(); 
+
+                    if (proxies.length === 0) {
+                        alert('کانفیگ‌های انتخاب شده با کلش سازگار نیستند یا مشکلی در پردازش آن‌ها وجود دارد.');
+                        return;
+                    }
+
+                    const proxyNames = proxies.map(p => p.name);
+                    const clashConfig = {
+                        'mixed-port': 7890,
+                        'allow-lan': false,
+                        'mode': 'rule',
+                        'log-level': 'info',
+                        'external-controller': '127.0.0.1:9090',
+                        'dns': {
+                            'enable': true,
+                            'listen': '0.0.0.0:53',
+                            'nameserver': ['8.8.8.8', '1.1.1.1', '8.8.4.4'],
+                            'fallback': ['1.0.0.1', 'dns.google'],
+                        },
+                        proxies,
+                        'proxy-groups': [
+                            { 'name': 'V2V-Auto', 'type': 'url-test', 'proxies': proxyNames, 'url': 'http://www.gstatic.com/generate_204', 'interval': 300 },
+                            { 'name': 'PROXY', 'type': 'select', 'proxies': ['V2V-Auto', 'DIRECT', ...proxyNames] }
+                        ],
+                        'rules': ['MATCH,PROXY']
+                    };
+                    
+                    const yamlConfig = jsyaml.dump(clashConfig, { indent: 2, sortKeys: false });
+                    const blob = new Blob([yamlConfig], { type: 'text/yaml;charset=utf-8' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'v2v-clash-meta.yaml';
+                    link.click();
                     URL.revokeObjectURL(link.href);
                 }
+                // END: Updated downloadClashFile Function
             };
 
             (async () => {
