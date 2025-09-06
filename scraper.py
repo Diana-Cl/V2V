@@ -37,6 +37,7 @@ HEADERS = {
     'Upgrade-Insecure-Requests': '1'
 }
 GITHUB_PAT = os.environ.get('GH_PAT')
+GITHUB_SEARCH_LIMIT = 50 # <-- FIX: The missing variable is now defined with the value you requested.
 GITHUB_SEARCH_QUERIES = [
     '"vless" "subscription" in:file', '"vmess" "sub" in:file', 'filename:v2ray.txt',
     'filename:clash.yaml "vless"', 'path:.github/workflows "v2ray"', '"trojan" "configs" in:file'
@@ -54,7 +55,7 @@ if GITHUB_PAT: HEADERS['Authorization'] = f'token {GITHUB_PAT}'
 
 # --- HELPER & PARSING FUNCTIONS ---
 def get_country_code(hostname):
-    if not hostname: return "🏁"
+    if not hostname: return "🏳️"
     try:
         ip_address = socket.gethostbyname(hostname)
         response = requests.get(f"http://ip-api.com/json/{ip_address}?fields=countryCode", timeout=2)
@@ -64,8 +65,8 @@ def get_country_code(hostname):
         if country_code and len(country_code) == 2:
             return "".join(chr(ord(char) + 127397) for char in country_code.upper())
     except Exception:
-        return "🏁"
-    return "🏁"
+        return "🏳️"
+    return "🏳️"
 
 def _decode_padded_b64(encoded_str: str) -> str:
     if not encoded_str: return ""
@@ -317,7 +318,7 @@ def main():
                     vmess_data = json.loads(_decode_padded_b64(result['config_str'].replace("vmess://", "")))
                     hostname = vmess_data.get('add')
                 result['flag'] = get_country_code(hostname)
-            except: result['flag'] = "🏁"
+            except: result['flag'] = "🏳️"
             return result
         for geo_result in executor.map(process_config_geo, fast_configs_results):
             final_results_with_geo.append(geo_result)
