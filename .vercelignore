@@ -1,17 +1,18 @@
-# Cloudflare Worker files
+# Cloudflare Worker files (not for Vercel)
 wrangler.toml
 worker.js
 
-# Node.js files
-package.json
-package-lock.json
+# Node.js dependency folder (always ignore)
 node_modules/
+package-lock.json
 
-# Python Scraper (not part of the live site)
+# Python Scraper and its sources (run on GitHub Actions, not Vercel)
 scraper.py
 sources.json
 
-# Other non-essential files
+# GitHub Actions workflows folder
 .github/
+
+# Temporary/output folder and other non-essential files
 configs/
 dl-test.bin
