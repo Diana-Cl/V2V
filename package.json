@@ -1,5 +1,5 @@
 {
   "scripts": {
-    "build": "mkdir public && cp index.html index.js logo.png manifest.json public/"
+    "build": "mkdir public && cp index.html index.js logo.png manifest.json all_live_configs.json cache_version.txt public/"
   }
 }
