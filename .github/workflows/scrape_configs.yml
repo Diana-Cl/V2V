@@ -1,4 +1,4 @@
-name: Scheduled Scrape and Build
+Name: Scheduled Scrape and Build
 
 on:
   schedule:
@@ -97,7 +97,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No new changes to commit."
           else
-            git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [skip ci]"
+            git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')]"
             git pull --rebase
             git push
           fi
