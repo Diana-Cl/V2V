@@ -194,3 +194,6 @@ def get_subscription(sub_uuid, sub_type):
     else:
         final_configs_str = "\n".join(healed_configs)
         return base64.b64encode(final_configs_str.encode("utf-8")).decode("utf-8")
+
+# Vercel handler - این خط حیاتی است
+app = app
