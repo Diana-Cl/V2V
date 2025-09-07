@@ -1,5 +1,5 @@
 {
   "scripts": {
-    "build": "echo 'Build step for static assets'"
+    "build": "mkdir public && cp index.html index.js style.css logo.png manifest.json public/"
   }
 }
