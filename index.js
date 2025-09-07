@@ -1,13 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- CONFIGURATION ---
-    // URL for server-side operations like creating subscriptions or server-side ping tests.
+    // --- CONFIGURATION (UPDATED FOR INDEPENDENCE) ---
+    
+    // API_SERVER_URL: Only for server-side functions (subscribe, ping).
     const API_SERVER_URL = 'https://v2v-vercel.vercel.app'; 
     
-    // Cloudflare worker for the primary, faster ping test.
+    // PING_ENDPOINTS: Using Cloudflare as primary, Vercel as fallback.
     const CF_PING_ENDPOINT = 'https://rapid-scene-1da6.mbrgh87.workers.dev'; 
     const VERCEL_PING_ENDPOINT = `${API_SERVER_URL}/api/ping`; 
     
-    // Data files are now loaded from a relative path, making each mirror independent.
+    // DATA_URLS: Using relative paths to make each mirror independent for data.
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
     const AUTO_SELECT_COUNT = 30;
@@ -68,13 +69,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- CORE LOGIC ---
     async function fetchData() {
-        // First, try to fetch the cache version from the local/relative path.
+        // Fetches data from relative paths to ensure mirror independence.
         try {
             const versionRes = await fetch(`${CACHE_URL}?t=${Date.now()}`, { cache: 'no-store' });
             if (versionRes.ok) statusBar.textContent = `آخرین بروزرسانی: ${toShamsi((await versionRes.text()).trim())}`;
         } catch (e) { console.error("Failed to fetch local cache version:", e); }
         
-        // Then, fetch the main config data from the local/relative path.
         try {
             const dataRes = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
             if (!dataRes.ok) throw new Error(`Status: ${dataRes.status}`);
