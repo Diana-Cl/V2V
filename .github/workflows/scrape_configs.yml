@@ -1,18 +1,24 @@
-name: Scheduled Scrape and Build
+name: Scrape, Build, and Deploy
 
 on:
   schedule:
     - cron: "0 */8 * * *"
+  push:
+    branches:
+      - main
   workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-and-commit:
-    permissions:
-      contents: write
+  build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -20,26 +26,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
-          fetch-depth: 0
-
-      - name: Validate Secrets
-        run: |
-          if [ -z "$GH_PAT" ]; then
-            echo "::error::GH_PAT secret is missing or empty."
-            exit 1
-          fi
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-
-      - name: Create dummy download test file
-        run: dd if=/dev/zero of=dl-test.bin bs=100k count=1
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           pip install --upgrade pip
           if [ -f "requirements.txt" ]; then
@@ -50,54 +43,41 @@ jobs:
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-        timeout-minutes: 55
 
-      - name: Upload files to ArvanCloud
-        if: success()
-        continue-on-error: true
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-        run: |
-          if [ -z "$AWS_ACCESS_KEY_ID" ]; then
-            echo "::warning::ArvanCloud secrets not found, skipping upload."
-            exit 0
-          fi
-          ENDPOINT_URL="https://s3.ir-thr-at1.arvanstorage.com"
-          BUCKET_NAME="s3://v2v-data"
-
-          # Upload main output files from root
-          if [ -f "all_live_configs.json" ]; then
-            aws s3 cp all_live_configs.json "$BUCKET_NAME/all_live_configs.json" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "application/json" --cache-control "max-age=300"
-          fi
-          if [ -f "clash_subscription.yaml" ]; then
-            aws s3 cp clash_subscription.yaml "$BUCKET_NAME/clash_subscription.yaml" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/yaml" --cache-control "max-age=300"
-          fi
-          
-          # Upload other utility files from root
-          if [ -f "cache_version.txt" ]; then
-            aws s3 cp cache_version.txt "$BUCKET_NAME/cache_version.txt" --endpoint-url "$ENDPOINT_URL" --acl public-read --content-type "text/plain" --cache-control "max-age=300"
-          fi
-          if [ -f "dl-test.bin" ]; then
-            aws s3 cp dl-test.bin "$BUCKET_NAME/dl-test.bin" --endpoint-url "$ENDPOINT_URL" --acl public-read --cache-control "max-age=3600"
-          fi
-
-      - name: Commit and Push final files to GitHub
+      - name: Commit and Push data files
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
-          if [ ! -f "all_live_configs.json" ]; then
-            echo "all_live_configs.json not found, skipping commit."
-            exit 0
-          fi
-          
           git add all_live_configs.json clash_subscription.yaml cache_version.txt
-          
           if git diff --staged --quiet; then
-            echo "No new changes to commit."
+            echo "No new data changes to commit."
           else
-            git commit -m "📊 Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')]"
+            git commit -m "📊 DATA: Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')]"
             git pull --rebase
             git push
           fi
+
+      - name: Build Static Frontend
+        run: |
+          echo "Building static site into /public directory..."
+          mkdir -p public
+          cp index.html public/
+          cp index.js public/
+          cp logo.png public/
+          cp manifest.json public/
+          cp icon-192.png public/
+          # Copy the freshly scraped data into the build directory
+          cp all_live_configs.json public/
+          cp cache_version.txt public/
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
