@@ -43,8 +43,15 @@ jobs:
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+      
+      # --- بخش کلیدی و اصلاح‌شده ---
+      - name: Update public folder with latest data
+        run: |
+          echo "Copying latest data files into /public directory..."
+          cp all_live_configs.json public/
+          cp cache_version.txt public/
 
-      - name: Commit and Push data files
+      - name: Commit and Push data files to repo
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -57,21 +64,6 @@ jobs:
             git push
           fi
       
-      # --- بخش اصلاح‌شده ---
-      - name: Build Static Frontend
-        run: |
-          echo "Building static site into /public directory..."
-          mkdir -p public
-          # مسیر صحیح فایل‌ها از پوشه public_files خوانده می‌شود
-          cp public_files/index.html public/
-          cp public_files/index.js public/
-          cp public_files/logo.png public/
-          cp public_files/manifest.json public/
-          cp public_files/icon-192.png public/
-          # فایل‌های داده از ریشه پروژه خوانده می‌شوند
-          cp all_live_configs.json public/
-          cp cache_version.txt public/
-      
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
@@ -83,4 +75,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
