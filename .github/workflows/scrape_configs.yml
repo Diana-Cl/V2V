@@ -56,17 +56,19 @@ jobs:
             git pull --rebase
             git push
           fi
-
+      
+      # --- بخش اصلاح‌شده ---
       - name: Build Static Frontend
         run: |
           echo "Building static site into /public directory..."
           mkdir -p public
-          cp index.html public/
-          cp index.js public/
-          cp logo.png public/
-          cp manifest.json public/
-          cp icon-192.png public/
-          # Copy the freshly scraped data into the build directory
+          # مسیر صحیح فایل‌ها از پوشه public_files خوانده می‌شود
+          cp public_files/index.html public/
+          cp public_files/index.js public/
+          cp public_files/logo.png public/
+          cp public_files/manifest.json public/
+          cp public_files/icon-192.png public/
+          # فایل‌های داده از ریشه پروژه خوانده می‌شوند
           cp all_live_configs.json public/
           cp cache_version.txt public/
       
@@ -81,3 +83,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
