@@ -1,4 +1,4 @@
-name: Scrape, Build, and Deploy
+name: Scrape, Build, and Deploy Mirrors
 
 on:
   schedule:
@@ -15,9 +15,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  scrape_and_build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    outputs:
+      should_deploy: ${{ steps.commit.outputs.should_deploy }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,44 +31,69 @@ jobs:
           python-version: "3.12"
 
       - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
-          if [ -f "requirements.txt" ]; then
-            pip install -r requirements.txt
-          fi
+        run: pip install -r requirements.txt
 
       - name: Run scraper script
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-      
+
       - name: Update public folder with latest data
         run: |
-          echo "Copying latest data files into /public directory..."
           cp all_live_configs.json public/
           cp cache_version.txt public/
-
-      - name: Commit and Push data files to repo
+      
+      - name: Check for changes and commit
+        id: commit
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add all_live_configs.json clash_subscription.yaml cache_version.txt
+          git add .
           if git diff --staged --quiet; then
-            echo "No new data changes to commit."
+            echo "No changes to deploy."
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
           else
+            echo "Changes detected. Proceeding to deploy."
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
             git commit -m "📊 DATA: Update configs [$(date -u '+%Y-%m-%d %H:%M:%S UTC')]"
             git pull --rebase
             git push
           fi
       
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
+      - name: Upload artifact for deployment jobs
+        if: steps.commit.outputs.should_deploy == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: './public'
 
+  deploy_to_github_pages:
+    needs: scrape_and_build
+    if: needs.scrape_and_build.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  deploy_to_vercel:
+    needs: scrape_and_build
+    if: needs.scrape_and_build.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: public
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./public
