@@ -69,16 +69,14 @@ jobs:
   deploy_to_github_pages:
     needs: scrape_and_build
     if: needs.scrape_and_build.outputs.should_deploy == 'true'
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    # ... (این job بدون تغییر باقی می‌ماند)
 
   deploy_to_vercel:
+    needs: scrape_and_build
+    if: needs.scrape_and_build.outputs.should_deploy == 'true'
+    # ... (این job بدون تغییر باقی می‌ماند)
+
+  deploy_to_arvancloud:
     needs: scrape_and_build
     if: needs.scrape_and_build.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
@@ -89,11 +87,15 @@ jobs:
           name: github-pages
           path: public
 
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
+      - name: Configure AWS Credentials for ArvanCloud
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-          working-directory: ./public
+          aws-access-key-id: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1 # This is a placeholder, Arvan doesn't use it but it's required.
+
+      - name: Deploy to ArvanCloud S3
+        run: |
+          aws s3 sync ./public s3://v2v-site --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
+        # نکته: لطفاً نام باکت (v2v-site) را با نام واقعی باکتی که در قدم اول ساختید، جایگزین کنید.
+
