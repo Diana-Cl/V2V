@@ -1,8 +1,6 @@
-name = "rapid-scene-1da6"
+Name = "rapid-scene-1da6"
 main = "worker.js"
 compatibility_date = "2024-03-20"
 
 [[compatibility_flags]]
-# This flag is required for the real TCP ping functionality.
-# It enables the connect() API for creating outbound TCP sockets.
 nodejs_compat = true
