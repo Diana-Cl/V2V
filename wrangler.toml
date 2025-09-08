@@ -1,6 +1,11 @@
-Name = "rapid-scene-1da6"
+# نام Worker شما در داشبورد کلادفلر
+name = "rapid-scene-1da6"
+
+# فایل اصلی کد شما
 main = "worker.js"
+
+# تاریخ سازگاری برای استفاده از قابلیت‌های جدید
 compatibility_date = "2024-03-20"
 
-[[compatibility_flags]]
-nodejs_compat = true
+# فلگ‌های سازگاری (با ساختار صحیح)
+compatibility_flags = ["nodejs_compat"]
