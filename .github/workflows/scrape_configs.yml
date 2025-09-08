@@ -2,7 +2,7 @@ name: Scrape, Build, and Deploy Mirrors
 
 on:
   schedule:
-    - cron: "0 */4 * * *"
+    - cron: "0 */8 * * *"
   workflow_dispatch:
 
 permissions:
@@ -69,12 +69,34 @@ jobs:
   deploy_to_github_pages:
     needs: scrape_and_build
     if: needs.scrape_and_build.outputs.should_deploy == 'true'
-    # ... (این job بدون تغییر باقی می‌ماند)
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   deploy_to_vercel:
     needs: scrape_and_build
     if: needs.scrape_and_build.outputs.should_deploy == 'true'
-    # ... (این job بدون تغییر باقی می‌ماند)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: public
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./public
 
   deploy_to_arvancloud:
     needs: scrape_and_build
@@ -92,10 +114,8 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1 # This is a placeholder, Arvan doesn't use it but it's required.
+          aws-region: us-east-1 # Placeholder
 
       - name: Deploy to ArvanCloud S3
         run: |
-          aws s3 sync ./public s3://v2v-site --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read
-        # نکته: لطفاً نام باکت (v2v-site) را با نام واقعی باکتی که در قدم اول ساختید، جایگزین کنید.
-
+          aws s3 sync ./public s3://v2v-data --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --delete
