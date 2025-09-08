@@ -1,7 +1,7 @@
 name: Deploy Cloudflare Worker
 
 on:
-workflow_dispatch
+  workflow_dispatch:  # این خط قابلیت اجرای دستی را فعال می‌کند
   push:
     branches:
       - main
