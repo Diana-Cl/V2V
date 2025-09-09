@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
     const AUTO_SELECT_COUNT = 30;
-    const PING_TIMEOUT = 3000; // 3 ثانیه
+    const PING_TIMEOUT = 5000; // 5 ثانیه
 
     // --- DOM ELEMENTS ---
     const statusBar = document.getElementById('status-bar');
@@ -59,6 +59,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.toggleGroup = (groupId) => document.getElementById(groupId)?.parentNode.classList.toggle('open');
     
+    function parseConfigForClient(config) {
+        try {
+            if (config.startsWith('vmess://')) {
+                const decoded = atob(config.replace("vmess://", ""));
+                const data = JSON.parse(decoded);
+                const params = { type: data.net || 'tcp' };
+                return { hostname: data.add, port: parseInt(data.port), params, path: data.path || '/' };
+            }
+            const url = new URL(config);
+            const params = Object.fromEntries(new URLSearchParams(url.search).entries());
+            return { hostname: url.hostname, port: parseInt(url.port), params, path: params.path || '/' };
+        } catch (e) {
+            return { hostname: null, port: null, params: {} };
+        }
+    }
+
     // --- CORE LOGIC ---
     async function fetchData() {
         try {
@@ -100,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         }
         wrapper.appendChild(actionsContainer);
-        document.getElementById(`${core}-test-btn`).addEventListener('click', () => runHybridPingTest(core));
+        document.getElementById(`${core}-test-btn`).addEventListener('click', () => runUserPingTest(core));
 
         if (!configs || configs.length === 0) {
             wrapper.insertAdjacentHTML('beforeend', '<div class="alert">هیچ کانفیگ سالمی برای این هسته یافت نشد.</div>');
@@ -125,7 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.className = 'config-item';
                 li.dataset.config = configObj.config;
                 try {
-                    const rawName = configObj.config.includes('#') ? decodeURIComponent(configObj.config.split('#')[1]) : new URL(configObj.config).hostname;
+                    let rawName = new URL(configObj.config).hostname;
+                    if(configObj.config.includes('#')) {
+                       rawName = decodeURIComponent(configObj.config.split('#')[1]);
+                    }
                     const { flag, name } = parseAndFormatName(rawName);
                     li.innerHTML = `
                         <input type="checkbox" class="config-checkbox">
@@ -140,98 +159,100 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="copy-btn" onclick="window.v2v.showConfigQr(event)">QR</button>
                         </div>`;
                     configList.appendChild(li);
-                } catch(e) { console.error("Error parsing config for display:", configObj.config, e); }
+                } catch(e) { /* Silently fail for configs that can't be parsed */ }
             });
             wrapper.appendChild(protocolGroup);
         }
     }
     
-    async function runHybridPingTest(core) {
+    async function runUserPingTest(core) {
         const testButton = document.getElementById(`${core}-test-btn`);
         if (testButton.disabled) return;
         testButton.disabled = true;
         testButton.textContent = 'درحال تست...';
 
         const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`));
-        allItems.forEach(item => {
+        allItems.forEach(item => { // Reset UI for new test
             item.style.display = 'flex';
-            const pingEl = item.querySelector('.ping-result');
-            pingEl.textContent = '';
+            item.querySelector('.ping-result').textContent = '...';
+            delete item.dataset.finalScore;
         });
         
         const allConfigs = allItems.map(item => item.dataset.config);
         const results = new Map();
-        const backendPingList = [];
-
-        const clientPingPromises = allConfigs.map(config => {
-            try {
-                const params = new URLSearchParams(new URL(config).search);
-                if (params.get('type') === 'ws') {
-                    return new Promise(resolve => {
-                        const startTime = Date.now();
-                        const wsUrl = `wss://${new URL(config).hostname}:${new URL(config).port}`;
-                        const ws = new WebSocket(wsUrl);
-                        let resolved = false;
-
-                        const fail = () => {
-                            if (!resolved) {
-                                resolved = true;
-                                results.set(config, null);
-                                resolve();
-                            }
-                        };
-                        
-                        ws.onopen = () => {
-                            if (!resolved) {
-                                resolved = true;
-                                results.set(config, Date.now() - startTime);
-                                ws.close();
-                                resolve();
-                            }
-                        };
-                        ws.onerror = fail;
-                        ws.onclose = fail;
-                        setTimeout(fail, PING_TIMEOUT);
-                    });
-                } else {
-                    backendPingList.push(config);
-                }
-            } catch (e) {
-                backendPingList.push(config);
+        
+        // Stage 1: WebSocket Ping from Client
+        testButton.textContent = 'تست مستقیم WebSocket...';
+        const wsPromises = allConfigs.map(config => new Promise(resolve => {
+            const { hostname, port, params, path } = parseConfigForClient(config);
+            if (hostname && port && params.type === 'ws') {
+                const startTime = Date.now();
+                const ws = new WebSocket(`wss://${hostname}:${port}${path}`);
+                let resolved = false;
+                const finish = (ping) => {
+                    if (!resolved) {
+                        resolved = true;
+                        if(ws.readyState < 2) ws.close();
+                        resolve({ config, ping, method: 'WS' });
+                    }
+                };
+                ws.onopen = () => finish(Date.now() - startTime);
+                ws.onerror = () => finish(null);
+                setTimeout(() => finish(null), PING_TIMEOUT);
+            } else {
+                resolve({ config, ping: null, method: 'N/A' }); // Not a WebSocket config
             }
-            return Promise.resolve();
+        }));
+
+        const wsResults = await Promise.allSettled(wsPromises);
+        const backendPingList = [];
+        wsResults.forEach(res => {
+            if (res.status === 'fulfilled') {
+                if (res.value.ping !== null) {
+                    results.set(res.value.config, { ping: res.value.ping, method: res.value.method });
+                } else {
+                    if (res.value.method === 'N/A') { // Not a WS config, send to backend
+                        backendPingList.push(res.value.config);
+                    } else { // Was a WS config but failed, mark as failed
+                        results.set(res.value.config, { ping: null, method: 'WS' });
+                    }
+                }
+            }
         });
 
-        await Promise.all(clientPingPromises);
-
+        // Stage 2: Cloudflare Ping for the rest
         if (backendPingList.length > 0) {
             try {
-                testButton.textContent = 'تست کانفیگ‌های TCP...';
+                testButton.textContent = `تست ${backendPingList.length} کانفیگ از کلادفلر...`;
                 const response = await fetch(`${API_ENDPOINT}/ping`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ configs: backendPingList })
                 });
-                if (!response.ok) throw new Error('Backend ping failed');
-                const backendResults = await response.json();
-                backendResults.forEach(res => {
-                    results.set(res.config, res.ping); // Backend returns null on failure
-                });
+                if (response.ok) {
+                    const backendResults = await response.json();
+                    backendResults.forEach(res => {
+                        results.set(res.config, { ping: res.ping, method: 'CF' });
+                    });
+                } else {
+                    backendPingList.forEach(c => results.set(c, { ping: null, method: 'CF' }));
+                }
             } catch (e) {
-                console.error("Backend ping failed:", e);
-                backendPingList.forEach(c => results.set(c, null));
+                console.error("Cloudflare ping failed:", e);
+                backendPingList.forEach(c => results.set(c, { ping: null, method: 'CF' }));
             }
         }
-
+        
+        // Final UI Update
         allItems.forEach(item => {
-            const ping = results.get(item.dataset.config);
-            if (ping !== null && ping > 0) {
-                const pingEl = item.querySelector('.ping-result');
+            const result = results.get(item.dataset.config);
+            const pingEl = item.querySelector('.ping-result');
+            if (result && result.ping !== null && result.ping > 0) {
                 let pingColor = 'var(--ping-good)';
-                if (ping > 600) pingColor = 'var(--ping-medium)';
-                if (ping > 1200) pingColor = 'var(--ping-bad)';
-                item.dataset.finalScore = ping;
-                pingEl.innerHTML = `پینگ: <strong style="color:${pingColor};">${ping}ms</strong>`;
+                if (result.ping > 600) pingColor = 'var(--ping-medium)';
+                if (result.ping > 1200) pingColor = 'var(--ping-bad)';
+                item.dataset.finalScore = result.ping;
+                pingEl.innerHTML = `پینگ (${result.method}): <strong style="color:${pingColor};">${result.ping}ms</strong>`;
                 item.style.display = 'flex';
             } else {
                 item.dataset.finalScore = 9999;
@@ -241,8 +262,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => {
             const list = group.querySelector('.config-list');
-            const sortedItems = Array.from(list.children).sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999));
-            sortedItems.forEach(item => list.appendChild(item));
+            const visibleItems = Array.from(list.children).filter(item => item.style.display !== 'none');
+            const hiddenItems = Array.from(list.children).filter(item => item.style.display === 'none');
+            visibleItems.sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999));
+            list.innerHTML = '';
+            visibleItems.forEach(item => list.appendChild(item));
+            hiddenItems.forEach(item => list.appendChild(item));
         });
 
         testButton.disabled = false;
@@ -251,13 +276,114 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- GLOBAL API FOR BUTTONS ---
     window.v2v = {
-        copyConfig: (event) => { /* ... بدون تغییر ... */ },
-        showConfigQr: (event) => { /* ... بدون تغییر ... */ },
-        getSelectedConfigs: (core) => { /* ... بدون تغییر ... */ },
-        createSubscription: async (core, type, action, event) => { /* ... بدون تغییر ... */ },
-        downloadClashFile: (core, event) => { /* ... بدون تغییر ... */ }
+        copyConfig: (event) => {
+            event.stopPropagation();
+            copyToClipboard(event.target.closest('.config-item').dataset.config);
+        },
+        showConfigQr: (event) => {
+            event.stopPropagation();
+            showQrCode(event, event.target.closest('.config-item').dataset.config);
+        },
+        getSelectedConfigs: (core) => {
+            let selected = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
+            if (selected.length === 0) {
+                alert(`هیچ کانفیگی انتخاب نشده. ${AUTO_SELECT_COUNT} عدد از بهترین کانفیگ‌ها به صورت خودکار انتخاب می‌شوند.`);
+                const visibleItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`)).filter(item => item.style.display !== 'none');
+                selected = visibleItems.sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999)).slice(0, AUTO_SELECT_COUNT).map(item => item.dataset.config);
+            }
+            return selected;
+        },
+        createSubscription: async (core, type, action, event) => {
+            const configs = window.v2v.getSelectedConfigs(core);
+            if (configs.length === 0) return alert('هیچ کانفیگی برای ساخت لینک وجود ندارد.');
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.disabled = true; btn.textContent = '...درحال ساخت';
+            try {
+                const response = await fetch(`${API_ENDPOINT}/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs, type }) });
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const data = await response.json();
+                if (action === 'url') { copyToClipboard(data.subscription_url, 'لینک اشتراک کپی شد!'); } 
+                else if (action === 'qr') { showQrCode(event, data.subscription_url); }
+            } catch (error) {
+                alert('خطا در ساخت لینک اشتراک. لطفاً دوباره تلاش کنید.');
+                console.error("Subscription creation failed:", error);
+            } finally { btn.disabled = false; btn.textContent = originalText; }
+        },
+        downloadClashFile: (core, event) => {
+            const configs = window.v2v.getSelectedConfigs(core);
+            if (configs.length === 0) return alert('هیچ کانفیگی برای ساخت فایل وجود ندارد.');
+
+            const usedNames = new Set();
+            const proxies = configs.map(configStr => {
+                try {
+                    if (configStr.includes('reality')) return null;
+
+                    let rawName = new URL(configStr).hostname;
+                    if (configStr.includes('#')) rawName = decodeURIComponent(configStr.split('#')[1]);
+
+                    let name = rawName;
+                    let counter = 1;
+                    while (usedNames.has(name)) { name = `${rawName}_${++counter}`; }
+                    usedNames.add(name);
+
+                    let proxy = { name };
+                    if (configStr.startsWith('vmess://')) {
+                        const d = JSON.parse(atob(configStr.replace('vmess://', '')));
+                        proxy = { ...proxy, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: d.aid, cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net || 'tcp', 'skip-cert-verify': true, servername: d.sni || d.host || d.add };
+                        if (proxy.network === 'ws') proxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add } };
+                    } else if (configStr.startsWith('vless://')) {
+                        const u = new URL(configStr);
+                        const p = new URLSearchParams(u.search);
+                        proxy = { ...proxy, type: 'vless', server: u.hostname, port: parseInt(u.port), uuid: u.username, tls: p.get('security') === 'tls', network: p.get('type') || 'tcp', servername: p.get('sni') || u.hostname, 'skip-cert-verify': true, client-fingerprint: 'chrome' };
+                        if (proxy.network === 'ws') {
+                            proxy['ws-opts'] = { path: p.get('path') || '/', headers: { Host: p.get('host') || u.hostname } };
+                        } else if (proxy.network === 'grpc') {
+                            proxy['grpc-opts'] = { 'grpc-service-name': p.get('serviceName') || '' };
+                        }
+                    } else if (configStr.startsWith('trojan://')) {
+                        const u = new URL(configStr);
+                        const p = new URLSearchParams(u.search);
+                        proxy = { ...proxy, type: 'trojan', server: u.hostname, port: parseInt(u.port), password: u.username, sni: p.get('sni') || u.hostname, 'skip-cert-verify': true };
+                    } else if (configStr.startsWith('ss://')) {
+                        const u = new URL(configStr);
+                        const [cipher, password] = atob(decodeURIComponent(u.username)).split(':');
+                        proxy = { ...proxy, type: 'ss', server: u.hostname, port: parseInt(u.port), cipher, password };
+                    } else { return null; }
+                    return proxy;
+                } catch (e) {
+                    console.warn("Skipping invalid config for Clash:", configStr, e);
+                    return null;
+                }
+            }).filter(p => p);
+
+            if (proxies.length === 0) {
+                alert('کانفیگ‌های انتخاب شده با کلش سازگار نیستند.'); return;
+            }
+
+            const proxyNames = proxies.map(p => p.name);
+            const clashConfig = {
+                'mixed-port': 7890, 'allow-lan': false, 'mode': 'rule', 'log-level': 'info',
+                'external-controller': '127.0.0.1:9090',
+                'dns': { 'enable': true, 'listen': '0.0.0.0:53', 'nameserver': ['8.8.8.8', '1.1.1.1'], 'fallback': ['1.0.0.1', 'dns.google'] },
+                proxies,
+                'proxy-groups': [
+                    { 'name': 'V2V-Auto', 'type': 'url-test', 'proxies': proxyNames, 'url': 'http://www.gstatic.com/generate_204', 'interval': 300 },
+                    { 'name': 'PROXY', 'type': 'select', 'proxies': ['V2V-Auto', 'DIRECT', ...proxyNames] }
+                ],
+                'rules': ['MATCH,PROXY']
+            };
+            
+            const yamlConfig = jsyaml.dump(clashConfig, { indent: 2, sortKeys: false });
+            const blob = new Blob([yamlConfig], { type: 'text/yaml;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'v2v-clash-meta.yaml';
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
     };
-    
+
     // --- INITIALIZE APP ---
     (async () => {
         try {
