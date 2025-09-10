@@ -2,7 +2,7 @@ name: Scrape, Build, and Deploy Mirrors
 
 on:
   schedule:
-    - cron: "0 */8 * * *"
+    - cron: "0 */4 * * *"
   workflow_dispatch:
 
 permissions:
@@ -119,3 +119,4 @@ jobs:
       - name: Deploy to ArvanCloud S3
         run: |
           aws s3 sync ./public s3://v2v-data --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --delete
+
