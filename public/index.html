@@ -24,10 +24,6 @@
         #singbox-header { background-color: var(--logo-green); }
         .test-button { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1em; margin-bottom: 15px; width: 100%; transition: background-color 0.2s; }
         .test-button:disabled { background-color: #555; cursor: not-allowed; }
-        .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-        .action-group-title { margin: 0 0 10px 0; font-size: 1.1em; text-align: right; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
-        .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-        .action-button { background-color: #333; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 0.9em; flex-grow: 1; color: var(--text-color); }
         .protocol-group { border-top: 1px solid var(--border-color); }
         .protocol-header { background-color: transparent; padding: 12px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .toggle-icon { display: inline-block; width: 6px; height: 6px; border-bottom: 2px solid var(--text-color); border-right: 2px solid var(--text-color); transform: rotate(45deg); transition: transform 0.3s; margin-left: 10px; }
@@ -35,58 +31,45 @@
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.4s ease-in-out; overflow-y: auto; }
         .protocol-group.open .config-list { max-height: 500px; }
         .config-item { padding: 8px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
-        .config-checkbox { flex-shrink: 0; transform: scale(1.2); margin-left: 8px; accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .config-details .server { font-weight: bold; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-        .flag { margin-left: 8px; font-size: 1.1em; vertical-align: middle; }
         .ping-result { font-size: 0.85em; }
         .copy-button-container { display: flex; gap: 6px; }
         .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
         .bottom-links { margin-top: auto; padding: 15px 0; border-top: 1px solid var(--border-color); width: 100%; display: flex; gap: 15px; justify-content: center; flex-shrink: 0; }
         .bottom-links a { color: #aaa; text-decoration: none; font-size: 0.85em; }
         .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
-        #qr-code-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; }
-        .qr-code-content { background-color: white; padding: 20px; border-radius: 10px; position: relative; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-        .qr-code-content #qr-code-container { padding: 10px; background-color: white; }
-        .qr-code-content #qr-download-btn { background-color: var(--logo-green); color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .close-button { color: #121212; position: absolute; top: 10px; left: 15px; font-size: 30px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="main-wrapper">
-        <div class="header">
+        <header class="header">
             <img src="logo.png" alt="V2V Logo">
             <p class="slogan">سپاس هرآنکه خواه یا ناخواه دستی بر این راهک رهایی داشت</p>
-        </div>
-        <div class="status-bar" id="status-bar">درحال بارگذاری...</div>
+        </header>
+        <div class="status-bar" id="status-bar">درحال مقداردهی اولیه...</div>
         <div class="container">
-            <div id="xray-section">
+            <section id="xray-section">
                 <div class="core-header" id="xray-header">هسته Xray</div>
-                <div id="xray-content-wrapper"><div class="alert">درحال بارگذاری کانفیگ‌ها...</div></div>
-            </div>
-            <div id="singbox-section">
+                <button class="test-button" id="xray-test-btn" onclick="runAdvancedPingTest('xray')">🚀 تست پیشرفته کانفیگ‌ها</button>
+                <div id="xray-content-wrapper"><div class="alert">درحال بارگذاری...</div></div>
+            </section>
+            <section id="singbox-section">
                 <div class="core-header" id="singbox-header">هسته Sing-box</div>
-                <div id="singbox-content-wrapper"><div class="alert">درحال بارگذاری کانفیگ‌ها...</div></div>
-            </div>
+                <button class="test-button" id="singbox-test-btn" onclick="runAdvancedPingTest('singbox')">🚀 تست پیشرفته کانفیگ‌ها</button>
+                <div id="singbox-content-wrapper"><div class="alert">درحال بارگذاری...</div></div>
+            </section>
         </div>
-        <div class="bottom-links" id="footer-links">
-             <a href="https://v2v-vercel.vercel.app/" target="_blank">ورسل</a>
-             <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank">ابر آروان</a>
-             <a href="https://smbcryp.github.io/V2V/" target="_blank">گیت‌هاب</a>
-        </div>
-    </div>
-    <div id="qr-code-modal">
-        <div class="qr-code-content">
-            <span class="close-button" onclick="closeModal()">&times;</span>
-            <div id="qr-code-container"></div>
-            <button id="qr-download-btn">دانلود QR Code</button>
-        </div>
+        <footer class="bottom-links">
+             <a href="https://v2v-vercel.vercel.app/" target="_blank" rel="noopener noreferrer">ورسل</a>
+             <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir" target="_blank" rel="noopener noreferrer">ابر آروان</a>
+             <a href="https://smbcryp.github.io/V2V/" target="_blank" rel="noopener noreferrer">گیت‌هاب</a>
+        </footer>
     </div>
     
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.js" defer></script>
     <script src="index.js"></script>
 </body>
 </html>
