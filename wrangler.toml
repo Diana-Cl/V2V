@@ -1,12 +1,11 @@
-# نام Worker شما در داشبورد کلادفلر
+# The name of your Worker in the Cloudflare dashboard.
 name = "rapid-scene-1da6"
 
-# فایل اصلی کد شما
+# The main entrypoint for your Worker script.
 main = "worker.js"
 
-# تاریخ سازگاری برای استفاده از قابلیت‌های جدید
+# The compatibility date specifies which version of the Workers runtime is used.
 compatibility_date = "2024-03-20"
 
-# فلگ‌های سازگاری (برای فعال کردن تست پینگ TCP)
+# Enables Node.js compatibility APIs, required for features like TCP sockets (`connect`).
 compatibility_flags = ["nodejs_compat"]
-
