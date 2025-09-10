@@ -21,7 +21,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # از یک توکن دسترسی شخصی استفاده می‌کنیم تا اکشن بتواند به ریپازیتوری Push کند
           token: ${{ secrets.GH_PAT }}
 
       - name: Set up Python
@@ -35,12 +34,10 @@ jobs:
       - name: Run scraper script
         run: python scraper.py
         env:
-          # توکن گیت‌هاب را به اسکریپت پایتون می‌دهیم
           GH_PAT: ${{ secrets.GH_PAT }}
 
       - name: Update public folder with latest data
         run: |
-          # کپی کردن فایل‌های جدید به پوشه public برای دیپلوی
           cp all_live_configs.json public/
           cp cache_version.txt public/
       
@@ -48,18 +45,11 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 DATA: Update configs"
-          commit_user_name: "GitHub Actions Bot"
-          commit_user_email: "actions-bot@github.com"
-          commit_author: "GitHub Actions Bot <actions-bot@github.com>"
       
       - name: Upload artifact for deployment jobs
         uses: actions/upload-pages-artifact@v3
         with:
-          # آپلود کردن محتویات پوشه public برای استفاده در مراحل بعدی
           path: './public'
-
-  # --- DEPLOYMENT JOBS ---
-  # این مراحل اکنون همیشه بعد از scrape_and_build اجرا می‌شوند
 
   deploy_to_github_pages:
     needs: scrape_and_build
@@ -76,6 +66,9 @@ jobs:
     needs: scrape_and_build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository # <--- این مرحله اضافه شده است
+        uses: actions/checkout@v4
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -106,7 +99,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1 # This is a placeholder, Arvan doesn't use it
+          aws-region: us-east-1
 
       - name: Deploy to ArvanCloud S3
         run: |
