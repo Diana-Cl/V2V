@@ -18,7 +18,7 @@ jobs:
   scrape_and_build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
@@ -28,15 +28,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Python dependencies
+      - name: Install Python Dependencies
         run: pip install -r requirements.txt
 
-      - name: Run scraper script
+      - name: Run Scraper Script
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
 
-      - name: Update public folder with latest data
+      - name: Update Public Folder with Latest Data
         run: |
           cp all_live_configs.json public/
           cp cache_version.txt public/
@@ -45,11 +45,15 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 DATA: Update configs"
+          # This action will only commit if there are actual changes.
       
-      - name: Upload artifact for deployment jobs
+      - name: Upload Artifact for Deployment Jobs
         uses: actions/upload-pages-artifact@v3
         with:
           path: './public'
+
+  # --- DEPLOYMENT JOBS ---
+  # These jobs will now always run after a successful build.
 
   deploy_to_github_pages:
     needs: scrape_and_build
@@ -66,10 +70,10 @@ jobs:
     needs: scrape_and_build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository # <--- این مرحله اضافه شده است
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download artifact
+      - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: github-pages
@@ -88,7 +92,7 @@ jobs:
     needs: scrape_and_build
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifact
+      - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: github-pages
@@ -99,8 +103,9 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: "us-east-1" # This is a placeholder, Arvan doesn't use it.
 
       - name: Deploy to ArvanCloud S3
         run: |
           aws s3 sync ./public s3://v2v-data --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --delete
+
