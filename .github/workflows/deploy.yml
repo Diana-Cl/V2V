@@ -1,19 +1,21 @@
+# Workflow name
 name: Deploy Cloudflare Worker
 
 on:
-  # اجازه اجرای دستی از طریق تب Actions در گیت‌هاب
+  # Allows manual execution from the GitHub Actions tab
   workflow_dispatch:
   
-  # اجرا در زمان Push به شاخه اصلی
+  # Triggers the workflow on push events to the main branch
   push:
     branches:
       - main
     paths:
-      # فقط زمانی اجرا می‌شود که فایل‌های مربوط به ورکر تغییر کنند تا از اجرای بیهوده جلوگیری شود
+      # Ensures the workflow only runs if Worker-related files have changed
       - 'worker.js'
       - 'wrangler.toml'
 
-# جلوگیری از اجرای همزمان چند نمونه از این workflow برای جلوگیری از خطا
+# Prevents multiple instances of this workflow from running simultaneously,
+# cancelling any in-progress runs when a new one is triggered.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -23,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy Worker to Cloudflare
     
-    # محدود کردن دسترسی‌های اکشن فقط به خواندن محتوای ریپازیتوری
+    # Restricts the workflow's permissions to read-only for security
     permissions:
       contents: read
       
@@ -32,8 +34,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy Worker to Cloudflare
-        # استفاده از آخرین نسخه پایدار v3 برای اطمینان از عملکرد صحیح
+        # Uses the latest stable v3 release of the Wrangler action
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
