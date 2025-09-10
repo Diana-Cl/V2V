@@ -1,18 +1,13 @@
-# The name of your Worker in the Cloudflare dashboard.
 name = "rapid-scene-1da6"
-
-# The main entrypoint for your Worker script.
 main = "worker.js"
-
-# The compatibility date specifies which version of the Workers runtime is used.
 compatibility_date = "2024-03-20"
-
-# Enables Node.js compatibility APIs, required for features like TCP sockets (`connect`).
 compatibility_flags = ["nodejs_compat"]
 
-# KV Namespace binding.
-# This section is REQUIRED for the subscription (UUID) feature to work.
-# It connects your code to a Cloudflare KV storage.
 [[kv_namespaces]]
-binding = "V2V_KV" # The name your code will use to access the KV. DO NOT CHANGE.
-id = "a71ebd79ab2e4c3883e1303e16141537" # Your production KV Namespace ID.
+binding = "V2V_KV"
+id = "a71ebd79ab2e4c3883e1303e16141537"
+
+# --- Set Environment Variables in Cloudflare Dashboard ---
+# [vars]
+# PRIMARY_CONFIGS_URL = "https://your-primary-source.com/all_live_configs.json"
+# FALLBACK_CONFIGS_URL = "https://your-fallback-source.com/all_live_configs.json"
