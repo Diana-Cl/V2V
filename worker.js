@@ -35,14 +35,13 @@ async function testTcpConnection(config) {
     const { hostname, port } = parseConfigForPing(config);
     if (!hostname || !port) return null;
     try {
+        const startTime = Date.now();
         // connect() API requires `nodejs_compat` flag in wrangler.toml
-        const socket = connect({ hostname, port, tls: { allowHalfClose: true } }); 
-        const writer = socket.writable.getWriter();
-        const reader = socket.readable.getReader();
-        writer.releaseLock();
-        reader.releaseLock();
+        const socket = connect({ hostname, port }); 
+        await socket.opened;
+        const latency = Date.now() - startTime;
         await socket.close();
-        return 1; // Returns 1 instead of latency as a simple success indicator from backend
+        return latency;
     } catch (e) {
         return null;
     }
@@ -129,11 +128,11 @@ async function handleGetSubscription(request, env) {
 
     const output = healedConfigs.join('\n');
     if (subType === 'clash') {
-        // For Clash, we send the healed configs back as plain text.
-        // The client-side `index.js` is responsible for generating the final YAML file.
+        // برای کلش، کانفیگ‌های ترمیم‌شده را به صورت متن خام برمی‌گردانیم
+        // خود index.js مسئول ساخت فایل نهایی YAML است
         return new Response(output, { headers: { ...corsHeaders, 'Content-Type': 'text/plain;charset=utf-8' } });
     } else {
-        // For standard subscriptions, we send the base64 encoded string.
+        // برای اشتراک استاندارد، رشته base64 را برمی‌گردانیم
         return new Response(btoa(output), { headers: { ...corsHeaders, 'Content-Type': 'text/plain;charset=utf-8' } });
     }
 }
@@ -155,11 +154,12 @@ export default {
             return handleSubscribeRequest(request, env);
         }
         
-        // This regex now matches a UUID or "clash/UUID"
+        // این عبارت منظم هم UUID و هم "clash/UUID" را پیدا می‌کند
         if (/^(clash\/)?[a-f0-9-]{36}$/.test(url.pathname.substring(1))) {
              return handleGetSubscription(request, env);
         }
 
-        return new Response('V2V API Worker', { status: 200, headers: corsHeaders });
+        return new Response('V2V API Worker is active.', { status: 200, headers: corsHeaders });
     },
 };
+
