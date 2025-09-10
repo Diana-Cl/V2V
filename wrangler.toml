@@ -15,4 +15,4 @@ compatibility_flags = ["nodejs_compat"]
 # It connects your code to a Cloudflare KV storage.
 [[kv_namespaces]]
 binding = "V2V_KV" # The name your code will use to access the KV. DO NOT CHANGE.
-id = "YOUR_KV_NAMESPACE_ID_HERE" # ⚠️ IMPORTANT: Replace this with the actual ID from your Cloudflare dashboard.
+id = "a71ebd79ab2e4c3883e1303e16141537" # Your production KV Namespace ID.
