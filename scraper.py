@@ -13,8 +13,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, quote, unquote
 from collections import defaultdict
 from github import Github, Auth
+from typing import Optional # <--- این خط برای رفع خطا اضافه شده است
 
-print("INFO: Initializing V2V Scraper v23.0...")
+print("INFO: Initializing V2V Scraper v23.1...")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -203,4 +204,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
