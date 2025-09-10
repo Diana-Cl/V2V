@@ -1,10 +1,13 @@
 name: Deploy Cloudflare Worker
 
 on:
-  workflow_dispatch:  # این خط قابلیت اجرای دستی را فعال می‌کند
+  workflow_dispatch:
   push:
     branches:
       - main
+    paths: # فقط زمانی اجرا شود که فایل‌های مربوط به Worker تغییر کنند
+      - 'worker.js'
+      - 'wrangler.toml'
 
 jobs:
   deploy:
@@ -15,7 +18,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy Worker
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
