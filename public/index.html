@@ -4,11 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>پروژه V2V</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.workers.dev;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://rapid-scene-1da6.mbrgh87.workers.dev;">
     <meta name="theme-color" content="#121212">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        :root { --primary-bg: #121212; --secondary-bg: #1a1a1a; --text-color: #d1d1d1; --logo-red: #D32F2F; --logo-green: #388E3C; --border-color: #333; --ping-good: #4CAF50; --ping-medium: #FFC107; --ping-bad: #F44336; }
+        html { height: 100%; box-sizing: border-box; }
+        *, *:before, *:after { box-sizing: inherit; }
+        body { background-color: var(--primary-bg); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100%; }
+        .main-wrapper { width: 100%; max-width: 700px; padding: 15px 10px; display: flex; flex-direction: column; flex-grow: 1; }
+        .header { margin-bottom: 15px; flex-shrink: 0; }
+        .header img { width: 90px; height: 90px; }
+        .slogan { font-size: 0.85em; color: #aaa; margin-top: 8px; font-style: italic; }
+        .status-bar { font-size: 0.8em; color: #888; margin-bottom: 15px; min-height: 1em; }
+        .container { width: 100%; background-color: var(--secondary-bg); padding: 15px; border-radius: 10px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); margin-bottom: 15px; }
+        .core-section { margin-bottom: 20px; }
+        .core-section:last-child { margin-bottom: 0; }
+        .core-header { color: white; padding: 12px; border-radius: 8px; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
+        #xray-header { background-color: var(--logo-red); }
+        #singbox-header { background-color: var(--logo-green); }
+        .action-button, .test-button { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1em; width: 100%; transition: background-color 0.2s; }
+        .test-button { margin-bottom: 15px; }
+        .action-button:disabled, .test-button:disabled { background-color: #555; cursor: not-allowed; }
+        .action-group { border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 15px; }
+        .action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .protocol-group { border-top: 1px solid var(--border-color); }
+        .protocol-header { background-color: transparent; padding: 12px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .toggle-icon { display: inline-block; width: 6px; height: 6px; border-bottom: 2px solid var(--text-color); border-right: 2px solid var(--text-color); transform: rotate(45deg); transition: transform 0.3s; margin-left: 10px; }
+        .protocol-group.open .toggle-icon { transform: rotate(-135deg); }
+        .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.4s ease-in-out; overflow-y: auto; }
+        .protocol-group.open .config-list { max-height: 500px; }
+        .config-item { padding: 8px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
+        .config-checkbox { flex-shrink: 0; transform: scale(1.2); margin-left: 8px; accent-color: var(--logo-green); }
+        .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
+        .config-details .server { font-weight: bold; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .ping-result { font-size: 0.85em; }
+        .copy-button-container { display: flex; gap: 6px; }
+        .copy-btn { background-color: #333; border: 1px solid var(--border-color); padding: 5px 8px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
+        .bottom-links { margin-top: auto; padding: 15px 0; border-top: 1px solid var(--border-color); width: 100%; display: flex; gap: 15px; justify-content: center; flex-shrink: 0; }
+        .bottom-links a { color: #aaa; text-decoration: none; font-size: 0.85em; }
+        .alert { padding: 20px; font-weight: bold; color: var(--logo-red); }
+    </style>
 </head>
 <body>
     <div class="main-wrapper">
@@ -22,7 +59,6 @@
                 <div class="core-header" id="xray-header">هسته Xray</div>
                 <div id="xray-content-wrapper"><div class="alert">درحال بارگذاری...</div></div>
             </section>
-            <hr class="section-divider">
             <section id="singbox-section" class="core-section">
                 <div class="core-header" id="singbox-header">هسته Sing-box</div>
                 <div id="singbox-content-wrapper"><div class="alert">درحال بارگذاری...</div></div>
@@ -34,8 +70,9 @@
              <a href="https://smbcryp.github.io/V2V/" target="_blank" rel="noopener noreferrer">گیت‌هاب</a>
         </footer>
     </div>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.js" defer></script>
     <script src="index.js"></script>
 </body>
 </html>
