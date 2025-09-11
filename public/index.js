@@ -2,12 +2,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
     const API_ENDPOINT = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
     
-    // ✅ اصلاح نهایی: آدرس‌ها اکنون به پوشه /public/ اشاره می‌کنند
+    // ✅ اصلاح ۱: آدرس‌های گیت‌هاب تصحیح شد (حذف /public)
     const DATA_MIRRORS = [
-        'https://smbcryp.github.io/v2v/public/all_live_configs.json', // منبع اصلی: گیت‌هاب
+        'https://smbcryp.github.io/v2v/all_live_configs.json', // منبع اصلی: گیت‌هاب
         'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json' // منبع پشتیبان: ابر آروان
     ];
-    const CACHE_URL = 'https://smbcryp.github.io/v2v/public/cache_version.txt';
+    const CACHE_URL = 'https://smbcryp.github.io/v2v/cache_version.txt';
     
     const PING_TIMEOUT = 3000;
     const READY_SUB_COUNT = 30;
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="action-box">
                 <span class="action-box-label">لینک اشتراک Clash Meta</span>
                 <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="window.open('https://smbcryp.github.io/v2v/public/clash_subscription.yaml', '_blank')">دانلود</button>
+                    <button class="action-btn-small" onclick="window.open('https://smbcryp.github.io/v2v/clash_subscription.yml', '_blank')">دانلود</button>
                     <button class="action-btn-small" onclick="v2v.copyStaticClashSub('copy')">کپی URL</button>
                     <button class="action-btn-small" onclick="v2v.copyStaticClashSub('qr')">QR</button>
                 </div>
@@ -145,7 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`${url}?t=${Date.now()}`, { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Status ${response.status}`);
                 const statusText = `با موفقیت از منبع شماره ${index + 1} بارگذاری شد.`;
-                // Only update status bar if version text is not already there
                 if (!statusBar.textContent.includes('آخرین بروزرسانی')) {
                     statusBar.textContent = statusText;
                 }
@@ -221,7 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectedConfigs.length === 0) return showToast('لطفاً حداقل یک کانفیگ را انتخاب کنید.', true);
             
             try {
-                const res = await fetch(`${API_ENDPOINT}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: selectedConfigs }) });
+                // ✅ اصلاح ۲: حذف /api از آدرس ورکر
+                const res = await fetch(`${API_ENDPOINT}/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: selectedConfigs }) });
                 if (!res.ok) throw new Error(`Server responded with ${res.status}`);
                 const data = await res.json();
                 
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const topConfigs = (allConfigs[core] || []).slice(0, READY_SUB_COUNT);
             if (topConfigs.length === 0) return showToast('کانفیگی برای ساخت لینک یافت نشد.', true);
             
-            const content = topConfigs.join('\n');
+            const content = topConfigs.map(c => c.config).join('\n'); // Extract config string from object
             const url = `data:text/plain;base64,${btoa(unescape(encodeURIComponent(content)))}`;
 
             if(action === 'copy') {
@@ -258,7 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         
         copyStaticClashSub: (action) => {
-            const url = 'https://smbcryp.github.io/v2v/public/clash_subscription.yaml';
+            // ✅ اصلاح ۱: آدرس گیت‌هاب تصحیح شد
+            const url = 'https://smbcryp.github.io/v2v/clash_subscription.yml';
              if(action === 'copy') {
                 navigator.clipboard.writeText(url);
                 showToast(`لینک اشتراک آماده کلش کپی شد.`);
@@ -270,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         generateClashFile: (core) => {
             let selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
             if (selectedConfigs.length === 0) {
-                 selectedConfigs = (allConfigs[core] || []).slice(0, READY_SUB_COUNT);
+                 selectedConfigs = (allConfigs[core] || []).map(c => c.config).slice(0, READY_SUB_COUNT);
                  if (selectedConfigs.length === 0) return showToast('هیچ کانفیگی برای ساخت فایل وجود ندارد.', true);
             }
             const yamlString = generateClashYaml(selectedConfigs);
@@ -329,7 +330,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (items.length === 0) return;
         items.forEach(({ item }) => updateItemUI(item, { source: 'S', ping: null }));
         try {
-            const res = await fetch(apiUrl + '/api/ping', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: items.map(i => i.config) }) });
+            // ✅ اصلاح ۲: حذف /api از آدرس ورکر
+            const res = await fetch(apiUrl + '/ping', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: items.map(i => i.config) }) });
             if (!res.ok) throw new Error('API response not OK');
             const results = await res.json();
             const resultsMap = new Map(results.map(r => [r.config, r.ping]));
@@ -346,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const uniqueCheck = new Set();
         configs.forEach(config => {
             try {
-                const parsed = parseProxyForClash(config);
+                const parsed = parseProxyForClash(config.config || config); // Handle both object and string
                 if (parsed) {
                     const key = `${parsed.server}:${parsed.port}:${parsed.name}`;
                     if (!uniqueCheck.has(key)) { proxies.push(parsed); uniqueCheck.add(key); }
