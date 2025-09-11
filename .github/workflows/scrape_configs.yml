@@ -40,11 +40,13 @@ jobs:
         run: |
           cp all_live_configs.json public/
           cp cache_version.txt public/
+          cp clash_subscription.yml public/
       
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 DATA: Update configs"
+          file_pattern: "public/all_live_configs.json public/cache_version.txt public/clash_subscription.yml all_live_configs.json cache_version.txt clash_subscription.yml"
       
       - name: Upload Artifact for Deployment
         uses: actions/upload-pages-artifact@v3
@@ -103,6 +105,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
           AWS_REGION: "us-east-1"
         run: |
-          aws s3 sync ./public s3://v2v-data --endpoint-url https://s3.ir-thr-at1.arvanstorage.com --acl public-read --delete
+          aws s3 sync ./public s3://v2v-data --endpoint-url [https://s3.ir-thr-at1.arvanstorage.com](https://s3.ir-thr-at1.arvanstorage.com) --acl public-read --delete
 
 
