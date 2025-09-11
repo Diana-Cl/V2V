@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
-    const API_ENDPOINT = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
+    const API_ENDPOINT = '[https://rapid-scene-1da6.mbrgh87.workers.dev](https://rapid-scene-1da6.mbrgh87.workers.dev)';
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
     const PING_TIMEOUT = 3000;
@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const singboxWrapper = document.getElementById('singbox-content-wrapper');
     const qrModal = document.getElementById('qr-modal');
     const qrContainer = document.getElementById('qr-code-container');
+    const toast = document.getElementById('toast');
     let allConfigs = { xray: [], singbox: [] };
 
     // --- HELPERS ---
@@ -25,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const parseConfigName = (configStr) => {
         try {
-            if (configStr.includes('#')) return decodeURIComponent(configStr.split('#')[1]);
+            if (configStr.includes('#')) return decodeURIComponent(configStr.split('#')[1] || `Unnamed`);
             if (configStr.startsWith('vmess://')) {
                 const data = JSON.parse(atob(configStr.replace('vmess://', '')));
                 return data.ps || data.add;
@@ -34,6 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { return 'Unnamed Config'; }
     };
     
+    const showToast = (message, isError = false) => {
+        toast.textContent = message;
+        toast.className = 'toast show';
+        if (isError) toast.classList.add('error');
+        setTimeout(() => { toast.className = 'toast'; }, 3000);
+    };
+
     // --- RENDER FUNCTIONS ---
     function renderCore(core, configs) {
         const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
@@ -62,27 +70,34 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="action-box">
                 <span class="action-box-label">لینک اشتراک Clash Meta</span>
                 <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="v2v.copyReadySubscription('${core}', 'clash', 'copy')">کپی</button>
-                    <button class="action-btn-small" onclick="v2v.copyReadySubscription('${core}', 'clash', 'qr')">QR</button>
+                    <button class="action-btn-small" onclick="window.open('clash_subscription.yml', '_blank')">دانلود</button>
+                    <button class="action-btn-small" onclick="v2v.copyStaticClashSub('copy')">کپی URL</button>
+                    <button class="action-btn-small" onclick="v2v.copyStaticClashSub('qr')">QR</button>
                 </div>
-            </div>
-            ` : ''}
+            </div>` : ''}
 
             <div class="action-group-title">اشتراک شخصی (کانفیگ‌های انتخابی شما)</div>
             <div class="action-box">
-                <span class="action-box-label">ساخت لینک از موارد انتخابی</span>
+                <span class="action-box-label">ساخت لینک UUID از موارد انتخابی</span>
                 <div class="action-box-buttons">
-                     <button class="action-btn-small" onclick="v2v.createSubscription('${core}')">ساخت و کپی UUID</button>
+                     <button class="action-btn-small" onclick="v2v.createSubscription('${core}', 'standard', 'copy')">کپی لینک</button>
+                     <button class="action-btn-small" onclick="v2v.createSubscription('${core}', 'standard', 'qr')">QR Code</button>
                 </div>
             </div>
              ${isXray ? `
             <div class="action-box">
-                <span class="action-box-label">دانلود فایل Clash از موارد انتخابی</span>
+                <span class="action-box-label">ساخت لینک Clash از موارد انتخابی</span>
                  <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="v2v.generateClashConfig('${core}')">دانلود</button>
+                    <button class="action-btn-small" onclick="v2v.createSubscription('${core}', 'clash', 'copy')">کپی لینک</button>
+                    <button class="action-btn-small" onclick="v2v.createSubscription('${core}', 'clash', 'qr')">QR Code</button>
                 </div>
             </div>
-            ` : ''}
+            <div class="action-box">
+                <span class="action-box-label">دانلود فایل Clash از موارد انتخابی</span>
+                 <div class="action-box-buttons">
+                    <button class="action-btn-small" onclick="v2v.generateClashFile('${core}')">دانلود فایل</button>
+                </div>
+            </div>` : ''}
         `;
         wrapper.innerHTML = actionsHTML;
 
@@ -103,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <li class="config-item" data-config='${safeConfig}'>
                         <input type="checkbox" class="config-checkbox">
                         <div class="config-details"><span class="server">${name}</span><span class="ping-result"></span></div>
-                        <button class="copy-btn" onclick="navigator.clipboard.writeText('${safeConfig}')">کپی</button>
+                        <button class="copy-btn" onclick="navigator.clipboard.writeText('${safeConfig}'); v2v.showToast('کانفیگ کپی شد!');">کپی</button>
                     </li>`;
             });
             pGroupEl.innerHTML = `
@@ -125,11 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             const dataRes = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
-            if (!dataRes.ok) throw new Error('Failed to load configs');
+            if (!dataRes.ok) throw new Error(`Failed to load configs (status: ${dataRes.status})`);
             allConfigs = await dataRes.json();
             renderCore('xray', allConfigs.xray || []);
             renderCore('singbox', allConfigs.singbox || []);
         } catch (e) {
+            console.error("Config load error:", e);
             const errorMsg = `<div class="alert">خطا در بارگذاری کانفیگ‌ها. لطفا صفحه را رفرش کنید.</div>`;
             xrayWrapper.innerHTML = errorMsg;
             singboxWrapper.innerHTML = errorMsg;
@@ -138,8 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- GLOBAL V2V OBJECT ---
     window.v2v = {
+        showToast,
         runAdvancedPingTest: async (core) => {
-            console.clear();
             const testButton = document.getElementById(`${core}-test-btn`);
             const buttonText = document.getElementById(`${core}-test-btn-text`);
             if (testButton.disabled) return;
@@ -156,8 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const config = item.dataset.config;
                 let isWs = false;
                 try {
-                    const params = new URLSearchParams(new URL(config).search);
-                    if ((config.startsWith('vless://') || config.startsWith('vmess://')) && params.get('type') === 'ws') isWs = true;
+                    if ((config.startsWith('vless://') || config.startsWith('vmess://')) && (new URL(config).searchParams.get('type') === 'ws')) isWs = true;
                 } catch {}
                 if (isWs) wsTestPromises.push(testWebSocket(config, item, PING_TIMEOUT));
                 else configsToTestBackend.push({ config, item });
@@ -174,48 +189,62 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonText.innerHTML = '🚀 تست مجدد کانفیگ‌ها';
         },
         
-        createSubscription: async (core) => {
+        createSubscription: async (core, type, action) => {
             const selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
-            if (selectedConfigs.length === 0) return alert('لطفاً حداقل یک کانفیگ را برای ساخت اشتراک انتخاب کنید.');
+            if (selectedConfigs.length === 0) return showToast('لطفاً حداقل یک کانفیگ را انتخاب کنید.', true);
+            
             try {
                 const res = await fetch(`${API_ENDPOINT}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: selectedConfigs }) });
                 if (!res.ok) throw new Error(`Server responded with ${res.status}`);
                 const data = await res.json();
-                navigator.clipboard.writeText(data.subscription_url);
-                alert('لینک اشتراک شخصی شما با موفقیت ساخته و در کلیپ‌بورد کپی شد.');
+                
+                let finalUrl = data.subscription_url;
+                if (type === 'clash') {
+                    finalUrl = finalUrl.replace('/sub/', '/sub/clash/');
+                }
+
+                if (action === 'copy') {
+                    navigator.clipboard.writeText(finalUrl);
+                    showToast('لینک اشتراک شخصی شما کپی شد.');
+                } else if (action === 'qr') {
+                    v2v.showQrCode(finalUrl);
+                }
             } catch (e) {
-                alert('خطا در ساخت لینک اشتراک. لطفاً دوباره تلاش کنید.');
+                showToast('خطا در ساخت لینک اشتراک.', true);
                 console.error('Subscription creation failed:', e);
             }
         },
 
         copyReadySubscription: (core, type, action) => {
             const topConfigs = (allConfigs[core] || []).slice(0, READY_SUB_COUNT);
-             if (topConfigs.length === 0) return alert('کانفیگی برای ساخت لینک یافت نشد.');
+            if (topConfigs.length === 0) return showToast('کانفیگی برای ساخت لینک یافت نشد.', true);
             
-            let url;
-            if (type === 'clash') {
-                const clashContent = generateClashYaml(topConfigs);
-                if(!clashContent) return alert('کانفیگ سازگار با کلش یافت نشد.');
-                url = `data:text/yaml;base64,${btoa(unescape(encodeURIComponent(clashContent)))}`;
-            } else {
-                 const content = topConfigs.join('\n');
-                 url = `data:text/plain;base64,${btoa(unescape(encodeURIComponent(content)))}`;
-            }
+            const content = topConfigs.join('\n');
+            const url = `data:text/plain;base64,${btoa(unescape(encodeURIComponent(content)))}`;
 
             if(action === 'copy') {
                 navigator.clipboard.writeText(url);
-                alert(`لینک اشتراک آماده ${type} کپی شد.`);
+                showToast(`لینک اشتراک آماده کپی شد.`);
+            } else if (action === 'qr') {
+                v2v.showQrCode(url);
+            }
+        },
+        
+        copyStaticClashSub: (action) => {
+            const url = new URL('clash_subscription.yml', window.location.href).href;
+             if(action === 'copy') {
+                navigator.clipboard.writeText(url);
+                showToast(`لینک اشتراک آماده کلش کپی شد.`);
             } else if (action === 'qr') {
                 v2v.showQrCode(url);
             }
         },
 
-        generateClashConfig: (core) => {
+        generateClashFile: (core) => {
             let selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
             if (selectedConfigs.length === 0) {
                  selectedConfigs = (allConfigs[core] || []).slice(0, READY_SUB_COUNT);
-                 if (selectedConfigs.length === 0) return alert('هیچ کانفیگی برای ساخت فایل وجود ندارد.');
+                 if (selectedConfigs.length === 0) return showToast('هیچ کانفیگی برای ساخت فایل وجود ندارد.', true);
             }
             const yamlString = generateClashYaml(selectedConfigs);
             if (!yamlString) return;
@@ -230,9 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         showQrCode: (text) => {
-            if (!window.QRCode) return alert('کتابخانه QR در حال بارگذاری است.');
+            if (!window.QRCode) return showToast('کتابخانه QR در حال بارگذاری است.', true);
             qrContainer.innerHTML = '';
-            new QRCode(qrContainer, { text, width: 256, height: 256 });
+            new QRCode(qrContainer, { text, width: 256, height: 256, correctLevel : QRCode.CorrectLevel.M });
             qrModal.style.display = 'flex';
         }
     };
@@ -253,14 +282,15 @@ document.addEventListener('DOMContentLoaded', () => {
         updateItemUI(item, { source: 'C', ping: null });
         try {
             const ping = await new Promise((resolve, reject) => {
-                const url = new URL(config), params = new URLSearchParams(url.search), startTime = Date.now();
-                const wsProtocol = (params.get('security') === 'tls' || url.port === '443') ? 'wss://' : 'ws://';
-                const wsPath = params.get('path') || '/';
+                const url = new URL(config);
+                const wsProtocol = (url.protocol === 'vless:' && url.searchParams.get('security') === 'tls') || url.port === '443' ? 'wss://' : 'ws://';
+                const wsPath = url.searchParams.get('path') || '/';
                 const wsUrl = `${wsProtocol}${url.hostname}:${url.port}${wsPath}`;
+                const startTime = Date.now();
                 const ws = new WebSocket(wsUrl);
-                const timeoutId = setTimeout(() => reject(new Error('Timeout')), timeout);
+                const timeoutId = setTimeout(() => { ws.close(); reject(new Error('Timeout')); }, timeout);
                 ws.onopen = () => { clearTimeout(timeoutId); ws.close(); resolve(Date.now() - startTime); };
-                ws.onerror = () => { clearTimeout(timeoutId); ws.close(); reject(new Error('WebSocket Error')); };
+                ws.onerror = () => { clearTimeout(timeoutId); reject(new Error('WebSocket Error')); };
             });
             updateItemUI(item, { source: 'C', ping });
         } catch {
@@ -284,43 +314,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function generateClashYaml(configs) {
-        if (!window.jsyaml) { alert('کتابخانه مورد نیاز برای ساخت فایل کلش بارگذاری نشده است.'); return null; }
+        if (!window.jsyaml) { showToast('کتابخانه YAML بارگذاری نشده است.', true); return null; }
         const proxies = [];
         const uniqueCheck = new Set();
         configs.forEach(config => {
             try {
                 const parsed = parseProxyForClash(config);
                 if (parsed) {
-                    const key = `${parsed.server}:${parsed.port}`;
+                    const key = `${parsed.server}:${parsed.port}:${parsed.name}`;
                     if (!uniqueCheck.has(key)) { proxies.push(parsed); uniqueCheck.add(key); }
                 }
             } catch {}
         });
-        if (proxies.length === 0) { alert('هیچ کانفیگ سازگاری یافت نشد.'); return null; }
+        if (proxies.length === 0) { showToast('هیچ کانفیگ سازگاری یافت نشد.', true); return null; }
         const proxyNames = proxies.map(p => p.name);
         const clashConfig = {
             'proxies': proxies,
             'proxy-groups': [
-                { 'name': 'V2V-Auto', 'type': 'url-test', 'proxies': proxyNames, 'url': 'http://www.gstatic.com/generate_204', 'interval': 300 },
+                { 'name': 'V2V-Auto', 'type': 'url-test', 'proxies': proxyNames, 'url': '[http://www.gstatic.com/generate_204](http://www.gstatic.com/generate_204)', 'interval': 300 },
                 { 'name': 'V2V-Select', 'type': 'select', 'proxies': ['V2V-Auto', ...proxyNames] }
             ], 'rules': ['MATCH,V2V-Select']
         };
         try { return jsyaml.dump(clashConfig, { indent: 2, sortKeys: false, lineWidth: -1 }); }
-        catch (e) { alert('خطا در ساخت فایل YAML.'); console.error(e); return null; }
+        catch (e) { showToast('خطا در ساخت فایل YAML.', true); console.error(e); return null; }
     }
     
     function parseProxyForClash(configStr) {
-        let name = decodeURIComponent(configStr.split('#').pop() || `V2V-${Date.now().toString().slice(-4)}`);
-        const base = { name, 'skip-cert-verify': true };
-        const protocol = configStr.split('://')[0];
-        if (protocol === 'vmess') {
-            const d = JSON.parse(atob(configStr.substring(8)));
-            return { ...base, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: parseInt(d.aid), cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net, servername: d.sni || d.host, 'ws-opts': d.net === 'ws' ? { path: d.path, headers: { Host: d.host } } : undefined };
-        }
-        const url = new URL(configStr), params = new URLSearchParams(url.search);
-        if (protocol === 'vless') return { ...base, type: 'vless', server: url.hostname, port: parseInt(url.port), uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type'), servername: params.get('sni'), 'ws-opts': params.get('type') === 'ws' ? { path: params.get('path'), headers: { Host: params.get('host') } } : undefined };
-        if (protocol === 'trojan') return { ...base, type: 'trojan', server: url.hostname, port: parseInt(url.port), password: url.username, sni: params.get('sni') };
-        if (protocol === 'ss') { const [c, p] = atob(url.username).split(':'); return { ...base, type: 'ss', server: url.hostname, port: parseInt(url.port), cipher: c, password: p }; }
+        try {
+            let name = decodeURIComponent(configStr.split('#').pop() || `V2V-${Date.now().toString().slice(-4)}`);
+            const base = { name, 'skip-cert-verify': true };
+            const protocol = configStr.split('://')[0];
+            if (protocol === 'vmess') {
+                const d = JSON.parse(atob(configStr.substring(8)));
+                const proxy = { ...base, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: parseInt(d.aid || 0), cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net, servername: d.sni || d.host };
+                if (d.net === 'ws') proxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add } };
+                return proxy;
+            }
+            const url = new URL(configStr), params = new URLSearchParams(url.search);
+            if (protocol === 'vless') {
+                const proxy = { ...base, type: 'vless', server: url.hostname, port: parseInt(url.port), uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type'), servername: params.get('sni') };
+                if (params.get('type') === 'ws') proxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || url.hostname } };
+                return proxy;
+            }
+            if (protocol === 'trojan') {
+                 if(!url.username) return null;
+                 return { ...base, type: 'trojan', server: url.hostname, port: parseInt(url.port), password: url.username, sni: params.get('sni') };
+            }
+            if (protocol === 'ss') { const [c, p] = atob(url.username).split(':'); return { ...base, type: 'ss', server: url.hostname, port: parseInt(url.port), cipher: c, password: p }; }
+        } catch {}
         return null;
     }
 });
