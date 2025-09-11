@@ -22,30 +22,33 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Install Python Dependencies
         run: pip install -r requirements.txt
+
       - name: Run Scraper Script
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+
+      # ✅ اصلاح نهایی: فقط فایل‌های ساخته شده توسط اسکریپت کپی می‌شوند
       - name: Update Public Folder for Deployments
         run: |
-          mkdir -p public
           cp all_live_configs.json public/
           cp cache_version.txt public/
           cp clash_subscription.yml public/
-          cp index.html public/
-          cp logo.png public/
-          cp index.js public/
+      
       - name: Commit and Push Changes to Repository
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 DATA: Update configs"
-          file_pattern: "public/*.* all_live_configs.json cache_version.txt clash_subscription.yml"
+          file_pattern: "public/all_live_configs.json public/cache_version.txt public/clash_subscription.yml all_live_configs.json cache_version.txt clash_subscription.yml"
+      
       - name: Upload Artifact for Deployment Jobs
         uses: actions/upload-pages-artifact@v3
         with:
@@ -94,7 +97,6 @@ jobs:
           name: github-pages
           path: public
       
-      # ✅ اصلاح نهایی: اضافه کردن این مرحله برای استخراج فایل‌ها
       - name: Extract Artifact
         run: tar -xf public/artifact.tar -C public/
       
@@ -107,3 +109,4 @@ jobs:
           ARVAN_S3_BUCKET: s3://v2v-data
         run: |
           aws s3 sync ./public ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --exclude 'artifact.tar'
+
