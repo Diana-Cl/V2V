@@ -1,20 +1,25 @@
+# نام Workflow
 name: Scrape, Build, and Deploy Mirrors
 
+# زمان‌بندی اجرا و قابلیت اجرای دستی
 on:
   schedule:
-    - cron: "0 */4 * * *"
+    - cron: "0 */4 * * *" # هر 4 ساعت یکبار
   workflow_dispatch:
 
+# دسترسی‌های مورد نیاز برای کامیت و دیپلوی
 permissions:
   contents: write
   pages: write
   id-token: write
 
+# جلوگیری از اجرای همزمان چند نمونه از همین Workflow
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # === مرحله ۱: جمع‌آوری داده و ساخت فایل‌ها ===
   scrape_and_build:
     runs-on: ubuntu-latest
     steps:
@@ -36,23 +41,25 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
 
-      - name: Update Public Folder
+      - name: Update Public Folder for Deployments
         run: |
+          mkdir -p public
           cp all_live_configs.json public/
           cp cache_version.txt public/
           cp clash_subscription.yml public/
       
-      - name: Commit and Push Changes
+      - name: Commit and Push Changes to Repository
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 DATA: Update configs"
           file_pattern: "public/all_live_configs.json public/cache_version.txt public/clash_subscription.yml all_live_configs.json cache_version.txt clash_subscription.yml"
       
-      - name: Upload Artifact for Deployment
+      - name: Upload Artifact for Deployment Jobs
         uses: actions/upload-pages-artifact@v3
         with:
           path: './public'
 
+  # === مرحله ۲ (آینه اول): دیپلوی روی GitHub Pages ===
   deploy_to_github_pages:
     needs: scrape_and_build
     runs-on: ubuntu-latest
@@ -65,15 +72,13 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+  # === مرحله ۳ (آینه دوم): دیپلوی روی Vercel ===
   deploy_to_vercel:
     needs: scrape_and_build
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
           name: github-pages
@@ -88,23 +93,27 @@ jobs:
           vercel-args: '--prod'
           working-directory: ./public
 
+  # === مرحله ۴ (آینه سوم): دیپلوی روی ابر آروان ===
   deploy_to_arvancloud:
     needs: scrape_and_build
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - name: Download Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
           name: github-pages
           path: public
-
+      
+      # ✅ بهبود: تعریف متغیرها در بخش env برای مدیریت آسان‌تر
       - name: Deploy to ArvanCloud S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-          AWS_REGION: "us-east-1"
+          AWS_REGION: "us-east-1" # این مقدار برای ابر آروان معمولاً ثابت است
+          ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com # ✅ آدرس Endpoint به اینجا منتقل شد
+          ARVAN_S3_BUCKET: s3://v2v-data # ✅ نام باکت به اینجا منتقل شد
+        
+        # ✅ اصلاح: حذف کاراکترهای اضافی و استفاده از متغیرها
         run: |
-          aws s3 sync ./public s3://v2v-data --endpoint-url [https://s3.ir-thr-at1.arvanstorage.com](https://s3.ir-thr-at1.arvanstorage.com) --acl public-read --delete
-
-
+          aws s3 sync ./public ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete
