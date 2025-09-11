@@ -1,25 +1,20 @@
-# نام Workflow
 name: Scrape, Build, and Deploy Mirrors
 
-# زمان‌بندی اجرا و قابلیت اجرای دستی
 on:
   schedule:
-    - cron: "0 */4 * * *" # هر 4 ساعت یکبار
+    - cron: "0 */4 * * *"
   workflow_dispatch:
 
-# دسترسی‌های مورد نیاز برای کامیت و دیپلوی
 permissions:
   contents: write
   pages: write
   id-token: write
 
-# جلوگیری از اجرای همزمان چند نمونه از همین Workflow
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # === مرحله ۱: جمع‌آوری داده و ساخت فایل‌ها ===
   scrape_and_build:
     runs-on: ubuntu-latest
     steps:
@@ -27,39 +22,35 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: Install Python Dependencies
         run: pip install -r requirements.txt
-
       - name: Run Scraper Script
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-
       - name: Update Public Folder for Deployments
         run: |
           mkdir -p public
           cp all_live_configs.json public/
           cp cache_version.txt public/
           cp clash_subscription.yml public/
-      
+          cp index.html public/
+          cp logo.png public/
+          cp index.js public/
       - name: Commit and Push Changes to Repository
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 DATA: Update configs"
-          file_pattern: "public/all_live_configs.json public/cache_version.txt public/clash_subscription.yml all_live_configs.json cache_version.txt clash_subscription.yml"
-      
+          file_pattern: "public/*.* all_live_configs.json cache_version.txt clash_subscription.yml"
       - name: Upload Artifact for Deployment Jobs
         uses: actions/upload-pages-artifact@v3
         with:
           path: './public'
 
-  # === مرحله ۲ (آینه اول): دیپلوی روی GitHub Pages ===
   deploy_to_github_pages:
     needs: scrape_and_build
     runs-on: ubuntu-latest
@@ -72,22 +63,18 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-  # === مرحله ۳ (آینه دوم): دیپلوی روی Vercel ===
   deploy_to_vercel:
     needs: scrape_and_build
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      # ✅ اصلاح: اضافه کردن این مرحله برای کپی کردن پروژه
       - name: Checkout Repository
         uses: actions/checkout@v4
-
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
           name: github-pages
           path: public
-
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:
@@ -95,9 +82,7 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
-          # working-directory: ./public # این خط دیگر لازم نیست چون ورسل خودش فایل‌های public را تشخیص می‌دهد
 
-  # === مرحله ۴ (آینه سوم): دیپلوی روی ابر آروان ===
   deploy_to_arvancloud:
     needs: scrape_and_build
     runs-on: ubuntu-latest
@@ -109,6 +94,10 @@ jobs:
           name: github-pages
           path: public
       
+      # ✅ اصلاح نهایی: اضافه کردن این مرحله برای استخراج فایل‌ها
+      - name: Extract Artifact
+        run: tar -xf public/artifact.tar -C public/
+      
       - name: Deploy to ArvanCloud S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
@@ -117,4 +106,4 @@ jobs:
           ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
           ARVAN_S3_BUCKET: s3://v2v-data
         run: |
-          aws s3 sync ./public ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete
+          aws s3 sync ./public ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --exclude 'artifact.tar'
