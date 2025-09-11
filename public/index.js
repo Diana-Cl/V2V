@@ -1,8 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
-    const API_ENDPOINT = '[https://rapid-scene-1da6.mbrgh87.workers.dev](https://rapid-scene-1da6.mbrgh87.workers.dev)';
-    const DATA_URL = 'all_live_configs.json';
-    const CACHE_URL = 'cache_version.txt';
+    const API_ENDPOINT = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
+    
+    // ✅ تعریف آینه‌ها برای افزایش پایداری
+    const DATA_MIRRORS = [
+        'https://smbcryp.github.io/v2v/all_live_configs.json', // منبع اصلی: گیت‌هاب
+        'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json' // منبع پشتیبان: ابر آروان
+    ];
+    const CACHE_URL = 'https://smbcryp.github.io/v2v/cache_version.txt';
+    
     const PING_TIMEOUT = 3000;
     const READY_SUB_COUNT = 30;
 
@@ -131,24 +137,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- INITIAL DATA LOAD ---
+    // ✅ تابع جدید برای تلاش جهت اتصال به منابع مختلف
+    async function fetchWithFailover(urls) {
+        let lastError = null;
+        for (const [index, url] of urls.entries()) {
+            try {
+                statusBar.textContent = `در حال تلاش برای اتصال به منبع شماره ${index + 1}...`;
+                const response = await fetch(`${url}?t=${Date.now()}`, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`Status ${response.status}`);
+                statusBar.textContent = `با موفقیت از منبع شماره ${index + 1} بارگذاری شد.`;
+                return await response.json();
+            } catch (error) {
+                console.warn(`Failed to fetch from ${url}:`, error);
+                lastError = error;
+            }
+        }
+        throw new Error('All data sources failed.', { cause: lastError });
+    }
+
+    // --- INITIAL DATA LOAD (Updated with Failover) ---
     (async () => {
         try {
             const verRes = await fetch(`${CACHE_URL}?t=${Date.now()}`, { cache: 'no-store' });
-            if (verRes.ok) statusBar.textContent = `آخرین بروزرسانی: ${toShamsi(await verRes.text())}`;
-        } catch { statusBar.textContent = 'عدم دسترسی به نسخه بروزرسانی.'; }
+            if (verRes.ok) {
+                const versionText = (await verRes.text()).split('\n')[0];
+                statusBar.textContent = `آخرین بروزرسانی: ${toShamsi(versionText.trim())}`;
+            }
+        } catch { /* Fail silently, main fetch is more important */ }
         
         try {
-            const dataRes = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
-            if (!dataRes.ok) throw new Error(`Failed to load configs (status: ${dataRes.status})`);
-            allConfigs = await dataRes.json();
+            allConfigs = await fetchWithFailover(DATA_MIRRORS);
             renderCore('xray', allConfigs.xray || []);
             renderCore('singbox', allConfigs.singbox || []);
         } catch (e) {
-            console.error("Config load error:", e);
-            const errorMsg = `<div class="alert">خطا در بارگذاری کانفیگ‌ها. لطفا صفحه را رفرش کنید.</div>`;
+            console.error("Config load error from all mirrors:", e);
+            const errorMsg = `<div class="alert">خطا: هیچکدام از منابع بارگذاری کانفیگ در دسترس نیستند.</div>`;
             xrayWrapper.innerHTML = errorMsg;
             singboxWrapper.innerHTML = errorMsg;
+            statusBar.textContent = 'خطا در بارگذاری کانفیگ‌ها.';
         }
     })();
 
@@ -331,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const clashConfig = {
             'proxies': proxies,
             'proxy-groups': [
-                { 'name': 'V2V-Auto', 'type': 'url-test', 'proxies': proxyNames, 'url': '[http://www.gstatic.com/generate_204](http://www.gstatic.com/generate_204)', 'interval': 300 },
+                { 'name': 'V2V-Auto', 'type': 'url-test', 'proxies': proxyNames, 'url': 'http://www.gstatic.com/generate_204', 'interval': 300 },
                 { 'name': 'V2V-Select', 'type': 'select', 'proxies': ['V2V-Auto', ...proxyNames] }
             ], 'rules': ['MATCH,V2V-Select']
         };
@@ -365,5 +391,3 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 });
-
-
