@@ -78,6 +78,10 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
+      # ✅ اصلاح: اضافه کردن این مرحله برای کپی کردن پروژه
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
@@ -91,7 +95,7 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
-          working-directory: ./public
+          # working-directory: ./public # این خط دیگر لازم نیست چون ورسل خودش فایل‌های public را تشخیص می‌دهد
 
   # === مرحله ۴ (آینه سوم): دیپلوی روی ابر آروان ===
   deploy_to_arvancloud:
@@ -105,15 +109,12 @@ jobs:
           name: github-pages
           path: public
       
-      # ✅ بهبود: تعریف متغیرها در بخش env برای مدیریت آسان‌تر
       - name: Deploy to ArvanCloud S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-          AWS_REGION: "us-east-1" # این مقدار برای ابر آروان معمولاً ثابت است
-          ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com # ✅ آدرس Endpoint به اینجا منتقل شد
-          ARVAN_S3_BUCKET: s3://v2v-data # ✅ نام باکت به اینجا منتقل شد
-        
-        # ✅ اصلاح: حذف کاراکترهای اضافی و استفاده از متغیرها
+          AWS_REGION: "us-east-1"
+          ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
+          ARVAN_S3_BUCKET: s3://v2v-data
         run: |
           aws s3 sync ./public ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete
