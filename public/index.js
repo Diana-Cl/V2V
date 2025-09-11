@@ -2,12 +2,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
     const API_ENDPOINT = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
     
-    // ✅ تعریف آینه‌ها برای افزایش پایداری
+    // ✅ اصلاح نهایی: آدرس‌ها اکنون به پوشه /public/ اشاره می‌کنند
     const DATA_MIRRORS = [
-        'https://smbcryp.github.io/v2v/all_live_configs.json', // منبع اصلی: گیت‌هاب
+        'https://smbcryp.github.io/v2v/public/all_live_configs.json', // منبع اصلی: گیت‌هاب
         'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json' // منبع پشتیبان: ابر آروان
     ];
-    const CACHE_URL = 'https://smbcryp.github.io/v2v/cache_version.txt';
+    const CACHE_URL = 'https://smbcryp.github.io/v2v/public/cache_version.txt';
     
     const PING_TIMEOUT = 3000;
     const READY_SUB_COUNT = 30;
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="action-box">
                 <span class="action-box-label">لینک اشتراک Clash Meta</span>
                 <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="window.open('clash_subscription.yml', '_blank')">دانلود</button>
+                    <button class="action-btn-small" onclick="window.open('https://smbcryp.github.io/v2v/public/clash_subscription.yaml', '_blank')">دانلود</button>
                     <button class="action-btn-small" onclick="v2v.copyStaticClashSub('copy')">کپی URL</button>
                     <button class="action-btn-small" onclick="v2v.copyStaticClashSub('qr')">QR</button>
                 </div>
@@ -137,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ✅ تابع جدید برای تلاش جهت اتصال به منابع مختلف
     async function fetchWithFailover(urls) {
         let lastError = null;
         for (const [index, url] of urls.entries()) {
@@ -145,7 +144,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusBar.textContent = `در حال تلاش برای اتصال به منبع شماره ${index + 1}...`;
                 const response = await fetch(`${url}?t=${Date.now()}`, { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Status ${response.status}`);
-                statusBar.textContent = `با موفقیت از منبع شماره ${index + 1} بارگذاری شد.`;
+                const statusText = `با موفقیت از منبع شماره ${index + 1} بارگذاری شد.`;
+                // Only update status bar if version text is not already there
+                if (!statusBar.textContent.includes('آخرین بروزرسانی')) {
+                    statusBar.textContent = statusText;
+                }
                 return await response.json();
             } catch (error) {
                 console.warn(`Failed to fetch from ${url}:`, error);
@@ -155,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('All data sources failed.', { cause: lastError });
     }
 
-    // --- INITIAL DATA LOAD (Updated with Failover) ---
     (async () => {
         try {
             const verRes = await fetch(`${CACHE_URL}?t=${Date.now()}`, { cache: 'no-store' });
@@ -163,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const versionText = (await verRes.text()).split('\n')[0];
                 statusBar.textContent = `آخرین بروزرسانی: ${toShamsi(versionText.trim())}`;
             }
-        } catch { /* Fail silently, main fetch is more important */ }
+        } catch { /* Fail silently */ }
         
         try {
             allConfigs = await fetchWithFailover(DATA_MIRRORS);
@@ -178,7 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })();
 
-    // --- GLOBAL V2V OBJECT ---
     window.v2v = {
         showToast,
         runAdvancedPingTest: async (core) => {
@@ -257,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         
         copyStaticClashSub: (action) => {
-            const url = new URL('clash_subscription.yml', window.location.href).href;
+            const url = 'https://smbcryp.github.io/v2v/public/clash_subscription.yaml';
              if(action === 'copy') {
                 navigator.clipboard.writeText(url);
                 showToast(`لینک اشتراک آماده کلش کپی شد.`);
