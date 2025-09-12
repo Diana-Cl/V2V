@@ -16,15 +16,10 @@ print("INFO: Initializing V2V Scraper v25.0 (Production Ready)...")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PUBLIC_DIR = os.path.join(BASE_DIR, "public")
-os.makedirs(PUBLIC_DIR, exist_ok=True) # ساخت پوشه public در صورت عدم وجود
-
 SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
-# فایل‌های خروجی مستقیما در پوشه public ذخیره می‌شوند
-OUTPUT_JSON_FILE = os.path.join(PUBLIC_DIR, "all_live_configs.json")
-OUTPUT_CLASH_FILE = os.path.join(PUBLIC_DIR, "clash_subscription.yml")
-CACHE_VERSION_FILE = os.path.join(PUBLIC_DIR, "cache_version.txt")
-
+OUTPUT_JSON_FILE = os.path.join(BASE_DIR, "all_live_configs.json")
+OUTPUT_CLASH_FILE = os.path.join(BASE_DIR, "clash_subscription.yml")
+CACHE_VERSION_FILE = os.path.join(BASE_DIR, "cache_version.txt")
 
 XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
 SINGBOX_ONLY_PROTOCOLS = {'hysteria2', 'hy2', 'tuic'}
