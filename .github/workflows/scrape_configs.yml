@@ -31,21 +31,25 @@ jobs:
       - name: Install Python Dependencies
         run: pip install -r requirements.txt
 
-      - name: Run Scraper to Generate Files in ./public
+      - name: Run Scraper to Generate Files in Root
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+      
+      # ✅ تغییر نهایی: مرحله انتقال فایل به طور کامل حذف شد چون اسکریپت فایل‌ها را در جای درست می‌سازد.
       
       - name: Commit and Push Changes to Repository
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 DATA: Update configs"
-          file_pattern: "public/"
+          # ✅ تغییر نهایی: تمام فایل‌های جدید در ریشه کامیت می‌شوند
+          file_pattern: "*.json *.yml *.txt"
       
       - name: Upload Artifact for Deployment Jobs
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './public'
+          # ✅ تغییر نهایی: از ریشه اصلی ('./') آرتیفکت می‌سازیم
+          path: '.'
 
   deploy_to_github_pages:
     needs: scrape_and_build
@@ -66,16 +70,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: github-pages
-          # ✅ تغییر نهایی: از همان پوشه 'public' استفاده می‌کنیم
-          path: ./public
+          path: .
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          # ✅ تغییر نهایی: به ورسل می‌گوییم ریشه سایت پوشه public است
-          working-directory: ./public
+          # ✅ تغییر نهایی: به ورسل می‌گوییم ریشه سایت همینجاست (ریشه اصلی)
+          working-directory: .
           vercel-args: '--prod'
 
   deploy_to_arvancloud:
@@ -86,8 +89,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: github-pages
-          # ✅ تغییر نهایی: از همان پوشه 'public' استفاده می‌کنیم
-          path: ./public
+          path: .
       
       - name: Deploy to ArvanCloud S3
         env:
@@ -97,7 +99,7 @@ jobs:
           ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
           ARVAN_S3_BUCKET: s3://v2v-data
         run: |
-          # ✅ تغییر نهایی: فقط محتویات داخل پوشه public را به ابر آروان منتقل می‌کنیم
-          aws s3 sync ./public ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete
+          # ✅ تغییر نهایی: تمام محتویات دانلود شده در ریشه را به ابر آروان منتقل می‌کنیم
+          aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete
 
 
