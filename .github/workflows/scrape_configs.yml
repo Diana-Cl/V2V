@@ -35,19 +35,15 @@ jobs:
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-
-      # ✅ اصلاح نهایی: فقط فایل‌های ساخته شده توسط اسکریپت کپی می‌شوند
-      - name: Update Public Folder for Deployments
-        run: |
-          cp all_live_configs.json public/
-          cp cache_version.txt public/
-          cp clash_subscription.yml public/
       
+      # ❌ مرحله کپی فایل حذف شد چون scraper.py مستقیما در public می‌نویسد
+
       - name: Commit and Push Changes to Repository
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 DATA: Update configs"
-          file_pattern: "public/all_live_configs.json public/cache_version.txt public/clash_subscription.yml all_live_configs.json cache_version.txt clash_subscription.yml"
+          # ✅ الگو فقط فایل‌های داخل پوشه public را شامل می‌شود
+          file_pattern: "public/all_live_configs.json public/cache_version.txt public/clash_subscription.yml"
       
       - name: Upload Artifact for Deployment Jobs
         uses: actions/upload-pages-artifact@v3
@@ -97,16 +93,16 @@ jobs:
           name: github-pages
           path: public
       
-      - name: Extract Artifact
-        run: tar -xf public/artifact.tar -C public/
-      
+      # ❌ مرحله استخراج حذف شد چون دیگر نیازی نیست
+
       - name: Deploy to ArvanCloud S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
           AWS_REGION: "us-east-1"
+          # ✅ این آدرس صحیح است و برای آپلود استفاده می‌شود
           ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
           ARVAN_S3_BUCKET: s3://v2v-data
         run: |
-          aws s3 sync ./public ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --exclude 'artifact.tar'
+          aws s3 sync ./public ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete
 
