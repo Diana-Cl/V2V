@@ -14,7 +14,7 @@ from typing import Optional, Set, List, Dict
 
 print("INFO: Initializing V2V Scraper v25.0 (Production Ready)...")
 
-# --- CONFIGURATION (✅ تغییر اصلی اینجا اعمال شده است) ---
+# --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 os.makedirs(PUBLIC_DIR, exist_ok=True) # ساخت پوشه public در صورت عدم وجود
@@ -37,7 +37,7 @@ TARGET_CONFIGS_PER_CORE = 500
 MAX_TEST_WORKERS = 150
 TCP_TIMEOUT = 2.5
 
-# --- HELPER FUNCTIONS (Robust Parsing & Validation) ---
+# --- (بقیه کد بدون تغییر باقی می‌ماند) ---
 
 def decode_base64_content(content: str) -> str:
     """Safely decodes base64 content, handling padding and other errors."""
@@ -64,7 +64,6 @@ def is_valid_config(config: str) -> bool:
         if parsed.scheme == 'vmess':
             return bool(decode_base64_content(config.replace("vmess://", "")))
         
-        # Trojan must have a password (username part of URL)
         if parsed.scheme == 'trojan' and not parsed.username:
             return False
             
@@ -90,8 +89,6 @@ def test_tcp_connection(config: str) -> Optional[str]:
             return config
     except Exception:
         return None
-
-# --- SCRAPING & CLASH GENERATION FUNCTIONS ---
 
 def fetch_from_static_sources(sources: list) -> Set[str]:
     """Fetches configs from a list of static subscription links."""
@@ -130,7 +127,6 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
             if count >= limit: break
             try:
                 decoded_content = decode_base64_content(content_file.content)
-                # CRITICAL FIX: Remove markdown code block characters
                 cleaned_content = decoded_content.replace('`', '')
                 found = {line.strip() for line in cleaned_content.splitlines() if is_valid_config(line.strip())}
                 all_configs.update(found)
@@ -152,7 +148,6 @@ def generate_clash_yaml(configs: List[str]) -> Optional[str]:
         try:
             parsed_proxy = parse_proxy_for_clash(config)
             if parsed_proxy:
-                # Use a combination of server, port, and name to ensure uniqueness
                 key = f"{parsed_proxy['server']}:{parsed_proxy['port']}:{parsed_proxy['name']}"
                 if key not in unique_check:
                     proxies.append(parsed_proxy)
@@ -184,7 +179,6 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
     """Parses a single config URI into a Clash proxy dictionary."""
     try:
         name_raw = urlparse(config).fragment or f"V2V-{int(time.time() * 1000) % 10000}"
-        # Clean the name to prevent errors
         name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251]+', '', name_raw).strip()
     except:
         name = f"V2V-Unnamed-{int(time.time() * 1000) % 10000}"
@@ -230,7 +224,6 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
         
     return None
 
-# --- MAIN LOGIC ---
 def main():
     print("\n--- 1. Loading Sources ---")
     try:
@@ -305,4 +298,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
