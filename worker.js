@@ -1,9 +1,10 @@
 // --- CONFIGURATION ---
 // این آدرس باید به فایل all_live_configs.json شما که توسط اسکریپت scraper.py ساخته و آپلود می‌شود، اشاره کند
 // مثلا آدرس فایل روی GitHub Pages یا فضای ابری آروان
-const LIVE_CONFIGS_URL = "https://smbcryp.github.io/v2v/all_live_configs.json"; 
+// ✅ تغییر اصلی: آدرس گیت‌هاب پیجز با توجه به نام مخزن (V2V) تصحیح شد
+const LIVE_CONFIGS_URL = "https://smbcryp.github.io/V2V/all_live_configs.json"; 
 
-// --- HELPERS ---
+// --- (بقیه کد بدون تغییر باقی می‌ماند) ---
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -17,7 +18,6 @@ function generateUUID() {
     });
 }
 
-// --- PING LOGIC (for non-WebSocket configs) ---
 function parseConfigForPing(config) {
     try {
         if (config.startsWith('vmess://')) {
@@ -36,14 +36,13 @@ async function testTcpConnection(config) {
     const { hostname, port } = parseConfigForPing(config);
     if (!hostname || !port) return null;
     try {
-        // connect() API requires `nodejs_compat` flag in wrangler.toml
         const socket = connect({ hostname, port, tls: { allowHalfClose: true } }); 
         const writer = socket.writable.getWriter();
         const reader = socket.readable.getReader();
         writer.releaseLock();
         reader.releaseLock();
         await socket.close();
-        return 1; // Returns 1 instead of latency as a simple success indicator from backend
+        return 1;
     } catch (e) {
         return null;
     }
@@ -67,8 +66,6 @@ async function handlePingRequest(request) {
     }
 }
 
-
-// --- SUBSCRIPTION LOGIC ---
 async function handleSubscribeRequest(request, env) {
     if (!env.V2V_KV) {
         return new Response('KV Namespace not configured.', { status: 500, headers: corsHeaders });
@@ -130,16 +127,12 @@ async function handleGetSubscription(request, env) {
 
     const output = healedConfigs.join('\n');
     if (subType === 'clash') {
-        // For Clash, we send the healed configs back as plain text.
-        // The client-side `index.js` is responsible for generating the final YAML file.
         return new Response(output, { headers: { ...corsHeaders, 'Content-Type': 'text/plain;charset=utf-8' } });
     } else {
-        // For standard subscriptions, we send the base64 encoded string.
         return new Response(btoa(output), { headers: { ...corsHeaders, 'Content-Type': 'text/plain;charset=utf-8' } });
     }
 }
 
-// --- MAIN ROUTER ---
 export default {
     async fetch(request, env, ctx) {
         if (request.method === 'OPTIONS') {
@@ -156,7 +149,6 @@ export default {
             return handleSubscribeRequest(request, env);
         }
         
-        // This regex now matches a UUID or "clash/UUID"
         if (/^(clash\/)?[a-f0-9-]{36}$/.test(url.pathname.substring(1))) {
              return handleGetSubscription(request, env);
         }
@@ -164,3 +156,5 @@ export default {
         return new Response('V2V API Worker', { status: 200, headers: corsHeaders });
     },
 };
+
+
