@@ -37,6 +37,7 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
       
       # ✅ تغییر کلیدی ۱: فایل‌های ساخته شده در ریشه را به پوشه public منتقل می‌کنیم
+      # این کار از ایجاد فایل‌های تکراری جلوگیری کرده و پوشه public را برای دیپلوی آماده می‌کند
       - name: Prepare Public Folder for Deployment
         run: |
           mv all_live_configs.json public/
@@ -47,7 +48,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 DATA: Update configs"
-          # ✅ فقط فایل‌های داخل پوشه public کامیت می‌شوند
+          # ✅ فقط تغییرات داخل پوشه public کامیت می‌شوند
           file_pattern: "public/"
       
       - name: Upload Artifact for Deployment Jobs
@@ -68,7 +69,6 @@ jobs:
         uses: actions/deploy-pages@v4
 
   deploy_to_vercel:
-    # (این بخش بدون تغییر باقی می‌ماند چون Vercel هوشمندانه پوشه public را تشخیص می‌دهد)
     needs: scrape_and_build
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -97,7 +97,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: github-pages
-          path: public
+          # ✅ آртиفکت در همین مسیر دانلود می‌شود
+          path: .
       
       - name: Deploy to ArvanCloud S3
         env:
@@ -107,7 +108,7 @@ jobs:
           ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
           ARVAN_S3_BUCKET: s3://v2v-data
         run: |
-          # ✅ تغییر کلیدی ۲: دستور sync فقط محتویات پوشه دانلود شده را به ریشه مخزن منتقل می‌کند
+          # ✅ تغییر کلیدی ۲: این دستور محتویات پوشه دانلود شده را به ریشه مخزن منتقل می‌کند
           aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete
 
 
