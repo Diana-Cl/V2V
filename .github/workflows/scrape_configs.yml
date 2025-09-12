@@ -31,14 +31,11 @@ jobs:
       - name: Install Python Dependencies
         run: pip install -r requirements.txt
 
-      - name: Run Scraper Script to Generate Files in ./public
+      - name: Run Scraper to Generate Files in ./public
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
       
-      # ✅ تغییر کلیدی ۱: مرحله اضافی "Prepare Public Folder" حذف شد
-      # اسکریپت پایتون حالا مستقیماً فایل‌ها را در پوشه public می‌سازد.
-
       - name: Commit and Push Changes to Repository
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
@@ -65,22 +62,21 @@ jobs:
     needs: scrape_and_build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
           name: github-pages
-          path: .
+          # ✅ تغییر نهایی: از همان پوشه 'public' استفاده می‌کنیم
+          path: ./public
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          # ✅ تغییر کلیدی ۲: به ورسل می‌گوییم ریشه سایت پوشه public است
-          vercel-args: '--prod'
+          # ✅ تغییر نهایی: به ورسل می‌گوییم ریشه سایت پوشه public است
           working-directory: ./public
+          vercel-args: '--prod'
 
   deploy_to_arvancloud:
     needs: scrape_and_build
@@ -90,7 +86,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: github-pages
-          path: .
+          # ✅ تغییر نهایی: از همان پوشه 'public' استفاده می‌کنیم
+          path: ./public
       
       - name: Deploy to ArvanCloud S3
         env:
@@ -100,7 +97,7 @@ jobs:
           ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
           ARVAN_S3_BUCKET: s3://v2v-data
         run: |
-          # ✅ تغییر کلیدی ۳: فقط محتویات داخل پوشه public را به ابر آروان منتقل می‌کنیم
+          # ✅ تغییر نهایی: فقط محتویات داخل پوشه public را به ابر آروان منتقل می‌کنیم
           aws s3 sync ./public ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete
 
 
