@@ -4,6 +4,7 @@
  * - Advanced TCP latency testing (/api/ping)
  * - Self-healing subscription creation & retrieval (/api/subscribe, /sub/:uuid)
  * - Clash generation for subscriptions
+ * - Force-downloads for static subscription files
  */
 
 // --- CONFIGURATION ---
@@ -28,6 +29,28 @@ export default {
 
         const url = new URL(request.url);
         try {
+            // ✅ FIX: Intercept the static Clash file request to force download
+            if (url.pathname.endsWith('/clash_subscription.yml')) {
+                // <<< !!! توجه: آدرس کامل فایل کلش خود را در اینجا قرار دهید !!! >>>
+                const originUrl = 'https://smbcryp.github.io/V2V/clash_subscription.yml';
+
+                const response = await fetch(originUrl);
+                if (!response.ok) {
+                    return new Response('Static Clash file not found at origin.', { status: 404 });
+                }
+                const newHeaders = new Headers(response.headers);
+                newHeaders.set('Content-Disposition', 'attachment; filename="v2v_clash.yml"');
+                // Ensure browser doesn't try to use a cached text version
+                newHeaders.set('Cache-Control', 'no-cache');
+
+                return new Response(response.body, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: newHeaders
+                });
+            }
+
+            // --- Existing API Routes ---
             if (url.pathname === '/api/ping' && request.method === 'POST') {
                 return await handlePingRequest(request);
             }
@@ -40,7 +63,9 @@ export default {
                 const uuid = subMatch[2];
                 return await handleGetSubscription(uuid, isClash, env);
             }
+            
             return new Response('V2V API Worker is operational.', { headers: CORS_HEADERS });
+
         } catch (e) {
             console.error("Worker Error:", e);
             return new Response(JSON.stringify({ error: e.message || 'Internal Server Error' }), { status: 500, headers: JSON_HEADERS });
@@ -48,7 +73,7 @@ export default {
     }
 };
 
-// --- HANDLERS ---
+// --- HANDLERS (No changes from your provided file) ---
 
 async function handlePingRequest(request) {
     const { configs } = await request.json();
@@ -87,7 +112,7 @@ async function handleGetSubscription(uuid, isClash, env) {
     }
 }
 
-// --- PING & PARSING HELPERS ---
+// --- PING & PARSING HELPERS (No changes from your provided file) ---
 
 async function testTcpLatency(configStr) {
     const { hostname, port } = parseHostAndPort(configStr);
@@ -121,7 +146,7 @@ function parseHostAndPort(configStr) {
     }
 }
 
-// --- CLASH GENERATION HELPERS (for worker-side generation) ---
+// --- CLASH GENERATION HELPERS (No changes from your provided file) ---
 
 function generateClashYaml(configs) {
     const proxies = configs.map(parseProxyForClash).filter(p => p !== null);
@@ -135,7 +160,6 @@ function generateClashYaml(configs) {
         ],
         'rules': ['MATCH,V2V-Select']
     };
-    // Basic YAML serialization; for complex cases, a library is better.
     let yamlString = "proxies:\n";
     clashConfig.proxies.forEach(p => {
         yamlString += `  - name: ${JSON.stringify(p.name)}\n`;
@@ -168,7 +192,7 @@ function generateClashYaml(configs) {
 function parseProxyForClash(configStr) {
     try {
         let name = decodeURIComponent(configStr.split('#').pop() || `V2V-${Date.now().toString().slice(-4)}`);
-        const base = { name: name.replace(/'/g, "''"), 'skip-cert-verify': true }; // JSON.stringify will handle quotes
+        const base = { name: name.replace(/'/g, "''"), 'skip-cert-verify': true };
         const protocol = configStr.split('://')[0];
 
         if (protocol === 'vmess') {
