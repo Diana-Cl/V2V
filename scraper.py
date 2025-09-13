@@ -11,13 +11,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 from github import Github, Auth
 from typing import Optional, Set, List, Dict
+from collections import defaultdict
 
-print("INFO: Initializing V2V Scraper v27.0 (Root Directory Mode)...")
+print("INFO: Initializing V2V Scraper v28.0 (Final Architecture)...")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
-# ✅ تغییر نهایی: تمام مسیرهای خروجی به ریشه اصلی پروژه اشاره می‌کنند
 OUTPUT_JSON_FILE = os.path.join(BASE_DIR, "all_live_configs.json")
 OUTPUT_CLASH_FILE = os.path.join(BASE_DIR, "clash_subscription.yml")
 CACHE_VERSION_FILE = os.path.join(BASE_DIR, "cache_version.txt")
@@ -33,12 +33,9 @@ TARGET_CONFIGS_PER_CORE = 500
 MAX_TEST_WORKERS = 150
 TCP_TIMEOUT = 2.5
 
-# --- (بقیه کد بدون تغییر باقی می‌ماند) ---
-
+# --- HELPER FUNCTIONS ---
 def decode_base64_content(content: str) -> str:
-    """Safely decodes base64 content, handling padding and other errors."""
-    if not isinstance(content, str) or not content.strip():
-        return ""
+    if not isinstance(content, str) or not content.strip(): return ""
     try:
         content = content.strip().replace('\n', '').replace('\r', '')
         return base64.b64decode(content + '===').decode('utf-8', 'ignore')
@@ -46,249 +43,158 @@ def decode_base64_content(content: str) -> str:
         return ""
 
 def is_valid_config(config: str) -> bool:
-    """More robustly validates the format of a config string."""
-    if not isinstance(config, str) or not config.strip():
-        return False
+    if not isinstance(config, str) or not config.strip(): return False
     try:
-        if not config.startswith(tuple(p + '://' for p in VALID_PROTOCOLS)):
-            return False
-        
         parsed = urlparse(config)
-        if parsed.scheme not in VALID_PROTOCOLS:
-            return False
-        
-        if parsed.scheme == 'vmess':
-            return bool(decode_base64_content(config.replace("vmess://", "")))
-        
-        if parsed.scheme == 'trojan' and not parsed.username:
-            return False
-            
-        return bool(parsed.hostname)
+        return parsed.scheme in VALID_PROTOCOLS and bool(parsed.hostname or (parsed.scheme == 'vmess' and decode_base64_content(config.replace("vmess://", ""))))
     except Exception:
         return False
 
 def test_tcp_connection(config: str) -> Optional[str]:
-    """Tests TCP connection for a config, returns the config if successful."""
     try:
         parsed_url = urlparse(config)
-        hostname = parsed_url.hostname
-        port = parsed_url.port
-        if not hostname or not port:
-            if parsed_url.scheme == 'vmess':
-                vmess_data = json.loads(decode_base64_content(config.replace("vmess://", "")))
-                hostname = vmess_data.get('add')
-                port = int(vmess_data.get('port'))
-            else:
-                return None
-        
+        hostname, port = parsed_url.hostname, parsed_url.port
+        if not all([hostname, port]) and parsed_url.scheme == 'vmess':
+            vmess_data = json.loads(decode_base64_content(config.replace("vmess://", "")))
+            hostname, port = vmess_data.get('add'), int(vmess_data.get('port', 0))
+        if not all([hostname, port]): return None
         with socket.create_connection((hostname, port), timeout=TCP_TIMEOUT):
             return config
     except Exception:
         return None
 
-def fetch_from_static_sources(sources: list) -> Set[str]:
-    """Fetches configs from a list of static subscription links."""
+def fetch_from_sources(sources: list, is_github: bool, pat: str = None, limit: int = 0) -> Set[str]:
     all_configs = set()
-    def fetch_url(url):
-        try:
-            response = requests.get(url, headers=HEADERS, timeout=10)
-            response.raise_for_status()
-            content = decode_base64_content(response.text)
-            return {line.strip() for line in content.splitlines() if line.strip()}
-        except requests.RequestException:
+    if is_github:
+        if not pat:
+            print("WARNING: GitHub PAT not found. Skipping dynamic search.")
             return set()
-
-    with ThreadPoolExecutor(max_workers=20) as executor:
-        futures = [executor.submit(fetch_url, url) for url in sources]
-        for future in as_completed(futures):
-            all_configs.update(future.result())
+        try:
+            auth = Auth.Token(pat)
+            g = Github(auth=auth, timeout=30)
+            query = " OR ".join(VALID_PROTOCOLS) + " extension:txt extension:md -user:mahdibland"
+            results = g.search_code(query, order='desc', sort='indexed')
+            count = 0
+            for content_file in results:
+                if count >= limit: break
+                try:
+                    decoded_content = decode_base64_content(content_file.content).replace('`', '')
+                    all_configs.update({line.strip() for line in decoded_content.splitlines() if is_valid_config(line.strip())})
+                    count += 1
+                except Exception: continue
+        except Exception as e:
+            print(f"ERROR: GitHub search failed. Reason: {e}")
+    else:
+        def fetch_url(url):
+            try:
+                response = requests.get(url, headers=HEADERS, timeout=10)
+                response.raise_for_status()
+                content = decode_base64_content(response.text)
+                return {line.strip() for line in content.splitlines() if line.strip()}
+            except requests.RequestException: return set()
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            futures = [executor.submit(fetch_url, url) for url in sources]
+            for future in as_completed(futures):
+                all_configs.update(future.result())
     
     return {cfg for cfg in all_configs if is_valid_config(cfg)}
 
-def fetch_from_github(pat: str, limit: int) -> Set[str]:
-    """Fetches configs by searching public GitHub repositories."""
-    if not pat:
-        print("WARNING: GitHub PAT not found. Skipping dynamic search.")
-        return set()
-    
-    try:
-        auth = Auth.Token(pat)
-        g = Github(auth=auth, timeout=30)
-        query = " OR ".join(VALID_PROTOCOLS) + " extension:txt extension:md -user:mahdibland"
-        results = g.search_code(query, order='desc', sort='indexed')
-        
-        all_configs = set()
-        count = 0
-        for content_file in results:
-            if count >= limit: break
-            try:
-                decoded_content = decode_base64_content(content_file.content)
-                cleaned_content = decoded_content.replace('`', '')
-                found = {line.strip() for line in cleaned_content.splitlines() if is_valid_config(line.strip())}
-                all_configs.update(found)
-                count += 1
-            except Exception:
-                continue
-        
-        return all_configs
-    except Exception as e:
-        print(f"ERROR: GitHub search failed. Reason: {e}")
-        return set()
-
-def generate_clash_yaml(configs: List[str]) -> Optional[str]:
-    """Generates a Clash Meta compatible YAML string from a list of configs."""
-    proxies = []
-    unique_check = set()
-    
-    for config in configs:
-        try:
-            parsed_proxy = parse_proxy_for_clash(config)
-            if parsed_proxy:
-                key = f"{parsed_proxy['server']}:{parsed_proxy['port']}:{parsed_proxy['name']}"
-                if key not in unique_check:
-                    proxies.append(parsed_proxy)
-                    unique_check.add(key)
-        except Exception:
-            continue
-            
-    if not proxies:
-        return None
-
-    proxy_names = [p['name'] for p in proxies]
-    
-    clash_config = {
-        'proxies': proxies,
-        'proxy-groups': [
-            {'name': 'V2V-Auto', 'type': 'url-test', 'proxies': proxy_names, 'url': 'http://www.gstatic.com/generate_204', 'interval': 300},
-            {'name': 'V2V-Select', 'type': 'select', 'proxies': ['V2V-Auto', *proxy_names]}
-        ],
-        'rules': ['MATCH,V2V-Select']
-    }
-    
-    class NoAliasDumper(yaml.Dumper):
-        def ignore_aliases(self, data):
-            return True
-
-    return yaml.dump(clash_config, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False, indent=2)
-
 def parse_proxy_for_clash(config: str) -> Optional[Dict]:
-    """Parses a single config URI into a Clash proxy dictionary."""
     try:
         name_raw = urlparse(config).fragment or f"V2V-{int(time.time() * 1000) % 10000}"
-        name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251]+', '', name_raw).strip()
-    except:
-        name = f"V2V-Unnamed-{int(time.time() * 1000) % 10000}"
-
-    base = {'name': name, 'skip-cert-verify': True}
-    protocol = urlparse(config).scheme
-
-    try:
+        name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251]+', '', name_raw).strip() or "V2V-Config"
+        base = {'name': name, 'skip-cert-verify': True}
+        parsed_url = urlparse(config)
+        protocol = parsed_url.scheme
+        
         if protocol == 'vmess':
             decoded = json.loads(decode_base64_content(config.replace("vmess://", "")))
-            vmess_proxy = {
-                **base, 'type': 'vmess', 'server': decoded.get('add'), 'port': int(decoded.get('port')),
-                'uuid': decoded.get('id'), 'alterId': int(decoded.get('aid', 0)), 'cipher': decoded.get('scy', 'auto'),
-                'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net'), 'servername': decoded.get('sni') or decoded.get('host')
-            }
-            if decoded.get('net') == 'ws':
-                vmess_proxy['ws-opts'] = {'path': decoded.get('path', '/'), 'headers': {'Host': decoded.get('host', decoded.get('add'))}}
-            return vmess_proxy
-        
-        parsed_url = urlparse(config)
+            proxy = {**base, 'type': 'vmess', 'server': decoded.get('add'), 'port': int(decoded.get('port')), 'uuid': decoded.get('id'), 'alterId': int(decoded.get('aid', 0)), 'cipher': decoded.get('scy', 'auto'), 'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net'), 'servername': decoded.get('sni') or decoded.get('host')}
+            if decoded.get('net') == 'ws': proxy['ws-opts'] = {'path': decoded.get('path', '/'), 'headers': {'Host': decoded.get('host', decoded.get('add'))}}
+            return proxy
+            
         params = dict(p.split('=', 1) for p in parsed_url.query.split('&') if '=' in p)
-
         if protocol == 'vless':
-            vless_proxy = {
-                **base, 'type': 'vless', 'server': parsed_url.hostname, 'port': parsed_url.port,
-                'uuid': parsed_url.username, 'tls': params.get('security') == 'tls', 'network': params.get('type'),
-                'servername': params.get('sni')
-            }
-            if params.get('type') == 'ws':
-                vless_proxy['ws-opts'] = {'path': params.get('path', '/'), 'headers': {'Host': params.get('host', parsed_url.hostname)}}
-            return vless_proxy
-            
+            proxy = {**base, 'type': 'vless', 'server': parsed_url.hostname, 'port': parsed_url.port, 'uuid': parsed_url.username, 'tls': params.get('security') == 'tls', 'network': params.get('type'), 'servername': params.get('sni')}
+            if params.get('type') == 'ws': proxy['ws-opts'] = {'path': params.get('path', '/'), 'headers': {'Host': params.get('host', parsed_url.hostname)}}
+            return proxy
         if protocol == 'trojan':
-            if not parsed_url.username: return None
             return {**base, 'type': 'trojan', 'server': parsed_url.hostname, 'port': parsed_url.port, 'password': parsed_url.username, 'sni': params.get('sni')}
-            
         if protocol == 'ss':
-            decoded_user = decode_base64_content(parsed_url.username)
-            cipher, password = decoded_user.split(':', 1)
+            cipher, password = decode_base64_content(parsed_url.username).split(':', 1)
             return {**base, 'type': 'ss', 'server': parsed_url.hostname, 'port': parsed_url.port, 'cipher': cipher, 'password': password}
-    except:
+    except Exception:
         return None
-        
     return None
+
+def generate_clash_yaml(configs: List[str]) -> Optional[str]:
+    proxies = [p for p in (parse_proxy_for_clash(c) for c in configs) if p]
+    if not proxies: return None
+    proxy_names = [p['name'] for p in proxies]
+    clash_config = {'proxies': proxies, 'proxy-groups': [{'name': 'V2V-Auto', 'type': 'url-test', 'proxies': proxy_names, 'url': 'http://www.gstatic.com/generate_204', 'interval': 300}, {'name': 'V2V-Select', 'type': 'select', 'proxies': ['V2V-Auto', *proxy_names]}], 'rules': ['MATCH,V2V-Select']}
+    class NoAliasDumper(yaml.Dumper):
+        def ignore_aliases(self, data): return True
+    return yaml.dump(clash_config, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False, indent=2)
 
 def main():
     print("\n--- 1. Loading Sources ---")
     try:
         with open(SOURCES_FILE, 'r', encoding='utf-8') as f:
-            sources = json.load(f)
-        static_sources = sources.get("static", [])
-        github_search_limit = sources.get("github_search_limit", 50)
+            sources_data = json.load(f)
+        static_sources = sources_data.get("static", [])
+        github_search_limit = sources_data.get("github_search_limit", 50)
         print(f"✅ Loaded {len(static_sources)} static sources. GitHub search limit: {github_search_limit}.")
     except Exception as e:
         print(f"CRITICAL: Failed to load sources.json. Error: {e}"); return
 
     print("\n--- 2. Fetching Configs ---")
     with ThreadPoolExecutor(max_workers=2) as executor:
-        static_future = executor.submit(fetch_from_static_sources, static_sources)
-        dynamic_future = executor.submit(fetch_from_github, GITHUB_PAT, github_search_limit)
-        static_configs = static_future.result()
-        print(f"✅ Found {len(static_configs)} valid configs from static sources.")
-        dynamic_configs = dynamic_future.result()
-        print(f"✅ Found {len(dynamic_configs)} valid configs from dynamic GitHub search.")
+        static_configs = executor.submit(fetch_from_sources, static_sources, is_github=False).result()
+        dynamic_configs = executor.submit(fetch_from_sources, [], is_github=True, pat=GITHUB_PAT, limit=github_search_limit).result()
+    print(f"✅ Found {len(static_configs)} valid configs from static sources.")
+    print(f"✅ Found {len(dynamic_configs)} valid configs from dynamic GitHub search.")
 
     all_unique_configs = static_configs.union(dynamic_configs)
-    print(f"\n📊 Total unique configs found before testing: {len(all_unique_configs)}")
+    print(f"\n📊 Total unique configs found: {len(all_unique_configs)}")
     if not all_unique_configs: print("CRITICAL: No configs found. Exiting."); return
 
-    print(f"\n--- 3. Testing Configs (up to {MAX_CONFIGS_TO_TEST}) ---")
-    configs_to_test = list(all_unique_configs)[:MAX_CONFIGS_TO_TEST]
-    live_configs = set()
-    with ThreadPoolExecutor(max_workers=MAX_TEST_WORKERS) as executor:
-        futures = {executor.submit(test_tcp_connection, c) for c in configs_to_test}
-        for future in as_completed(futures):
-            result = future.result()
-            if result:
-                live_configs.add(result)
-    print("✅ TCP testing complete.")
-
-    if not live_configs: print("\nCRITICAL: No live configs found. Exiting."); return
-
-    print(f"\n--- 4. Finalizing and Writing Files ---")
+    print(f"\n--- 3. Testing Configs ---")
+    live_configs = {result for result in ThreadPoolExecutor(max_workers=MAX_TEST_WORKERS).map(test_tcp_connection, list(all_unique_configs)[:MAX_CONFIGS_TO_TEST]) if result}
     print(f"🏆 Found {len(live_configs)} live configs.")
-    
-    xray_pool = {cfg for cfg in live_configs if urlparse(cfg).scheme in XRAY_PROTOCOLS}
-    singbox_only_pool = {cfg for cfg in live_configs if urlparse(cfg).scheme in SINGBOX_ONLY_PROTOCOLS}
-    
-    xray_final = list(xray_pool)[:TARGET_CONFIGS_PER_CORE]
-    singbox_final = list(singbox_only_pool)
-    
-    needed_for_singbox = TARGET_CONFIGS_PER_CORE - len(singbox_final)
-    if needed_for_singbox > 0:
-        shared_pool_remaining = xray_pool - set(xray_final)
-        singbox_final.extend(list(shared_pool_remaining)[:needed_for_singbox])
-    singbox_final = singbox_final[:TARGET_CONFIGS_PER_CORE]
+    if not live_configs: print("CRITICAL: No live configs found. Exiting."); return
 
-    output_data = {"xray": xray_final, "singbox": singbox_final}
+    print("\n--- 4. Grouping and Finalizing ---")
+    
+    all_final_configs = list(live_configs)[:TARGET_CONFIGS_PER_CORE * 2]
+    
+    xray_pool = {cfg for cfg in all_final_configs if urlparse(cfg).scheme in XRAY_PROTOCOLS}
+    singbox_pool = {cfg for cfg in all_final_configs} # Singbox supports all protocols in this context
+
+    def group_by_protocol(configs):
+        grouped = defaultdict(list)
+        for cfg in configs:
+            protocol = urlparse(cfg).scheme
+            if protocol == 'hysteria2': protocol = 'hy2' # Normalize for frontend
+            grouped[protocol].append(cfg)
+        return dict(grouped)
+
+    # ✅ اصلاح نهایی: خروجی JSON با فرمت گروه‌بندی شده بر اساس پروتکل ساخته می‌شود
+    output_data = {
+        "xray": group_by_protocol(list(xray_pool)[:TARGET_CONFIGS_PER_CORE]),
+        "singbox": group_by_protocol(list(singbox_pool)[:TARGET_CONFIGS_PER_CORE])
+    }
 
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
-    print(f"✅ Wrote {len(xray_final)} Xray and {len(singbox_final)} Sing-box configs to {OUTPUT_JSON_FILE}.")
+    print(f"✅ Wrote grouped configs to {OUTPUT_JSON_FILE}.")
 
-    clash_yaml_content = generate_clash_yaml(xray_final)
+    clash_yaml_content = generate_clash_yaml(list(xray_pool)[:TARGET_CONFIGS_PER_CORE])
     if clash_yaml_content:
-        with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f:
-            f.write(clash_yaml_content)
-        print(f"✅ Wrote Clash subscription with {len(xray_final)} configs to {OUTPUT_CLASH_FILE}.")
-    else:
-        print("⚠️ Could not generate Clash subscription file (no compatible configs found).")
+        with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f: f.write(clash_yaml_content)
+        print(f"✅ Wrote Clash subscription to {OUTPUT_CLASH_FILE}.")
 
-    with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f:
-        f.write(str(int(time.time())))
-    print(f"✅ Cache version updated in {CACHE_VERSION_FILE}.")
+    with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f: f.write(str(int(time.time())))
+    print(f"✅ Cache version updated.")
     
     print("\n--- Process Completed ---")
 
