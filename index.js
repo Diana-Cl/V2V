@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const qrModal = document.getElementById('qr-modal');
     const qrContainer = document.getElementById('qr-code-container');
     const toast = document.getElementById('toast');
-    let allConfigs = { xray: [], singbox: [] };
+    let allConfigs = { xray: {}, singbox: {} }; // ✅ FIX: Default to object instead of array
 
     // --- HELPERS ---
     const toShamsi = (timestamp) => {
@@ -42,11 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- RENDER FUNCTION ---
-    function renderCore(core, configs) {
+    function renderCore(core, groupedConfigs) { // Changed parameter name for clarity
         const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
         wrapper.innerHTML = '';
 
-        if (!configs || configs.length === 0) {
+        if (!groupedConfigs || Object.keys(groupedConfigs).length === 0) {
             wrapper.innerHTML = `<div class="alert">هیچ کانفیگ فعالی یافت نشد.</div>`;
             return;
         }
@@ -92,17 +92,15 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         wrapper.innerHTML = actionsHTML;
 
-        const grouped = configs.reduce((acc, config) => {
-            const protocol = config.match(/^(\w+):\/\//)?.[1]?.toLowerCase() || 'unknown';
-            if (!acc[protocol]) acc[protocol] = [];
-            acc[protocol].push(config);
-        }, {});
+        // ✅ FIX: The grouping logic below is removed, as scraper.py now provides pre-grouped data.
+        // const grouped = configs.reduce(...); // This was the line causing the error.
 
-        for (const protocol in grouped) {
+        for (const protocol in groupedConfigs) {
             const pGroupEl = document.createElement('div');
             pGroupEl.className = 'protocol-group';
             let itemsHTML = '';
-            grouped[protocol].forEach(config => {
+            const configs = groupedConfigs[protocol]; // get configs for the current protocol
+            configs.forEach(config => {
                 const name = parseConfigName(config);
                 const safeConfig = config.replace(/'/g, "&apos;").replace(/"/g, '&quot;');
                 itemsHTML += `
@@ -114,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             pGroupEl.innerHTML = `
                 <div class="protocol-header" data-action="toggle-protocol">
-                    <span>${protocol.toUpperCase()} (${grouped[protocol].length})</span>
+                    <span>${protocol.toUpperCase()} (${configs.length})</span>
                     <span class="toggle-icon">▼</span>
                 </div>
                 <ul class="config-list">${itemsHTML}</ul>`;
@@ -133,9 +131,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataRes = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
             if (!dataRes.ok) throw new Error('Failed to load configs');
             allConfigs = await dataRes.json();
-            renderCore('xray', allConfigs.xray || []);
-            renderCore('singbox', allConfigs.singbox || []);
+            // ✅ FIX: Use {} as fallback for grouped data structure
+            renderCore('xray', allConfigs.xray || {});
+            renderCore('singbox', allConfigs.singbox || {});
         } catch (e) {
+            console.error("Config loading failed:", e);
             const errorMsg = `<div class="alert">خطا در بارگذاری کانفیگ‌ها. لطفا صفحه را رفرش کنید.</div>`;
             xrayWrapper.innerHTML = errorMsg;
             singboxWrapper.innerHTML = errorMsg;
@@ -199,7 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function copyReadySubscription(core, type, method) {
-        const topConfigs = (allConfigs[core] || []).slice(0, READY_SUB_COUNT);
+        // ✅ FIX: Flatten the grouped configs back into a single list before slicing
+        const allFlatConfigs = Object.values(allConfigs[core] || {}).flat();
+        const topConfigs = allFlatConfigs.slice(0, READY_SUB_COUNT);
         if (topConfigs.length === 0) return showToast('کانفیگی برای ساخت لینک یافت نشد.', true);
         
         let url, content;
@@ -224,7 +226,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function generateClashFile(core) {
         let selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
-        if (selectedConfigs.length === 0) return showToast('هیچ کانفیگی برای ساخت فایل انتخاب نشده است.', true);
+        if (selectedConfigs.length === 0) {
+            showToast('هیچ کانفیگی انتخاب نشده، فایل از کانفیگ‌های برتر ساخته می‌شود.');
+            // ✅ FIX: Handle the case where no configs are selected, using the flattened list
+            const allFlatConfigs = Object.values(allConfigs[core] || {}).flat();
+            selectedConfigs = allFlatConfigs.slice(0, READY_SUB_COUNT);
+            if (selectedConfigs.length === 0) return showToast('هیچ کانفیگی برای ساخت فایل وجود ندارد.', true);
+        }
         
         const yamlString = generateClashYaml(selectedConfigs);
         if (!yamlString) return showToast('ساخت فایل Clash از کانفیگ‌های انتخابی ممکن نبود.', true);
@@ -286,8 +294,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const ws = new WebSocket(wsUrl);
                 const timeoutId = setTimeout(() => { ws.close(); reject(new Error('Timeout')); }, timeout);
-                ws.onopen = () => { clearTimeout(timeoutId); ws.close(); resolve(Date.now() - startTime); };
                 const startTime = Date.now();
+                ws.onopen = () => { clearTimeout(timeoutId); ws.close(); resolve(Date.now() - startTime); };
                 ws.onerror = (e) => { clearTimeout(timeoutId); reject(new Error('WebSocket Error')); };
             });
             updateItemUI(item, { source: 'C', ping });
