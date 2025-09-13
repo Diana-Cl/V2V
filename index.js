@@ -2,37 +2,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
     const API_ENDPOINT = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
     const PUBLIC_SUB_UUID = "00000000-v2v-public-sub-000000000000";
-
-    // ✅ معماری نهایی: مسیر نسبی به عنوان اولین منبع برای استقلال کامل
     const DATA_MIRRORS = [
-        './all_live_configs.json', // منبع اصلی و محلی هر سایت
+        './all_live_configs.json',
         'https://v2v-vercel.vercel.app/all_live_configs.json',
         'https://smbcryp.github.io/V2V/all_live_configs.json',
         'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/all_live_configs.json'
     ];
     const CACHE_URLS = [
-        './cache_version.txt', // منبع اصلی و محلی هر سایت
+        './cache_version.txt',
         'https://v2v-vercel.vercel.app/cache_version.txt',
         'https://smbcryp.github.io/V2V/cache_version.txt',
         'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/cache_version.txt'
     ];
-    // ✅ این مسیر هم نسبی شد تا هر سایت فایل کلش خودش را ارائه دهد
     const STATIC_CLASH_SUB_URL = './clash_subscription.yml';
-
-    const PING_TIMEOUT = 3000;
-    const READY_SUB_COUNT = 50; // افزایش تعداد کانفیگ‌های اشتراک آماده
     const FETCH_TIMEOUT = 5000;
+    const READY_SUB_COUNT = 50;
 
-    // --- DOM ELEMENTS & STATE ---
+    // --- DOM & STATE ---
     const statusBar = document.getElementById('status-bar');
     const xrayWrapper = document.getElementById('xray-content-wrapper');
     const singboxWrapper = document.getElementById('singbox-content-wrapper');
     const qrModal = document.getElementById('qr-modal');
     const qrContainer = document.getElementById('qr-code-container');
     const toast = document.getElementById('toast');
-    let allConfigs = { xray: [], singbox: [] };
+    let allConfigsData = {};
 
-    // --- HELPERS (توابع هوشمندانه شما) ---
+    // --- HELPERS ---
     const toShamsi = (timestamp) => {
         if (!timestamp || isNaN(timestamp)) return 'N/A';
         try {
@@ -54,12 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const showToast = (message, isError = false) => {
         toast.textContent = message;
-        toast.className = 'toast show';
-        if (isError) toast.classList.add('error');
+        toast.className = `toast show ${isError ? 'error' : ''}`;
         setTimeout(() => { toast.className = 'toast'; }, 3000);
     };
 
-    // --- IMPROVED FAILOVER MECHANISM (منطق failover پیشرفته شما) ---
     async function fetchWithFailover(urls, isJson = true) {
         const fetchWithTimeout = async (url) => {
             const controller = new AbortController();
@@ -72,8 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 clearTimeout(timeoutId);
             }
         };
-
-        // استفاده از Promise.any برای پیدا کردن اولین پاسخ موفق
         const promises = urls.map(url => fetchWithTimeout(url));
         try {
             return await Promise.any(promises);
@@ -83,13 +74,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- RENDER FUNCTIONS (تابع رندر شما) ---
-    function renderCore(core, configs) {
+    // --- RENDER FUNCTION ---
+    function renderCore(core, groupedConfigs) {
         const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
         wrapper.innerHTML = '';
+        
+        const allFlatConfigs = Object.values(groupedConfigs).flat();
 
-        if (!configs || configs.length === 0) {
-            wrapper.innerHTML = `<div class="alert">هیچ کانفیگ فعالی یافت نشد.</div>`;
+        if (allFlatConfigs.length === 0) {
+            wrapper.innerHTML = `<div class="alert">هیچ کانفیگ فعالی برای هسته ${core} یافت نشد.</div>`;
             return;
         }
 
@@ -123,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      <button class="action-btn-small" onclick="v2v.createSubscription('${core}', 'standard', 'qr')">QR Code</button>
                 </div>
             </div>
-             ${isXray ? `
+            ${isXray ? `
             <div class="action-box">
                 <span class="action-box-label">ساخت لینک Clash از موارد انتخابی</span>
                  <div class="action-box-buttons">
@@ -140,17 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         wrapper.innerHTML = actionsHTML;
 
-        const grouped = configs.reduce((acc, config) => {
-            const protocol = config.match(/^(\w+):\/\//)?.[1]?.toLowerCase() || 'unknown';
-            if (!acc[protocol]) acc[protocol] = [];
-            acc[protocol].push(config);
-        }, {});
-
-        for (const protocol in grouped) {
+        // ✅ اصلاح نهایی: رندر کردن بر اساس ساختار جدید (گروه‌بندی شده)
+        for (const protocol in groupedConfigs) {
+            const configs = groupedConfigs[protocol];
             const pGroupEl = document.createElement('div');
             pGroupEl.className = 'protocol-group';
             let itemsHTML = '';
-            grouped[protocol].forEach(config => {
+            configs.forEach(config => {
                 const name = parseConfigName(config);
                 const safeConfig = config.replace(/'/g, "&apos;");
                 itemsHTML += `
@@ -162,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             pGroupEl.innerHTML = `
                 <div class="protocol-header" onclick="this.parentElement.classList.toggle('open')">
-                    <span>${protocol.toUpperCase()} (${grouped[protocol].length})</span>
+                    <span>${protocol.toUpperCase()} (${configs.length})</span>
                     <span class="toggle-icon">▼</span>
                 </div>
                 <ul class="config-list">${itemsHTML}</ul>`;
@@ -177,14 +166,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const versionText = await fetchWithFailover(CACHE_URLS, false);
             statusBar.textContent = `آخرین بروزرسانی: ${toShamsi(versionText.split('\n')[0].trim())}`;
         } catch (e) {
-            console.warn('Could not load cache version:', e.message);
             statusBar.textContent = 'عدم امکان دریافت زمان بروزرسانی.';
         }
         
         try {
-            allConfigs = await fetchWithFailover(DATA_MIRRORS, true);
-            renderCore('xray', allConfigs.xray || []);
-            renderCore('singbox', allConfigs.singbox || []);
+            allConfigsData = await fetchWithFailover(DATA_MIRRORS, true);
+            if (typeof allConfigsData !== 'object' || !allConfigsData.xray || !allConfigsData.singbox) {
+                throw new Error("فرمت داده دریافت شده نامعتبر است.");
+            }
+            renderCore('xray', allConfigsData.xray);
+            renderCore('singbox', allConfigsData.singbox);
         } catch (error) {
             console.error("خطا در بارگذاری کانفیگ‌ها:", error);
             const errorMsg = `<div class="alert">خطا در بارگذاری: ${error.message}</div>`;
@@ -194,13 +185,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })();
 
-    // --- GLOBAL API (تلفیق نهایی) ---
+    // --- GLOBAL API ---
     window.v2v = {
         showToast,
-        
-        runAdvancedPingTest: async (core) => { /* (منطق تست پینگ شما بدون تغییر) */ },
-        testWebSocket: async (config, item, timeout) => { /* (منطق تست پینگ شما بدون تغییر) */ },
+        getStaticClashUrl: () => new URL(STATIC_CLASH_SUB_URL, window.location.href).href,
+        copyStaticClashSub: (action) => {
+            const url = v2v.getStaticClashUrl();
+            if (action === 'copy') { navigator.clipboard.writeText(url); showToast('لینک Clash کپی شد'); }
+            else if (action === 'qr') { v2v.showQrCode(url); }
+        },
+        copyReadySubscription: (core, type, action) => {
+            const coreData = allConfigsData[core];
+            if (!coreData) return showToast("داده‌ای برای این هسته یافت نشد.", true);
+            
+            const allFlatConfigs = Object.values(coreData).flat();
+            if (allFlatConfigs.length === 0) return showToast("کانفیگی برای ساخت اشتراک یافت نشد.", true);
+            
+            const configsForSub = allFlatConfigs.slice(0, READY_SUB_COUNT);
+            
+            // For now, we fall back to direct data URI as public subscription via worker needs more setup
+            const content = configsForSub.join('\n');
+            const directUrl = `data:text/plain;base64,${btoa(unescape(encodeURIComponent(content)))}`;
 
+            if (action === 'copy') { navigator.clipboard.writeText(directUrl); showToast('لینک اشتراک آماده کپی شد.'); }
+            else if (action === 'qr') { v2v.showQrCode(directUrl); }
+        },
         createSubscription: async (core, type, action) => {
             const selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
             if (selectedConfigs.length === 0) return showToast('لطفاً حداقل یک کانفیگ را انتخاب کنید.', true);
@@ -210,66 +219,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!res.ok) throw new Error(`Server responded with ${res.status}`);
                 const data = await res.json();
                 
-                const subTypePath = type === 'clash' ? 'clash/' : '';
-                // اطمینان از عدم وجود اسلش اضافه
-                const finalUrl = `${data.subscription_url.replace(/\/$/, '')}/${subTypePath}`;
-                
+                let finalUrl = data.subscription_url;
+                if (type === 'clash' && data.clash_url) {
+                    finalUrl = data.clash_url;
+                }
+
                 if (action === 'copy') { navigator.clipboard.writeText(finalUrl); showToast('لینک اشتراک شخصی کپی شد.'); } 
                 else if (action === 'qr') { v2v.showQrCode(finalUrl); }
-
             } catch (error) {
                 console.warn('Subscription API failed, creating fallback link:', error);
                 showToast('API در دسترس نیست، لینک پشتیبان ساخته شد.', true);
                 const content = selectedConfigs.join('\n');
                 const directUrl = `data:text/plain;base64,${btoa(unescape(encodeURIComponent(content)))}`;
-                if (action === 'copy') { navigator.clipboard.writeText(directUrl); } 
+                if (action === 'copy') { navigator.clipboard.writeText(directUrl); }
                 else if (action === 'qr') { v2v.showQrCode(directUrl); }
             }
         },
-
-        // ✅ اصلاح نهایی: این تابع حالا یک اشتراک واقعی و پویا می‌سازد
-        copyReadySubscription: (core, type, action) => {
-            const subTypePath = type === 'clash' ? 'clash/' : '';
-            const corePath = core === 'singbox' ? 'singbox/' : 'xray/';
-            const finalUrl = `${API_ENDPOINT}/sub/${corePath}${subTypePath}${PUBLIC_SUB_UUID}`;
-            
-            if (action === 'copy') {
-                navigator.clipboard.writeText(finalUrl);
-                showToast('لینک اشتراک آماده کپی شد.');
-            } else if (action === 'qr') {
-                v2v.showQrCode(finalUrl);
-            }
-        },
-        
-        getStaticClashUrl: () => new URL(STATIC_CLASH_SUB_URL, window.location.href).href,
-
-        copyStaticClashSub: (action) => {
-            const absoluteUrl = v2v.getStaticClashUrl();
-            if (action === 'copy') {
-                navigator.clipboard.writeText(absoluteUrl);
-                showToast('لینک Clash کپی شد');
-            } else if (action === 'qr') {
-                v2v.showQrCode(absoluteUrl);
-            }
-        },
-
-        generateClashFile: (core) => { /* (کد شما بدون تغییر) */ },
-        generateClashYaml: (configs) => { /* (کد شما بدون تغییر) */ },
-        parseProxyForClash: (config) => { /* (کد شما بدون تغییر) */ },
-        
         showQrCode: (text) => {
             if (!window.QRCode) return showToast('کتابخانه QR در حال بارگذاری است...', true);
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, { text, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.M });
             qrModal.style.display = 'flex';
-        }
+        },
+        // Placeholder for ping logic
+        runAdvancedPingTest: (core) => { showToast('این قابلیت به زودی اضافه خواهد شد.'); },
+        generateClashFile: () => { showToast('این قابلیت به زودی اضافه خواهد شد.');}
     };
-
-    // بستن مودال QR
     qrModal.onclick = (e) => {
-        if (e.target === qrModal) {
-            qrModal.style.display = 'none';
-        }
+        if (e.target === qrModal) qrModal.style.display = 'none';
     };
 });
 
