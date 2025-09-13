@@ -13,7 +13,7 @@ from github import Github, Auth
 from typing import Optional, Set, List, Dict
 from collections import defaultdict
 
-print("INFO: Initializing V2V Scraper v28.0 (Final Architecture)...")
+print("INFO: Initializing V2V Scraper v28.1 (Robust Clash Generation)...")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -101,8 +101,11 @@ def fetch_from_sources(sources: list, is_github: bool, pat: str = None, limit: i
 
 def parse_proxy_for_clash(config: str) -> Optional[Dict]:
     try:
+        # ✅ FIX: بهبود استخراج نام و جلوگیری از نام‌های خالی
         name_raw = urlparse(config).fragment or f"V2V-{int(time.time() * 1000) % 10000}"
-        name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251]+', '', name_raw).strip() or "V2V-Config"
+        name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251]+', '', name_raw).strip()
+        if not name: name = "V2V-Config"
+        
         base = {'name': name, 'skip-cert-verify': True}
         parsed_url = urlparse(config)
         protocol = parsed_url.scheme
@@ -110,30 +113,51 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
         if protocol == 'vmess':
             decoded = json.loads(decode_base64_content(config.replace("vmess://", "")))
             proxy = {**base, 'type': 'vmess', 'server': decoded.get('add'), 'port': int(decoded.get('port')), 'uuid': decoded.get('id'), 'alterId': int(decoded.get('aid', 0)), 'cipher': decoded.get('scy', 'auto'), 'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net'), 'servername': decoded.get('sni') or decoded.get('host')}
-            if decoded.get('net') == 'ws': proxy['ws-opts'] = {'path': decoded.get('path', '/'), 'headers': {'Host': decoded.get('host', decoded.get('add'))}}
+            if decoded.get('net') == 'ws': 
+                proxy['ws-opts'] = {'path': decoded.get('path', '/'), 'headers': {'Host': decoded.get('host') or decoded.get('add')}}
             return proxy
             
         params = dict(p.split('=', 1) for p in parsed_url.query.split('&') if '=' in p)
         if protocol == 'vless':
             proxy = {**base, 'type': 'vless', 'server': parsed_url.hostname, 'port': parsed_url.port, 'uuid': parsed_url.username, 'tls': params.get('security') == 'tls', 'network': params.get('type'), 'servername': params.get('sni')}
-            if params.get('type') == 'ws': proxy['ws-opts'] = {'path': params.get('path', '/'), 'headers': {'Host': params.get('host', parsed_url.hostname)}}
+            if params.get('type') == 'ws': 
+                proxy['ws-opts'] = {'path': params.get('path', '/'), 'headers': {'Host': params.get('host') or parsed_url.hostname}}
             return proxy
+
         if protocol == 'trojan':
+            # ✅ FIX: اطمینان از وجود پسورد در تروجان
+            if not parsed_url.username: return None
             return {**base, 'type': 'trojan', 'server': parsed_url.hostname, 'port': parsed_url.port, 'password': parsed_url.username, 'sni': params.get('sni')}
+
         if protocol == 'ss':
-            cipher, password = decode_base64_content(parsed_url.username).split(':', 1)
+            # ✅ FIX: مدیریت هوشمند خطای پسورد در Shadowsocks
+            decoded_user = decode_base64_content(parsed_url.username)
+            if ':' not in decoded_user: return None
+            cipher, password = decoded_user.split(':', 1)
             return {**base, 'type': 'ss', 'server': parsed_url.hostname, 'port': parsed_url.port, 'cipher': cipher, 'password': password}
     except Exception:
         return None
     return None
 
 def generate_clash_yaml(configs: List[str]) -> Optional[str]:
-    proxies = [p for p in (parse_proxy_for_clash(c) for c in configs) if p]
+    proxies, unique_check = [], set()
+    for config in configs:
+        parsed_proxy = parse_proxy_for_clash(config)
+        if parsed_proxy:
+            # ✅ FIX: کلید یکتاسازی بر اساس سرور، پورت و نوع برای جلوگیری از هرگونه تکرار
+            key = f"{parsed_proxy['server']}:{parsed_proxy['port']}:{parsed_proxy['type']}"
+            if key not in unique_check:
+                proxies.append(parsed_proxy)
+                unique_check.add(key)
+                
     if not proxies: return None
+    
     proxy_names = [p['name'] for p in proxies]
     clash_config = {'proxies': proxies, 'proxy-groups': [{'name': 'V2V-Auto', 'type': 'url-test', 'proxies': proxy_names, 'url': 'http://www.gstatic.com/generate_204', 'interval': 300}, {'name': 'V2V-Select', 'type': 'select', 'proxies': ['V2V-Auto', *proxy_names]}], 'rules': ['MATCH,V2V-Select']}
+    
     class NoAliasDumper(yaml.Dumper):
         def ignore_aliases(self, data): return True
+        
     return yaml.dump(clash_config, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False, indent=2)
 
 def main():
@@ -168,17 +192,16 @@ def main():
     all_final_configs = list(live_configs)[:TARGET_CONFIGS_PER_CORE * 2]
     
     xray_pool = {cfg for cfg in all_final_configs if urlparse(cfg).scheme in XRAY_PROTOCOLS}
-    singbox_pool = {cfg for cfg in all_final_configs} # Singbox supports all protocols in this context
+    singbox_pool = {cfg for cfg in all_final_configs}
 
     def group_by_protocol(configs):
         grouped = defaultdict(list)
         for cfg in configs:
             protocol = urlparse(cfg).scheme
-            if protocol == 'hysteria2': protocol = 'hy2' # Normalize for frontend
+            if protocol == 'hysteria2': protocol = 'hy2'
             grouped[protocol].append(cfg)
         return dict(grouped)
 
-    # ✅ اصلاح نهایی: خروجی JSON با فرمت گروه‌بندی شده بر اساس پروتکل ساخته می‌شود
     output_data = {
         "xray": group_by_protocol(list(xray_pool)[:TARGET_CONFIGS_PER_CORE]),
         "singbox": group_by_protocol(list(singbox_pool)[:TARGET_CONFIGS_PER_CORE])
@@ -188,7 +211,9 @@ def main():
         json.dump(output_data, f, indent=2, ensure_ascii=False)
     print(f"✅ Wrote grouped configs to {OUTPUT_JSON_FILE}.")
 
-    clash_yaml_content = generate_clash_yaml(list(xray_pool)[:TARGET_CONFIGS_PER_CORE])
+    clash_configs_for_sub = [cfg for cfg in xray_pool if urlparse(cfg).scheme in {'vless', 'vmess', 'trojan', 'ss'}]
+    clash_yaml_content = generate_clash_yaml(clash_configs_for_sub[:TARGET_CONFIGS_PER_CORE])
+    
     if clash_yaml_content:
         with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f: f.write(clash_yaml_content)
         print(f"✅ Wrote Clash subscription to {OUTPUT_CLASH_FILE}.")
@@ -200,5 +225,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
