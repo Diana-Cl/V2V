@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- RENDER FUNCTION ---
+    // --- RENDER FUNCTION (نسخه نهایی با ظاهر مینیمال و کشویی) ---
     function renderCore(core, groupedConfigs) {
         const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
         wrapper.innerHTML = '';
@@ -88,52 +88,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isXray = core === 'xray';
         let actionsHTML = `
-            <button class="test-button" id="${core}-test-btn" onclick="v2v.runAdvancedPingTest('${core}')">
+            <button class="test-button" data-action="test-all" data-core="${core}">
                 <span id="${core}-test-btn-text">🚀 تست پیشرفته کانفیگ‌ها</span>
             </button>
-            <div class="action-group-title">اشتراک آماده (بر اساس ${READY_SUB_COUNT} کانفیگ برتر)</div>
-            <div class="action-box">
-                <span class="action-box-label">لینک اشتراک Standard</span>
-                <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="v2v.copyReadySubscription('${core}', 'standard', 'copy')">کپی</button>
-                    <button class="action-btn-small" onclick="v2v.copyReadySubscription('${core}', 'standard', 'qr')">QR</button>
+            
+            <div class="action-group-collapsible">
+                <div class="protocol-header" data-action="toggle-actions">
+                    <span>گزینه‌های اشتراک</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="action-group-title">اشتراک آماده (بر اساس ${READY_SUB_COUNT} کانفیگ برتر)</div>
+                    <div class="action-box">
+                        <span class="action-box-label">لینک اشتراک Standard</span>
+                        <div class="action-box-buttons">
+                            <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="standard" data-method="copy">کپی</button>
+                            <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="standard" data-method="qr">QR</button>
+                        </div>
+                    </div>
+                    ${isXray ? `
+                    <div class="action-box">
+                        <span class="action-box-label">لینک اشتراک Clash Meta</span>
+                        <div class="action-box-buttons">
+                            <button class="action-btn-small" data-action="open-static-clash">دانلود</button>
+                            <button class="action-btn-small" data-action="copy-static-clash" data-method="copy">کپی URL</button>
+                            <button class="action-btn-small" data-action="copy-static-clash" data-method="qr">QR</button>
+                        </div>
+                    </div>` : ''}
+                    <div class="action-group-title">اشتراک شخصی (کانفیگ‌های انتخابی شما)</div>
+                    <div class="action-box">
+                        <span class="action-box-label">ساخت لینک UUID از موارد انتخابی</span>
+                        <div class="action-box-buttons">
+                             <button class="action-btn-small" data-action="create-sub" data-core="${core}" data-type="standard" data-method="copy">کپی لینک</button>
+                             <button class="action-btn-small" data-action="create-sub" data-core="${core}" data-type="standard" data-method="qr">QR Code</button>
+                        </div>
+                    </div>
+                    ${isXray ? `
+                    <div class="action-box">
+                        <span class="action-box-label">ساخت لینک Clash از موارد انتخابی</span>
+                         <div class="action-box-buttons">
+                            <button class="action-btn-small" data-action="create-sub" data-core="${core}" data-type="clash" data-method="copy">کپی لینک</button>
+                            <button class="action-btn-small" data-action="create-sub" data-core="${core}" data-type="clash" data-method="qr">QR Code</button>
+                        </div>
+                    </div>
+                    <div class="action-box">
+                        <span class="action-box-label">دانلود فایل Clash از موارد انتخابی</span>
+                         <div class="action-box-buttons">
+                            <button class="action-btn-small" data-action="generate-clash-file" data-core="${core}">دانلود فایل</button>
+                        </div>
+                    </div>` : ''}
                 </div>
             </div>
-            ${isXray ? `
-            <div class="action-box">
-                <span class="action-box-label">لینک اشتراک Clash Meta</span>
-                <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="window.open(v2v.getStaticClashUrl(), '_blank')">دانلود</button>
-                    <button class="action-btn-small" onclick="v2v.copyStaticClashSub('copy')">کپی URL</button>
-                    <button class="action-btn-small" onclick="v2v.copyStaticClashSub('qr')">QR</button>
-                </div>
-            </div>` : ''}
-            <div class="action-group-title">اشتراک شخصی (کانفیگ‌های انتخابی شما)</div>
-            <div class="action-box">
-                <span class="action-box-label">ساخت لینک UUID از موارد انتخابی</span>
-                <div class="action-box-buttons">
-                     <button class="action-btn-small" onclick="v2v.createSubscription('${core}', 'standard', 'copy')">کپی لینک</button>
-                     <button class="action-btn-small" onclick="v2v.createSubscription('${core}', 'standard', 'qr')">QR Code</button>
-                </div>
-            </div>
-            ${isXray ? `
-            <div class="action-box">
-                <span class="action-box-label">ساخت لینک Clash از موارد انتخابی</span>
-                 <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="v2v.createSubscription('${core}', 'clash', 'copy')">کپی لینک</button>
-                    <button class="action-btn-small" onclick="v2v.createSubscription('${core}', 'clash', 'qr')">QR Code</button>
-                </div>
-            </div>
-            <div class="action-box">
-                <span class="action-box-label">دانلود فایل Clash از موارد انتخابی</span>
-                 <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="v2v.generateClashFile('${core}')">دانلود فایل</button>
-                </div>
-            </div>` : ''}
         `;
         wrapper.innerHTML = actionsHTML;
 
-        // ✅ اصلاح نهایی: رندر کردن بر اساس ساختار جدید (گروه‌بندی شده)
         for (const protocol in groupedConfigs) {
             const configs = groupedConfigs[protocol];
             const pGroupEl = document.createElement('div');
@@ -146,16 +154,55 @@ document.addEventListener('DOMContentLoaded', () => {
                     <li class="config-item" data-config='${safeConfig}'>
                         <input type="checkbox" class="config-checkbox">
                         <div class="config-details"><span class="server">${name}</span><span class="ping-result"></span></div>
-                        <button class="copy-btn" onclick="navigator.clipboard.writeText('${safeConfig}'); v2v.showToast('کانفیگ کپی شد!');">کپی</button>
+                        <button class="copy-btn" data-action="copy-config" data-config='${safeConfig}'>کپی</button>
                     </li>`;
             });
             pGroupEl.innerHTML = `
-                <div class="protocol-header" onclick="this.parentElement.classList.toggle('open')">
+                <div class="protocol-header" data-action="toggle-protocol">
                     <span>${protocol.toUpperCase()} (${configs.length})</span>
                     <span class="toggle-icon">▼</span>
                 </div>
                 <ul class="config-list">${itemsHTML}</ul>`;
             wrapper.appendChild(pGroupEl);
+        }
+    }
+
+    // --- تابع متمرکز برای مدیریت کلیک‌ها ---
+    function handleCoreClicks(event) {
+        const target = event.target.closest('[data-action]');
+        if (!target) return;
+
+        const { action, core, type, method, config } = target.dataset;
+
+        switch (action) {
+            case 'test-all':
+                v2v.runAdvancedPingTest(core);
+                break;
+            case 'copy-ready-sub':
+                v2v.copyReadySubscription(core, type, method);
+                break;
+            case 'open-static-clash':
+                window.open(v2v.getStaticClashUrl(), '_blank');
+                break;
+            case 'copy-static-clash':
+                v2v.copyStaticClashSub(method);
+                break;
+            case 'create-sub':
+                v2v.createSubscription(core, type, method);
+                break;
+            case 'generate-clash-file':
+                v2v.generateClashFile();
+                break;
+            case 'copy-config':
+                navigator.clipboard.writeText(config);
+                v2v.showToast('کانفیگ کپی شد!');
+                break;
+            case 'toggle-protocol':
+                target.parentElement.classList.toggle('open');
+                break;
+            case 'toggle-actions':
+                target.parentElement.classList.toggle('open');
+                break;
         }
     }
 
@@ -203,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const configsForSub = allFlatConfigs.slice(0, READY_SUB_COUNT);
             
-            // For now, we fall back to direct data URI as public subscription via worker needs more setup
             const content = configsForSub.join('\n');
             const directUrl = `data:text/plain;base64,${btoa(unescape(encodeURIComponent(content)))}`;
 
@@ -236,18 +282,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
         showQrCode: (text) => {
-            if (!window.QRCode) return showToast('کتابخانه QR در حال بارگذاری است...', true);
+            if (!window.QRCode) {
+                showToast('کتابخانه QR در حال بارگذاری است...', true);
+                return;
+            }
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, { text, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.M });
             qrModal.style.display = 'flex';
         },
-        // Placeholder for ping logic
         runAdvancedPingTest: (core) => { showToast('این قابلیت به زودی اضافه خواهد شد.'); },
         generateClashFile: () => { showToast('این قابلیت به زودی اضافه خواهد شد.');}
     };
+    
+    // --- EVENT LISTENERS ---
     qrModal.onclick = (e) => {
         if (e.target === qrModal) qrModal.style.display = 'none';
     };
+
+    // فعال‌سازی شنونده‌های کلیک برای هر دو بخش
+    xrayWrapper.addEventListener('click', handleCoreClicks);
+    singboxWrapper.addEventListener('click', handleCoreClicks);
 });
-
-
