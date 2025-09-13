@@ -15,69 +15,72 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  scrape_and_build:
+  # JOB ۱: ساخت "بسته دیپلوی کامل"
+  build_package:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
+          # توکن را اینجا هم نیاز داریم تا در مرحله بعد کامیت کنیم
           token: ${{ secrets.GH_PAT }}
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      
       - name: Install Python Dependencies
         run: pip install -r requirements.txt
-      - name: Run Scraper to Generate Files in Root
+      
+      - name: Run Scraper to Generate Data Files
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-      - name: Commit and Push Changes to Repository
+
+      # ✅ اصلاح کلیدی ۱: ابتدا فایل‌های جدید را به مخزن پوش می‌کنیم
+      # این کار برای داشتن تاریخچه و نسخه پشتیبان در خود گیت انجام می‌شود
+      - name: Commit and Push Data Files
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 DATA: Update configs"
           file_pattern: "*.json *.yml *.txt"
-      - name: Upload Artifact for Deployment Jobs
-        uses: actions/upload-pages-artifact@v3
+
+      # ✅ اصلاح کلیدی ۲: حالا یک آرتیفکت کامل و قابل اعتماد می‌سازیم
+      # این آرتیفکت شامل تمام فایل‌های سایت (index.html و ...) و همچنین
+      # تمام فایل‌های داده جدید (.json, .yml) است. این بسته کامل ما برای دیپلوی است.
+      - name: Create Complete Deployment Artifact
+        uses: actions/upload-artifact@v4
         with:
-          path: '.'
+          name: deployment-package
+          path: .
+          retention-days: 1
 
-  deploy_to_github_pages:
-    needs: scrape_and_build
+  # JOB ۲: دیپلوی بسته کامل روی تمام پلتفرم‌ها
+  deploy_all:
+    needs: build_package
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    
+    # ✅ اصلاح کلیدی ۳: این Job حالا شامل تمام مراحل دیپلوی است
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Download Complete Deployment Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-package
+          path: .
 
-  deploy_to_vercel:
-    needs: scrape_and_build
-    runs-on: ubuntu-latest
-    steps:
-      # ✅ اصلاح کلیدی: checkout کامل مخزن برای حل خطای 'not a git repository'
-      - name: Checkout Repository with Latest Data
-        uses: actions/checkout@v4
+      # --- مرحله دیپلوی روی Vercel ---
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          # حالا که تمام فایل‌ها از آرتیفکت آمده‌اند، ورسل به درستی دیپلوی می‌کند
           working-directory: .
           vercel-args: '--prod'
 
-  deploy_to_arvancloud:
-    needs: scrape_and_build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download Build Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: github-pages
-          path: .
+      # --- مرحله دیپلوی روی ابر آروان ---
       - name: Deploy to ArvanCloud S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
@@ -86,7 +89,16 @@ jobs:
           ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
           ARVAN_S3_BUCKET: s3://v2v-data
         run: |
-          # ✅ بهینه‌سازی: افزودن هدر cache-control برای بروزرسانی سریع‌تر
           aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --cache-control max-age=300
+
+      # --- مرحله دیپلوی روی GitHub Pages ---
+      # برای دیپلوی روی گیت‌هاب پیجز، باید آرتیفکت را با نام خاص خودش دوباره بسازیم
+      - name: Prepare Artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
 
 
