@@ -7,13 +7,14 @@ import re
 import time
 import yaml
 import socket
+import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 from github import Github, Auth
 from typing import Optional, Set, List, Dict
 from collections import defaultdict
 
-print("INFO: Initializing V2V Scraper v30.0 (Production Ready)...")
+print("INFO: Initializing V2V Scraper v31.0 (Final Production)...")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,7 +33,7 @@ MAX_CONFIGS_TO_TEST = 5000
 TARGET_CONFIGS_PER_CORE = 500
 MAX_TEST_WORKERS = 150
 TCP_TIMEOUT = 2.5
-MAX_NAME_LENGTH = 50 # حداکثر طول نام کانفیگ
+MAX_NAME_LENGTH = 40
 
 # --- HELPER FUNCTIONS ---
 def decode_base64_content(content: str) -> str:
@@ -99,16 +100,22 @@ def fetch_from_sources(sources: list, is_github: bool, pat: str = None, limit: i
 
 def parse_proxy_for_clash(config: str) -> Optional[Dict]:
     try:
-        original_name = urlparse(config).fragment or "Config"
+        parsed_url = urlparse(config)
+        
+        # ✅ FIX: New robust naming algorithm to prevent duplicates
+        original_name = parsed_url.fragment or ""
         sanitized_name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251]+', '', original_name).strip()
+        
+        if not sanitized_name:
+            server_id = f"{parsed_url.hostname}:{parsed_url.port}"
+            unique_hash = hashlib.md5(server_id.encode()).hexdigest()[:6]
+            sanitized_name = f"Config-{unique_hash}"
+            
         if len(sanitized_name) > MAX_NAME_LENGTH:
             sanitized_name = sanitized_name[:MAX_NAME_LENGTH] + "..."
-        if not sanitized_name: sanitized_name = "Config"
         
         final_name = f"V2V | {sanitized_name}"
-        
         base = {'name': final_name, 'skip-cert-verify': True}
-        parsed_url = urlparse(config)
         protocol = parsed_url.scheme
         
         if protocol == 'vmess':
