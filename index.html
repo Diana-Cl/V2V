@@ -31,15 +31,7 @@
         .core-header { color: white; padding: 15px; border-radius: 10px; font-size: 1.3em; font-weight: bold; margin-bottom: 20px; }
         #xray-header { background: linear-gradient(135deg, #c31432, #240b36); }
         #singbox-header { background: linear-gradient(135deg, #159957, #155799); }
-        .test-button {
-            background-color: transparent;
-            color: var(--action-orange);
-            border: 2px solid var(--action-orange);
-            padding: 10px 20px; border-radius: 8px; cursor: pointer;
-            font-weight: bold; font-size: 1em; width: 100%;
-            transition: all 0.2s ease-in-out;
-            display: inline-flex; justify-content: center; align-items: center; gap: 8px;
-        }
+        .test-button { background-color: transparent; color: var(--action-orange); border: 2px solid var(--action-orange); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; width: 100%; transition: all 0.2s ease-in-out; display: inline-flex; justify-content: center; align-items: center; gap: 8px; }
         .test-button:hover:not(:disabled) { background-color: rgba(255, 167, 38, 0.1); color: var(--action-orange-hover); border-color: var(--action-orange-hover); }
         .test-button:disabled { background-color: #2a2a2a; color: #666; border-color: #444; cursor: not-allowed; }
         .loader { width: 16px; height: 16px; border: 2px solid #666; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
@@ -52,15 +44,18 @@
         .action-btn-small:hover { background-color: #555; }
         .protocol-group { border-top: 1px solid var(--border-color); }
         .protocol-header { padding: 15px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .protocol-header-title { display: flex; align-items: center; gap: 10px; }
+        .protocol-header-actions { display: flex; gap: 8px; }
         .toggle-icon { transition: transform 0.3s; }
         .protocol-group.open .toggle-icon, .action-group-collapsible.open .toggle-icon { transform: rotate(180deg); }
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.4s ease-in-out; overflow: hidden; }
-        .protocol-group.open .config-list { max-height: 1500px; }
+        .protocol-group.open .config-list { max-height: 400px; overflow-y: auto; }
         .config-item { padding: 10px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
         .config-checkbox { flex-shrink: 0; transform: scale(1.2); accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .server { font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-        .ping-result { font-size: 0.8em; min-width: 220px; text-align: left; white-space: pre; font-family: monospace; }
+        .ping-result { font-size: 0.9em; font-weight: bold; min-width: 120px; text-align: left; white-space: pre; font-family: monospace; }
+        .config-actions { display: flex; gap: 5px; }
         .copy-btn { background-color: #3e3e3e; border: 1px solid #555; padding: 5px 10px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
         .bottom-links { margin-top: auto; padding-top: 20px; width: 100%; display: flex; gap: 20px; justify-content: center; }
         .bottom-links a { color: #aaa; text-decoration: none; font-size: 0.9em; }
@@ -99,10 +94,7 @@
              <a href="https://smbcryp.github.io/V2V/" target="_blank" rel="noopener noreferrer">گیت‌هاب</a>
         </footer>
     </div>
-
-    <div id="qr-modal">
-        <div class="qr-content" id="qr-code-container"></div>
-    </div>
+    <div id="qr-modal"><div class="qr-content" id="qr-code-container"></div></div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
