@@ -4,13 +4,12 @@
  * - Advanced TCP latency testing (/api/ping)
  * - Personal subscription creation & retrieval (crash-proof, self-healing)
  * - Public subscription retrieval (dynamic)
- * - Force-downloads for static subscription files
+ * - Dynamic generation of all Clash subscriptions
  */
 
 // --- CONFIGURATION ---
 const SUBSCRIPTION_TTL = 48 * 60 * 60; // 48 hours for personal subs
 const READY_SUB_COUNT = 30;
-const STATIC_CLASH_URL = 'https://raw.githubusercontent.com/smbcryp/V2V/main/clash_subscription.yml';
 const DATA_MIRRORS = [
     'https://v2v-vercel.vercel.app/all_live_configs.json',
     'https://smbcryp.github.io/V2V/all_live_configs.json',
@@ -37,7 +36,7 @@ export default {
         const url = new URL(request.url);
         try {
             if (url.pathname.endsWith('/clash_subscription.yml')) {
-                return await handleStaticClashDownload();
+                return await handleGetPublicSubscription('xray', true);
             }
             if (url.pathname === '/api/ping' && request.method === 'POST') {
                 return await handlePingRequest(request);
@@ -62,27 +61,13 @@ export default {
 
         } catch (e) {
             console.error("Worker Error:", e);
-            return new Response(JSON.stringify({ error: e.message || 'Internal Server Error' }), { status: 500, headers: JSON_HEADERS });
+            const errorResponse = { error: true, message: e.message || 'Internal Server Error' };
+            return new Response(JSON.stringify(errorResponse), { status: 500, headers: JSON_HEADERS });
         }
     }
 };
 
 // --- HANDLERS ---
-async function handleStaticClashDownload() {
-    try {
-        const response = await fetch(STATIC_CLASH_URL, { headers: { 'User-Agent': 'V2V-Worker-Fetcher' }});
-        if (!response.ok) throw new Error('Static Clash file not found at origin.');
-        
-        const newHeaders = new Headers(response.headers);
-        newHeaders.set('Content-Disposition', 'attachment; filename="v2v_clash.yml"');
-        newHeaders.set('Content-Type', 'text/yaml;charset=utf-8');
-        newHeaders.set('Cache-Control', 'no-cache');
-        return new Response(response.body, { status: 200, headers: newHeaders });
-    } catch (e) {
-        return new Response(e.message, { status: 502, headers: TEXT_HEADERS });
-    }
-}
-
 async function handlePingRequest(request) {
     try {
         const { configs } = await request.json();
@@ -121,9 +106,11 @@ async function handleGetPublicSubscription(core, isClash) {
         }
         
         if (isClash) {
-            const clashYaml = generateClashYaml(topConfigs);
+            const clashYaml = await generateClashYaml(topConfigs);
             if (!clashYaml) throw new Error('Could not generate Clash config for public sub.');
-            return new Response(clashYaml, { headers: YAML_HEADERS });
+            const headers = new Headers(YAML_HEADERS);
+            headers.set('Content-Disposition', 'attachment; filename="v2v_clash.yml"');
+            return new Response(clashYaml, { headers });
         } else {
             const base64Content = safeBtoa(topConfigs.join('\n'));
             return new Response(base64Content, { headers: TEXT_HEADERS });
@@ -149,7 +136,6 @@ async function handleGetPersonalSubscription(uuid, isClash, env) {
         let userConfigs = JSON.parse(kvData);
         const allLiveConfigs = new Set([...Object.values(liveData.xray || {}).flat(), ...Object.values(liveData.singbox || {}).flat()]);
 
-        // Self-healing logic
         const userConfigsSet = new Set(userConfigs);
         let healedConfigs = userConfigs.filter(cfg => allLiveConfigs.has(cfg));
         const deadCount = userConfigs.length - healedConfigs.length;
@@ -158,15 +144,14 @@ async function handleGetPersonalSubscription(uuid, isClash, env) {
             const replacements = [...allLiveConfigs].filter(cfg => !userConfigsSet.has(cfg));
             healedConfigs.push(...replacements.slice(0, deadCount));
         }
-        if (healedConfigs.length === 0) {
-             healedConfigs = [...allLiveConfigs].slice(0, 10); // Fallback to 10 random live configs
+        if (healedConfigs.length === 0 && allLiveConfigs.size > 0) {
+             healedConfigs = [...allLiveConfigs].slice(0, 10);
         }
         
-        // Update the KV with the healed list for the next request
         await env.V2V_KV.put(`sub:${uuid}`, JSON.stringify(healedConfigs), { expirationTtl: SUBSCRIPTION_TTL });
         
         if (isClash) {
-            const clashYaml = generateClashYaml(healedConfigs);
+            const clashYaml = await generateClashYaml(healedConfigs);
             if (!clashYaml) throw new Error('Could not generate Clash config from healed subscription.');
             return new Response(clashYaml, { headers: YAML_HEADERS });
         } else {
@@ -183,30 +168,22 @@ function safeBtoa(str) {
     try {
         return btoa(unescape(encodeURIComponent(str)));
     } catch (e) {
-        console.error("btoa failed:", e);
         return btoa("Error: Could not encode content.");
     }
 }
 
 async function fetchFromMirrors() {
-    const promises = DATA_MIRRORS.map(url => fetch(`${url}?t=${Date.now()}`).then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-    }));
-    try {
-        // Promise.any is not supported in all CF Worker environments, use a race-like approach
-        return await new Promise((resolve, reject) => {
-            let errorCount = 0;
-            promises.forEach(p => p.then(resolve).catch(e => {
-                errorCount++;
-                if (errorCount === promises.length) {
-                    reject(new Error("All data mirrors are currently unavailable."));
-                }
-            }));
-        });
-    } catch (e) {
-        throw new Error("All data mirrors are currently unavailable.");
-    }
+    // This is a more robust Promise.any implementation for workers
+    const promises = DATA_MIRRORS.map(url =>
+        fetch(`${url}?t=${Date.now()}`).then(response => {
+            if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+            return response.json();
+        }).catch(error => {
+            console.error(error);
+            return Promise.reject(error);
+        })
+    );
+    return Promise.any(promises);
 }
 
 async function testTcpLatency(configStr) {
@@ -237,9 +214,32 @@ function parseHostAndPort(configStr) {
     }
 }
 
-function generateClashYaml(configs) {
-    const proxies = configs.map(parseProxyForClash).filter(p => p !== null);
+async function generateProxyName(configStr) {
+    try {
+        const url = new URL(configStr);
+        const original_name = decodeURIComponent(url.hash.substring(1) || "");
+        let sanitized_name = original_name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim();
+        
+        if (!sanitized_name) {
+             const server_id = `${url.hostname}:${url.port}`;
+             const buffer = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(server_id));
+             const hash = Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 6);
+             sanitized_name = `Config-${hash}`;
+        }
+        if (sanitized_name.length > MAX_NAME_LENGTH) {
+            sanitized_name = sanitized_name.substring(0, MAX_NAME_LENGTH) + '...';
+        }
+        return `V2V | ${sanitized_name}`;
+    } catch { 
+        return 'V2V | Unnamed Config';
+    }
+}
+
+async function generateClashYaml(configs) {
+    const proxyPromises = configs.map(parseProxyForClash);
+    const proxies = (await Promise.all(proxyPromises)).filter(p => p !== null);
     if (proxies.length === 0) return null;
+
     const proxyNames = proxies.map(p => p.name);
     const clashConfig = {
         'proxies': proxies,
@@ -249,17 +249,51 @@ function generateClashYaml(configs) {
         ],
         'rules': ['MATCH,V2V-Select']
     };
-    // Basic but functional YAML serialization for workers
+    // Basic but functional YAML serialization. A library would be better for full spec compliance.
     let yamlString = "proxies:\n";
-    proxies.forEach(p => {
-        yamlString += `  - {name: ${JSON.stringify(p.name)}, type: ${p.type}, server: ${p.server}, port: ${p.port}, ...}\n`;
+    for (const p of proxies) {
+        yamlString += `  - {name: ${JSON.stringify(p.name)}, type: ${p.type}, server: ${JSON.stringify(p.server)}, port: ${p.port}, `;
+        const details = [];
+        for (const key in p) {
+            if (!['name', 'type', 'server', 'port'].includes(key)) {
+                if (typeof p[key] === 'object' && p[key] !== null) {
+                    const subDetails = Object.entries(p[key]).map(([sk, sv]) => `${sk}: ${JSON.stringify(sv)}`).join(', ');
+                    details.push(`${key}: {${subDetails}}`);
+                } else {
+                    details.push(`${key}: ${JSON.stringify(p[key])}`);
+                }
+            }
+        }
+        yamlString += details.join(', ') + '}\n';
+    }
+    yamlString += "proxy-groups:\n";
+    clashConfig['proxy-groups'].forEach(g => {
+        yamlString += `  - {name: ${JSON.stringify(g.name)}, type: ${g.type}, proxies: [${g.proxies.map(p => JSON.stringify(p)).join(', ')}], url: '${g.url}', interval: ${g.interval}}\n`;
     });
-    // This is a simplified representation. A real implementation would be more complex.
-    return "proxies: [] # YAML generation in worker is complex and needs a library.";
+    yamlString += "rules:\n  - 'MATCH,V2V-Select'\n";
+    return yamlString;
 }
 
-function parseProxyForClash(configStr) {
-    // This function also needs to be fully implemented in the worker
-    // It would be identical to the robust version in scraper.py / index.js
-    return null; 
+async function parseProxyForClash(configStr) {
+   try {
+        const final_name = await generateProxyName(configStr);
+        const base = { name: final_name, 'skip-cert-verify': true };
+        const protocol = configStr.split('://')[0];
+
+        if (protocol === 'vmess') {
+            const d = JSON.parse(atob(configStr.substring(8)));
+            const vmessProxy = { ...base, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: parseInt(d.aid), cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net, servername: d.sni || d.host };
+            if (d.net === 'ws') vmessProxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add }};
+            return vmessProxy;
+        }
+        const url = new URL(configStr), params = new URLSearchParams(url.search);
+        if (protocol === 'vless') {
+             const vlessProxy = { ...base, type: 'vless', server: url.hostname, port: parseInt(url.port), uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type'), servername: params.get('sni')};
+             if (params.get('type') === 'ws') vlessProxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || url.hostname }};
+             return vlessProxy;
+        }
+        if (protocol === 'trojan') return { ...base, type: 'trojan', server: url.hostname, port: parseInt(url.port), password: url.username, sni: params.get('sni') };
+        if (protocol === 'ss') { const [c, p] = atob(url.username).split(':'); return { ...base, type: 'ss', server: url.hostname, port: parseInt(url.port), cipher: c, password: p }; }
+    } catch { return null; }
+    return null;
 }
