@@ -14,7 +14,7 @@ from github import Github, Auth
 from typing import Optional, Set, List, Dict
 from collections import defaultdict
 
-print("INFO: Initializing V2V Scraper v31.0 (Final Production)...")
+print("INFO: Initializing V2V Scraper v32.0 (Production Ready)...")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
