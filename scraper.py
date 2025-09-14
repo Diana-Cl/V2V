@@ -102,7 +102,6 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
     try:
         parsed_url = urlparse(config)
         
-        # ✅ FIX: New robust naming algorithm to prevent duplicates
         original_name = parsed_url.fragment or ""
         sanitized_name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251]+', '', original_name).strip()
         
