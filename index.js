@@ -32,21 +32,19 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { toast.className = 'toast'; }, 3000);
     };
     
-    // ✅ FIX: New robust naming function used by both Clash and UI
     function generateProxyName(configStr) {
         try {
-            let original_name = decodeURIComponent(configStr.split('#')[1] || "");
+            const url = new URL(configStr);
+            const original_name = decodeURIComponent(url.hash.substring(1) || "");
             let sanitized_name = original_name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim();
             
             if (!sanitized_name) {
-                 const url = new URL(configStr);
                  const server_id = `${url.hostname}:${url.port}`;
-                 // Simple hash function to generate a short unique ID
                  let hash = 0;
                  for (let i = 0; i < server_id.length; i++) {
                      const char = server_id.charCodeAt(i);
                      hash = ((hash << 5) - hash) + char;
-                     hash |= 0; // Convert to 32bit integer
+                     hash |= 0;
                  }
                  sanitized_name = `Config-${Math.abs(hash).toString(16).substring(0, 6)}`;
             }
@@ -93,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="action-box">
                         <span class="action-box-label">لینک اشتراک Clash Meta</span>
                         <div class="action-box-buttons">
-                            <button class.action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button>
+                            <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button>
                             <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="clash" data-method="copy">کپی URL</button>
                             <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="clash" data-method="qr">QR</button>
                         </div>
@@ -174,17 +172,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`));
         allItems.forEach(item => {
-            item.querySelector('.ping-result').textContent = '...';
-            item.dataset.clientPingResult = "pending";
+            item.querySelector('.ping-result').textContent = '[C-Http]... / [C-Rtc]... / [S-Tcp]...';
+            item.dataset.httpPing = "pending";
+            item.dataset.rtcPing = "pending";
+            item.dataset.serverPing = "pending";
         });
         
-        const clientPromises = allItems.map(item => testHttpProbe(item, PING_TIMEOUT));
-        await Promise.allSettled(clientPromises);
-        
-        const failedItems = allItems.filter(item => item.dataset.clientPingResult === "null");
-        if (failedItems.length > 0) {
-            await testTcpBatch(failedItems, API_ENDPOINT);
-        }
+        const httpPromises = allItems.map(item => testHttpProbe(item, PING_TIMEOUT));
+        const rtcPromises = allItems.map(item => testWebRTC(item, PING_TIMEOUT));
+        const serverPromise = testTcpBatch(allItems, API_ENDPOINT);
+
+        await Promise.allSettled([...httpPromises, ...rtcPromises, serverPromise]);
+
+        allItems.forEach(item => {
+            const bestPing = Math.min(
+                item.dataset.httpPing > 0 ? parseInt(item.dataset.httpPing) : 9999,
+                item.dataset.rtcPing > 0 ? parseInt(item.dataset.rtcPing) : 9999,
+                item.dataset.serverPing > 0 ? parseInt(item.dataset.serverPing) : 9999
+            );
+            item.dataset.finalScore = bestPing;
+        });
 
         document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => {
             const list = group.querySelector('.config-list');
@@ -196,33 +203,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function copyReadySubscription(core, type, method) {
+        let subUrl;
+        if (type === 'clash') {
+            subUrl = STATIC_CLASH_URL;
+        } else {
+            subUrl = `${API_ENDPOINT}/sub/public/${core}`;
+        }
+
         if (method === 'copy') {
-            const subUrl = type === 'clash' ? STATIC_CLASH_URL : `${API_ENDPOINT}/sub/public/${core}`;
             navigator.clipboard.writeText(subUrl);
             showToast(`لینک اشتراک آماده ${type} کپی شد.`);
             return;
         }
         
+        if (method === 'qr') {
+            showQrCode(subUrl);
+            return;
+        }
+        
+        if (method === 'download' && type === 'clash') {
+            window.open(subUrl, '_blank');
+            return;
+        }
+
         const allFlatConfigs = Object.values(allConfigs[core] || {}).flat();
         const topConfigs = allFlatConfigs.slice(0, READY_SUB_COUNT);
         if (topConfigs.length === 0) return showToast('کانفیگی برای ساخت لینک یافت نشد.', true);
         
-        let content, fileType = 'text/plain', qrContent;
+        let content, fileType = 'text/plain';
         if (type === 'clash') {
-            content = generateClashYaml(topConfigs);
-            fileType = 'text/yaml';
-            qrContent = STATIC_CLASH_URL; // QR code for Clash should be the clean URL
+            content = generateClashYaml(topConfigs); fileType = 'text/yaml';
         } else {
             content = topConfigs.join('\n');
-            qrContent = btoa(content); // Standard sub QR can be base64
         }
         if (!content) return showToast('ساخت محتوای اشتراک ممکن نبود.', true);
-
-        if (method === 'download') {
-            downloadFile(content, `v2v-${core}-ready.${type === 'clash' ? 'yaml' : 'txt'}`, fileType);
-        } else if (method === 'qr') {
-            showQrCode(qrContent);
-        }
+        downloadFile(content, `v2v-${core}-ready.${type === 'clash' ? 'yaml' : 'txt'}`, fileType);
     }
     
     async function createSubscription(core) {
@@ -282,15 +297,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- PING & UI HELPERS ---
     function updateItemUI(item, source, ping) {
-        const pingEl = item.querySelector('.ping-result');
-        if(ping !== null){
-            item.dataset.finalScore = ping;
-            let color = ping < 700 ? 'var(--ping-good)' : (ping < 1500 ? 'var(--ping-medium)' : 'var(--ping-bad)');
-            pingEl.innerHTML = `<strong style="color:${color};">[${source}] ${ping}ms</strong>`;
-        } else {
-            item.dataset.finalScore = 9999;
-            pingEl.textContent = `[${source}] ناموفق`;
+        item.dataset[source] = ping ?? "null";
+
+        const httpPing = item.dataset.httpPing;
+        const rtcPing = item.dataset.rtcPing;
+        const serverPing = item.dataset.serverPing;
+        
+        const formatResult = (p) => p === "pending" ? "..." : (p === "null" ? "X" : `${p}ms`);
+
+        const bestPing = Math.min(
+            httpPing > 0 ? parseInt(httpPing) : 9999,
+            rtcPing > 0 ? parseInt(rtcPing) : 9999,
+            serverPing > 0 ? parseInt(serverPing) : 9999
+        );
+
+        let color = 'var(--text-color)';
+        if(bestPing !== 9999){
+             color = bestPing < 700 ? 'var(--ping-good)' : (bestPing < 1500 ? 'var(--ping-medium)' : 'var(--ping-bad)');
         }
+        
+        item.querySelector('.ping-result').innerHTML = `<strong style="color:${color};">[C-H] ${formatResult(httpPing)} / [C-R] ${formatResult(rtcPing)} / [S] ${formatResult(serverPing)}</strong>`;
     }
     
     async function testHttpProbe(item, timeout) {
@@ -313,11 +339,54 @@ document.addEventListener('DOMContentLoaded', () => {
             const latency = Date.now() - startTime;
             
             clearTimeout(timeoutId);
-            item.dataset.clientPingResult = latency;
-            updateItemUI(item, 'C', latency);
+            updateItemUI(item, 'httpPing', latency);
         } catch (e) {
-            item.dataset.clientPingResult = "null";
-            updateItemUI(item, 'C', null);
+            updateItemUI(item, 'httpPing', null);
+        }
+    }
+
+    async function testWebRTC(item, timeout) {
+        const config = item.dataset.config;
+        try {
+            let hostname;
+            if (config.startsWith('vmess://')) {
+                hostname = JSON.parse(atob(config.replace('vmess://', ''))).add;
+            } else {
+                hostname = new URL(config).hostname;
+            }
+            if (!/^[0-9.]+$/.test(hostname)) { // Only test IPs for simplicity
+                updateItemUI(item, 'rtcPing', null);
+                return;
+            }
+
+            const pc = new RTCPeerConnection({ iceServers: [{ urls: `stun:${hostname}:3478` }] });
+            const startTime = Date.now();
+            
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout));
+            
+            const candidatePromise = new Promise((resolve, reject) => {
+                pc.onicecandidate = (e) => {
+                    if (e.candidate && e.candidate.type === 'srflx') {
+                        pc.close();
+                        resolve(Date.now() - startTime);
+                    }
+                };
+                pc.onicegatheringstatechange = () => {
+                    if (pc.iceGatheringState === 'complete') {
+                       pc.close();
+                       reject(new Error('No srflx candidate found'));
+                    }
+                };
+            });
+
+            pc.createDataChannel("ping");
+            await pc.createOffer().then(offer => pc.setLocalDescription(offer));
+            
+            const latency = await Promise.race([candidatePromise, timeoutPromise]);
+            updateItemUI(item, 'rtcPing', latency);
+
+        } catch (e) {
+            updateItemUI(item, 'rtcPing', null);
         }
     }
     
@@ -331,11 +400,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const resultsMap = new Map(results.map(r => [r.config, r.ping]));
             items.forEach(item => {
                 const ping = resultsMap.get(item.dataset.config) ?? null;
-                updateItemUI(item, 'S', ping);
+                updateItemUI(item, 'serverPing', ping);
             });
         } catch (e) {
             console.error("Backend TCP test failed:", e);
-            items.forEach(item => updateItemUI(item, 'S', null));
+            items.forEach(item => updateItemUI(item, 'serverPing', null));
         }
     }
 
@@ -386,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const url = new URL(configStr), params = new URLSearchParams(url.search);
             if (protocol === 'vless') {
                  const vlessProxy = { ...base, type: 'vless', server: url.hostname, port: parseInt(url.port), uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type'), servername: params.get('sni')};
-                 if (params.get('type') === 'ws') vlessProxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || url.hostname }};
+                 if (params.get('type') === 'ws') vmessProxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || url.hostname }};
                  return vlessProxy;
             }
             if (protocol === 'trojan') return { ...base, type: 'trojan', server: url.hostname, port: parseInt(url.port), password: url.username, sni: params.get('sni') };
