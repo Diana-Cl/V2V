@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>پروژه V2V</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://rapid-scene-1da6.mbrgh87.workers.dev https://smbcryp.github.io https://v2v-vercel.vercel.app https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src *;">
     <meta name="theme-color" content="#121212">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="manifest" href="manifest.json">
@@ -13,7 +13,8 @@
         :root {
             --primary-bg: #121212; --secondary-bg: #1e1e1e; --text-color: #e0e0e0;
             --logo-red: #D32F2F; --logo-green: #388E3C; --border-color: #2e2e2e;
-            --action-blue: #007bff; --action-blue-hover: #0056b3; --action-gray: #333;
+            --action-orange: #FFA726; --action-orange-hover: #FFB74D;
+            --action-gray: #333;
             --ping-good: #4CAF50; --ping-medium: #FFC107; --ping-bad: #F44336;
             --toast-bg: linear-gradient(135deg, #34d399, #10b981);
             --toast-error-bg: linear-gradient(135deg, #f87171, #ef4444);
@@ -30,10 +31,18 @@
         .core-header { color: white; padding: 15px; border-radius: 10px; font-size: 1.3em; font-weight: bold; margin-bottom: 20px; }
         #xray-header { background: linear-gradient(135deg, #c31432, #240b36); }
         #singbox-header { background: linear-gradient(135deg, #159957, #155799); }
-        .test-button { background: var(--action-blue); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; width: 100%; transition: all 0.3s ease; display: inline-flex; justify-content: center; align-items: center; gap: 8px; }
-        .test-button:hover { background-color: var(--action-blue-hover); transform: translateY(-2px); }
-        .test-button:disabled { background-color: #555; cursor: not-allowed; transform: none; }
-        .loader { width: 16px; height: 16px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
+        .test-button {
+            background-color: transparent;
+            color: var(--action-orange);
+            border: 2px solid var(--action-orange);
+            padding: 10px 20px; border-radius: 8px; cursor: pointer;
+            font-weight: bold; font-size: 1em; width: 100%;
+            transition: all 0.2s ease-in-out;
+            display: inline-flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        .test-button:hover:not(:disabled) { background-color: rgba(255, 167, 38, 0.1); color: var(--action-orange-hover); border-color: var(--action-orange-hover); }
+        .test-button:disabled { background-color: #2a2a2a; color: #666; border-color: #444; cursor: not-allowed; }
+        .loader { width: 16px; height: 16px; border: 2px solid #666; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .action-group-title { color: #ccc; font-size: 0.9em; font-weight: bold; text-align: right; margin: 15px 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid var(--border-color); }
         .action-box { display: flex; justify-content: space-between; align-items: center; background-color: var(--action-gray); padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; }
@@ -46,12 +55,12 @@
         .toggle-icon { transition: transform 0.3s; }
         .protocol-group.open .toggle-icon, .action-group-collapsible.open .toggle-icon { transform: rotate(180deg); }
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.4s ease-in-out; overflow: hidden; }
-        .protocol-group.open .config-list { max-height: 1000px; }
+        .protocol-group.open .config-list { max-height: 1500px; }
         .config-item { padding: 10px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
         .config-checkbox { flex-shrink: 0; transform: scale(1.2); accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .server { font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-        .ping-result { font-size: 0.85em; }
+        .ping-result { font-size: 0.85em; min-width: 150px; text-align: left; }
         .copy-btn { background-color: #3e3e3e; border: 1px solid #555; padding: 5px 10px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
         .bottom-links { margin-top: auto; padding-top: 20px; width: 100%; display: flex; gap: 20px; justify-content: center; }
         .bottom-links a { color: #aaa; text-decoration: none; font-size: 0.9em; }
