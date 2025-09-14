@@ -3,8 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_ENDPOINT = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
+    const STATIC_CLASH_URL = 'https://smbcryp.github.io/V2V/clash_subscription.yml';
     const PING_TIMEOUT = 3000;
     const READY_SUB_COUNT = 30;
+    const MAX_NAME_LENGTH = 50;
 
     // --- DOM ELEMENTS ---
     const statusBar = document.getElementById('status-bar');
@@ -13,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const qrModal = document.getElementById('qr-modal');
     const qrContainer = document.getElementById('qr-code-container');
     const toast = document.getElementById('toast');
-    let allConfigs = { xray: {}, singbox: {} }; // ✅ FIX: Default to object instead of array
+    let allConfigs = { xray: {}, singbox: {} };
 
     // --- HELPERS ---
     const toShamsi = (timestamp) => {
@@ -26,13 +28,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const parseConfigName = (configStr) => {
         try {
-            if (configStr.includes('#')) return decodeURIComponent(configStr.split('#')[1] || 'Unnamed');
-            if (configStr.startsWith('vmess://')) {
-                const data = JSON.parse(atob(configStr.replace('vmess://', '')));
-                return data.ps || data.add || 'Unnamed';
+            const original_name = decodeURIComponent(configStr.split('#')[1] || 'Unnamed');
+            let sanitized_name = original_name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim();
+            if (sanitized_name.length > MAX_NAME_LENGTH) {
+                sanitized_name = sanitized_name.substring(0, MAX_NAME_LENGTH) + '...';
             }
-            return new URL(configStr).hostname || 'Unnamed';
-        } catch { return 'Unnamed Config'; }
+            return `V2V | ${sanitized_name || 'Config'}`;
+        } catch { 
+            return 'V2V | Unnamed Config';
+        }
     };
 
     const showToast = (message, isError = false) => {
@@ -42,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- RENDER FUNCTION ---
-    function renderCore(core, groupedConfigs) { // Changed parameter name for clarity
+    function renderCore(core, groupedConfigs) {
         const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
         wrapper.innerHTML = '';
 
@@ -56,55 +60,61 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="test-button" data-action="run-ping-test" data-core="${core}">
                 <span class="test-button-text">🚀 تست پیشرفته کانفیگ‌ها</span>
             </button>
-            <div class="action-group-title">اشتراک آماده (بر اساس ${READY_SUB_COUNT} کانفیگ برتر)</div>
-            <div class="action-box">
-                <span class="action-box-label">لینک اشتراک Standard</span>
-                <div class="action-box-buttons">
-                    <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="standard" data-method="copy">کپی</button>
-                    <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="standard" data-method="qr">QR</button>
+            <div class="action-group-collapsible">
+                <div class="protocol-header" data-action="toggle-actions">
+                    <span>گزینه‌های اشتراک</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="action-group-title">اشتراک آماده (بر اساس ${READY_SUB_COUNT} کانفیگ برتر)</div>
+                    <div class="action-box">
+                        <span class="action-box-label">لینک اشتراک Standard</span>
+                        <div class="action-box-buttons">
+                            <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="standard" data-method="copy">کپی</button>
+                            <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="standard" data-method="qr">QR</button>
+                        </div>
+                    </div>
+                    ${isXray ? `
+                    <div class="action-box">
+                        <span class="action-box-label">لینک اشتراک Clash Meta</span>
+                        <div class="action-box-buttons">
+                            <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button>
+                            <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="clash" data-method="copy">کپی URL</button>
+                            <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="clash" data-method="qr">QR</button>
+                        </div>
+                    </div>
+                    ` : ''}
+                    <div class="action-group-title">اشتراک شخصی (کانفیگ‌های انتخابی شما)</div>
+                    <div class="action-box">
+                        <span class="action-box-label">ساخت لینک از موارد انتخابی</span>
+                        <div class="action-box-buttons">
+                            <button class="action-btn-small" data-action="create-personal-sub" data-core="${core}">ساخت و کپی UUID</button>
+                        </div>
+                    </div>
+                     ${isXray ? `
+                    <div class="action-box">
+                        <span class="action-box-label">دانلود فایل Clash از موارد انتخابی</span>
+                         <div class="action-box-buttons">
+                            <button class="action-btn-small" data-action="generate-clash-file" data-core="${core}">دانلود</button>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
-            ${isXray ? `
-            <div class="action-box">
-                <span class="action-box-label">لینک اشتراک Clash Meta</span>
-                <div class="action-box-buttons">
-                    <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button>
-                    <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="clash" data-method="copy">کپی</button>
-                    <button class="action-btn-small" data-action="copy-ready-sub" data-core="${core}" data-type="clash" data-method="qr">QR</button>
-                </div>
-            </div>
-            ` : ''}
-            <div class="action-group-title">اشتراک شخصی (کانفیگ‌های انتخابی شما)</div>
-            <div class="action-box">
-                <span class="action-box-label">ساخت لینک از موارد انتخابی</span>
-                <div class="action-box-buttons">
-                     <button class="action-btn-small" data-action="create-personal-sub" data-core="${core}">ساخت و کپی UUID</button>
-                </div>
-            </div>
-             ${isXray ? `
-            <div class="action-box">
-                <span class="action-box-label">دانلود فایل Clash از موارد انتخابی</span>
-                 <div class="action-box-buttons">
-                    <button class="action-btn-small" data-action="generate-clash-file" data-core="${core}">دانلود</button>
-                </div>
-            </div>
-            ` : ''}
         `;
         wrapper.innerHTML = actionsHTML;
-
-        // ✅ FIX: The grouping logic below is removed, as scraper.py now provides pre-grouped data.
-        // const grouped = configs.reduce(...); // This was the line causing the error.
-
+        
         for (const protocol in groupedConfigs) {
             const pGroupEl = document.createElement('div');
             pGroupEl.className = 'protocol-group';
             let itemsHTML = '';
-            const configs = groupedConfigs[protocol]; // get configs for the current protocol
-            configs.forEach(config => {
+            const configs = groupedConfigs[protocol];
+            configs.forEach((config, index) => {
                 const name = parseConfigName(config);
                 const safeConfig = config.replace(/'/g, "&apos;").replace(/"/g, '&quot;');
+                const uniqueId = `${core}-${protocol}-${index}`;
                 itemsHTML += `
-                    <li class="config-item" data-config='${safeConfig}'>
+                    <li class="config-item" id="${uniqueId}" data-config='${safeConfig}'>
                         <input type="checkbox" class="config-checkbox">
                         <div class="config-details"><span class="server">${name}</span><span class="ping-result"></span></div>
                         <button class="copy-btn" data-action="copy-single-config" data-config='${safeConfig}'>کپی</button>
@@ -131,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataRes = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
             if (!dataRes.ok) throw new Error('Failed to load configs');
             allConfigs = await dataRes.json();
-            // ✅ FIX: Use {} as fallback for grouped data structure
             renderCore('xray', allConfigs.xray || {});
             renderCore('singbox', allConfigs.singbox || {});
         } catch (e) {
@@ -142,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })();
 
-    // --- GLOBAL V2V OBJECT & EVENT HANDLERS ---
+    // --- EVENT HANDLING & GLOBAL API ---
     
     async function runAdvancedPingTest(core, testButton) {
         const buttonText = testButton.querySelector('.test-button-text');
@@ -151,28 +160,22 @@ document.addEventListener('DOMContentLoaded', () => {
         buttonText.innerHTML = `<span class="loader"></span> درحال تست...`;
 
         const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`));
-        allItems.forEach(item => { item.style.display = 'flex'; item.querySelector('.ping-result').textContent = '...'; });
-
-        const configsToTestBackend = [];
-        const wsTestPromises = [];
-
-        for (const item of allItems) {
-            const config = item.dataset.config;
-            let isWs = false;
-            try {
-                if (config.startsWith('vmess://')) {
-                    const data = JSON.parse(atob(config.replace('vmess://', '')));
-                    if (data.net === 'ws') isWs = true;
-                } else {
-                    const params = new URLSearchParams(new URL(config).search);
-                    if (params.get('type') === 'ws') isWs = true;
-                }
-            } catch {}
-            if (isWs) wsTestPromises.push(testWebSocket(config, item, PING_TIMEOUT));
-            else configsToTestBackend.push({ config, item });
-        }
+        allItems.forEach(item => {
+            item.querySelector('.ping-result').textContent = '[C]... / [S]...';
+            item.dataset.clientPing = "pending";
+            item.dataset.serverPing = "pending";
+        });
         
-        await Promise.allSettled([...wsTestPromises, testTcpBatch(configsToTestBackend, API_ENDPOINT)]);
+        const clientPromises = allItems.map(item => testHttpProbe(item, PING_TIMEOUT));
+        const serverPromise = testTcpBatch(allItems, API_ENDPOINT);
+
+        await Promise.allSettled([...clientPromises, serverPromise]);
+
+        allItems.forEach(item => {
+            const clientPing = item.dataset.clientPing === "null" ? null : parseInt(item.dataset.clientPing, 10);
+            const serverPing = item.dataset.serverPing === "null" ? null : parseInt(item.dataset.serverPing, 10);
+            item.dataset.finalScore = Math.min(clientPing ?? 9999, serverPing ?? 9999);
+        });
 
         document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => {
             const list = group.querySelector('.config-list');
@@ -199,11 +202,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function copyReadySubscription(core, type, method) {
-        // ✅ FIX: Flatten the grouped configs back into a single list before slicing
         const allFlatConfigs = Object.values(allConfigs[core] || {}).flat();
         const topConfigs = allFlatConfigs.slice(0, READY_SUB_COUNT);
         if (topConfigs.length === 0) return showToast('کانفیگی برای ساخت لینک یافت نشد.', true);
         
+        if (type === 'clash' && method === 'copy') {
+            navigator.clipboard.writeText(STATIC_CLASH_URL);
+            showToast('لینک اشتراک آماده Clash کپی شد.');
+            return;
+        }
+
         let url, content;
         if (type === 'clash') {
             content = generateClashYaml(topConfigs);
@@ -228,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
         if (selectedConfigs.length === 0) {
             showToast('هیچ کانفیگی انتخاب نشده، فایل از کانفیگ‌های برتر ساخته می‌شود.');
-            // ✅ FIX: Handle the case where no configs are selected, using the flattened list
             const allFlatConfigs = Object.values(allConfigs[core] || {}).flat();
             selectedConfigs = allFlatConfigs.slice(0, READY_SUB_COUNT);
             if (selectedConfigs.length === 0) return showToast('هیچ کانفیگی برای ساخت فایل وجود ندارد.', true);
@@ -246,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
         qrModal.style.display = 'flex';
     }
 
-    // --- CLICK HANDLER ---
     function handleClicks(event) {
         const target = event.target.closest('[data-action]');
         if (!target) return;
@@ -260,6 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'generate-clash-file': generateClashFile(core); break;
             case 'copy-single-config': navigator.clipboard.writeText(config); showToast('کانفیگ کپی شد.'); break;
             case 'toggle-protocol': target.parentElement.classList.toggle('open'); break;
+            case 'toggle-actions': target.parentElement.classList.toggle('open'); break;
         }
     }
     xrayWrapper.addEventListener('click', handleClicks);
@@ -267,55 +274,71 @@ document.addEventListener('DOMContentLoaded', () => {
     qrModal.onclick = () => qrModal.style.display = 'none';
 
     // --- PING & UI HELPERS ---
-    function updateItemUI(item, result) {
-        item.dataset.finalScore = result.ping ?? 9999;
-        const pingEl = item.querySelector('.ping-result');
-        if (result.ping !== null) {
-            let color = result.ping < 400 ? 'var(--ping-good)' : (result.ping < 1000 ? 'var(--ping-medium)' : 'var(--ping-bad)');
-            pingEl.innerHTML = `[${result.source}] <strong style="color:${color};">${result.ping}ms</strong>`;
-        } else {
-            pingEl.textContent = `[${result.source}] ناموفق`;
+    function updateItemUI(item, source, ping) {
+        if (source === 'C') item.dataset.clientPing = ping;
+        if (source === 'S') item.dataset.serverPing = ping;
+
+        const clientPing = item.dataset.clientPing;
+        const serverPing = item.dataset.serverPing;
+        
+        let clientResult = clientPing === "pending" ? "..." : (clientPing === "null" ? "ناموفق" : `${clientPing}ms`);
+        let serverResult = serverPing === "pending" ? "..." : (serverPing === "null" ? "ناموفق" : `${serverPing}ms`);
+        
+        const bestPing = Math.min(
+            clientPing === "null" || clientPing === "pending" ? 9999 : parseInt(clientPing),
+            serverPing === "null" || serverPing === "pending" ? 9999 : parseInt(serverPing)
+        );
+
+        let color = 'var(--text-color)';
+        if(bestPing !== 9999){
+             color = bestPing < 700 ? 'var(--ping-good)' : (bestPing < 1500 ? 'var(--ping-medium)' : 'var(--ping-bad)');
         }
+        
+        item.querySelector('.ping-result').innerHTML = `<strong style="color:${color};">[C] ${clientResult} / [S] ${serverResult}</strong>`;
     }
     
-    async function testWebSocket(config, item, timeout) {
-        updateItemUI(item, { source: 'C', ping: null });
+    async function testHttpProbe(item, timeout) {
+        const config = item.dataset.config;
         try {
-            const ping = await new Promise((resolve, reject) => {
-                const url = new URL(config), params = new URLSearchParams(url.search);
-                let wsUrl;
-                if (config.startsWith('vmess://')) {
-                     const data = JSON.parse(atob(config.replace('vmess://', '')));
-                     const wsProtocol = (data.tls === 'tls' || data.port === '443') ? 'wss://' : 'ws://';
-                     wsUrl = `${wsProtocol}${data.add}:${data.port}${data.path || '/'}`;
-                } else {
-                     const wsProtocol = (params.get('security') === 'tls' || url.port === '443') ? 'wss://' : 'ws://';
-                     wsUrl = `${wsProtocol}${url.hostname}:${url.port}${params.get('path') || '/'}`;
-                }
-                const ws = new WebSocket(wsUrl);
-                const timeoutId = setTimeout(() => { ws.close(); reject(new Error('Timeout')); }, timeout);
-                const startTime = Date.now();
-                ws.onopen = () => { clearTimeout(timeoutId); ws.close(); resolve(Date.now() - startTime); };
-                ws.onerror = (e) => { clearTimeout(timeoutId); reject(new Error('WebSocket Error')); };
-            });
-            updateItemUI(item, { source: 'C', ping });
-        } catch {
-             updateItemUI(item, { source: 'C', ping: null });
+            let hostname, port;
+            if (config.startsWith('vmess://')) {
+                const data = JSON.parse(atob(config.replace('vmess://', '')));
+                hostname = data.add; port = data.port;
+            } else {
+                const url = new URL(config);
+                hostname = url.hostname; port = url.port;
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            const startTime = Date.now();
+            await fetch(`https://${hostname}:${port}`, { method: 'HEAD', mode: 'no-cors', signal: controller.signal, cache: 'no-store' });
+            const latency = Date.now() - startTime;
+            
+            clearTimeout(timeoutId);
+            updateItemUI(item, 'C', latency);
+        } catch (e) {
+            updateItemUI(item, 'C', null);
         }
     }
     
     async function testTcpBatch(items, apiUrl) {
         if (items.length === 0) return;
-        items.forEach(({ item }) => updateItemUI(item, { source: 'S', ping: null }));
         try {
-            const res = await fetch(apiUrl + '/api/ping', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: items.map(i => i.config) }) });
+            const configsToTest = items.map(item => item.dataset.config);
+            const res = await fetch(apiUrl + '/api/ping', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: configsToTest }) });
             if (!res.ok) throw new Error('API response not OK');
             const results = await res.json();
             const resultsMap = new Map(results.map(r => [r.config, r.ping]));
-            items.forEach(({ config, item }) => updateItemUI(item, { source: 'S', ping: resultsMap.get(config) ?? null }));
+
+            items.forEach(item => {
+                const ping = resultsMap.get(item.dataset.config) ?? null;
+                updateItemUI(item, 'S', ping);
+            });
         } catch (e) {
             console.error("Backend TCP test failed:", e);
-            items.forEach(({ item }) => updateItemUI(item, { source: 'S', ping: null }));
+            items.forEach(item => updateItemUI(item, 'S', null));
         }
     }
 
@@ -353,8 +376,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function parseProxyForClash(configStr) {
        try {
-            let name = decodeURIComponent(configStr.split('#').pop() || `V2V-${Date.now().toString().slice(-4)}`);
-            const base = { name: name.replace(/'/g, "''"), 'skip-cert-verify': true };
+            const original_name = decodeURIComponent(configStr.split('#').pop() || "Config");
+            let sanitized_name = original_name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim();
+            if (sanitized_name.length > MAX_NAME_LENGTH) {
+                sanitized_name = sanitized_name.substring(0, MAX_NAME_LENGTH) + '...';
+            }
+            const final_name = `V2V | ${sanitized_name || 'Config'}`;
+            
+            const base = { name: final_name, 'skip-cert-verify': true };
             const protocol = configStr.split('://')[0];
 
             if (protocol === 'vmess') {
