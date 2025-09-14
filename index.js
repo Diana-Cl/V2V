@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { toast.className = 'toast'; }, 3000);
     };
     
-    function generateProxyName(configStr) {
+    async function generateProxyName(configStr) {
         try {
             const url = new URL(configStr);
             const original_name = decodeURIComponent(url.hash.substring(1) || "");
@@ -40,13 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!sanitized_name) {
                  const server_id = `${url.hostname}:${url.port}`;
-                 let hash = 0;
-                 for (let i = 0; i < server_id.length; i++) {
-                     const char = server_id.charCodeAt(i);
-                     hash = ((hash << 5) - hash) + char;
-                     hash |= 0;
-                 }
-                 sanitized_name = `Config-${Math.abs(hash).toString(16).substring(0, 6)}`;
+                 const buffer = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(server_id));
+                 const hash = Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 6);
+                 sanitized_name = `Config-${hash}`;
             }
 
             if (sanitized_name.length > MAX_NAME_LENGTH) {
@@ -59,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- RENDER FUNCTION ---
-    function renderCore(core, groupedConfigs) {
+    async function renderCore(core, groupedConfigs) {
         const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
         wrapper.innerHTML = '';
 
@@ -122,8 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
             pGroupEl.className = 'protocol-group';
             let itemsHTML = '';
             const configs = groupedConfigs[protocol];
-            configs.forEach((config) => {
-                const name = generateProxyName(config);
+            const namePromises = configs.map(config => generateProxyName(config));
+            const names = await Promise.all(namePromises);
+
+            configs.forEach((config, index) => {
+                const name = names[index];
                 const safeConfig = config.replace(/'/g, "&apos;").replace(/"/g, '&quot;');
                 itemsHTML += `
                     <li class="config-item" data-config='${safeConfig}'>
@@ -153,8 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataRes = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
             if (!dataRes.ok) throw new Error('Failed to load configs');
             allConfigs = await dataRes.json();
-            renderCore('xray', allConfigs.xray || {});
-            renderCore('singbox', allConfigs.singbox || {});
+            await renderCore('xray', allConfigs.xray || {});
+            await renderCore('singbox', allConfigs.singbox || {});
         } catch (e) {
             console.error("Config loading failed:", e);
             const errorMsg = `<div class="alert">خطا در بارگذاری کانفیگ‌ها. لطفا صفحه را رفرش کنید.</div>`;
@@ -172,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`));
         allItems.forEach(item => {
-            item.querySelector('.ping-result').textContent = '[C-Http]... / [C-Rtc]... / [S-Tcp]...';
+            item.querySelector('.ping-result').textContent = '[C-H].../[C-R].../[S-T]...';
             item.dataset.httpPing = "pending";
             item.dataset.rtcPing = "pending";
             item.dataset.serverPing = "pending";
@@ -186,9 +185,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         allItems.forEach(item => {
             const bestPing = Math.min(
-                item.dataset.httpPing > 0 ? parseInt(item.dataset.httpPing) : 9999,
-                item.dataset.rtcPing > 0 ? parseInt(item.dataset.rtcPing) : 9999,
-                item.dataset.serverPing > 0 ? parseInt(item.dataset.serverPing) : 9999
+                (item.dataset.httpPing && item.dataset.httpPing !== "null") ? parseInt(item.dataset.httpPing) : 9999,
+                (item.dataset.rtcPing && item.dataset.rtcPing !== "null") ? parseInt(item.dataset.rtcPing) : 9999,
+                (item.dataset.serverPing && item.dataset.serverPing !== "null") ? parseInt(item.dataset.serverPing) : 9999
             );
             item.dataset.finalScore = bestPing;
         });
@@ -205,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function copyReadySubscription(core, type, method) {
         let subUrl;
         if (type === 'clash') {
-            subUrl = STATIC_CLASH_URL;
+            subUrl = `${API_ENDPOINT}/sub/public/clash/${core}`;
         } else {
             subUrl = `${API_ENDPOINT}/sub/public/${core}`;
         }
@@ -223,21 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (method === 'download' && type === 'clash') {
             window.open(subUrl, '_blank');
-            return;
         }
-
-        const allFlatConfigs = Object.values(allConfigs[core] || {}).flat();
-        const topConfigs = allFlatConfigs.slice(0, READY_SUB_COUNT);
-        if (topConfigs.length === 0) return showToast('کانفیگی برای ساخت لینک یافت نشد.', true);
-        
-        let content, fileType = 'text/plain';
-        if (type === 'clash') {
-            content = generateClashYaml(topConfigs); fileType = 'text/yaml';
-        } else {
-            content = topConfigs.join('\n');
-        }
-        if (!content) return showToast('ساخت محتوای اشتراک ممکن نبود.', true);
-        downloadFile(content, `v2v-${core}-ready.${type === 'clash' ? 'yaml' : 'txt'}`, fileType);
     }
     
     async function createSubscription(core) {
@@ -255,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function generateClashFile(core) {
+    async function generateClashFile(core) {
         let selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
         if (selectedConfigs.length === 0) {
             showToast('هیچ کانفیگی انتخاب نشده، فایل از کانفیگ‌های برتر ساخته می‌شود.');
@@ -264,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectedConfigs.length === 0) return showToast('هیچ کانفیگی برای ساخت فایل وجود ندارد.', true);
         }
         
-        const yamlString = generateClashYaml(selectedConfigs);
+        const yamlString = await generateClashYaml(selectedConfigs);
         if (!yamlString) return showToast('ساخت فایل Clash از کانفیگ‌های انتخابی ممکن نبود.', true);
         downloadFile(yamlString, `v2v-clash-selected.yaml`, 'text/yaml');
     }
@@ -303,12 +288,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const rtcPing = item.dataset.rtcPing;
         const serverPing = item.dataset.serverPing;
         
-        const formatResult = (p) => p === "pending" ? "..." : (p === "null" ? "X" : `${p}ms`);
+        const formatResult = (p) => p === "pending" ? "..." : (p === "null" ? "-" : `${p}ms`);
 
         const bestPing = Math.min(
-            httpPing > 0 ? parseInt(httpPing) : 9999,
-            rtcPing > 0 ? parseInt(rtcPing) : 9999,
-            serverPing > 0 ? parseInt(serverPing) : 9999
+            (httpPing && httpPing !== "null") ? parseInt(httpPing) : 9999,
+            (rtcPing && rtcPing !== "null") ? parseInt(rtcPing) : 9999,
+            (serverPing && serverPing !== "null") ? parseInt(serverPing) : 9999
         );
 
         let color = 'var(--text-color)';
@@ -316,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
              color = bestPing < 700 ? 'var(--ping-good)' : (bestPing < 1500 ? 'var(--ping-medium)' : 'var(--ping-bad)');
         }
         
-        item.querySelector('.ping-result').innerHTML = `<strong style="color:${color};">[C-H] ${formatResult(httpPing)} / [C-R] ${formatResult(rtcPing)} / [S] ${formatResult(serverPing)}</strong>`;
+        item.querySelector('.ping-result').innerHTML = `<strong style="color:${color};">[C-H]${formatResult(httpPing)}/[C-R]${formatResult(rtcPing)}/[S-T]${formatResult(serverPing)}</strong>`;
     }
     
     async function testHttpProbe(item, timeout) {
@@ -354,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 hostname = new URL(config).hostname;
             }
-            if (!/^[0-9.]+$/.test(hostname)) { // Only test IPs for simplicity
+            if (!/^[0-9.]+$/.test(hostname)) {
                 updateItemUI(item, 'rtcPing', null);
                 return;
             }
@@ -362,19 +347,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const pc = new RTCPeerConnection({ iceServers: [{ urls: `stun:${hostname}:3478` }] });
             const startTime = Date.now();
             
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout));
-            
             const candidatePromise = new Promise((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error('No srflx candidate')), timeout - 100);
                 pc.onicecandidate = (e) => {
                     if (e.candidate && e.candidate.type === 'srflx') {
+                        clearTimeout(timer);
                         pc.close();
                         resolve(Date.now() - startTime);
                     }
                 };
                 pc.onicegatheringstatechange = () => {
                     if (pc.iceGatheringState === 'complete') {
+                       clearTimeout(timer);
                        pc.close();
-                       reject(new Error('No srflx candidate found'));
+                       reject(new Error('Gathering complete without srflx'));
                     }
                 };
             });
@@ -382,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pc.createDataChannel("ping");
             await pc.createOffer().then(offer => pc.setLocalDescription(offer));
             
-            const latency = await Promise.race([candidatePromise, timeoutPromise]);
+            const latency = await candidatePromise;
             updateItemUI(item, 'rtcPing', latency);
 
         } catch (e) {
@@ -419,10 +405,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.removeChild(link);
     }
 
-    function generateClashYaml(configs) {
+    async function generateClashYaml(configs) {
         if (!window.jsyaml) { showToast('کتابخانه js-yaml بارگذاری نشده است.', true); return null; }
         try {
-            const proxies = configs.map(parseProxyForClash).filter(p => p !== null);
+            const proxyPromises = configs.map(parseProxyForClash);
+            const proxies = (await Promise.all(proxyPromises)).filter(p => p !== null);
+            
             if (proxies.length === 0) return null;
             const proxyNames = proxies.map(p => p.name);
             const clashConfig = {
@@ -440,9 +428,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    function parseProxyForClash(configStr) {
+    async function parseProxyForClash(configStr) {
        try {
-            const final_name = generateProxyName(configStr);
+            const final_name = await generateProxyName(configStr);
             const base = { name: final_name, 'skip-cert-verify': true };
             const protocol = configStr.split('://')[0];
 
@@ -456,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (protocol === 'vless') {
                  const vlessProxy = { ...base, type: 'vless', server: url.hostname, port: parseInt(url.port), uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type'), servername: params.get('sni')};
                  if (params.get('type') === 'ws') vmessProxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || url.hostname }};
-                 return vlessProxy;
+                 return vmessProxy;
             }
             if (protocol === 'trojan') return { ...base, type: 'trojan', server: url.hostname, port: parseInt(url.port), password: url.username, sni: params.get('sni') };
             if (protocol === 'ss') { const [c, p] = atob(url.username).split(':'); return { ...base, type: 'ss', server: url.hostname, port: parseInt(url.port), cipher: c, password: p }; }
