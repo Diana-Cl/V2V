@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const protocol in groupedConfigs) {
             const pGroupEl = document.createElement('div');
             pGroupEl.className = 'protocol-group';
+            pGroupEl.dataset.protocolName = protocol; // Store protocol name for later access
             const configs = groupedConfigs[protocol];
             const names = await Promise.all(configs.map(generateProxyName));
             let itemsHTML = '';
@@ -40,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const safeConfig = config.replace(/'/g, "&apos;").replace(/"/g, '&quot;');
                 itemsHTML += `<li class="config-item" data-config='${safeConfig}'><input type="checkbox" class="config-checkbox"><div class="config-details"><span class="server">${names[index]}</span><span class="ping-result"></span></div><div class="config-actions"><button class="copy-btn" data-action="copy-single" data-config='${safeConfig}'>کپی</button><button class="copy-btn" data-action="qr-single" data-config='${safeConfig}'>QR</button></div></li>`;
             });
-            pGroupEl.innerHTML = `<div class="protocol-header" data-action="toggle-protocol"><span>${protocol.toUpperCase()} (${configs.length})</span><span class="toggle-icon">▼</span></div><ul class="config-list">${itemsHTML}</ul>`;
+            pGroupEl.innerHTML = `<div class="protocol-header" data-action="toggle-protocol"><div class="protocol-header-title"><span>${protocol.toUpperCase()} (${configs.length})</span><span class="toggle-icon">▼</span></div><div class="protocol-header-actions"><button class="action-btn-small" data-action="copy-protocol" data-protocol="${protocol}">کپی همه</button><button class="action-btn-small" data-action="qr-protocol" data-protocol="${protocol}">QR همه</button></div></div><ul class="config-list">${itemsHTML}</ul>`;
             wrapper.appendChild(pGroupEl);
         }
     }
@@ -64,148 +65,53 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
     
     // --- ADVANCED PARALLEL TESTING LOGIC ---
-    function parseConfig(configStr) {
-        try {
-            const url = new URL(configStr);
-            const params = new URLSearchParams(url.search);
-            return {
-                protocol: url.protocol.replace(':', ''),
-                host: url.hostname,
-                port: parseInt(url.port),
-                transport: params.get('type'),
-                path: params.get('path') || '/',
-            };
-        } catch { return null; }
-    }
-
-    async function runAdvancedPingTest(core, testButton) {
-        const buttonText = testButton.querySelector('.test-button-text');
-        testButton.disabled = true;
-        buttonText.innerHTML = `<span class="loader"></span> در حال تست...`;
-        const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`));
-        
-        const testPromises = allItems.map(item => {
-            const config = parseConfig(item.dataset.config);
-            if (!config) return Promise.resolve();
-
-            let promises = [];
-            if (config.transport === 'ws') promises.push(testDirectWebSocket(config));
-            if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) promises.push(testDirectWebTransport(config));
-            if (['vless', 'vmess', 'trojan', 'ss'].includes(config.protocol)) promises.push(testBridgeTCP(config));
-            
-            return Promise.allSettled(promises).then(results => {
-                const successfulResults = results.filter(r => r.status === 'fulfilled' && r.value.latency !== null).map(r => r.value);
-                updateUI(item, successfulResults);
-                const bestLatency = successfulResults.length > 0 ? Math.min(...successfulResults.map(r => r.latency)) : 9999;
-                item.dataset.finalScore = bestLatency;
-            });
-        });
-        await Promise.all(testPromises);
-
-        document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => {
-            const list = group.querySelector('.config-list');
-            const sorted = Array.from(list.children).sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999));
-            sorted.forEach(item => list.appendChild(item));
-        });
-        testButton.disabled = false;
-        buttonText.innerHTML = '🚀 تست مجدد کانفیگ‌ها';
-    }
-    
-    async function testBridgeTCP(config) {
-        return new Promise((resolve) => {
-            const ws = new WebSocket(`${WORKER_URL.replace('http', 'ws')}/tcp-bridge`);
-            const timeout = setTimeout(() => { ws.close(); resolve({ type: 'TCP', latency: null }); }, 4000);
-            ws.onopen = () => ws.send(JSON.stringify({ host: config.host, port: config.port }));
-            ws.onmessage = (event) => { const data = JSON.parse(event.data); clearTimeout(timeout); resolve({ type: 'TCP', latency: data.status === 'success' ? data.latency : null }); ws.close(); };
-            ws.onerror = () => { clearTimeout(timeout); resolve({ type: 'TCP', latency: null }); };
-        });
-    }
-    async function testDirectWebSocket(config) {
-        return new Promise((resolve) => {
-            const startTime = Date.now();
-            const ws = new WebSocket(`wss://${config.host}:${config.port}${config.path}`);
-            const timeout = setTimeout(() => { ws.close(); resolve({ type: 'WS', latency: null }); }, 4000);
-            ws.onopen = () => { clearTimeout(timeout); resolve({ type: 'WS', latency: Date.now() - startTime }); ws.close(); };
-            ws.onerror = () => { clearTimeout(timeout); resolve({ type: 'WS', latency: null }); };
-        });
-    }
-    async function testDirectWebTransport(config) {
-        if (typeof WebTransport === 'undefined') return { type: 'WT', latency: null };
-        return new Promise(async (resolve) => {
-            try {
-                const startTime = Date.now();
-                const transport = new WebTransport(`https://${config.host}:${config.port}`);
-                await transport.ready;
-                resolve({ type: 'WT', latency: Date.now() - startTime });
-                transport.close();
-            } catch (e) { resolve({ type: 'WT', latency: null }); }
-        });
-    }
-
-    function updateUI(item, results) {
-        const resultEl = item.querySelector('.ping-result');
-        if (!results || results.length === 0) {
-            resultEl.innerHTML = `<strong style="color:var(--ping-bad);">❌ ناموفق</strong>`;
-            resultEl.title = 'هیچ تستی موفق نبود';
-            return;
-        }
-        const priority = ['WT', 'WS', 'TCP'];
-        const bestResult = results.sort((a, b) => priority.indexOf(a.type) - priority.indexOf(b.type))[0];
-        
-        const icon = `[${bestResult.type}]`;
-        const color = bestResult.latency < 700 ? 'var(--ping-good)' : 'var(--ping-medium)';
-        resultEl.innerHTML = `<strong style="color:${color};">${icon} ${bestResult.latency}ms</strong>`;
-        resultEl.title = results.map(r => `${r.type}: ${r.latency !== null ? r.latency + 'ms' : 'Fail'}`).join(' | ');
-    }
+    // ... (This logic remains the same as the full version from the previous response)
+    function parseConfig(configStr) { /* ... */ }
+    async function runAdvancedPingTest(core, testButton) { /* ... */ }
+    async function testBridgeTCP(config) { /* ... */ }
+    async function testDirectWebSocket(config) { /* ... */ }
+    async function testDirectWebTransport(config) { /* ... */ }
+    function updateUI(item, results) { /* ... */ }
+    // ...
 
     // --- EVENT HANDLING & ACTIONS ---
-    function getSubscriptionUrl(core, type) {
-        return (type === 'clash') ? `${WORKER_URL}/sub/public/clash/xray` : `${WORKER_URL}/sub/public/${core}`;
-    }
+    function getSubscriptionUrl(core, type) { return (type === 'clash') ? `${WORKER_URL}/sub/public/clash/xray` : `${WORKER_URL}/sub/public/${core}`; }
+    async function createPersonalSubscription(core) { const sel = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config); if (sel.length === 0) { showToast('حداقل یک کانفیگ انتخاب کنید.', true); return null; } try { const res = await fetch(`${WORKER_URL}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: sel }) }); if (!res.ok) throw new Error(`Server responded with ${res.status}`); return (await res.json()).subscription_url; } catch (e) { showToast('خطا در ساخت لینک اشتراک.', true); return null; } }
+    function showQrCode(text) { if (!window.QRCode) { showToast('کتابخانه QR در حال بارگذاری است...', true); return; } qrContainer.innerHTML = ''; new QRCode(qrContainer, { text, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.H }); qrModal.style.display = 'flex'; }
     
-    async function createPersonalSubscription(core) {
-        const selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
-        if (selectedConfigs.length === 0) { showToast('لطفاً حداقل یک کانفیگ را انتخاب کنید.', true); return null; }
-        try {
-            const res = await fetch(`${WORKER_URL}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: selectedConfigs }) });
-            if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-            const data = await res.json();
-            return data.subscription_url;
-        } catch (e) { showToast('خطا در ساخت لینک اشتراک.', true); return null; }
-    }
-
-    function showQrCode(text) {
-        if (!window.QRCode) { showToast('کتابخانه QR در حال بارگذاری است...', true); return; }
-        qrContainer.innerHTML = '';
-        new QRCode(qrContainer, { text, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.H });
-        qrModal.style.display = 'flex';
+    function getProtocolConfigs(target) {
+        const protocolGroup = target.closest('.protocol-group');
+        if (!protocolGroup) return [];
+        return Array.from(protocolGroup.querySelectorAll('.config-item')).map(item => item.dataset.config);
     }
 
     async function handleClicks(event) {
         const target = event.target.closest('[data-action]');
         if (!target) return;
-        const { action, core, type, method, config } = target.dataset;
+        const { action, core, type, method, config, protocol } = target.dataset;
 
         switch (action) {
             case 'run-ping-test': runAdvancedPingTest(core, target); break;
             case 'copy-single': navigator.clipboard.writeText(config); showToast('کانفیگ کپی شد.'); break;
             case 'qr-single': showQrCode(config); break;
-            case 'copy-sub':
-                const subUrl = getSubscriptionUrl(core, type);
-                if (method === 'download') { window.open(subUrl, '_blank'); } 
-                else { navigator.clipboard.writeText(subUrl); showToast('لینک اشتراک کپی شد.'); }
-                break;
+            case 'copy-sub': const subUrl = getSubscriptionUrl(core, type); if (method === 'download') { window.open(subUrl, '_blank'); } else { navigator.clipboard.writeText(subUrl); showToast('لینک اشتراک کپی شد.'); } break;
             case 'qr-sub': showQrCode(getSubscriptionUrl(core, type)); break;
-            case 'create-personal-sub':
-                const personalUrl = await createPersonalSubscription(core);
-                if (!personalUrl) return;
-                if (method === 'qr') { showQrCode(personalUrl); } 
-                else { navigator.clipboard.writeText(personalUrl); showToast('لینک اشتراک شخصی کپی شد.'); }
-                break;
-            case 'toggle-protocol': target.parentElement.classList.toggle('open'); break;
-            case 'toggle-actions': target.parentElement.classList.toggle('open'); break;
+            case 'create-personal-sub': const personalUrl = await createPersonalSubscription(core); if (!personalUrl) return; if (method === 'qr') { showQrCode(personalUrl); } else { navigator.clipboard.writeText(personalUrl); showToast('لینک اشتراک شخصی کپی شد.'); } break;
+            case 'copy-protocol': const protocolConfigs = getProtocolConfigs(target); if (protocolConfigs.length > 0) { navigator.clipboard.writeText(protocolConfigs.join('\n')); showToast(`تمام ${protocolConfigs.length} کانفیگ ${protocol} کپی شد.`); } break;
+            case 'qr-protocol': const qrProtocolConfigs = getProtocolConfigs(target); if (qrProtocolConfigs.length > 0) { showQrCode(qrProtocolConfigs.join('\n')); } break;
+            case 'toggle-protocol': target.closest('.protocol-group').classList.toggle('open'); break;
+            case 'toggle-actions': target.closest('.action-group-collapsible').classList.toggle('open'); break;
         }
     }
     document.querySelectorAll('.main-wrapper').forEach(w => w.addEventListener('click', handleClicks));
     qrModal.onclick = () => qrModal.style.display = 'none';
+
+    // The full testing logic from the previous response is assumed to be here.
+    // For brevity, it is not repeated. The following are placeholders.
+    parseConfig = function(configStr) { try { const url = new URL(configStr); const params = new URLSearchParams(url.search); return { protocol: url.protocol.replace(':', ''), host: url.hostname, port: parseInt(url.port), transport: params.get('type'), path: params.get('path') || '/', }; } catch { return null; } };
+    runAdvancedPingTest = async function(core, testButton) { const buttonText = testButton.querySelector('.test-button-text'); testButton.disabled = true; buttonText.innerHTML = `<span class="loader"></span> در حال تست...`; const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`)); const testPromises = allItems.map(item => { const config = parseConfig(item.dataset.config); if (!config) return Promise.resolve(); let promises = []; if (config.transport === 'ws') promises.push(testDirectWebSocket(config)); if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) promises.push(testDirectWebTransport(config)); if (['vless', 'vmess', 'trojan', 'ss'].includes(config.protocol)) promises.push(testBridgeTCP(config)); return Promise.allSettled(promises).then(results => { const successfulResults = results.filter(r => r.status === 'fulfilled' && r.value.latency !== null).map(r => r.value); updateUI(item, successfulResults); const bestLatency = successfulResults.length > 0 ? Math.min(...successfulResults.map(r => r.latency)) : 9999; item.dataset.finalScore = bestLatency; }); }); await Promise.all(testPromises); document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => { const list = group.querySelector('.config-list'); const sorted = Array.from(list.children).sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999)); sorted.forEach(item => list.appendChild(item)); }); testButton.disabled = false; buttonText.innerHTML = '🚀 تست مجدد کانفیگ‌ها'; };
+    testBridgeTCP = async function(config) { return new Promise((resolve) => { const ws = new WebSocket(`${WORKER_URL.replace('http', 'ws')}/tcp-bridge`); const timeout = setTimeout(() => { ws.close(); resolve({ type: 'TCP', latency: null }); }, 4000); ws.onopen = () => ws.send(JSON.stringify({ host: config.host, port: config.port })); ws.onmessage = (event) => { const data = JSON.parse(event.data); clearTimeout(timeout); resolve({ type: 'TCP', latency: data.status === 'success' ? data.latency : null }); ws.close(); }; ws.onerror = () => { clearTimeout(timeout); resolve({ type: 'TCP', latency: null }); }; }); };
+    testDirectWebSocket = async function(config) { return new Promise((resolve) => { const startTime = Date.now(); const ws = new WebSocket(`wss://${config.host}:${config.port}${config.path}`); const timeout = setTimeout(() => { ws.close(); resolve({ type: 'WS', latency: null }); }, 4000); ws.onopen = () => { clearTimeout(timeout); resolve({ type: 'WS', latency: Date.now() - startTime }); ws.close(); }; ws.onerror = () => { clearTimeout(timeout); resolve({ type: 'WS', latency: null }); }; }); };
+    testDirectWebTransport = async function(config) { if (typeof WebTransport === 'undefined') return { type: 'WT', latency: null }; return new Promise(async (resolve) => { try { const startTime = Date.now(); const transport = new WebTransport(`https://${config.host}:${config.port}`); await transport.ready; resolve({ type: 'WT', latency: Date.now() - startTime }); transport.close(); } catch (e) { resolve({ type: 'WT', latency: null }); } }); };
+    updateUI = function(item, results) { const resultEl = item.querySelector('.ping-result'); if (!results || results.length === 0) { resultEl.innerHTML = `<strong style="color:var(--ping-bad);">❌ ناموفق</strong>`; resultEl.title = 'هیچ تستی موفق نبود'; return; } const priority = ['WT', 'WS', 'TCP']; const bestResult = results.sort((a, b) => priority.indexOf(a.type) - priority.indexOf(b.type))[0]; const icon = `[${bestResult.type}]`; const color = bestResult.latency < 700 ? 'var(--ping-good)' : 'var(--ping-medium)'; resultEl.innerHTML = `<strong style="color:${color};">${icon} ${bestResult.latency}ms</strong>`; resultEl.title = results.map(r => `${r.type}: ${r.latency !== null ? r.latency + 'ms' : 'Fail'}`).join(' | '); };
 });
