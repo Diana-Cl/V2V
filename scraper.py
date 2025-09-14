@@ -13,7 +13,7 @@ from github import Github, Auth
 from typing import Optional, Set, List, Dict
 from collections import defaultdict
 
-print("INFO: Initializing V2V Scraper v28.1 (Robust Clash Generation)...")
+print("INFO: Initializing V2V Scraper v30.0 (Production Ready)...")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,6 +32,7 @@ MAX_CONFIGS_TO_TEST = 5000
 TARGET_CONFIGS_PER_CORE = 500
 MAX_TEST_WORKERS = 150
 TCP_TIMEOUT = 2.5
+MAX_NAME_LENGTH = 50 # حداکثر طول نام کانفیگ
 
 # --- HELPER FUNCTIONS ---
 def decode_base64_content(content: str) -> str:
@@ -39,16 +40,14 @@ def decode_base64_content(content: str) -> str:
     try:
         content = content.strip().replace('\n', '').replace('\r', '')
         return base64.b64decode(content + '===').decode('utf-8', 'ignore')
-    except Exception:
-        return ""
+    except Exception: return ""
 
 def is_valid_config(config: str) -> bool:
     if not isinstance(config, str) or not config.strip(): return False
     try:
         parsed = urlparse(config)
         return parsed.scheme in VALID_PROTOCOLS and bool(parsed.hostname or (parsed.scheme == 'vmess' and decode_base64_content(config.replace("vmess://", ""))))
-    except Exception:
-        return False
+    except Exception: return False
 
 def test_tcp_connection(config: str) -> Optional[str]:
     try:
@@ -60,8 +59,7 @@ def test_tcp_connection(config: str) -> Optional[str]:
         if not all([hostname, port]): return None
         with socket.create_connection((hostname, port), timeout=TCP_TIMEOUT):
             return config
-    except Exception:
-        return None
+    except Exception: return None
 
 def fetch_from_sources(sources: list, is_github: bool, pat: str = None, limit: int = 0) -> Set[str]:
     all_configs = set()
@@ -101,12 +99,15 @@ def fetch_from_sources(sources: list, is_github: bool, pat: str = None, limit: i
 
 def parse_proxy_for_clash(config: str) -> Optional[Dict]:
     try:
-        # ✅ FIX: بهبود استخراج نام و جلوگیری از نام‌های خالی
-        name_raw = urlparse(config).fragment or f"V2V-{int(time.time() * 1000) % 10000}"
-        name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251]+', '', name_raw).strip()
-        if not name: name = "V2V-Config"
+        original_name = urlparse(config).fragment or "Config"
+        sanitized_name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251]+', '', original_name).strip()
+        if len(sanitized_name) > MAX_NAME_LENGTH:
+            sanitized_name = sanitized_name[:MAX_NAME_LENGTH] + "..."
+        if not sanitized_name: sanitized_name = "Config"
         
-        base = {'name': name, 'skip-cert-verify': True}
+        final_name = f"V2V | {sanitized_name}"
+        
+        base = {'name': final_name, 'skip-cert-verify': True}
         parsed_url = urlparse(config)
         protocol = parsed_url.scheme
         
@@ -125,12 +126,10 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
             return proxy
 
         if protocol == 'trojan':
-            # ✅ FIX: اطمینان از وجود پسورد در تروجان
             if not parsed_url.username: return None
             return {**base, 'type': 'trojan', 'server': parsed_url.hostname, 'port': parsed_url.port, 'password': parsed_url.username, 'sni': params.get('sni')}
 
         if protocol == 'ss':
-            # ✅ FIX: مدیریت هوشمند خطای پسورد در Shadowsocks
             decoded_user = decode_base64_content(parsed_url.username)
             if ':' not in decoded_user: return None
             cipher, password = decoded_user.split(':', 1)
@@ -144,7 +143,6 @@ def generate_clash_yaml(configs: List[str]) -> Optional[str]:
     for config in configs:
         parsed_proxy = parse_proxy_for_clash(config)
         if parsed_proxy:
-            # ✅ FIX: کلید یکتاسازی بر اساس سرور، پورت و نوع برای جلوگیری از هرگونه تکرار
             key = f"{parsed_proxy['server']}:{parsed_proxy['port']}:{parsed_proxy['type']}"
             if key not in unique_check:
                 proxies.append(parsed_proxy)
@@ -189,11 +187,17 @@ def main():
 
     print("\n--- 4. Grouping and Finalizing ---")
     
-    all_final_configs = list(live_configs)[:TARGET_CONFIGS_PER_CORE * 2]
-    
-    xray_pool = {cfg for cfg in all_final_configs if urlparse(cfg).scheme in XRAY_PROTOCOLS}
-    singbox_pool = {cfg for cfg in all_final_configs}
+    singbox_only_pool = {cfg for cfg in live_configs if urlparse(cfg).scheme in SINGBOX_ONLY_PROTOCOLS}
+    xray_compatible_pool = {cfg for cfg in live_configs if urlparse(cfg).scheme in XRAY_PROTOCOLS}
 
+    singbox_final = list(singbox_only_pool)
+    needed_for_singbox = TARGET_CONFIGS_PER_CORE - len(singbox_final)
+    if needed_for_singbox > 0:
+        fillers = [cfg for cfg in xray_compatible_pool if cfg not in singbox_final]
+        singbox_final.extend(fillers[:needed_for_singbox])
+    
+    xray_final = list(xray_compatible_pool)[:TARGET_CONFIGS_PER_CORE]
+    
     def group_by_protocol(configs):
         grouped = defaultdict(list)
         for cfg in configs:
@@ -203,15 +207,15 @@ def main():
         return dict(grouped)
 
     output_data = {
-        "xray": group_by_protocol(list(xray_pool)[:TARGET_CONFIGS_PER_CORE]),
-        "singbox": group_by_protocol(list(singbox_pool)[:TARGET_CONFIGS_PER_CORE])
+        "xray": group_by_protocol(xray_final),
+        "singbox": group_by_protocol(singbox_final)
     }
 
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
     print(f"✅ Wrote grouped configs to {OUTPUT_JSON_FILE}.")
 
-    clash_configs_for_sub = [cfg for cfg in xray_pool if urlparse(cfg).scheme in {'vless', 'vmess', 'trojan', 'ss'}]
+    clash_configs_for_sub = [cfg for cfg in xray_compatible_pool if urlparse(cfg).scheme in {'vless', 'vmess', 'trojan', 'ss'}]
     clash_yaml_content = generate_clash_yaml(clash_configs_for_sub[:TARGET_CONFIGS_PER_CORE])
     
     if clash_yaml_content:
