@@ -38,12 +38,16 @@ export default {
 
             const publicSubMatch = url.pathname.match(/^\/sub\/public\/(clash\/)?(xray|singbox)$/);
             if (publicSubMatch) {
-                return handleGetPublicSubscription(publicSubMatch[2], !!publicSubMatch[1], env);
+                const core = publicSubMatch[2];
+                const isClash = !!publicSubMatch[1];
+                return handleGetPublicSubscription(core, isClash, env);
             }
 
             const personalSubMatch = url.pathname.match(/^\/sub\/(clash\/)?([0-9a-f-]+)$/);
             if (personalSubMatch) {
-                return handleGetPersonalSubscription(personalSubMatch[2], !!personalSubMatch[1], env);
+                const uuid = personalSubMatch[2];
+                const isClash = !!personalSubMatch[1];
+                return handleGetPersonalSubscription(uuid, isClash, env);
             }
 
             return new Response('V2V API Worker is operational.', { headers: CORS_HEADERS });
@@ -95,11 +99,11 @@ async function handleGetPublicSubscription(core, isClash, env) {
     const allFlatConfigs = Object.values(coreConfigs).flat();
     const topConfigs = allFlatConfigs.slice(0, READY_SUB_COUNT);
     if (topConfigs.length === 0) return new Response(`No public configs found for core: ${core}`, { status: 404 });
-    return generateSubscriptionResponse(topConfigs, isClash, env);
+    return generateSubscriptionResponse(topConfigs, isClash);
 }
 
 async function handleGetPersonalSubscription(uuid, isClash, env) {
-    if (!env.V2V_KV) return new Response('KV Namespace is not configured.', { status: 500 });
+    if (!env.V2V_KV) return new Response('KV Namespace not configured.', { status: 500 });
     const [kvData, liveData] = await Promise.all([ env.V2V_KV.get(`sub:${uuid}`), fetchFromMirrors() ]);
     if (!kvData) return new Response('Subscription not found or has expired.', { status: 404 });
     
@@ -115,12 +119,12 @@ async function handleGetPersonalSubscription(uuid, isClash, env) {
     if (healedConfigs.length === 0 && allLiveConfigs.size > 0) healedConfigs = [...allLiveConfigs].slice(0, 10);
     
     await env.V2V_KV.put(`sub:${uuid}`, JSON.stringify(healedConfigs), { expirationTtl: SUBSCRIPTION_TTL });
-    return generateSubscriptionResponse(healedConfigs, isClash, env);
+    return generateSubscriptionResponse(healedConfigs, isClash);
 }
 
-async function generateSubscriptionResponse(configs, isClash, env) {
+async function generateSubscriptionResponse(configs, isClash) {
     if (isClash) {
-        const clashYaml = await generateClashYaml(configs, env);
+        const clashYaml = await generateClashYaml(configs);
         if (!clashYaml) throw new Error('Could not generate Clash config.');
         const headers = new Headers(YAML_HEADERS);
         headers.set('Content-Disposition', 'attachment; filename="v2v_clash.yml"');
@@ -143,10 +147,23 @@ async function generateClashYaml(configs) {
     if (proxies.length === 0) return null;
     const proxyNames = proxies.map(p => p.name);
     let yamlString = "proxies:\n";
-    proxies.forEach(p => { yamlString += `  - {name: ${safeYamlStringify(p.name)}, type: ${p.type}, server: ${safeYamlStringify(p.server)}, port: ${p.port}, uuid: ${p.uuid ? safeYamlStringify(p.uuid) : ''}, password: ${p.password ? safeYamlStringify(p.password) : ''}, alterId: ${p.alterId || 0}, cipher: ${p.cipher ? safeYamlStringify(p.cipher) : 'auto'}, tls: ${!!p.tls}, network: ${p.network ? safeYamlStringify(p.network) : 'tcp'}, skip-cert-verify: ${!!p['skip-cert-verify']}, servername: ${p.servername ? safeYamlStringify(p.servername) : ''}, ws-opts: {path: ${p['ws-opts']?.path ? safeYamlStringify(p['ws-opts'].path) : '""'}, headers: {Host: ${p['ws-opts']?.headers?.Host ? safeYamlStringify(p['ws-opts'].headers.Host) : '""'}}}}\n`; });
+    proxies.forEach(p => {
+        yamlString += `  - name: ${safeYamlStringify(p.name)}\n`;
+        const orderedKeys = ['type', 'server', 'port', 'uuid', 'password', 'alterId', 'cipher', 'tls', 'network', 'servername', 'skip-cert-verify', 'ws-opts'];
+        orderedKeys.forEach(key => {
+            if (p[key] === undefined || p[key] === null) return;
+            if (key === 'ws-opts') {
+                yamlString += `    ws-opts:\n`;
+                if(p[key].path) yamlString += `      path: ${safeYamlStringify(p[key].path)}\n`;
+                if(p[key].headers?.Host) yamlString += `      headers:\n        Host: ${safeYamlStringify(p[key].headers.Host)}\n`;
+            } else {
+                yamlString += `    ${key}: ${typeof p[key] === 'string' ? safeYamlStringify(p[key]) : p[key]}\n`;
+            }
+        });
+    });
     yamlString += "proxy-groups:\n";
-    yamlString += `  - {name: V2V-Auto, type: url-test, proxies: [${proxyNames.map(safeYamlStringify).join(', ')}], url: 'http://www.gstatic.com/generate_204', interval: 300}\n`;
-    yamlString += `  - {name: V2V-Select, type: select, proxies: [V2V-Auto, ${proxyNames.map(safeYamlStringify).join(', ')}]}\n`;
+    yamlString += `  - name: V2V-Auto\n    type: url-test\n    proxies: [${proxyNames.map(safeYamlStringify).join(', ')}]\n    url: 'http://www.gstatic.com/generate_204'\n    interval: 300\n`;
+    yamlString += `  - name: V2V-Select\n    type: select\n    proxies: [V2V-Auto, ${proxyNames.map(safeYamlStringify).join(', ')}]\n`;
     yamlString += "rules:\n  - 'MATCH,V2V-Select'\n";
     return yamlString;
 }
