@@ -20,7 +20,6 @@ const YAML_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'text/yaml;charset=utf-8
 export default {
     async fetch(request, env) {
         if (request.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
-
         const url = new URL(request.url);
 
         try {
@@ -52,7 +51,7 @@ export default {
 
             return new Response('V2V API Worker is operational.', { headers: CORS_HEADERS });
         } catch (error) {
-            console.error('Worker Error:', error);
+            console.error('Worker Error:', error.stack);
             return new Response(error.message || 'Internal Server Error', { status: 500, headers: CORS_HEADERS });
         }
     }
@@ -65,14 +64,13 @@ async function tcpBridge(request) {
     server.addEventListener('message', async (event) => {
         try {
             const { host, port } = JSON.parse(event.data);
-            if (!host || !port) {
-                server.send(JSON.stringify({ error: 'Invalid host or port' }));
-                return;
-            }
+            if (!host || !port) return server.send(JSON.stringify({ error: 'Invalid host or port' }));
+            
             const startTime = Date.now();
             const socket = connect({ hostname: host, port });
             await socket.opened;
             const latency = Date.now() - startTime;
+            
             server.send(JSON.stringify({ host, port, latency, status: 'success' }));
             await socket.close();
         } catch (e) {
@@ -99,7 +97,7 @@ async function handleGetPublicSubscription(core, isClash, env) {
     const allFlatConfigs = Object.values(coreConfigs).flat();
     const topConfigs = allFlatConfigs.slice(0, READY_SUB_COUNT);
     if (topConfigs.length === 0) return new Response(`No public configs found for core: ${core}`, { status: 404 });
-    return generateSubscriptionResponse(topConfigs, isClash);
+    return generateSubscriptionResponse(topConfigs, isClash, env);
 }
 
 async function handleGetPersonalSubscription(uuid, isClash, env) {
@@ -113,13 +111,16 @@ async function handleGetPersonalSubscription(uuid, isClash, env) {
     let healedConfigs = userConfigs.filter(cfg => allLiveConfigs.has(cfg));
     const deadCount = userConfigs.length - healedConfigs.length;
     if (deadCount > 0) {
-        const replacements = [...allLiveConfigs].filter(cfg => !userConfigs.includes(cfg));
+        const userConfigsSet = new Set(userConfigs);
+        const replacements = [...allLiveConfigs].filter(cfg => !userConfigsSet.has(cfg));
         healedConfigs.push(...replacements.slice(0, deadCount));
     }
-    if (healedConfigs.length === 0 && allLiveConfigs.size > 0) healedConfigs = [...allLiveConfigs].slice(0, 10);
+    if (healedConfigs.length === 0 && allLiveConfigs.size > 0) {
+        healedConfigs = [...allLiveConfigs].slice(0, Math.min(10, allLiveConfigs.size));
+    }
     
     await env.V2V_KV.put(`sub:${uuid}`, JSON.stringify(healedConfigs), { expirationTtl: SUBSCRIPTION_TTL });
-    return generateSubscriptionResponse(healedConfigs, isClash);
+    return generateSubscriptionResponse(healedConfigs, isClash, env);
 }
 
 async function generateSubscriptionResponse(configs, isClash) {
@@ -127,43 +128,99 @@ async function generateSubscriptionResponse(configs, isClash) {
         const clashYaml = await generateClashYaml(configs);
         if (!clashYaml) throw new Error('Could not generate Clash config.');
         const headers = new Headers(YAML_HEADERS);
-        headers.set('Content-Disposition', 'attachment; filename="v2v_clash.yml"');
+        headers.set('Content-Disposition', 'attachment; filename="v2v_clash.yaml"');
         return new Response(clashYaml, { headers });
     } else {
-        return new Response(btoa(configs.join('\n')), { headers: TEXT_HEADERS });
+        return new Response(btoa(unescape(encodeURIComponent(configs.join('\n')))), { headers: TEXT_HEADERS });
     }
 }
 
 // --- HELPERS & YAML GENERATION ---
-async function fetchFromMirrors() { return Promise.any(DATA_MIRRORS.map(url => fetch(`${url}?t=${Date.now()}`).then(r => r.ok ? r.json() : Promise.reject()))); }
-async function generateProxyName(configStr) { try { const url = new URL(configStr); let name = decodeURIComponent(url.hash.substring(1) || ""); if (!name) { const server_id = `${url.hostname}:${url.port}`; const buffer = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(server_id)); name = `Config-${Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 6)}`; } name = name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim().substring(0, MAX_NAME_LENGTH); return `V2V | ${name}`; } catch { return 'V2V | Unnamed Config'; } }
-async function parseProxyForClash(configStr) { try { const name = await generateProxyName(configStr); const base = { name, 'skip-cert-verify': true }; const proto = configStr.split('://')[0]; if (proto === 'vmess') { const d = JSON.parse(atob(configStr.substring(8))); const p = { ...base, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: parseInt(d.aid), cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net, servername: d.sni || d.host }; if (d.net === 'ws') p['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add }}; return p; } const url = new URL(configStr), params = new URLSearchParams(url.search); if (proto === 'vless') { const p = { ...base, type: 'vless', server: url.hostname, port: parseInt(url.port), uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type'), servername: params.get('sni')}; if (params.get('type') === 'ws') p['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || url.hostname }}; return p; } if (proto === 'trojan') return { ...base, type: 'trojan', server: url.hostname, port: parseInt(url.port), password: url.username, sni: params.get('sni') }; if (proto === 'ss') { const [c, p] = atob(url.username).split(':'); return { ...base, type: 'ss', server: url.hostname, port: parseInt(url.port), cipher: c, password: p }; } } catch { return null; } return null; }
+async function fetchFromMirrors() { return Promise.any(DATA_MIRRORS.map(url => fetch(`${url}?t=${Date.now()}`).then(r => r.ok ? r.json() : Promise.reject(`Fetch failed for ${url}`)))); }
+
+async function generateProxyName(configStr, server, port) {
+    try {
+        const url = new URL(configStr);
+        let name = decodeURIComponent(url.hash.substring(1) || "");
+        if (!name) {
+            const server_id = `${server}:${port}`;
+            const buffer = await crypto.subtle.digest('MD5', new TextEncoder().encode(server_id));
+            const hash = Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 6);
+            name = `Config-${hash}`;
+        }
+        name = name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim().substring(0, MAX_NAME_LENGTH);
+        const finalHash = (await crypto.subtle.digest('MD5', new TextEncoder().encode(`${server}:${port}`))).toString().substring(0,4);
+        return `V2V | ${name} | ${finalHash}`;
+    } catch { return `V2V | Unnamed Config`; }
+}
+
+async function parseProxyForClash(configStr) {
+    try {
+        const url = new URL(configStr);
+        const server = url.hostname;
+        const port = parseInt(url.port);
+        const name = await generateProxyName(configStr, server, port);
+        const base = { name, 'skip-cert-verify': true };
+        const proto = url.protocol.replace(':', '');
+        const params = new URLSearchParams(url.search);
+
+        if (proto === 'vmess') {
+            const d = JSON.parse(atob(configStr.substring(8)));
+            const vmessServer = d.add || server;
+            const vmessPort = parseInt(d.port) || port;
+            const vmessName = await generateProxyName(configStr, vmessServer, vmessPort);
+            const p = { ...base, name: vmessName, type: 'vmess', server: vmessServer, port: vmessPort, uuid: d.id, alterId: parseInt(d.aid), cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net, servername: d.sni || d.host };
+            if (d.net === 'ws') p['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add }};
+            return p;
+        }
+        if (proto === 'vless') {
+            const p = { ...base, type: 'vless', server, port, uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type'), servername: params.get('sni')};
+            if (params.get('type') === 'ws') p['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || server }};
+            return p;
+        }
+        if (proto === 'trojan') return { ...base, type: 'trojan', server, port, password: url.username, sni: params.get('sni') };
+        if (proto === 'ss') { const [c, p] = atob(url.username).split(':'); return { ...base, type: 'ss', server, port, cipher: c, password: p }; }
+    } catch { return null; }
+    return null;
+}
+
 function safeYamlStringify(value) { return JSON.stringify(String(value)); }
+
 async function generateClashYaml(configs) {
-    const uniqueProxies = new Map();
-    const parsedProxies = (await Promise.all(configs.map(parseProxyForClash))).filter(p => p);
-    for (const proxy of parsedProxies) { if (!uniqueProxies.has(proxy.name)) uniqueProxies.set(proxy.name, proxy); }
-    const proxies = Array.from(uniqueProxies.values());
+    const proxies = (await Promise.all(configs.map(parseProxyForClash))).filter(p => p);
     if (proxies.length === 0) return null;
-    const proxyNames = proxies.map(p => p.name);
+
+    // Use a Map with a server:port key to ensure uniqueness of servers, then get the final proxies
+    const uniqueServerProxies = new Map();
+    for (const proxy of proxies) {
+        const key = `${proxy.server}:${proxy.port}`;
+        if (!uniqueServerProxies.has(key)) {
+            uniqueServerProxies.set(key, proxy);
+        }
+    }
+    const finalProxies = Array.from(uniqueServerProxies.values());
+    const proxyNames = finalProxies.map(p => p.name);
+    
     let yamlString = "proxies:\n";
-    proxies.forEach(p => {
+    finalProxies.forEach(p => {
         yamlString += `  - name: ${safeYamlStringify(p.name)}\n`;
         const orderedKeys = ['type', 'server', 'port', 'uuid', 'password', 'alterId', 'cipher', 'tls', 'network', 'servername', 'skip-cert-verify', 'ws-opts'];
         orderedKeys.forEach(key => {
             if (p[key] === undefined || p[key] === null) return;
-            if (key === 'ws-opts') {
+            const value = p[key];
+            if (key === 'ws-opts' && typeof value === 'object') {
                 yamlString += `    ws-opts:\n`;
-                if(p[key].path) yamlString += `      path: ${safeYamlStringify(p[key].path)}\n`;
-                if(p[key].headers?.Host) yamlString += `      headers:\n        Host: ${safeYamlStringify(p[key].headers.Host)}\n`;
-            } else {
-                yamlString += `    ${key}: ${typeof p[key] === 'string' ? safeYamlStringify(p[key]) : p[key]}\n`;
+                if (value.path) yamlString += `      path: ${safeYamlStringify(value.path)}\n`;
+                if (value.headers?.Host) yamlString += `      headers:\n        Host: ${safeYamlStringify(value.headers.Host)}\n`;
+            } else if (typeof value !== 'object') {
+                yamlString += `    ${key}: ${typeof value === 'string' ? safeYamlStringify(value) : value}\n`;
             }
         });
     });
+    
     yamlString += "proxy-groups:\n";
-    yamlString += `  - name: V2V-Auto\n    type: url-test\n    proxies: [${proxyNames.map(safeYamlStringify).join(', ')}]\n    url: 'http://www.gstatic.com/generate_204'\n    interval: 300\n`;
-    yamlString += `  - name: V2V-Select\n    type: select\n    proxies: [V2V-Auto, ${proxyNames.map(safeYamlStringify).join(', ')}]\n`;
+    yamlString += `  - {name: V2V-Auto, type: url-test, proxies: [${proxyNames.map(safeYamlStringify).join(', ')}], url: 'http://www.gstatic.com/generate_204', interval: 300}\n`;
+    yamlString += `  - {name: V2V-Select, type: select, proxies: [V2V-Auto, ${proxyNames.map(safeYamlStringify).join(', ')}]}\n`;
     yamlString += "rules:\n  - 'MATCH,V2V-Select'\n";
     return yamlString;
 }
