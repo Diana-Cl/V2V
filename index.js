@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- HELPERS ---
     const toShamsi = (ts) => { if (!ts || isNaN(ts)) return 'N/A'; try { return new Date(parseInt(ts, 10) * 1000).toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }); } catch { return 'N/A'; } };
     const showToast = (message, isError = false) => { toast.textContent = message; toast.className = `toast show ${isError ? 'error' : ''}`; setTimeout(() => { toast.className = 'toast'; }, 3000); };
-    async function generateProxyName(configStr) { try { const url = new URL(configStr); let name = decodeURIComponent(url.hash.substring(1) || ""); if (!name) { const server_id = `${url.hostname}:${url.port}`; const buffer = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(server_id)); name = `Config-${Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 6)}`; } name = name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim(); if (name.length > MAX_NAME_LENGTH) name = name.substring(0, MAX_NAME_LENGTH) + '...'; return `V2V | ${name}`; } catch { return 'V2V | Unnamed Config'; } }
+    async function generateProxyName(configStr) { try { const url = new URL(configStr); let name = decodeURIComponent(url.hash.substring(1) || ""); if (!name) { const server_id = `${url.hostname}:${url.port}`; const buffer = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(server_id)); name = `Config-${Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 6)}`; } name = name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim().substring(0, MAX_NAME_LENGTH); return `V2V | ${name}`; } catch { return 'V2V | Unnamed Config'; } }
     
     // --- RENDER FUNCTION ---
     async function renderCore(core, groupedConfigs) {
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const protocol in groupedConfigs) {
             const pGroupEl = document.createElement('div');
             pGroupEl.className = 'protocol-group';
-            pGroupEl.dataset.protocolName = protocol; // Store protocol name for later access
+            pGroupEl.dataset.protocolName = protocol;
             const configs = groupedConfigs[protocol];
             const names = await Promise.all(configs.map(generateProxyName));
             let itemsHTML = '';
@@ -65,25 +65,105 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
     
     // --- ADVANCED PARALLEL TESTING LOGIC ---
-    // ... (This logic remains the same as the full version from the previous response)
-    function parseConfig(configStr) { /* ... */ }
-    async function runAdvancedPingTest(core, testButton) { /* ... */ }
-    async function testBridgeTCP(config) { /* ... */ }
-    async function testDirectWebSocket(config) { /* ... */ }
-    async function testDirectWebTransport(config) { /* ... */ }
-    function updateUI(item, results) { /* ... */ }
-    // ...
+    function parseConfig(configStr) {
+        if (!configStr || typeof configStr !== 'string') return null;
+        try {
+            if (configStr.startsWith('vmess://')) {
+                const data = JSON.parse(atob(configStr.substring(8)));
+                return { protocol: 'vmess', host: data.add, port: parseInt(data.port), transport: data.net, path: data.path || '/' };
+            }
+            const url = new URL(configStr);
+            const params = new URLSearchParams(url.search);
+            const protocol = url.protocol.replace(':', '');
+            return { protocol, host: url.hostname, port: parseInt(url.port), transport: params.get('type'), path: params.get('path') || '/' };
+        } catch (e) { return null; }
+    }
+
+    async function runAdvancedPingTest(core, testButton) {
+        const buttonText = testButton.querySelector('.test-button-text');
+        testButton.disabled = true;
+        buttonText.innerHTML = `<span class="loader"></span> در حال تست...`;
+        const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`));
+        
+        const testPromises = allItems.map(item => {
+            const config = parseConfig(item.dataset.config);
+            if (!config) return Promise.resolve();
+            let promises = [];
+            if (config.transport === 'ws') promises.push(testDirectWebSocket(config));
+            if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) promises.push(testDirectWebTransport(config));
+            if (['vless', 'vmess', 'trojan', 'ss'].includes(config.protocol)) promises.push(testBridgeTCP(config));
+            
+            return Promise.allSettled(promises).then(results => {
+                const successfulResults = results.filter(r => r.status === 'fulfilled' && r.value.latency !== null).map(r => r.value);
+                updateUI(item, successfulResults);
+                item.dataset.finalScore = successfulResults.length > 0 ? Math.min(...successfulResults.map(r => r.latency)) : 9999;
+            });
+        });
+        await Promise.all(testPromises);
+
+        document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => {
+            const list = group.querySelector('.config-list');
+            const sorted = Array.from(list.children).sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999));
+            sorted.forEach(item => list.appendChild(item));
+        });
+        testButton.disabled = false;
+        buttonText.innerHTML = '🚀 تست مجدد کانفیگ‌ها';
+    }
+    
+    async function testBridgeTCP(config) {
+        return new Promise((resolve) => {
+            const ws = new WebSocket(`${WORKER_URL.replace(/^http/, 'ws')}/tcp-bridge`);
+            const timeout = setTimeout(() => { ws.close(); resolve({ type: 'TCP', latency: null }); }, 4000);
+            ws.onopen = () => ws.send(JSON.stringify({ host: config.host, port: config.port }));
+            ws.onmessage = (event) => { const data = JSON.parse(event.data); clearTimeout(timeout); resolve({ type: 'TCP', latency: data.status === 'success' ? data.latency : null }); ws.close(); };
+            ws.onerror = () => { clearTimeout(timeout); resolve({ type: 'TCP', latency: null }); };
+        });
+    }
+
+    async function testDirectWebSocket(config) {
+        return new Promise((resolve) => {
+            const startTime = Date.now();
+            const ws = new WebSocket(`wss://${config.host}:${config.port}${config.path}`);
+            const timeout = setTimeout(() => { ws.close(); resolve({ type: 'WS', latency: null }); }, 4000);
+            ws.onopen = () => { clearTimeout(timeout); resolve({ type: 'WS', latency: Date.now() - startTime }); ws.close(); };
+            ws.onerror = () => { clearTimeout(timeout); resolve({ type: 'WS', latency: null }); };
+        });
+    }
+
+    async function testDirectWebTransport(config) {
+        if (typeof WebTransport === 'undefined') return { type: 'WT', latency: null };
+        return new Promise(async (resolve) => {
+            try {
+                const startTime = Date.now();
+                const transport = new WebTransport(`https://${config.host}:${config.port}`);
+                await transport.ready;
+                resolve({ type: 'WT', latency: Date.now() - startTime });
+                transport.close();
+            } catch (e) { resolve({ type: 'WT', latency: null }); }
+        });
+    }
+
+    function updateUI(item, results) {
+        const resultEl = item.querySelector('.ping-result');
+        if (!results || results.length === 0) {
+            resultEl.innerHTML = `<strong style="color:var(--ping-bad);">❌ ناموفق</strong>`;
+            resultEl.title = 'هیچ تستی موفق نبود';
+            return;
+        }
+        const priority = ['WT', 'WS', 'TCP'];
+        const bestResult = results.sort((a, b) => priority.indexOf(a.type) - priority.indexOf(b.type))[0];
+        
+        const icon = `[${bestResult.type}]`;
+        const color = bestResult.latency < 700 ? 'var(--ping-good)' : 'var(--ping-medium)';
+        resultEl.innerHTML = `<strong style="color:${color};">${icon} ${bestResult.latency}ms</strong>`;
+        resultEl.title = results.map(r => `${r.type}: ${r.latency !== null ? r.latency + 'ms' : 'Fail'}`).join(' | ');
+    }
 
     // --- EVENT HANDLING & ACTIONS ---
     function getSubscriptionUrl(core, type) { return (type === 'clash') ? `${WORKER_URL}/sub/public/clash/xray` : `${WORKER_URL}/sub/public/${core}`; }
     async function createPersonalSubscription(core) { const sel = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config); if (sel.length === 0) { showToast('حداقل یک کانفیگ انتخاب کنید.', true); return null; } try { const res = await fetch(`${WORKER_URL}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: sel }) }); if (!res.ok) throw new Error(`Server responded with ${res.status}`); return (await res.json()).subscription_url; } catch (e) { showToast('خطا در ساخت لینک اشتراک.', true); return null; } }
     function showQrCode(text) { if (!window.QRCode) { showToast('کتابخانه QR در حال بارگذاری است...', true); return; } qrContainer.innerHTML = ''; new QRCode(qrContainer, { text, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.H }); qrModal.style.display = 'flex'; }
-    
-    function getProtocolConfigs(target) {
-        const protocolGroup = target.closest('.protocol-group');
-        if (!protocolGroup) return [];
-        return Array.from(protocolGroup.querySelectorAll('.config-item')).map(item => item.dataset.config);
-    }
+    function getProtocolConfigs(target) { return Array.from(target.closest('.protocol-group').querySelectorAll('.config-item')).map(item => item.dataset.config); }
 
     async function handleClicks(event) {
         const target = event.target.closest('[data-action]');
@@ -105,13 +185,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.querySelectorAll('.main-wrapper').forEach(w => w.addEventListener('click', handleClicks));
     qrModal.onclick = () => qrModal.style.display = 'none';
-
-    // The full testing logic from the previous response is assumed to be here.
-    // For brevity, it is not repeated. The following are placeholders.
-    parseConfig = function(configStr) { try { const url = new URL(configStr); const params = new URLSearchParams(url.search); return { protocol: url.protocol.replace(':', ''), host: url.hostname, port: parseInt(url.port), transport: params.get('type'), path: params.get('path') || '/', }; } catch { return null; } };
-    runAdvancedPingTest = async function(core, testButton) { const buttonText = testButton.querySelector('.test-button-text'); testButton.disabled = true; buttonText.innerHTML = `<span class="loader"></span> در حال تست...`; const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`)); const testPromises = allItems.map(item => { const config = parseConfig(item.dataset.config); if (!config) return Promise.resolve(); let promises = []; if (config.transport === 'ws') promises.push(testDirectWebSocket(config)); if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) promises.push(testDirectWebTransport(config)); if (['vless', 'vmess', 'trojan', 'ss'].includes(config.protocol)) promises.push(testBridgeTCP(config)); return Promise.allSettled(promises).then(results => { const successfulResults = results.filter(r => r.status === 'fulfilled' && r.value.latency !== null).map(r => r.value); updateUI(item, successfulResults); const bestLatency = successfulResults.length > 0 ? Math.min(...successfulResults.map(r => r.latency)) : 9999; item.dataset.finalScore = bestLatency; }); }); await Promise.all(testPromises); document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => { const list = group.querySelector('.config-list'); const sorted = Array.from(list.children).sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999)); sorted.forEach(item => list.appendChild(item)); }); testButton.disabled = false; buttonText.innerHTML = '🚀 تست مجدد کانفیگ‌ها'; };
-    testBridgeTCP = async function(config) { return new Promise((resolve) => { const ws = new WebSocket(`${WORKER_URL.replace('http', 'ws')}/tcp-bridge`); const timeout = setTimeout(() => { ws.close(); resolve({ type: 'TCP', latency: null }); }, 4000); ws.onopen = () => ws.send(JSON.stringify({ host: config.host, port: config.port })); ws.onmessage = (event) => { const data = JSON.parse(event.data); clearTimeout(timeout); resolve({ type: 'TCP', latency: data.status === 'success' ? data.latency : null }); ws.close(); }; ws.onerror = () => { clearTimeout(timeout); resolve({ type: 'TCP', latency: null }); }; }); };
-    testDirectWebSocket = async function(config) { return new Promise((resolve) => { const startTime = Date.now(); const ws = new WebSocket(`wss://${config.host}:${config.port}${config.path}`); const timeout = setTimeout(() => { ws.close(); resolve({ type: 'WS', latency: null }); }, 4000); ws.onopen = () => { clearTimeout(timeout); resolve({ type: 'WS', latency: Date.now() - startTime }); ws.close(); }; ws.onerror = () => { clearTimeout(timeout); resolve({ type: 'WS', latency: null }); }; }); };
-    testDirectWebTransport = async function(config) { if (typeof WebTransport === 'undefined') return { type: 'WT', latency: null }; return new Promise(async (resolve) => { try { const startTime = Date.now(); const transport = new WebTransport(`https://${config.host}:${config.port}`); await transport.ready; resolve({ type: 'WT', latency: Date.now() - startTime }); transport.close(); } catch (e) { resolve({ type: 'WT', latency: null }); } }); };
-    updateUI = function(item, results) { const resultEl = item.querySelector('.ping-result'); if (!results || results.length === 0) { resultEl.innerHTML = `<strong style="color:var(--ping-bad);">❌ ناموفق</strong>`; resultEl.title = 'هیچ تستی موفق نبود'; return; } const priority = ['WT', 'WS', 'TCP']; const bestResult = results.sort((a, b) => priority.indexOf(a.type) - priority.indexOf(b.type))[0]; const icon = `[${bestResult.type}]`; const color = bestResult.latency < 700 ? 'var(--ping-good)' : 'var(--ping-medium)'; resultEl.innerHTML = `<strong style="color:${color};">${icon} ${bestResult.latency}ms</strong>`; resultEl.title = results.map(r => `${r.type}: ${r.latency !== null ? r.latency + 'ms' : 'Fail'}`).join(' | '); };
 });
