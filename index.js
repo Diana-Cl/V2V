@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
-    const WORKER_URL = 'https://rapid-scene-1da6.workers.dev';
+    const WORKER_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
     const READY_SUB_COUNT = 30;
