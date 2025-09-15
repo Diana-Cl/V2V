@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
-    const WORKER_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev'; // Correct Worker URL
+    const WORKER_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
     const READY_SUB_COUNT = 30;
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- HELPERS ---
     const toShamsi = (ts) => { if (!ts || isNaN(ts)) return 'N/A'; try { return new Date(parseInt(ts, 10) * 1000).toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }); } catch { return 'N/A'; } };
     const showToast = (message, isError = false) => { toast.textContent = message; toast.className = `toast show ${isError ? 'error' : ''}`; setTimeout(() => { toast.className = 'toast'; }, 3000); };
-    async function generateProxyName(configStr) { try { const url = new URL(configStr); let name = decodeURIComponent(url.hash.substring(1) || ""); if (!name) { const server_id = `${url.hostname}:${url.port}`; const buffer = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(server_id)); name = `Config-${Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 6)}`; } name = name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim().substring(0, MAX_NAME_LENGTH); return `V2V | ${name}`; } catch { return 'V2V | Unnamed Config'; } }
+    async function generateProxyName(configStr) { try { const url = new URL(configStr); let name = decodeURIComponent(url.hash.substring(1) || ""); if (!name) { const server_id = `${url.hostname}:${url.port}`; const buffer = await crypto.subtle.digest('MD5', new TextEncoder().encode(server_id)); name = `Config-${Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 6)}`; } name = name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim().substring(0, MAX_NAME_LENGTH); return `V2V | ${name}`; } catch { return 'V2V | Unnamed Config'; } }
     
     // --- RENDER FUNCTION ---
     async function renderCore(core, groupedConfigs) {
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pGroupEl.className = 'protocol-group';
             pGroupEl.dataset.protocolName = protocol;
             const configs = groupedConfigs[protocol];
-            const names = await Promise.all(configs.map(generateProxyName));
+            const names = await Promise.all(configs.map(config => generateProxyName(config)));
             let itemsHTML = '';
             configs.forEach((config, index) => {
                 const safeConfig = config.replace(/'/g, "&apos;").replace(/"/g, '&quot;');
@@ -70,12 +70,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (configStr.startsWith('vmess://')) {
                 const data = JSON.parse(atob(configStr.substring(8)));
-                return { protocol: 'vmess', host: data.add, port: parseInt(data.port), transport: data.net, path: data.path || '/', original: configStr };
+                return { protocol: 'vmess', host: data.add, port: parseInt(data.port), transport: data.net, path: data.path || '/' };
             }
             const url = new URL(configStr);
             const params = new URLSearchParams(url.search);
             const protocol = url.protocol.replace(':', '');
-            return { protocol, host: url.hostname, port: parseInt(url.port), transport: params.get('type'), path: params.get('path') || '/', original: configStr };
+            return { protocol, host: url.hostname, port: parseInt(url.port), transport: params.get('type'), path: params.get('path') || '/' };
         } catch (e) { return null; }
     }
 
