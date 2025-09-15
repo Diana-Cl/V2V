@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
-    const WORKER_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
+    const WORKER_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev'; // Correct Worker URL
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
     const READY_SUB_COUNT = 30;
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.innerHTML = `<div class="alert">هیچ کانفیگ فعالی برای هسته ${core} یافت نشد.</div>`; return;
         }
         const isXray = core === 'xray';
-        let actionsHTML = `<button class="test-button" data-action="run-ping-test" data-core="${core}"><span class="test-button-text">🚀 تست پیشرفته کانفیگ‌ها</span></button><div class="action-group-collapsible"><div class="protocol-header" data-action="toggle-actions"><span>گزینه‌های اشتراک</span><span class="toggle-icon">▼</span></div><div class="collapsible-content"><div class="action-group-title">اشتراک آماده</div><div class="action-box"><span class="action-box-label">لینک اشتراک Standard</span><div class="action-box-buttons"><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="standard">کپی</button><button class="action-btn-small" data-action="qr-sub" data-core="${core}" data-type="standard">QR</button></div></div>${isXray ? `<div class="action-box"><span class="action-box-label">لینک اشتراک Clash</span><div class="action-box-buttons"><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="clash">کپی URL</button><button class="action-btn-small" data-action="qr-sub" data-core="${core}" data-type="clash">QR</button></div></div>` : ''}<div class="action-group-title">اشتراک شخصی</div><div class="action-box"><span class="action-box-label">ساخت لینک از موارد انتخابی</span><div class="action-box-buttons"><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}">کپی</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-method="qr">QR</button></div></div></div></div>`;
+        let actionsHTML = `<button class="test-button" data-action="run-ping-test" data-core="${core}"><span class="test-button-text">🚀 تست پیشرفته کانفیگ‌ها</span></button><div class="action-group-collapsible open"><div class="protocol-header" data-action="toggle-actions"><span>گزینه‌های اشتراک</span><span class="toggle-icon">▼</span></div><div class="collapsible-content"><div class="action-group-title">اشتراک آماده</div><div class="action-box"><span class="action-box-label">لینک اشتراک Standard</span><div class="action-box-buttons"><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="standard">کپی</button><button class="action-btn-small" data-action="qr-sub" data-core="${core}" data-type="standard">QR</button></div></div>${isXray ? `<div class="action-box"><span class="action-box-label">لینک اشتراک Clash</span><div class="action-box-buttons"><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="clash">کپی URL</button><button class="action-btn-small" data-action="qr-sub" data-core="${core}" data-type="clash">QR</button></div></div>` : ''}<div class="action-group-title">اشتراک شخصی</div><div class="action-box"><span class="action-box-label">ساخت لینک از موارد انتخابی</span><div class="action-box-buttons"><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}">کپی</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-method="qr">QR</button></div></div></div></div>`;
         wrapper.innerHTML = actionsHTML;
         for (const protocol in groupedConfigs) {
             const pGroupEl = document.createElement('div');
@@ -70,12 +70,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (configStr.startsWith('vmess://')) {
                 const data = JSON.parse(atob(configStr.substring(8)));
-                return { protocol: 'vmess', host: data.add, port: parseInt(data.port), transport: data.net, path: data.path || '/' };
+                return { protocol: 'vmess', host: data.add, port: parseInt(data.port), transport: data.net, path: data.path || '/', original: configStr };
             }
             const url = new URL(configStr);
             const params = new URLSearchParams(url.search);
             const protocol = url.protocol.replace(':', '');
-            return { protocol, host: url.hostname, port: parseInt(url.port), transport: params.get('type'), path: params.get('path') || '/' };
+            return { protocol, host: url.hostname, port: parseInt(url.port), transport: params.get('type'), path: params.get('path') || '/', original: configStr };
         } catch (e) { return null; }
     }
 
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const testPromises = allItems.map(item => {
             const config = parseConfig(item.dataset.config);
-            if (!config) return Promise.resolve();
+            if (!config) { updateUI(item, []); return Promise.resolve(); }
             let promises = [];
             if (config.transport === 'ws') promises.push(testDirectWebSocket(config));
             if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) promises.push(testDirectWebTransport(config));
@@ -151,7 +151,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const priority = ['WT', 'WS', 'TCP'];
-        const bestResult = results.sort((a, b) => priority.indexOf(a.type) - priority.indexOf(b.type))[0];
+        const bestResult = results.sort((a, b) => {
+            const priorityA = priority.indexOf(a.type);
+            const priorityB = priority.indexOf(b.type);
+            if (priorityA !== priorityB) return priorityA - priorityB;
+            return a.latency - b.latency;
+        })[0];
         
         const icon = `[${bestResult.type}]`;
         const color = bestResult.latency < 700 ? 'var(--ping-good)' : 'var(--ping-medium)';
