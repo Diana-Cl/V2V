@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
     const MAX_NAME_LENGTH = 40;
-    const TEST_TIMEOUT = 5000; // Increased timeout for Iran's network
+    const TEST_TIMEOUT = 5000; // Increased timeout
+    const CONCURRENT_TESTS = 15; // Concurrency limit
 
     // --- DOM ELEMENTS ---
     const statusBar = document.getElementById('status-bar');
@@ -36,9 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                    <div class="action-box">
                                        <div class="action-row"><span class="action-box-label">لینک اشتراک Standard</span><div class="action-box-buttons"><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="standard">کپی</button><button class="action-btn-small" data-action="qr-sub" data-core="${core}" data-type="standard">QR</button></div></div>
                                    </div>
-                                   ${isXray ? `<div class="action-box">
-                                       <div class="action-row"><span class="action-box-label">لینک اشتراک Clash</span><div class="action-box-buttons"><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="clash">کپی URL</button><button class="action-btn-small" data-action="qr-sub" data-core="${core}" data-type="clash">QR</button></div></div>
-                                   </div>` : ''}
                                    <div class="action-group-title">اشتراک شخصی</div>
                                    <div class="action-box">
                                        <div class="action-row"><span class="action-box-label">لینک Standard از موارد انتخابی</span><div class="action-box-buttons"><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="standard">کپی</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="standard" data-method="qr">QR</button></div></div>
@@ -106,27 +104,48 @@ document.addEventListener('DOMContentLoaded', () => {
             resultContainer.innerHTML = `<span class="ping-result-item" data-type="TCP">--</span><span class="ping-result-item" data-type="WS">--</span><span class="ping-result-item" data-type="WT">--</span>`;
         });
         
-        const testPromises = allItems.map(item => {
+        const queue = allItems.slice(); // Create a mutable copy of the items
+        let running = 0;
+
+        const runNext = async () => {
+            if (running >= CONCURRENT_TESTS || queue.length === 0) return;
+            running++;
+            const item = queue.shift();
             const config = parseConfig(item.dataset.config);
-            if (!config) { updateUI(item, 'FAIL', null); return Promise.resolve(); }
+
+            if (config) {
+                let promises = [];
+                if (['vless', 'vmess', 'trojan', 'ss'].includes(config.protocol)) {
+                    promises.push(testBridgeTCP(config).then(res => updateItemUI(item, 'TCP', res.latency)));
+                }
+                if (config.transport === 'ws') {
+                    promises.push(testDirectWebSocket(config).then(res => updateItemUI(item, 'WS', res.latency)));
+                }
+                if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) {
+                    promises.push(testDirectWebTransport(config).then(res => updateItemUI(item, 'WT', res.latency)));
+                }
+                await Promise.allSettled(promises);
+            } else {
+                updateItemUI(item, 'FAIL', null);
+            }
             
-            let promises = [];
-            // Run TCP Bridge test for all applicable protocols
-            if (['vless', 'vmess', 'trojan', 'ss'].includes(config.protocol)) {
-                promises.push(testBridgeTCP(config).then(res => updateUI(item, 'TCP', res.latency)));
-            }
-            // Run direct WS test as primary for WS, but also as a fallback check for TCP types
-            if (config.transport === 'ws') {
-                promises.push(testDirectWebSocket(config).then(res => updateUI(item, 'WS', res.latency)));
-            }
-            // Run direct WT test only for UDP-based protocols
-            if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) {
-                promises.push(testDirectWebTransport(config).then(res => updateUI(item, 'WT', res.latency)));
-            }
-            
-            return Promise.allSettled(promises);
+            running--;
+            runNext();
+        };
+
+        for (let i = 0; i < CONCURRENT_TESTS; i++) {
+            runNext();
+        }
+        
+        // Wait for all tests to finish by checking when queue and running are both zero
+        await new Promise(resolve => {
+            const interval = setInterval(() => {
+                if (queue.length === 0 && running === 0) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 100);
         });
-        await Promise.all(testPromises);
 
         // Sorting after all tests are done
         allItems.forEach(item => {
@@ -145,9 +164,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     async function testBridgeTCP(config) { return new Promise(r => { const ws = new WebSocket(`${WORKER_URL.replace(/^http/, 'ws')}/tcp-bridge`), t = setTimeout(() => { ws.close(); r({ latency: null }) }, TEST_TIMEOUT); ws.onopen = () => ws.send(JSON.stringify({ host: config.host, port: config.port })); ws.onmessage = e => { const d = JSON.parse(e.data); clearTimeout(t); r({ latency: d.status === 'success' ? d.latency : null }); ws.close() }; ws.onerror = () => { clearTimeout(t); r({ latency: null }) } }) };
     async function testDirectWebSocket(config) { return new Promise(r => { const s = Date.now(), ws = new WebSocket(`wss://${config.host}:${config.port}${config.path}`), t = setTimeout(() => { ws.close(); r({ latency: null }) }, TEST_TIMEOUT); ws.onopen = () => { clearTimeout(t); r({ latency: Date.now() - s }); ws.close() }; ws.onerror = () => { clearTimeout(t); r({ latency: null }) } }) };
-    async function testDirectWebTransport(config) { if ("undefined" == typeof WebTransport) return { latency: null }; try { const s = Date.now(), t = new WebTransport(`https://${config.host}:${config.port}`); await t.ready; const e = Date.now() - s; return t.close(), { latency: e } } catch (s) { return { latency: null } } };
+    async function testDirectWebTransport(config) { if ("undefined" == typeof WebTransport) return Promise.resolve({ latency: null }); return new Promise(async r => { try { const s = Date.now(), t = new WebTransport(`https://${config.host}:${config.port}`); await t.ready; r({ latency: Date.now() - s }); t.close() } catch (e) { r({ latency: null }) } }) };
 
     function updateItemUI(item, type, latency) {
+        if (type === 'FAIL') {
+            const container = item.querySelector('.ping-result-container');
+            container.innerHTML = `<strong style="color:var(--ping-bad);">❌ نامعتبر</strong>`;
+            return;
+        }
+
         const resultEl = item.querySelector(`.ping-result-item[data-type="${type}"]`);
         if (!resultEl) return;
 
@@ -166,9 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getSubscriptionUrl(core, type) {
         const isClash = type === 'clash';
         const clashPart = isClash ? '/clash' : '';
-        // For sing-box, standard sub is xray compatible. Clash is always xray.
-        const subCore = core === 'singbox' && !isClash ? 'xray' : core;
-        return `${WORKER_URL}/sub/public${clashPart}/${subCore}`;
+        return `${WORKER_URL}/sub/public${clashPart}/${core}`;
     }
 
     async function createPersonalSubscription(core, type, method) {
