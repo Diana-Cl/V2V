@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
     const MAX_NAME_LENGTH = 40;
+    const TEST_TIMEOUT = 5000; // Increased timeout for Iran's network
 
     // --- DOM ELEMENTS ---
     const statusBar = document.getElementById('status-bar');
@@ -107,20 +108,20 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const testPromises = allItems.map(item => {
             const config = parseConfig(item.dataset.config);
-            if (!config) { updateItemUI(item, 'FAIL', null); return Promise.resolve(); }
+            if (!config) { updateUI(item, 'FAIL', null); return Promise.resolve(); }
             
             let promises = [];
-            // Run TCP Bridge test for all TCP-based protocols
-            if (['vless', 'vmess', 'trojan', 'ss', 'ws'].includes(config.transport) || !config.transport) {
-                promises.push(testBridgeTCP(config).then(res => updateItemUI(item, 'TCP', res.latency)));
+            // Run TCP Bridge test for all applicable protocols
+            if (['vless', 'vmess', 'trojan', 'ss'].includes(config.protocol)) {
+                promises.push(testBridgeTCP(config).then(res => updateUI(item, 'TCP', res.latency)));
             }
-            // Run direct WS test only for WS configs
+            // Run direct WS test as primary for WS, but also as a fallback check for TCP types
             if (config.transport === 'ws') {
-                promises.push(testDirectWebSocket(config).then(res => updateItemUI(item, 'WS', res.latency)));
+                promises.push(testDirectWebSocket(config).then(res => updateUI(item, 'WS', res.latency)));
             }
             // Run direct WT test only for UDP-based protocols
             if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) {
-                promises.push(testDirectWebTransport(config).then(res => updateItemUI(item, 'WT', res.latency)));
+                promises.push(testDirectWebTransport(config).then(res => updateUI(item, 'WT', res.latency)));
             }
             
             return Promise.allSettled(promises);
@@ -142,29 +143,32 @@ document.addEventListener('DOMContentLoaded', () => {
         buttonText.innerHTML = '🚀 تست مجدد کانفیگ‌ها';
     }
     
-    async function testBridgeTCP(config) { /* ... same as previous ... */ }
-    async function testDirectWebSocket(config) { /* ... same as previous ... */ }
-    async function testDirectWebTransport(config) { /* ... same as previous ... */ }
+    async function testBridgeTCP(config) { return new Promise(r => { const ws = new WebSocket(`${WORKER_URL.replace(/^http/, 'ws')}/tcp-bridge`), t = setTimeout(() => { ws.close(); r({ latency: null }) }, TEST_TIMEOUT); ws.onopen = () => ws.send(JSON.stringify({ host: config.host, port: config.port })); ws.onmessage = e => { const d = JSON.parse(e.data); clearTimeout(t); r({ latency: d.status === 'success' ? d.latency : null }); ws.close() }; ws.onerror = () => { clearTimeout(t); r({ latency: null }) } }) };
+    async function testDirectWebSocket(config) { return new Promise(r => { const s = Date.now(), ws = new WebSocket(`wss://${config.host}:${config.port}${config.path}`), t = setTimeout(() => { ws.close(); r({ latency: null }) }, TEST_TIMEOUT); ws.onopen = () => { clearTimeout(t); r({ latency: Date.now() - s }); ws.close() }; ws.onerror = () => { clearTimeout(t); r({ latency: null }) } }) };
+    async function testDirectWebTransport(config) { if ("undefined" == typeof WebTransport) return { latency: null }; try { const s = Date.now(), t = new WebTransport(`https://${config.host}:${config.port}`); await t.ready; const e = Date.now() - s; return t.close(), { latency: e } } catch (s) { return { latency: null } } };
 
     function updateItemUI(item, type, latency) {
         const resultEl = item.querySelector(`.ping-result-item[data-type="${type}"]`);
         if (!resultEl) return;
 
-        item.dataset[type.toLowerCase()] = latency; // Store for sorting
+        item.dataset[type.toLowerCase()] = latency;
 
         if (latency === null) {
             resultEl.textContent = '❌';
             resultEl.style.color = 'var(--ping-bad)';
         } else {
-            resultEl.textContent = `${latency}ms`;
+            resultEl.textContent = `[${type}] ${latency}ms`;
             resultEl.style.color = latency < 700 ? 'var(--ping-good)' : 'var(--ping-medium)';
         }
     }
 
     // --- EVENT HANDLING & ACTIONS ---
-    function getSubscriptionUrl(core, type, isClash = false) {
+    function getSubscriptionUrl(core, type) {
+        const isClash = type === 'clash';
         const clashPart = isClash ? '/clash' : '';
-        return `${WORKER_URL}/sub/public${clashPart}/${core}`;
+        // For sing-box, standard sub is xray compatible. Clash is always xray.
+        const subCore = core === 'singbox' && !isClash ? 'xray' : core;
+        return `${WORKER_URL}/sub/public${clashPart}/${subCore}`;
     }
 
     async function createPersonalSubscription(core, type, method) {
@@ -198,12 +202,11 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'copy-single': navigator.clipboard.writeText(config); showToast('کانفیگ کپی شد.'); break;
             case 'qr-single': showQrCode(config); break;
             case 'copy-sub': 
-                const isClashCopy = type === 'clash';
-                const subUrl = getSubscriptionUrl(core, type, isClashCopy);
+                const subUrl = getSubscriptionUrl(core, type);
                 if (method === 'download') { window.open(subUrl, '_blank'); } 
                 else { navigator.clipboard.writeText(subUrl); showToast('لینک اشتراک کپی شد.'); }
                 break;
-            case 'qr-sub': showQrCode(getSubscriptionUrl(core, type, type === 'clash')); break;
+            case 'qr-sub': showQrCode(getSubscriptionUrl(core, type)); break;
             case 'create-personal-sub': createPersonalSubscription(core, type, method); break;
             case 'copy-protocol': const pcfgs = getProtocolConfigs(target); if (pcfgs.length > 0) { navigator.clipboard.writeText(pcfgs.join('\n')); showToast(`تمام ${pcfgs.length} کانفیگ ${protocol} کپی شد.`); } break;
             case 'toggle-protocol': target.closest('.protocol-group').classList.toggle('open'); break;
@@ -212,9 +215,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.querySelectorAll('.main-wrapper').forEach(w => w.addEventListener('click', handleClicks));
     qrModal.onclick = () => qrModal.style.display = 'none';
-
-    // Minified test functions for brevity in the final code
-    testBridgeTCP = async function(config) { return new Promise(r => { const ws = new WebSocket(`${WORKER_URL.replace(/^http/, 'ws')}/tcp-bridge`), t = setTimeout(() => { ws.close(); r({ type: 'TCP', latency: null }) }, 4e3); ws.onopen = () => ws.send(JSON.stringify({ host: config.host, port: config.port })); ws.onmessage = e => { const d = JSON.parse(e.data); clearTimeout(t); r({ type: 'TCP', latency: d.status === 'success' ? d.latency : null }); ws.close() }; ws.onerror = () => { clearTimeout(t); r({ type: 'TCP', latency: null }) } }) };
-    testDirectWebSocket = async function(config) { return new Promise(r => { const s = Date.now(), ws = new WebSocket(`wss://${config.host}:${config.port}${config.path}`), t = setTimeout(() => { ws.close(); r({ type: 'WS', latency: null }) }, 4e3); ws.onopen = () => { clearTimeout(t); r({ type: 'WS', latency: Date.now() - s }); ws.close() }; ws.onerror = () => { clearTimeout(t); r({ type: 'WS', latency: null }) } }) };
-    testDirectWebTransport = async function(config) { if ("undefined" == typeof WebTransport) return { type: "WT", latency: null }; try { const s = Date.now(), t = new WebTransport(`https://${config.host}:${config.port}`); await t.ready; const e = Date.now() - s; return t.close(), { type: "WT", latency: e } } catch (s) { return { type: "WT", latency: null } } };
 });
