@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const WORKER_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
-    const READY_SUB_COUNT = 30;
     const MAX_NAME_LENGTH = 40;
 
     // --- DOM ELEMENTS ---
@@ -28,20 +27,37 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.innerHTML = `<div class="alert">هیچ کانفیگ فعالی برای هسته ${core} یافت نشد.</div>`; return;
         }
         const isXray = core === 'xray';
-        let actionsHTML = `<button class="test-button" data-action="run-ping-test" data-core="${core}"><span class="test-button-text">🚀 تست پیشرفته کانفیگ‌ها</span></button><div class="action-group-collapsible open"><div class="protocol-header" data-action="toggle-actions"><span>گزینه‌های اشتراک</span><span class="toggle-icon">▼</span></div><div class="collapsible-content"><div class="action-group-title">اشتراک آماده</div><div class="action-box"><span class="action-box-label">لینک اشتراک Standard</span><div class="action-box-buttons"><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="standard">کپی</button><button class="action-btn-small" data-action="qr-sub" data-core="${core}" data-type="standard">QR</button></div></div>${isXray ? `<div class="action-box"><span class="action-box-label">لینک اشتراک Clash</span><div class="action-box-buttons"><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="clash">کپی URL</button><button class="action-btn-small" data-action="qr-sub" data-core="${core}" data-type="clash">QR</button></div></div>` : ''}<div class="action-group-title">اشتراک شخصی</div><div class="action-box"><span class="action-box-label">ساخت لینک از موارد انتخابی</span><div class="action-box-buttons"><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}">کپی</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-method="qr">QR</button></div></div></div></div>`;
+        let actionsHTML = `<button class="test-button" data-action="run-ping-test" data-core="${core}"><span class="test-button-text">🚀 تست پیشرفته کانفیگ‌ها</span></button>
+                           <div class="action-group-collapsible open">
+                               <div class="protocol-header" data-action="toggle-actions"><span>گزینه‌های اشتراک</span><span class="toggle-icon">▼</span></div>
+                               <div class="collapsible-content">
+                                   <div class="action-group-title">اشتراک آماده</div>
+                                   <div class="action-box">
+                                       <div class="action-row"><span class="action-box-label">لینک اشتراک Standard</span><div class="action-box-buttons"><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="standard">کپی</button><button class="action-btn-small" data-action="qr-sub" data-core="${core}" data-type="standard">QR</button></div></div>
+                                   </div>
+                                   ${isXray ? `<div class="action-box">
+                                       <div class="action-row"><span class="action-box-label">لینک اشتراک Clash</span><div class="action-box-buttons"><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button><button class="action-btn-small" data-action="copy-sub" data-core="${core}" data-type="clash">کپی URL</button><button class="action-btn-small" data-action="qr-sub" data-core="${core}" data-type="clash">QR</button></div></div>
+                                   </div>` : ''}
+                                   <div class="action-group-title">اشتراک شخصی</div>
+                                   <div class="action-box">
+                                       <div class="action-row"><span class="action-box-label">لینک Standard از موارد انتخابی</span><div class="action-box-buttons"><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="standard">کپی</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="standard" data-method="qr">QR</button></div></div>
+                                       ${isXray ? `<div class="action-row" style="margin-top:10px;"><span class="action-box-label">لینک Clash از موارد انتخابی</span><div class="action-box-buttons"><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash">کپی URL</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash" data-method="qr">QR</button></div></div>` : ''}
+                                   </div>
+                               </div>
+                           </div>`;
         wrapper.innerHTML = actionsHTML;
         for (const protocol in groupedConfigs) {
             const pGroupEl = document.createElement('div');
             pGroupEl.className = 'protocol-group';
             pGroupEl.dataset.protocolName = protocol;
             const configs = groupedConfigs[protocol];
-            const names = await Promise.all(configs.map(config => generateProxyName(config)));
+            const names = await Promise.all(configs.map(generateProxyName));
             let itemsHTML = '';
             configs.forEach((config, index) => {
                 const safeConfig = config.replace(/'/g, "&apos;").replace(/"/g, '&quot;');
-                itemsHTML += `<li class="config-item" data-config='${safeConfig}'><input type="checkbox" class="config-checkbox"><div class="config-details"><span class="server">${names[index]}</span><span class="ping-result"></span></div><div class="config-actions"><button class="copy-btn" data-action="copy-single" data-config='${safeConfig}'>کپی</button><button class="copy-btn" data-action="qr-single" data-config='${safeConfig}'>QR</button></div></li>`;
+                itemsHTML += `<li class="config-item" data-config='${safeConfig}'><input type="checkbox" class="config-checkbox"><div class="config-details"><span class="server">${names[index]}</span><div class="ping-result-container"></div></div><div class="config-actions"><button class="copy-btn" data-action="copy-single" data-config='${safeConfig}'>کپی</button><button class="copy-btn" data-action="qr-single" data-config='${safeConfig}'>QR</button></div></li>`;
             });
-            pGroupEl.innerHTML = `<div class="protocol-header" data-action="toggle-protocol"><div class="protocol-header-title"><span>${protocol.toUpperCase()} (${configs.length})</span><span class="toggle-icon">▼</span></div><div class="protocol-header-actions"><button class="action-btn-small" data-action="copy-protocol" data-protocol="${protocol}">کپی همه</button><button class="action-btn-small" data-action="qr-protocol" data-protocol="${protocol}">QR همه</button></div></div><ul class="config-list">${itemsHTML}</ul>`;
+            pGroupEl.innerHTML = `<div class="protocol-header" data-action="toggle-protocol"><div class="protocol-header-title"><span>${protocol.toUpperCase()} (${configs.length})</span><span class="toggle-icon">▼</span></div><div class="protocol-header-actions"><button class="action-btn-small" data-action="copy-protocol" data-protocol="${protocol}">کپی همه</button></div></div><ul class="config-list">${itemsHTML}</ul>`;
             wrapper.appendChild(pGroupEl);
         }
     }
@@ -84,89 +100,91 @@ document.addEventListener('DOMContentLoaded', () => {
         testButton.disabled = true;
         buttonText.innerHTML = `<span class="loader"></span> در حال تست...`;
         const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`));
+        allItems.forEach(item => {
+            const resultContainer = item.querySelector('.ping-result-container');
+            resultContainer.innerHTML = `<span class="ping-result-item" data-type="TCP">--</span><span class="ping-result-item" data-type="WS">--</span><span class="ping-result-item" data-type="WT">--</span>`;
+        });
         
         const testPromises = allItems.map(item => {
             const config = parseConfig(item.dataset.config);
-            if (!config) { updateUI(item, []); return Promise.resolve(); }
-            let promises = [];
-            if (config.transport === 'ws') promises.push(testDirectWebSocket(config));
-            if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) promises.push(testDirectWebTransport(config));
-            if (['vless', 'vmess', 'trojan', 'ss'].includes(config.protocol)) promises.push(testBridgeTCP(config));
+            if (!config) { updateItemUI(item, 'FAIL', null); return Promise.resolve(); }
             
-            return Promise.allSettled(promises).then(results => {
-                const successfulResults = results.filter(r => r.status === 'fulfilled' && r.value.latency !== null).map(r => r.value);
-                updateUI(item, successfulResults);
-                item.dataset.finalScore = successfulResults.length > 0 ? Math.min(...successfulResults.map(r => r.latency)) : 9999;
-            });
+            let promises = [];
+            // Run TCP Bridge test for all TCP-based protocols
+            if (['vless', 'vmess', 'trojan', 'ss', 'ws'].includes(config.transport) || !config.transport) {
+                promises.push(testBridgeTCP(config).then(res => updateItemUI(item, 'TCP', res.latency)));
+            }
+            // Run direct WS test only for WS configs
+            if (config.transport === 'ws') {
+                promises.push(testDirectWebSocket(config).then(res => updateItemUI(item, 'WS', res.latency)));
+            }
+            // Run direct WT test only for UDP-based protocols
+            if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) {
+                promises.push(testDirectWebTransport(config).then(res => updateItemUI(item, 'WT', res.latency)));
+            }
+            
+            return Promise.allSettled(promises);
         });
         await Promise.all(testPromises);
 
+        // Sorting after all tests are done
+        allItems.forEach(item => {
+            const latencies = ['tcp', 'ws', 'wt'].map(t => parseInt(item.dataset[t] || 9999));
+            item.dataset.finalScore = Math.min(...latencies);
+        });
         document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => {
             const list = group.querySelector('.config-list');
             const sorted = Array.from(list.children).sort((a, b) => (a.dataset.finalScore || 9999) - (b.dataset.finalScore || 9999));
             sorted.forEach(item => list.appendChild(item));
         });
+
         testButton.disabled = false;
         buttonText.innerHTML = '🚀 تست مجدد کانفیگ‌ها';
     }
     
-    async function testBridgeTCP(config) {
-        return new Promise((resolve) => {
-            const ws = new WebSocket(`${WORKER_URL.replace(/^http/, 'ws')}/tcp-bridge`);
-            const timeout = setTimeout(() => { ws.close(); resolve({ type: 'TCP', latency: null }); }, 4000);
-            ws.onopen = () => ws.send(JSON.stringify({ host: config.host, port: config.port }));
-            ws.onmessage = (event) => { const data = JSON.parse(event.data); clearTimeout(timeout); resolve({ type: 'TCP', latency: data.status === 'success' ? data.latency : null }); ws.close(); };
-            ws.onerror = () => { clearTimeout(timeout); resolve({ type: 'TCP', latency: null }); };
-        });
-    }
+    async function testBridgeTCP(config) { /* ... same as previous ... */ }
+    async function testDirectWebSocket(config) { /* ... same as previous ... */ }
+    async function testDirectWebTransport(config) { /* ... same as previous ... */ }
 
-    async function testDirectWebSocket(config) {
-        return new Promise((resolve) => {
-            const startTime = Date.now();
-            const ws = new WebSocket(`wss://${config.host}:${config.port}${config.path}`);
-            const timeout = setTimeout(() => { ws.close(); resolve({ type: 'WS', latency: null }); }, 4000);
-            ws.onopen = () => { clearTimeout(timeout); resolve({ type: 'WS', latency: Date.now() - startTime }); ws.close(); };
-            ws.onerror = () => { clearTimeout(timeout); resolve({ type: 'WS', latency: null }); };
-        });
-    }
+    function updateItemUI(item, type, latency) {
+        const resultEl = item.querySelector(`.ping-result-item[data-type="${type}"]`);
+        if (!resultEl) return;
 
-    async function testDirectWebTransport(config) {
-        if (typeof WebTransport === 'undefined') return { type: 'WT', latency: null };
-        return new Promise(async (resolve) => {
-            try {
-                const startTime = Date.now();
-                const transport = new WebTransport(`https://${config.host}:${config.port}`);
-                await transport.ready;
-                resolve({ type: 'WT', latency: Date.now() - startTime });
-                transport.close();
-            } catch (e) { resolve({ type: 'WT', latency: null }); }
-        });
-    }
+        item.dataset[type.toLowerCase()] = latency; // Store for sorting
 
-    function updateUI(item, results) {
-        const resultEl = item.querySelector('.ping-result');
-        if (!results || results.length === 0) {
-            resultEl.innerHTML = `<strong style="color:var(--ping-bad);">❌ ناموفق</strong>`;
-            resultEl.title = 'هیچ تستی موفق نبود';
-            return;
+        if (latency === null) {
+            resultEl.textContent = '❌';
+            resultEl.style.color = 'var(--ping-bad)';
+        } else {
+            resultEl.textContent = `${latency}ms`;
+            resultEl.style.color = latency < 700 ? 'var(--ping-good)' : 'var(--ping-medium)';
         }
-        const priority = ['WT', 'WS', 'TCP'];
-        const bestResult = results.sort((a, b) => {
-            const priorityA = priority.indexOf(a.type);
-            const priorityB = priority.indexOf(b.type);
-            if (priorityA !== priorityB) return priorityA - priorityB;
-            return a.latency - b.latency;
-        })[0];
-        
-        const icon = `[${bestResult.type}]`;
-        const color = bestResult.latency < 700 ? 'var(--ping-good)' : 'var(--ping-medium)';
-        resultEl.innerHTML = `<strong style="color:${color};">${icon} ${bestResult.latency}ms</strong>`;
-        resultEl.title = results.map(r => `${r.type}: ${r.latency !== null ? r.latency + 'ms' : 'Fail'}`).join(' | ');
     }
 
     // --- EVENT HANDLING & ACTIONS ---
-    function getSubscriptionUrl(core, type) { return (type === 'clash') ? `${WORKER_URL}/sub/public/clash/xray` : `${WORKER_URL}/sub/public/${core}`; }
-    async function createPersonalSubscription(core) { const sel = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config); if (sel.length === 0) { showToast('حداقل یک کانفیگ انتخاب کنید.', true); return null; } try { const res = await fetch(`${WORKER_URL}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: sel }) }); if (!res.ok) throw new Error(`Server responded with ${res.status}`); return (await res.json()).subscription_url; } catch (e) { showToast('خطا در ساخت لینک اشتراک.', true); return null; } }
+    function getSubscriptionUrl(core, type, isClash = false) {
+        const clashPart = isClash ? '/clash' : '';
+        return `${WORKER_URL}/sub/public${clashPart}/${core}`;
+    }
+
+    async function createPersonalSubscription(core, type, method) {
+        const selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
+        if (selectedConfigs.length === 0) { showToast('لطفاً حداقل یک کانفیگ را انتخاب کنید.', true); return; }
+        try {
+            const res = await fetch(`${WORKER_URL}/api/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configs: selectedConfigs }) });
+            if (!res.ok) throw new Error('Server Error');
+            const data = await res.json();
+            
+            const isClash = type === 'clash';
+            const clashPart = isClash ? '/clash' : '';
+            const finalUrl = `${WORKER_URL}/sub${clashPart}/${data.uuid}`;
+
+            if (method === 'qr') showQrCode(finalUrl);
+            else if (method === 'download') window.open(finalUrl, '_blank');
+            else { navigator.clipboard.writeText(finalUrl); showToast(`لینک اشتراک شخصی ${isClash ? 'Clash' : ''} کپی شد.`); }
+        } catch (e) { showToast('خطا در ساخت لینک اشتراک.', true); }
+    }
+    
     function showQrCode(text) { if (!window.QRCode) { showToast('کتابخانه QR در حال بارگذاری است...', true); return; } qrContainer.innerHTML = ''; new QRCode(qrContainer, { text, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.H }); qrModal.style.display = 'flex'; }
     function getProtocolConfigs(target) { return Array.from(target.closest('.protocol-group').querySelectorAll('.config-item')).map(item => item.dataset.config); }
 
@@ -179,15 +197,24 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'run-ping-test': runAdvancedPingTest(core, target); break;
             case 'copy-single': navigator.clipboard.writeText(config); showToast('کانفیگ کپی شد.'); break;
             case 'qr-single': showQrCode(config); break;
-            case 'copy-sub': const subUrl = getSubscriptionUrl(core, type); if (method === 'download') { window.open(subUrl, '_blank'); } else { navigator.clipboard.writeText(subUrl); showToast('لینک اشتراک کپی شد.'); } break;
-            case 'qr-sub': showQrCode(getSubscriptionUrl(core, type)); break;
-            case 'create-personal-sub': const personalUrl = await createPersonalSubscription(core); if (!personalUrl) return; if (method === 'qr') { showQrCode(personalUrl); } else { navigator.clipboard.writeText(personalUrl); showToast('لینک اشتراک شخصی کپی شد.'); } break;
-            case 'copy-protocol': const protocolConfigs = getProtocolConfigs(target); if (protocolConfigs.length > 0) { navigator.clipboard.writeText(protocolConfigs.join('\n')); showToast(`تمام ${protocolConfigs.length} کانفیگ ${protocol} کپی شد.`); } break;
-            case 'qr-protocol': const qrProtocolConfigs = getProtocolConfigs(target); if (qrProtocolConfigs.length > 0) { showQrCode(qrProtocolConfigs.join('\n')); } break;
+            case 'copy-sub': 
+                const isClashCopy = type === 'clash';
+                const subUrl = getSubscriptionUrl(core, type, isClashCopy);
+                if (method === 'download') { window.open(subUrl, '_blank'); } 
+                else { navigator.clipboard.writeText(subUrl); showToast('لینک اشتراک کپی شد.'); }
+                break;
+            case 'qr-sub': showQrCode(getSubscriptionUrl(core, type, type === 'clash')); break;
+            case 'create-personal-sub': createPersonalSubscription(core, type, method); break;
+            case 'copy-protocol': const pcfgs = getProtocolConfigs(target); if (pcfgs.length > 0) { navigator.clipboard.writeText(pcfgs.join('\n')); showToast(`تمام ${pcfgs.length} کانفیگ ${protocol} کپی شد.`); } break;
             case 'toggle-protocol': target.closest('.protocol-group').classList.toggle('open'); break;
             case 'toggle-actions': target.closest('.action-group-collapsible').classList.toggle('open'); break;
         }
     }
     document.querySelectorAll('.main-wrapper').forEach(w => w.addEventListener('click', handleClicks));
     qrModal.onclick = () => qrModal.style.display = 'none';
+
+    // Minified test functions for brevity in the final code
+    testBridgeTCP = async function(config) { return new Promise(r => { const ws = new WebSocket(`${WORKER_URL.replace(/^http/, 'ws')}/tcp-bridge`), t = setTimeout(() => { ws.close(); r({ type: 'TCP', latency: null }) }, 4e3); ws.onopen = () => ws.send(JSON.stringify({ host: config.host, port: config.port })); ws.onmessage = e => { const d = JSON.parse(e.data); clearTimeout(t); r({ type: 'TCP', latency: d.status === 'success' ? d.latency : null }); ws.close() }; ws.onerror = () => { clearTimeout(t); r({ type: 'TCP', latency: null }) } }) };
+    testDirectWebSocket = async function(config) { return new Promise(r => { const s = Date.now(), ws = new WebSocket(`wss://${config.host}:${config.port}${config.path}`), t = setTimeout(() => { ws.close(); r({ type: 'WS', latency: null }) }, 4e3); ws.onopen = () => { clearTimeout(t); r({ type: 'WS', latency: Date.now() - s }); ws.close() }; ws.onerror = () => { clearTimeout(t); r({ type: 'WS', latency: null }) } }) };
+    testDirectWebTransport = async function(config) { if ("undefined" == typeof WebTransport) return { type: "WT", latency: null }; try { const s = Date.now(), t = new WebTransport(`https://${config.host}:${config.port}`); await t.ready; const e = Date.now() - s; return t.close(), { type: "WT", latency: e } } catch (s) { return { type: "WT", latency: null } } };
 });
