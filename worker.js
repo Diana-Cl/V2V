@@ -39,6 +39,8 @@ export default {
             if (publicSubMatch) {
                 const core = publicSubMatch[2];
                 const isClash = !!publicSubMatch[1];
+                // Per user request, disable public-ready Clash subscription
+                if (isClash) return new Response('Public Clash subscription is disabled.', { status: 404 });
                 return handleGetPublicSubscription(core, isClash, env);
             }
 
@@ -74,24 +76,20 @@ async function tcpBridge(request) {
             socket = connect({ hostname: host, port: port }, { allowHalfOpen: false });
             
             const writer = socket.writable.getWriter();
-            // Send a small probe to ensure the connection is truly established and writable
-            await writer.write(new Uint8Array([0]));
+            await writer.write(new Uint8Array([0])); // Send a small probe
             writer.releaseLock();
              
-            // Wait for the connection to be fully established and ready
             await socket.opened;
             const latency = Date.now() - startTime;
             
-            if (latency < 10) { // Filter out unrealistically low latencies
-                throw new Error("Unrealistic latency, potential connection issue");
-            }
+            if (latency < 10) throw new Error("Unrealistic latency");
             
             server.send(JSON.stringify({ host, port, latency, status: 'success' }));
         } catch (e) {
             server.send(JSON.stringify({ error: e.message || "Connection failed", status: 'failure' }));
         } finally {
             if (socket) {
-                await socket.close().catch(() => {}); // Gracefully close the socket
+                await socket.close().catch(() => {});
             }
         }
     });
@@ -163,13 +161,10 @@ async function generateProxyName(configStr, server, port) {
         const url = new URL(configStr);
         let name = decodeURIComponent(url.hash.substring(1) || "");
         if (!name) {
-            const server_id = `${server}:${port}`;
-            const buffer = await crypto.subtle.digest('MD5', new TextEncoder().encode(server_id));
-            const hash = Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 6);
-            name = `Config-${hash}`;
+            name = `Config-${server.slice(0,8)}...`;
         }
         name = name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim().substring(0, MAX_NAME_LENGTH);
-        const uniqueHashBuffer = await crypto.subtle.digest('MD5', new TextEncoder().encode(`${configStr}`));
+        const uniqueHashBuffer = await crypto.subtle.digest('MD5', new TextEncoder().encode(`${server}:${port}`));
         const uniqueHash = Array.from(new Uint8Array(uniqueHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 4);
         return `V2V | ${name} | ${uniqueHash}`;
     } catch { return `V2V | Unnamed Config`; }
