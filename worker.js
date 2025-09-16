@@ -76,20 +76,22 @@ async function tcpBridge(request) {
             socket = connect({ hostname: host, port: port }, { allowHalfOpen: false });
             
             const writer = socket.writable.getWriter();
-            await writer.write(new Uint8Array([0])); // Send a small probe
+            await writer.write(new Uint8Array([0])); // Send a small probe to ensure connection is real
             writer.releaseLock();
              
             await socket.opened;
             const latency = Date.now() - startTime;
             
-            if (latency < 10) throw new Error("Unrealistic latency");
+            if (latency < 10) { // Filter out unrealistically low latencies
+                throw new Error("Unrealistic latency, potential connection issue");
+            }
             
             server.send(JSON.stringify({ host, port, latency, status: 'success' }));
         } catch (e) {
             server.send(JSON.stringify({ error: e.message || "Connection failed", status: 'failure' }));
         } finally {
             if (socket) {
-                await socket.close().catch(() => {});
+                await socket.close().catch(() => {}); // Gracefully close the socket
             }
         }
     });
