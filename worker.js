@@ -67,18 +67,32 @@ async function tcpBridge(request) {
             if (!host || !port) return server.send(JSON.stringify({ error: 'Invalid host or port' }));
             
             const startTime = Date.now();
-            const socket = connect({ hostname: host, port });
-            await socket.opened;
+            const socket = connect({ hostname: host, port: port }, { allowHalfOpen: false });
+            
+            const writer = socket.writable.getWriter();
+            const reader = socket.readable.getReader();
+            
+            // Send a small probe to ensure the connection is truly established and writable
+            await writer.write(new Uint8Array([0])); 
+            
+            const { value, done } = await Promise.race([
+                reader.read(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Read timeout')), 1500))
+            ]);
+
             const latency = Date.now() - startTime;
             
-            server.send(JSON.stringify({ host, port, latency, status: 'success' }));
+            reader.releaseLock();
             await socket.close();
+            
+            server.send(JSON.stringify({ host, port, latency, status: 'success' }));
         } catch (e) {
             server.send(JSON.stringify({ error: e.message || "Connection failed", status: 'failure' }));
         }
     });
     return new Response(null, { status: 101, webSocket: client });
 }
+
 
 // --- SUBSCRIPTION LOGIC ---
 async function handleSubscribeRequest(request, env) {
@@ -87,7 +101,8 @@ async function handleSubscribeRequest(request, env) {
     if (!Array.isArray(configs) || configs.length === 0) return new Response("'configs' must be a non-empty array.", { status: 400 });
     const subUuid = crypto.randomUUID();
     await env.V2V_KV.put(`sub:${subUuid}`, JSON.stringify(configs), { expirationTtl: SUBSCRIPTION_TTL });
-    const subscription_url = `${new URL(request.url).origin}/sub/${subUuid}`;
+    const origin = request.headers.get("Origin") || new URL(request.url).origin;
+    const subscription_url = `${origin}/sub/${subUuid}`;
     return new Response(JSON.stringify({ subscription_url, uuid: subUuid }), { status: 201, headers: JSON_HEADERS });
 }
 
@@ -97,7 +112,7 @@ async function handleGetPublicSubscription(core, isClash, env) {
     const allFlatConfigs = Object.values(coreConfigs).flat();
     const topConfigs = allFlatConfigs.slice(0, READY_SUB_COUNT);
     if (topConfigs.length === 0) return new Response(`No public configs found for core: ${core}`, { status: 404 });
-    return generateSubscriptionResponse(topConfigs, isClash, env);
+    return generateSubscriptionResponse(topConfigs, isClash);
 }
 
 async function handleGetPersonalSubscription(uuid, isClash, env) {
@@ -120,7 +135,7 @@ async function handleGetPersonalSubscription(uuid, isClash, env) {
     }
     
     await env.V2V_KV.put(`sub:${uuid}`, JSON.stringify(healedConfigs), { expirationTtl: SUBSCRIPTION_TTL });
-    return generateSubscriptionResponse(healedConfigs, isClash, env);
+    return generateSubscriptionResponse(healedConfigs, isClash);
 }
 
 async function generateSubscriptionResponse(configs, isClash) {
@@ -149,13 +164,23 @@ async function generateProxyName(configStr, server, port) {
             name = `Config-${hash}`;
         }
         name = name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim().substring(0, MAX_NAME_LENGTH);
-        const finalHash = (await crypto.subtle.digest('MD5', new TextEncoder().encode(`${server}:${port}`))).toString().substring(0,4);
-        return `V2V | ${name} | ${finalHash}`;
+        const uniqueHash = Array.from(await crypto.subtle.digest('MD5', new TextEncoder().encode(`${server}:${port}`)))
+                             .map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 4);
+        return `V2V | ${name} | ${uniqueHash}`;
     } catch { return `V2V | Unnamed Config`; }
 }
 
 async function parseProxyForClash(configStr) {
     try {
+        if (configStr.startsWith('vmess://')) {
+            const d = JSON.parse(atob(configStr.substring(8)));
+            const vmessServer = d.add;
+            const vmessPort = parseInt(d.port);
+            const name = await generateProxyName(configStr, vmessServer, vmessPort);
+            const p = { name, 'skip-cert-verify': true, type: 'vmess', server: vmessServer, port: vmessPort, uuid: d.id, alterId: parseInt(d.aid || 0), cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net, servername: d.sni || d.host };
+            if (d.net === 'ws') p['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add }};
+            return p;
+        }
         const url = new URL(configStr);
         const server = url.hostname;
         const port = parseInt(url.port);
@@ -164,15 +189,6 @@ async function parseProxyForClash(configStr) {
         const proto = url.protocol.replace(':', '');
         const params = new URLSearchParams(url.search);
 
-        if (proto === 'vmess') {
-            const d = JSON.parse(atob(configStr.substring(8)));
-            const vmessServer = d.add || server;
-            const vmessPort = parseInt(d.port) || port;
-            const vmessName = await generateProxyName(configStr, vmessServer, vmessPort);
-            const p = { ...base, name: vmessName, type: 'vmess', server: vmessServer, port: vmessPort, uuid: d.id, alterId: parseInt(d.aid), cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net, servername: d.sni || d.host };
-            if (d.net === 'ws') p['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add }};
-            return p;
-        }
         if (proto === 'vless') {
             const p = { ...base, type: 'vless', server, port, uuid: url.username, tls: params.get('security') === 'tls', network: params.get('type'), servername: params.get('sni')};
             if (params.get('type') === 'ws') p['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || server }};
@@ -190,7 +206,6 @@ async function generateClashYaml(configs) {
     const proxies = (await Promise.all(configs.map(parseProxyForClash))).filter(p => p);
     if (proxies.length === 0) return null;
 
-    // Use a Map with a server:port key to ensure uniqueness of servers, then get the final proxies
     const uniqueServerProxies = new Map();
     for (const proxy of proxies) {
         const key = `${proxy.server}:${proxy.port}`;
@@ -218,9 +233,9 @@ async function generateClashYaml(configs) {
         });
     });
     
-    yamlString += "proxy-groups:\n";
-    yamlString += `  - {name: V2V-Auto, type: url-test, proxies: [${proxyNames.map(safeYamlStringify).join(', ')}], url: 'http://www.gstatic.com/generate_204', interval: 300}\n`;
-    yamlString += `  - {name: V2V-Select, type: select, proxies: [V2V-Auto, ${proxyNames.map(safeYamlStringify).join(', ')}]}\n`;
-    yamlString += "rules:\n  - 'MATCH,V2V-Select'\n";
+    yamlString += "\nproxy-groups:\n";
+    yamlString += `  - name: V2V-Auto\n    type: url-test\n    proxies:\n${proxyNames.map(name => `      - ${safeYamlStringify(name)}`).join('\n')}\n    url: 'http://www.gstatic.com/generate_204'\n    interval: 300\n`;
+    yamlString += `  - name: V2V-Select\n    type: select\n    proxies:\n      - V2V-Auto\n${proxyNames.map(name => `      - ${safeYamlStringify(name)}`).join('\n')}\n`;
+    yamlString += "\nrules:\n  - 'MATCH,V2V-Select'\n";
     return yamlString;
 }
