@@ -62,32 +62,37 @@ async function tcpBridge(request) {
     const { 0: client, 1: server } = new WebSocketPair();
     server.accept();
     server.addEventListener('message', async (event) => {
+        let socket;
         try {
             const { host, port } = JSON.parse(event.data);
-            if (!host || !port) return server.send(JSON.stringify({ error: 'Invalid host or port' }));
+            if (!host || !port) {
+                server.send(JSON.stringify({ error: 'Invalid host or port' }));
+                return;
+            }
             
             const startTime = Date.now();
-            const socket = connect({ hostname: host, port: port }, { allowHalfOpen: false });
+            socket = connect({ hostname: host, port: port }, { allowHalfOpen: false });
             
             const writer = socket.writable.getWriter();
-            const reader = socket.readable.getReader();
-            
             // Send a small probe to ensure the connection is truly established and writable
-            await writer.write(new Uint8Array([0])); 
-            
-            const { value, done } = await Promise.race([
-                reader.read(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Read timeout')), 1500))
-            ]);
-
+            await writer.write(new Uint8Array([0]));
+            writer.releaseLock();
+             
+            // Wait for the connection to be fully established and ready
+            await socket.opened;
             const latency = Date.now() - startTime;
             
-            reader.releaseLock();
-            await socket.close();
+            if (latency < 10) { // Filter out unrealistically low latencies
+                throw new Error("Unrealistic latency, potential connection issue");
+            }
             
             server.send(JSON.stringify({ host, port, latency, status: 'success' }));
         } catch (e) {
             server.send(JSON.stringify({ error: e.message || "Connection failed", status: 'failure' }));
+        } finally {
+            if (socket) {
+                await socket.close().catch(() => {}); // Gracefully close the socket
+            }
         }
     });
     return new Response(null, { status: 101, webSocket: client });
@@ -101,7 +106,7 @@ async function handleSubscribeRequest(request, env) {
     if (!Array.isArray(configs) || configs.length === 0) return new Response("'configs' must be a non-empty array.", { status: 400 });
     const subUuid = crypto.randomUUID();
     await env.V2V_KV.put(`sub:${subUuid}`, JSON.stringify(configs), { expirationTtl: SUBSCRIPTION_TTL });
-    const origin = request.headers.get("Origin") || new URL(request.url).origin;
+    const origin = new URL(request.url).origin;
     const subscription_url = `${origin}/sub/${subUuid}`;
     return new Response(JSON.stringify({ subscription_url, uuid: subUuid }), { status: 201, headers: JSON_HEADERS });
 }
@@ -164,8 +169,8 @@ async function generateProxyName(configStr, server, port) {
             name = `Config-${hash}`;
         }
         name = name.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim().substring(0, MAX_NAME_LENGTH);
-        const uniqueHash = Array.from(await crypto.subtle.digest('MD5', new TextEncoder().encode(`${server}:${port}`)))
-                             .map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 4);
+        const uniqueHashBuffer = await crypto.subtle.digest('MD5', new TextEncoder().encode(`${configStr}`));
+        const uniqueHash = Array.from(new Uint8Array(uniqueHashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 4);
         return `V2V | ${name} | ${uniqueHash}`;
     } catch { return `V2V | Unnamed Config`; }
 }
@@ -221,7 +226,7 @@ async function generateClashYaml(configs) {
         yamlString += `  - name: ${safeYamlStringify(p.name)}\n`;
         const orderedKeys = ['type', 'server', 'port', 'uuid', 'password', 'alterId', 'cipher', 'tls', 'network', 'servername', 'skip-cert-verify', 'ws-opts'];
         orderedKeys.forEach(key => {
-            if (p[key] === undefined || p[key] === null) return;
+            if (p[key] === undefined || p[key] === null || (key === 'alterId' && p[key] === 0)) return;
             const value = p[key];
             if (key === 'ws-opts' && typeof value === 'object') {
                 yamlString += `    ws-opts:\n`;
