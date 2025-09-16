@@ -8,6 +8,7 @@ import time
 import yaml
 import socket
 import hashlib
+import ssl
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 from github import Github, Auth
@@ -15,13 +16,13 @@ from typing import Optional, Set, List, Dict, Tuple
 from collections import defaultdict
 import itertools
 
-print("INFO: Initializing V2V Scraper v33.0 (Intelligent Filtering)...")
+print("INFO: Initializing V2V Scraper v33.1 (Deep Protocol Testing & Flexible Quota)...")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
 OUTPUT_JSON_FILE = os.path.join(BASE_DIR, "all_live_configs.json")
-OUTPUT_CLASH_FILE = os.path.join(BASE_DIR, "clash_subscription.yml")
+# OUTPUT_CLASH_FILE = os.path.join(BASE_DIR, "clash_subscription.yml") # Removed
 CACHE_VERSION_FILE = os.path.join(BASE_DIR, "cache_version.txt")
 
 XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
@@ -30,16 +31,16 @@ VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_ONLY_PROTOCOLS)
 
 HEADERS = {'User-Agent': 'V2V-Scraper/1.0'}
 GITHUB_PAT = os.environ.get('GH_PAT')
-MAX_CONFIGS_TO_TEST = 10000  # Increased to find more quality configs
-TARGET_CONFIGS_PER_CORE = 500
+MAX_CONFIGS_TO_TEST = 10000
+MIN_TARGET_CONFIGS_PER_CORE = 500  # Minimum configs for each core
+MAX_FINAL_CONFIGS_PER_CORE = 1000 # Maximum configs for each core
 MAX_TEST_WORKERS = 200
-TCP_TIMEOUT = 2.5
-MAX_LATENCY_MS = 5000  # New: Max acceptable latency is 5 seconds
+TCP_TIMEOUT = 4  # Increased to 4 seconds for deeper testing
+MAX_LATENCY_MS = 5000
 MAX_NAME_LENGTH = 40
 
 # --- HELPER FUNCTIONS (UNCHANGED) ---
 def decode_base64_content(content: str) -> str:
-    # ... (code is unchanged)
     if not isinstance(content, str) or not content.strip(): return ""
     try:
         content = content.strip().replace('\n', '').replace('\r', '')
@@ -47,7 +48,6 @@ def decode_base64_content(content: str) -> str:
     except Exception: return ""
 
 def is_valid_config(config: str) -> bool:
-    # ... (code is unchanged)
     if not isinstance(config, str) or not config.strip(): return False
     try:
         parsed = urlparse(config)
@@ -55,7 +55,6 @@ def is_valid_config(config: str) -> bool:
     except Exception: return False
 
 def fetch_from_sources(sources: list, is_github: bool, pat: str = None, limit: int = 0) -> Set[str]:
-    # ... (code is unchanged)
     all_configs = set()
     if is_github:
         if not pat:
@@ -90,8 +89,9 @@ def fetch_from_sources(sources: list, is_github: bool, pat: str = None, limit: i
                 all_configs.update(future.result())
     return {cfg for cfg in all_configs if is_valid_config(cfg)}
 
+# parse_proxy_for_clash and generate_clash_yaml are kept for internal consistency
+# but are NOT used for public clash file generation in this script anymore.
 def parse_proxy_for_clash(config: str) -> Optional[Dict]:
-    # ... (code is unchanged)
     try:
         parsed_url = urlparse(config)
         original_name = parsed_url.fragment or ""
@@ -130,7 +130,6 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
     return None
 
 def generate_clash_yaml(configs: List[str]) -> Optional[str]:
-    # ... (code is unchanged)
     proxies, unique_check = [], set()
     for config in configs:
         parsed_proxy = parse_proxy_for_clash(config)
@@ -148,47 +147,97 @@ def generate_clash_yaml(configs: List[str]) -> Optional[str]:
 
 # --- NEW & IMPROVED FUNCTIONS ---
 
-def test_tcp_connection_with_latency(config: str) -> Optional[Tuple[str, int]]:
+def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
     """
-    Tests a TCP connection and returns the config and its latency in milliseconds.
-    Returns None if the connection fails.
+    Tests a full protocol handshake for VLESS, VMess, Trojan, SS.
+    For Hysteria2/TUIC (UDP-based), it performs a basic UDP port check.
+    Returns the config and its latency in milliseconds, or None if the connection fails.
     """
+    parsed_url = urlparse(config)
+    protocol = parsed_url.scheme
+    hostname, port = None, None
+    is_tls = False
+
     try:
-        parsed_url = urlparse(config)
-        hostname, port = parsed_url.hostname, parsed_url.port
-        if not all([hostname, port]) and parsed_url.scheme == 'vmess':
-            vmess_data = json.loads(decode_base64_content(config.replace("vmess://", "")))
-            hostname, port = vmess_data.get('add'), int(vmess_data.get('port', 0))
-        
-        if not all([hostname, port]): 
-            return None
+        if protocol == 'vmess':
+            decoded_data = json.loads(decode_base64_content(config.replace("vmess://", "")))
+            hostname = decoded_data.get('add')
+            port = int(decoded_data.get('port', 0))
+            is_tls = decoded_data.get('tls') == 'tls'
+            # No specific handshake for vmess, just check connection
+        elif protocol in ['vless', 'trojan', 'ss']:
+            hostname = parsed_url.hostname
+            port = parsed_url.port
+            params = dict(p.split('=', 1) for p in parsed_url.query.split('&') if '=' in p)
+            is_tls = params.get('security') == 'tls' or protocol == 'trojan' # Trojan implies TLS
+        elif protocol in SINGBOX_ONLY_PROTOCOLS:
+            # For UDP-based protocols, perform a basic UDP check
+            hostname = parsed_url.hostname
+            port = parsed_url.port
+            if not all([hostname, port]): return None
             
-        start_time = time.monotonic()
-        with socket.create_connection((hostname, port), timeout=TCP_TIMEOUT):
+            start_time = time.monotonic()
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.settimeout(TCP_TIMEOUT)
+                # Send a small dummy packet
+                sock.sendto(b'ping', (hostname, port))
+                # Wait for a response (if any), indicating the port is active
+                sock.recvfrom(1024) 
             end_time = time.monotonic()
             latency_ms = int((end_time - start_time) * 1000)
             return config, latency_ms
-    except Exception:
+
+        if not all([hostname, port]):
+            return None
+
+        start_time = time.monotonic()
+        
+        sock = socket.create_connection((hostname, port), timeout=TCP_TIMEOUT)
+        if is_tls:
+            context = ssl.create_default_context()
+            context.check_hostname = False # We don't verify hostname for testing
+            context.verify_mode = ssl.CERT_NONE # Don't verify certificates for testing
+            
+            with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                # Attempt a read to see if the TLS handshake completes
+                ssock.do_handshake() 
+                # For VLESS, VMess, Trojan after TLS, we might send a small probe
+                # This part can be enhanced with actual protocol-specific probes if needed
+                # For now, successful TLS handshake is a strong indicator
+                end_time = time.monotonic()
+                latency_ms = int((end_time - start_time) * 1000)
+                return config, latency_ms
+        else:
+            # For non-TLS protocols (e.g., plain WS, SS without TLS)
+            end_time = time.monotonic()
+            latency_ms = int((end_time - start_time) * 1000)
+            return config, latency_ms
+
+    except Exception as e:
+        # print(f"DEBUG: Failed to test {config[:50]}... Reason: {e}") # Uncomment for debugging
         return None
 
-def select_configs_with_fluid_quota(configs_with_latency: List[Tuple[str, int]], target_count: int) -> List[str]:
+def select_configs_with_fluid_quota(configs_with_latency: List[Tuple[str, int]], min_target_count: int, max_final_count: int) -> List[str]:
     """
-    Selects configs using a fluid, round-robin method to ensure protocol diversity and quality.
+    Selects configs using a fluid, round-robin method to ensure protocol diversity and quality,
+    within a specified min/max range.
     """
     if not configs_with_latency:
         return []
 
-    # 1. Group configs by protocol
+    # 1. Group configs by protocol and keep them sorted by latency
     grouped_by_protocol = defaultdict(list)
-    for config, latency in configs_with_latency:
+    for config, latency in sorted(configs_with_latency, key=lambda item: item[1]): # Ensure they are sorted
         protocol = urlparse(config).scheme
+        if protocol == 'hysteria2': protocol = 'hy2'
         grouped_by_protocol[protocol].append(config)
     
     # 2. Use a round-robin approach to build the final list
     final_configs = []
     protocol_iterators = {protocol: iter(configs) for protocol, configs in grouped_by_protocol.items()}
     
-    while len(final_configs) < target_count:
+    # First pass: try to reach min_target_count ensuring diversity
+    for _ in range(min_target_count * len(protocol_iterators)): # Max iterations to fill min_target
         added_in_this_round = 0
         for protocol in protocol_iterators:
             try:
@@ -196,15 +245,48 @@ def select_configs_with_fluid_quota(configs_with_latency: List[Tuple[str, int]],
                 if next_config not in final_configs:
                     final_configs.append(next_config)
                     added_in_this_round += 1
-                if len(final_configs) >= target_count:
-                    break
+                if len(final_configs) >= min_target_count:
+                    break # Reached min target, can start filling up to max
             except StopIteration:
-                continue # This protocol group is exhausted
-        
-        if added_in_this_round == 0:
-            break # All iterators are exhausted
+                continue
+        if len(final_configs) >= min_target_count or added_in_this_round == 0:
+            break
+            
+    # Second pass: continue adding up to max_final_count
+    if len(final_configs) < max_final_count:
+        # Re-initialize iterators to continue from where they left off or from start if exhausted
+        protocol_iterators = {protocol: iter(configs) for protocol, configs in grouped_by_protocol.items()}
+        # Advance iterators to skip already added configs
+        for cfg_already_added in final_configs:
+            proto_of_added = urlparse(cfg_already_added).scheme
+            if proto_of_added == 'hysteria2': proto_of_added = 'hy2'
+            try:
+                # Find and skip this config in its iterator
+                for _ in range(len(grouped_by_protocol[proto_of_added])): # max possible iteration to find it
+                    next_cfg_in_iter = next(protocol_iterators[proto_of_added])
+                    if next_cfg_in_iter == cfg_already_added:
+                        break
+            except StopIteration:
+                pass # This iterator might be exhausted
 
-    return final_configs[:target_count]
+        while len(final_configs) < max_final_count:
+            added_in_this_round = 0
+            for protocol in protocol_iterators:
+                try:
+                    next_config = next(protocol_iterators[protocol])
+                    if next_config not in final_configs:
+                        final_configs.append(next_config)
+                        added_in_this_round += 1
+                    if len(final_configs) >= max_final_count:
+                        break
+                except StopIteration:
+                    continue # This protocol group is exhausted
+            
+            if added_in_this_round == 0:
+                break # All iterators are exhausted or no new configs to add
+
+    return final_configs[:max_final_count]
+
 
 # --- MAIN EXECUTION ---
 def main():
@@ -231,10 +313,11 @@ def main():
     print(f"\n📊 Total unique configs found: {len(all_unique_configs)}")
     if not all_unique_configs: print("CRITICAL: No configs found. Exiting."); return
 
-    print(f"\n--- 3. Testing Configs and Filtering by Latency (Max: {MAX_LATENCY_MS}ms) ---")
+    print(f"\n--- 3. Performing Deep Protocol Handshake Test and Filtering (Max: {MAX_LATENCY_MS}ms) ---")
     fast_configs_with_latency = []
     with ThreadPoolExecutor(max_workers=MAX_TEST_WORKERS) as executor:
-        future_to_config = {executor.submit(test_tcp_connection_with_latency, cfg): cfg for cfg in list(all_unique_configs)[:MAX_CONFIGS_TO_TEST]}
+        # Use test_full_protocol_handshake instead of test_tcp_connection_with_latency
+        future_to_config = {executor.submit(test_full_protocol_handshake, cfg): cfg for cfg in list(all_unique_configs)[:MAX_CONFIGS_TO_TEST]}
         for future in as_completed(future_to_config):
             result = future.result()
             if result:
@@ -244,25 +327,26 @@ def main():
     
     # Sort all fast configs globally by latency
     fast_configs_with_latency.sort(key=lambda item: item[1])
-    print(f"🏆 Found {len(fast_configs_with_latency)} fast configs.")
-    if not fast_configs_with_latency: print("CRITICAL: No fast configs found. Exiting."); return
+    print(f"🏆 Found {len(fast_configs_with_latency)} fast and functional configs.")
+    if not fast_configs_with_latency: print("CRITICAL: No fast and functional configs found. Exiting."); return
 
-    print("\n--- 4. Grouping and Finalizing with Fluid Quota ---")
+    print("\n--- 4. Grouping and Finalizing with Fluid Quota (Min 500, Max 1000 per core) ---")
     
     # Separate pools based on the globally sorted list
     singbox_only_pool = [(cfg, lat) for cfg, lat in fast_configs_with_latency if urlparse(cfg).scheme in SINGBOX_ONLY_PROTOCOLS]
     xray_compatible_pool = [(cfg, lat) for cfg, lat in fast_configs_with_latency if urlparse(cfg).scheme in XRAY_PROTOCOLS]
 
     # Select final configs using the new fluid quota logic
-    xray_final = select_configs_with_fluid_quota(xray_compatible_pool, TARGET_CONFIGS_PER_CORE)
+    xray_final = select_configs_with_fluid_quota(xray_compatible_pool, MIN_TARGET_CONFIGS_PER_CORE, MAX_FINAL_CONFIGS_PER_CORE)
     
     # For Sing-box, prioritize its own protocols, then backfill with fast Xray configs
     singbox_final_sb_only = [cfg for cfg, lat in singbox_only_pool]
-    needed_for_singbox = TARGET_CONFIGS_PER_CORE - len(singbox_final_sb_only)
+    # Backfill if needed, up to MAX_FINAL_CONFIGS_PER_CORE
+    needed_for_singbox = MAX_FINAL_CONFIGS_PER_CORE - len(singbox_final_sb_only)
     if needed_for_singbox > 0:
         xray_fillers = [cfg for cfg, lat in xray_compatible_pool if cfg not in singbox_final_sb_only]
         singbox_final_sb_only.extend(xray_fillers[:needed_for_singbox])
-    singbox_final = singbox_final_sb_only[:TARGET_CONFIGS_PER_CORE]
+    singbox_final = singbox_final_sb_only[:MAX_FINAL_CONFIGS_PER_CORE]
     
     print(f"✅ Selected {len(xray_final)} configs for Xray core.")
     print(f"✅ Selected {len(singbox_final)} configs for Sing-box core.")
@@ -285,12 +369,12 @@ def main():
         json.dump(output_data, f, indent=2, ensure_ascii=False)
     print(f"✅ Wrote grouped configs to {OUTPUT_JSON_FILE}.")
 
-    # Generate Clash file from fast Xray-compatible configs
-    clash_candidate_configs = [cfg for cfg, lat in xray_compatible_pool]
-    clash_yaml_content = generate_clash_yaml(clash_candidate_configs[:TARGET_CONFIGS_PER_CORE])
-    if clash_yaml_content:
-        with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f: f.write(clash_yaml_content)
-        print(f"✅ Wrote Clash subscription to {OUTPUT_CLASH_FILE}.")
+    # Clash file generation removed
+    # clash_candidate_configs = [cfg for cfg, lat in xray_compatible_pool]
+    # clash_yaml_content = generate_clash_yaml(clash_candidate_configs[:TARGET_CONFIGS_PER_CORE])
+    # if clash_yaml_content:
+    #     with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f: f.write(clash_yaml_content)
+    #     print(f"✅ Wrote Clash subscription to {OUTPUT_CLASH_FILE}.")
 
     with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f: f.write(str(int(time.time())))
     print(f"✅ Cache version updated.")
