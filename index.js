@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const DATA_URL = 'all_live_configs.json';
     const CACHE_URL = 'cache_version.txt';
     const MAX_NAME_LENGTH = 40;
-    const TEST_TIMEOUT = 5000; // Increased timeout
+    const TEST_TIMEOUT = 5000; // Increased timeout for Iran's network
     const CONCURRENT_TESTS = 15; // Concurrency limit
 
     // --- DOM ELEMENTS ---
@@ -104,48 +104,30 @@ document.addEventListener('DOMContentLoaded', () => {
             resultContainer.innerHTML = `<span class="ping-result-item" data-type="TCP">--</span><span class="ping-result-item" data-type="WS">--</span><span class="ping-result-item" data-type="WT">--</span>`;
         });
         
-        const queue = allItems.slice(); // Create a mutable copy of the items
-        let running = 0;
-
-        const runNext = async () => {
-            if (running >= CONCURRENT_TESTS || queue.length === 0) return;
-            running++;
-            const item = queue.shift();
-            const config = parseConfig(item.dataset.config);
-
-            if (config) {
+        // Concurrency Queue Logic
+        const queue = allItems.slice();
+        const runTask = async () => {
+            while (queue.length > 0) {
+                const item = queue.shift();
+                const config = parseConfig(item.dataset.config);
+                if (!config) {
+                    updateItemUI(item, 'FAIL', null);
+                    continue;
+                }
+                
                 let promises = [];
-                if (['vless', 'vmess', 'trojan', 'ss'].includes(config.protocol)) {
-                    promises.push(testBridgeTCP(config).then(res => updateItemUI(item, 'TCP', res.latency)));
-                }
-                if (config.transport === 'ws') {
-                    promises.push(testDirectWebSocket(config).then(res => updateItemUI(item, 'WS', res.latency)));
-                }
+                // Simplified Logic: Only run the most appropriate test.
                 if (['hysteria2', 'hy2', 'tuic'].includes(config.protocol)) {
                     promises.push(testDirectWebTransport(config).then(res => updateItemUI(item, 'WT', res.latency)));
+                } else { // All TCP-based protocols (vless, vmess, trojan, ss, ws)
+                    promises.push(testBridgeTCP(config).then(res => updateItemUI(item, 'TCP', res.latency)));
                 }
                 await Promise.allSettled(promises);
-            } else {
-                updateItemUI(item, 'FAIL', null);
             }
-            
-            running--;
-            runNext();
         };
 
-        for (let i = 0; i < CONCURRENT_TESTS; i++) {
-            runNext();
-        }
-        
-        // Wait for all tests to finish by checking when queue and running are both zero
-        await new Promise(resolve => {
-            const interval = setInterval(() => {
-                if (queue.length === 0 && running === 0) {
-                    clearInterval(interval);
-                    resolve();
-                }
-            }, 100);
-        });
+        const workers = Array(CONCURRENT_TESTS).fill(null).map(runTask);
+        await Promise.all(workers);
 
         // Sorting after all tests are done
         allItems.forEach(item => {
@@ -167,14 +149,19 @@ document.addEventListener('DOMContentLoaded', () => {
     async function testDirectWebTransport(config) { if ("undefined" == typeof WebTransport) return Promise.resolve({ latency: null }); return new Promise(async r => { try { const s = Date.now(), t = new WebTransport(`https://${config.host}:${config.port}`); await t.ready; r({ latency: Date.now() - s }); t.close() } catch (e) { r({ latency: null }) } }) };
 
     function updateItemUI(item, type, latency) {
+        const container = item.querySelector('.ping-result-container');
         if (type === 'FAIL') {
-            const container = item.querySelector('.ping-result-container');
             container.innerHTML = `<strong style="color:var(--ping-bad);">❌ نامعتبر</strong>`;
             return;
         }
 
         const resultEl = item.querySelector(`.ping-result-item[data-type="${type}"]`);
-        if (!resultEl) return;
+        if (!resultEl) return; // Should not happen with the new structure
+        
+        // Hide other placeholders
+        container.querySelectorAll('.ping-result-item').forEach(el => {
+            if(el !== resultEl) el.style.display = 'none';
+        });
 
         item.dataset[type.toLowerCase()] = latency;
 
@@ -190,8 +177,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT HANDLING & ACTIONS ---
     function getSubscriptionUrl(core, type) {
         const isClash = type === 'clash';
-        const clashPart = isClash ? '/clash' : '';
-        return `${WORKER_URL}/sub/public${clashPart}/${core}`;
+        if (isClash) return ''; // Public clash is disabled
+        return `${WORKER_URL}/sub/public/${core}`;
     }
 
     async function createPersonalSubscription(core, type, method) {
