@@ -1,22 +1,23 @@
-# workflow name
-name: deploy cloudflare worker
+# Workflow name
+name: Deploy Cloudflare Worker
 
 on:
-  # allows manual execution from the github actions tab
+  # Allows manual execution from the GitHub Actions tab
   workflow_dispatch:
   
-  # triggers the workflow on push events to the main branch
+  # Triggers the workflow on push events to the main branch
   push:
     branches:
       - main
     paths:
-      # ensures the workflow only runs if worker-related files have changed
+      # Ensures the workflow only runs if project files have changed
       - 'worker.js'
       - 'wrangler.toml'
-      - 'index.js' # این خط اضافه شد تا تغییرات در index.js نیز workflow را فعال کند
+      - 'index.js'
+      - 'scraper.py'
+      - 'requirements.txt'
 
-# prevents multiple instances of this workflow from running simultaneously,
-# cancelling any in-progress runs when a new one is triggered.
+# Prevents multiple instances of this workflow from running simultaneously
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -24,19 +25,38 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: deploy worker to cloudflare
+    name: Deploy Worker to Cloudflare
     
-    # restricts the workflow's permissions to read-only for security
+    # Restricts the workflow's permissions to read-only for security
     permissions:
       contents: read
       
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v4 # از uses: actions/checkout@v4 استفاده کردم چون v4 پایدارتر و جدیدتر است
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: deploy worker to cloudflare
-        # uses the latest stable v3 release of the wrangler action
+      # --- بخش جدید برای آماده‌سازی و اجرای اسکریپت پایتون ---
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # یا نسخه‌ای که با پروژه شما سازگار است
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run Scraper to Generate Data
+        run: python scraper.py
+        env:
+          # اگر اسکریپت شما به متغیرهای محیطی نیاز دارد، آنها را اینجا تعریف کنید
+          # مثال:
+          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ANY_OTHER_SECRET: ${{ secrets.ANY_OTHER_SECRET }}
+      # --- پایان بخش پایتون ---
+
+      - name: Deploy Worker to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.cloudflare_api_token }} # camelCase برای ورودی‌های اکشن
-          accountId: ${{ secrets.cloudflare_account_id }} # camelCase برای ورودی‌های اکشن
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
