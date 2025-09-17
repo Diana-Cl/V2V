@@ -1,45 +1,38 @@
 import { connect } from 'cloudflare:sockets';
 
 // --- CONFIGURATION ---
-const SUBSCRIPTION_TTL = 48 * 60 * 60; // 48 hours in seconds
-const READY_SUB_COUNT = 30;
+const SUBSCRIPTION_TTL = 48 * 60 * 60; // 48 hours
 const MAX_NAME_LENGTH = 40;
-const PROBE_TIMEOUT_MS = 5000;
+const KV_LIVE_CONFIGS_KEY = 'all_live_configs.json';
+const KV_CACHE_VERSION_KEY = 'cache_version.txt';
 
 // --- HEADERS ---
-const CORS_HEADERS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, User-Agent' };
-const JSON_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'application/json;charset=utf-8' };
+const CORS_HEADERS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
+const JSON_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
 const TEXT_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'text/plain;charset=utf-8' };
 const YAML_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'text/yaml;charset=utf-8' };
 
 // --- MAIN FETCH HANDLER ---
 export default {
     async fetch(request, env) {
-        if (request.method === 'OPTIONS') {
-            return new Response(null, { headers: CORS_HEADERS });
-        }
+        if (request.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
         const url = new URL(request.url);
 
         try {
             if (url.pathname === '/tcp-probe' && request.method === 'POST') {
-                return await handleTcpProbe(request);
+                return handleTcpProbe(request);
             }
             if (url.pathname === '/api/subscribe' && request.method === 'POST') {
-                return await handleSubscribeRequest(request, env);
-            }
-            const publicSubMatch = url.pathname.match(/^\/sub\/public\/(xray|singbox)$/);
-            if (publicSubMatch) {
-                const core = publicSubMatch[1];
-                return await handleGetPublicSubscription(core, false, env);
+                return handleSubscribeRequest(request, env);
             }
             const personalSubMatch = url.pathname.match(/^\/sub\/(clash\/)?([0-9a-f-]+)$/);
             if (personalSubMatch) {
                 const isClash = !!personalSubMatch[1];
                 const uuid = personalSubMatch[2];
-                return await handleGetPersonalSubscription(uuid, isClash, env);
+                return handleGetPersonalSubscription(uuid, isClash, env);
             }
             if (url.pathname === '/cache-version') {
-                return await handleGetCacheVersion(env);
+                return handleGetCacheVersion(env);
             }
             return new Response('V2V API Worker is operational.', { headers: CORS_HEADERS });
         } catch (error) {
@@ -51,23 +44,25 @@ export default {
 
 // --- TCP PROBE LOGIC ---
 async function handleTcpProbe(request) {
+    let socket;
     try {
         const { host, port } = await request.json();
         if (!host || !port) {
             return new Response(JSON.stringify({ error: 'Invalid host or port' }), { status: 400, headers: JSON_HEADERS });
         }
         const startTime = Date.now();
-        const socket = connect({ hostname: host, port: port }, { allowHalfOpen: false });
+        socket = connect({ hostname: host, port: port }, { allowHalfOpen: false });
         
-        // Race connection against a timeout
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out')), PROBE_TIMEOUT_MS));
-        await Promise.race([socket.opened, timeoutPromise]);
-        
+        await socket.opened;
         const latency = Date.now() - startTime;
-        await socket.close();
+        
+        if (latency < 10) throw new Error("Unrealistic latency");
+        
         return new Response(JSON.stringify({ latency }), { headers: JSON_HEADERS });
     } catch (e) {
         return new Response(JSON.stringify({ latency: null, error: e.message }), { headers: JSON_HEADERS });
+    } finally {
+        if (socket) await socket.close().catch(() => {});
     }
 }
 
@@ -75,29 +70,10 @@ async function handleTcpProbe(request) {
 async function handleSubscribeRequest(request, env) {
     if (!env.V2V_KV) return new Response(JSON.stringify({ error: 'KV Namespace not configured.' }), { status: 500, headers: JSON_HEADERS });
     const { configs } = await request.json();
-    if (!Array.isArray(configs) || configs.length === 0) {
-        return new Response(JSON.stringify({ error: "'configs' must be a non-empty array." }), { status: 400, headers: JSON_HEADERS });
-    }
+    if (!Array.isArray(configs) || configs.length === 0) return new Response(JSON.stringify({ error: "'configs' must be a non-empty array." }), { status: 400, headers: JSON_HEADERS });
     const subUuid = crypto.randomUUID();
     await env.V2V_KV.put(`sub:${subUuid}`, JSON.stringify(configs), { expirationTtl: SUBSCRIPTION_TTL });
     return new Response(JSON.stringify({ uuid: subUuid }), { status: 201, headers: JSON_HEADERS });
-}
-
-async function handleGetPublicSubscription(core, isClash, env) {
-    if (isClash) return new Response('Public Clash subscription is disabled.', { status: 403, headers: TEXT_HEADERS });
-    if (!env.V2V_KV) return new Response('KV Namespace not available.', { status: 500, headers: TEXT_HEADERS });
-    
-    const liveDataRaw = await env.V2V_KV.get('all_live_configs.json');
-    if (!liveDataRaw) return new Response('Live configs not found in KV.', { status: 404, headers: TEXT_HEADERS });
-    
-    const liveData = JSON.parse(liveDataRaw);
-    const coreConfigs = liveData[core] || {};
-    const allFlatConfigs = Object.values(coreConfigs).flat();
-    const topConfigs = allFlatConfigs.slice(0, READY_SUB_COUNT);
-
-    if (topConfigs.length === 0) return new Response(`No public configs available for core: ${core}`, { status: 404, headers: TEXT_HEADERS });
-    
-    return generateSubscriptionResponse(topConfigs, isClash);
 }
 
 async function handleGetPersonalSubscription(uuid, isClash, env) {
@@ -105,7 +81,7 @@ async function handleGetPersonalSubscription(uuid, isClash, env) {
     
     const [userSubRaw, liveDataRaw] = await Promise.all([
         env.V2V_KV.get(`sub:${uuid}`),
-        env.V2V_KV.get('all_live_configs.json')
+        env.V2V_KV.get(KV_LIVE_CONFIGS_KEY)
     ]);
 
     if (!userSubRaw) return new Response('Subscription not found or has expired.', { status: 404, headers: TEXT_HEADERS });
@@ -119,7 +95,6 @@ async function handleGetPersonalSubscription(uuid, isClash, env) {
 
     let healedConfigs = userConfigs.filter(cfg => allLiveConfigsSet.has(cfg));
     const deadCount = userConfigs.length - healedConfigs.length;
-
     if (deadCount > 0) {
         const userConfigsSet = new Set(userConfigs);
         const replacements = [...allLiveConfigsSet].filter(cfg => !userConfigsSet.has(cfg));
@@ -135,8 +110,8 @@ async function handleGetPersonalSubscription(uuid, isClash, env) {
 
 async function handleGetCacheVersion(env) {
     if (!env.V2V_KV) return new Response('KV Namespace not available.', { status: 500, headers: TEXT_HEADERS });
-    const version = await env.V2V_KV.get('cache_version.txt');
-    return new Response(version || Date.now() / 1000, { headers: TEXT_HEADERS });
+    const version = await env.V2V_KV.get(KV_CACHE_VERSION_KEY);
+    return new Response(version || Math.floor(Date.now() / 1000).toString(), { headers: TEXT_HEADERS });
 }
 
 function generateSubscriptionResponse(configs, isClash) {
@@ -154,7 +129,8 @@ function generateSubscriptionResponse(configs, isClash) {
 function parseProxyForClash(configStr) {
     try {
         const url = new URL(configStr);
-        let name = decodeURIComponent(url.hash.substring(1) || "V2V Config").trim().substring(0, MAX_NAME_LENGTH);
+        let name = decodeURIComponent(url.hash.substring(1) || "V2V Config").trim();
+        name = `V2V | ${name.substring(0, MAX_NAME_LENGTH)}`;
         const base = { name, 'skip-cert-verify': true };
         const params = new URLSearchParams(url.search);
 
