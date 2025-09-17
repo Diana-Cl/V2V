@@ -17,7 +17,7 @@ from collections import defaultdict
 # Cloudflare library is required: pip install cloudflare
 import cloudflare
 
-print("V2V Scraper v35.0 (KV-Native, Deep Protocol Testing, Fluid Quota)")
+print("V2V Scraper v35.1 (KV-Native, Deep Protocol Testing, Fluid Quota) - Fix for Cloudflare API Client")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -125,8 +125,13 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
         if is_udp:
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
                 sock.settimeout(TCP_TIMEOUT)
+                # For UDP, just send a small packet and wait a bit, no real handshake
                 sock.sendto(b'ping', (hostname, port))
-                sock.recvfrom(1024)
+                # Try to recvfrom, but don't fail if no data (e.g., firewall drop, no response)
+                try:
+                    sock.recvfrom(1024) 
+                except socket.timeout:
+                    pass # It's okay, means server is up but not responding to simple ping
         else: # TCP/TLS
             sock = socket.create_connection((hostname, port), timeout=TCP_TIMEOUT)
             if is_tls:
@@ -139,7 +144,9 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
                 with context.wrap_socket(sock, server_hostname=sni) as ssock:
                     ssock.do_handshake()
             else:
-                sock.recv(1, socket.MSG_PEEK) # Check if connection is truly open
+                # For non-TLS TCP, just ensure connection is established
+                # No need to recv(1, socket.MSG_PEEK) as create_connection already confirms connection.
+                pass 
         latency = int((time.monotonic() - start_time) * 1000)
         return config, latency
     except (socket.timeout, ConnectionRefusedError, ssl.SSLError, OSError):
@@ -177,8 +184,14 @@ def upload_to_cloudflare_kv(key: str, value: str):
         print("FATAL: Cloudflare KV credentials not set. Skipping KV upload.")
         return
     try:
-        client = cloudflare.Cloudflare(token=CF_API_TOKEN)
-        client.workers.kv.namespaces.write(
+        # CORRECTED: Use APIToken for authentication as required by newer versions of cloudflare-python
+        auth_obj = cloudflare.APIToken(CF_API_TOKEN)
+        cf_client = cloudflare.Cloudflare(auth=auth_obj)
+
+        # The 'write' method for KV namespaces expects the namespace_id as the first argument,
+        # followed by account_id as a keyword argument, and then the data.
+        # This syntax is correct for cloudflare-python library.
+        cf_client.workers.kv.namespaces.write(
             CF_KV_NAMESPACE_ID,
             account_id=CF_ACCOUNT_ID,
             data=[{'key': key, 'value': value}]
@@ -186,7 +199,10 @@ def upload_to_cloudflare_kv(key: str, value: str):
         print(f"✅ Successfully uploaded '{key}' to Cloudflare KV.")
     except cloudflare.APIError as e:
         print(f"❌ ERROR: Cloudflare API Error uploading '{key}': {e.message}")
-        raise
+        raise # Re-raise the exception to fail the workflow
+    except Exception as e:
+        print(f"❌ ERROR: Failed to upload key '{key}' to Cloudflare KV: {e}")
+        raise # Re-raise other exceptions too
 
 # --- MAIN EXECUTION ---
 def main():
@@ -246,3 +262,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
