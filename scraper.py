@@ -21,7 +21,7 @@ print("v2v scraper v35.3 (kv-native, deep protocol testing, fluid quota) - final
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
+SOURCES_FILE = os.path.join(BASE_DIR, "sources.json") # <--- این متغیر گلوبال است
 
 XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
 SINGBOX_ONLY_PROTOCOLS = {'hysteria2', 'hy2', 'tuic'}
@@ -188,6 +188,11 @@ def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: 
 
 # --- Cloudflare KV Upload ---
 def upload_to_cloudflare_kv(key: str, value: str):
+    # Ensure environment variables are loaded for Cloudflare
+    cf_api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+    cf_account_id = os.environ.get('CLOUDFLARE_ACCOUNT_ID')
+    cf_kv_namespace_id = os.environ.get('CLOUDFLARE_KV_NAMESPACE_ID')
+
     if not all([cf_api_token, cf_account_id, cf_kv_namespace_id]):
         raise ValueError("Cloudflare API token, account ID, or KV namespace ID is missing from environment variables.")
     try:
@@ -210,44 +215,47 @@ def upload_to_cloudflare_kv(key: str, value: str):
 def main():
     print("--- 1. LOADING SOURCES ---")
     try:
-        with open(sources_file, 'r', encoding='utf-8') as f:
+        # استفاده صحیح از متغیر گلوبال SOURCES_FILE
+        with open(SOURCES_FILE, 'r', encoding='utf-8') as f: # <--- اینجا اصلاح شد
             sources = json.load(f)
         print(f"✅ Loaded {len(sources.get('static', []))} static sources. GitHub limit: {sources.get('github_search_limit', 50)}.")
     except Exception as e:
-        print(f"FATAL: Cannot load sources.json: {e}"); return
+        print(f"FATAL: Cannot load {SOURCES_FILE}: {e}"); return # <--- پیام خطا هم دقیق‌تر شد
 
     print("\n--- 2. FETCHING CONFIGS ---")
     with ThreadPoolExecutor(max_workers=2) as executor:
         static = executor.submit(fetch_from_sources, sources.get("static", []), False)
-        dynamic = executor.submit(fetch_from_sources, [], True, github_pat, sources.get("github_search_limit", 50))
+        # GITHUB_PAT هم باید به عنوان یک متغیر محیطی از `os.environ.get('GH_PAT')` خوانده شود.
+        # اطمینان حاصل شود که این متغیر در GitHub Actions به درستی تنظیم شده باشد.
+        dynamic = executor.submit(fetch_from_sources, [], True, os.environ.get('GH_PAT'), sources.get("github_search_limit", 50))
         all_configs = static.result().union(dynamic.result())
     print(f"📊 Total unique configs found: {len(all_configs)}")
     if not all_configs: print("FATAL: No configs found."); return
 
-    print(f"\n--- 3. PERFORMING DEEP PROTOCOL HANDSHAKE TEST (Max latency: {max_latency_ms}ms) ---")
+    print(f"\n--- 3. PERFORMING DEEP PROTOCOL HANDSHAKE TEST (Max latency: {MAX_LATENCY_MS}ms) ---") # <--- MAX_LATENCY_MS اصلاح شد
     fast_configs = []
-    with ThreadPoolExecutor(max_workers=max_test_workers) as executor:
-        futures = {executor.submit(test_full_protocol_handshake, cfg): cfg for cfg in list(all_configs)[:max_configs_to_test]}
+    with ThreadPoolExecutor(max_workers=MAX_TEST_WORKERS) as executor: # <--- MAX_TEST_WORKERS اصلاح شد
+        futures = {executor.submit(test_full_protocol_handshake, cfg): cfg for cfg in list(all_configs)[:MAX_CONFIGS_TO_TEST]} # <--- MAX_CONFIGS_TO_TEST اصلاح شد
         for i, future in enumerate(as_completed(futures)):
             if (i + 1) % 500 == 0: print(f"  Tested {i+1}/{len(futures)} configs...")
             result = future.result()
-            if result and result[1] <= max_latency_ms:
+            if result and result[1] <= MAX_LATENCY_MS: # <--- MAX_LATENCY_MS اصلاح شد
                 fast_configs.append(result)
     print(f"🏆 Found {len(fast_configs)} fast configs.")
     if not fast_configs: print("FATAL: No fast configs found."); return
 
     print("\n--- 4. GROUPING AND FINALIZING WITH FLUID QUOTA ---")
-    singbox_pool = [(c, l) for c, l in fast_configs if urlparse(c).scheme.lower() in singbox_only_protocols]
-    xray_pool = [(c, l) for c, l in fast_configs if urlparse(c).scheme.lower() in xray_protocols]
+    singbox_pool = [(c, l) for c, l in fast_configs if urlparse(c).scheme.lower() in SINGBOX_ONLY_PROTOCOLS] # <--- SINGBOX_ONLY_PROTOCOLS اصلاح شد
+    xray_pool = [(c, l) for c, l in fast_configs if urlparse(c).scheme.lower() in XRAY_PROTOCOLS] # <--- XRAY_PROTOCOLS اصلاح شد
     
-    xray_final = select_configs_with_fluid_quota(xray_pool, min_target_configs_per_core, max_final_configs_per_core)
+    xray_final = select_configs_with_fluid_quota(xray_pool, MIN_TARGET_CONFIGS_PER_CORE, MAX_FINAL_CONFIGS_PER_CORE) # <--- CONSTS اصلاح شد
     
     singbox_initial = [cfg for cfg, _ in singbox_pool]
-    needed_for_singbox = max_final_configs_per_core - len(singbox_initial)
+    needed_for_singbox = MAX_FINAL_CONFIGS_PER_CORE - len(singbox_initial) # <--- CONSTS اصلاح شد
     if needed_for_singbox > 0:
         fillers = [cfg for cfg, _ in xray_pool if cfg not in singbox_initial]
         singbox_initial.extend(fillers[:needed_for_singbox])
-    singbox_final = singbox_initial[:max_final_configs_per_core]
+    singbox_final = singbox_initial[:MAX_FINAL_CONFIGS_PER_CORE] # <--- CONSTS اصلاح شد
 
     print(f"✅ Selected {len(xray_final)} configs for Xray.")
     print(f"✅ Selected {len(singbox_final)} configs for Sing-Box.")
@@ -263,8 +271,8 @@ def main():
     output = {"xray": group_by_protocol(xray_final), "singbox": group_by_protocol(singbox_final)}
 
     print("\n--- 5. UPLOADING TO CLOUDFLARE KV ---")
-    upload_to_cloudflare_kv(kv_live_configs_key, json.dumps(output, indent=2, ensure_ascii=False))
-    upload_to_cloudflare_kv(kv_cache_version_key, str(int(time.time())))
+    upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json.dumps(output, indent=2, ensure_ascii=False)) # <--- KV_LIVE_CONFIGS_KEY اصلاح شد
+    upload_to_cloudflare_kv(KV_CACHE_VERSION_KEY, str(int(time.time()))) # <--- KV_CACHE_VERSION_KEY اصلاح شد
     
     print("\n--- PROCESS COMPLETED SUCCESSFULLY ---")
 
