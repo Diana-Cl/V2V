@@ -10,14 +10,16 @@ import hashlib
 import ssl
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
-from github import Github, Auth
+from github import Github, Auth # This Auth is for PyGithub, not Cloudflare
 from typing import Optional, Set, List, Dict, Tuple
 from collections import defaultdict
 
 # Cloudflare library is required: pip install cloudflare
-import cloudflare
+# CORRECTED: Import specific classes from the Cloudflare package
+from Cloudflare import Cloudflare, Auth as CFAuth # Renamed Auth to CFAuth to avoid conflict with PyGithub.Auth
+from Cloudflare import exceptions as CFExceptions # Import exceptions for specific error handling
 
-print("V2V Scraper v35.1 (KV-Native, Deep Protocol Testing, Fluid Quota) - Fix for Cloudflare API Client")
+print("V2V Scraper v35.2 (KV-Native, Deep Protocol Testing, Fluid Quota) - Final Fix for Cloudflare API Client")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -75,8 +77,9 @@ def fetch_from_sources(sources: list, is_github: bool, pat: str = None, limit: i
             print("WARNING: GitHub PAT not found. Skipping dynamic search.")
             return set()
         try:
-            auth = Auth.Token(pat)
-            g = Github(auth=auth, timeout=30)
+            # Use PyGithub's Auth for GitHub operations
+            gh_auth = Auth.Token(pat)
+            g = Github(auth=gh_auth, timeout=30)
             query = " OR ".join(VALID_PROTOCOLS) + " extension:txt extension:md -user:mahdibland"
             results = g.search_code(query, order='desc', sort='indexed')
             count = 0
@@ -143,10 +146,8 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
                 elif protocol == 'vmess' and 'sni' in locals().get('decoded', {}): sni = decoded['sni']
                 with context.wrap_socket(sock, server_hostname=sni) as ssock:
                     ssock.do_handshake()
-            else:
-                # For non-TLS TCP, just ensure connection is established
-                # No need to recv(1, socket.MSG_PEEK) as create_connection already confirms connection.
-                pass 
+            # For non-TLS TCP, just ensure connection is established.
+            # No need to recv(1, socket.MSG_PEEK) as create_connection already confirms connection.
         latency = int((time.monotonic() - start_time) * 1000)
         return config, latency
     except (socket.timeout, ConnectionRefusedError, ssl.SSLError, OSError):
@@ -182,24 +183,26 @@ def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: 
 def upload_to_cloudflare_kv(key: str, value: str):
     if not all([CF_API_TOKEN, CF_ACCOUNT_ID, CF_KV_NAMESPACE_ID]):
         print("FATAL: Cloudflare KV credentials not set. Skipping KV upload.")
-        return
+        raise ValueError("Cloudflare API Token, Account ID, or KV Namespace ID is missing from environment variables.")
     try:
-        # CORRECTED: Use APIToken for authentication as required by newer versions of cloudflare-python
-        auth_obj = cloudflare.APIToken(CF_API_TOKEN)
-        cf_client = cloudflare.Cloudflare(auth=auth_obj)
+        # Use CFAuth (aliased from Cloudflare.Auth) for authentication
+        auth_obj = CFAuth.APIToken(CF_API_TOKEN)
+        # Use Cloudflare (aliased from Cloudflare.Cloudflare) for the client
+        cf_client = Cloudflare(auth=auth_obj)
 
-        # The 'write' method for KV namespaces expects the namespace_id as the first argument,
-        # followed by account_id as a keyword argument, and then the data.
-        # This syntax is correct for cloudflare-python library.
         cf_client.workers.kv.namespaces.write(
             CF_KV_NAMESPACE_ID,
             account_id=CF_ACCOUNT_ID,
             data=[{'key': key, 'value': value}]
         )
         print(f"✅ Successfully uploaded '{key}' to Cloudflare KV.")
-    except cloudflare.APIError as e:
-        print(f"❌ ERROR: Cloudflare API Error uploading '{key}': {e.message}")
-        raise # Re-raise the exception to fail the workflow
+    except CFExceptions.CloudflareAPIError as e:
+        print(f"❌ ERROR: Cloudflare API Error uploading '{key}': Code {e.code} - {e.message}")
+        if e.code == 10000:
+            print("HINT: Ensure the CLOUDFLARE_API_TOKEN has 'Worker KV Storage Write' permission and is scoped to the correct account.")
+        if e.code == 10014:
+            print("HINT: Double-check that CLOUDFLARE_KV_NAMESPACE_ID is correct for your KV namespace and within the specified account.")
+        raise # Re-raise the exception to fail the workflow cleanly
     except Exception as e:
         print(f"❌ ERROR: Failed to upload key '{key}' to Cloudflare KV: {e}")
         raise # Re-raise other exceptions too
@@ -262,4 +265,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
