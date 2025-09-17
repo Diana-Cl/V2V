@@ -1,11 +1,11 @@
-name: Deploy Cloudflare Worker
+name: deploy cloudflare worker
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Manual trigger
   push:
     branches:
       - main
-    paths:
+    paths: # Only trigger if worker-related files change
       - 'worker.js'
       - 'wrangler.toml'
 
@@ -16,16 +16,24 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy Worker to Cloudflare
+    name: deploy worker to cloudflare
     permissions:
       contents: read
+      # id-token: write # Required for OIDC, but wrangler-action supports direct API token
       
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: checkout repository
+        uses: actions/checkout@v4 # Updated to v4 for latest features
 
-      - name: Deploy Worker to Cloudflare
+      - name: deploy worker to cloudflare
+        # Using the latest major version (v3) of wrangler-action
+        # Ensure that CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_KV_NAMESPACE_ID
+        # are correctly configured in your Cloudflare project associated with wrangler.toml.
+        # Wrangler will automatically use account_id from wrangler.toml if available.
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Use exact secret names
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # Use exact secret names
+          # Add extra environment variables for the worker script itself if needed
+          # But for KV bindings, wrangler.toml is the preferred method
+          # command: 'deploy --minify --environment production' # Example for specific deployment
