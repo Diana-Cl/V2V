@@ -1,4 +1,4 @@
-# Workflow name
+# Workflow Name
 name: Deploy Cloudflare Worker
 
 on:
@@ -10,7 +10,7 @@ on:
     branches:
       - main
     paths:
-      # Ensures the workflow only runs if project files have changed
+      # Ensures the workflow only runs if specified files have changed
       - 'worker.js'
       - 'wrangler.toml'
       - 'index.js'
@@ -35,11 +35,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # --- بخش جدید برای آماده‌سازی و اجرای اسکریپت پایتون ---
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # یا نسخه‌ای که با پروژه شما سازگار است
+          python-version: '3.11' # Use '3.12' if your scraper specifically needs 3.12.x
 
       - name: Install Python Dependencies
         run: |
@@ -48,12 +47,11 @@ jobs:
       
       - name: Run Scraper to Generate Data
         run: python scraper.py
-        env:
-          # اگر اسکریپت شما به متغیرهای محیطی نیاز دارد، آنها را اینجا تعریف کنید
-          # مثال:
-          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # ANY_OTHER_SECRET: ${{ secrets.ANY_OTHER_SECRET }}
-      # --- پایان بخش پایتون ---
+        # If your scraper.py needs specific environment variables (e.g., secrets), 
+        # uncomment and list them here, referencing your GitHub secrets.
+        # Example:
+        # env:
+        #   YOUR_API_KEY: ${{ secrets.YOUR_API_KEY }}
 
       - name: Deploy Worker to Cloudflare
         uses: cloudflare/wrangler-action@v3
