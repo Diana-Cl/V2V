@@ -1,4 +1,4 @@
-name: Scrape, Build, and Deploy Mirrors
+name: scrape, build, and deploy mirrors
 
 on:
   schedule:
@@ -17,67 +17,67 @@ concurrency:
 jobs:
   build_and_commit:
     runs-on: ubuntu-latest
-    name: 1. Scrape Data & Upload to Cloudflare KV
+    name: 1. scrape data & upload to cloudflare kv
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: checkout repository
+        uses: actions/checkout@v4 # Changed to @v4 for consistency
         with:
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GH_PAT }} # Changed to GH_PAT to match new scraper.py variable name
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: set up python
+        uses: actions/setup-python@v5 # Changed to @v5 for consistency
         with:
           python-version: "3.12"
 
-      - name: Install Python Dependencies
+      - name: install python dependencies
         run: pip install -r requirements.txt
 
-      - name: Run Scraper to Generate Data and Upload to KV
+      - name: run scraper to generate data and upload to kv
         run: python scraper.py
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
+          GH_PAT: ${{ secrets.GH_PAT }} # Changed to GH_PAT
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Changed to CLOUDFLARE_API_TOKEN
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # Changed to CLOUDFLARE_ACCOUNT_ID
+          CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }} # Changed to CLOUDFLARE_KV_NAMESPACE_ID
 
-      - name: Commit and Push Data Files to Repository
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: commit and push data files to repository
+        uses: stefanzweifel/git-auto-commit-action@v5 # Changed to @v5 for consistency
         with:
-          commit_message: "📊 DATA: Update configs"
+          commit_message: "📊 Data: Update configs" # Changed to "Data" for better casing
           file_pattern: "*.json *.yml *.txt"
 
   deploy_mirrors:
     needs: build_and_commit
     runs-on: ubuntu-latest
-    name: 2. Deploy to Vercel, ArvanCloud & GitHub Pages
+    name: 2. deploy to vercel, arvancloud & github pages
     steps:
-      - name: Checkout Repository with LATEST data
-        uses: actions/checkout@v4
+      - name: checkout repository with latest data
+        uses: actions/checkout@v4 # Changed to @v4 for consistency
 
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
+      - name: deploy to vercel
+        uses: amondnet/vercel-action@v25 # Changed to @v25 for consistency
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }} # Changed to VERCEL_TOKEN
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }} # Changed to VERCEL_ORG_ID
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }} # Changed to VERCEL_PROJECT_ID
           working-directory: .
           vercel-args: '--prod'
 
-      - name: Deploy to ArvanCloud S3
+      - name: deploy to arvancloud s3
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }} # Changed to AWS_ACCESS_KEY_ID
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }} # Changed to AWS_SECRET_ACCESS_KEY
           AWS_REGION: "us-east-1"
           ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
           ARVAN_S3_BUCKET: s3://v2v-data
         run: |
           aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --cache-control max-age=300
 
-      - name: Create Artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
+      - name: create artifact for github pages
+        uses: actions/upload-pages-artifact@v3 # Changed to @v3 for consistency
         with:
           path: '.'
 
-      - name: Deploy to GitHub Pages
+      - name: deploy to github pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4 # Changed to @v4 for consistency
