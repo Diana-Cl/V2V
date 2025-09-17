@@ -5,7 +5,7 @@ import os
 import json
 import re
 import time
-import yaml
+import yaml # Only for generate_clash_yaml, which is not used for public output anymore
 import socket
 import hashlib
 import ssl
@@ -16,14 +16,16 @@ from typing import Optional, Set, List, Dict, Tuple
 from collections import defaultdict
 import itertools
 
+# !!! IMPORTANT: Ensure Cloudflare library is installed: pip install cloudflare !!!
+import Cloudflare # ADDED: Import Cloudflare library
+
 print("INFO: Initializing V2V Scraper v33.1 (Deep Protocol Testing & Flexible Quota)...")
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
-OUTPUT_JSON_FILE = os.path.join(BASE_DIR, "all_live_configs.json")
-# OUTPUT_CLASH_FILE = os.path.join(BASE_DIR, "clash_subscription.yml") # Removed
-CACHE_VERSION_FILE = os.path.join(BASE_DIR, "cache_version.txt")
+# OUTPUT_JSON_FILE = os.path.join(BASE_DIR, "all_live_configs.json") # REMOVED: Will upload to KV
+# CACHE_VERSION_FILE = os.path.join(BASE_DIR, "cache_version.txt") # REMOVED: Will upload to KV
 
 XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
 SINGBOX_ONLY_PROTOCOLS = {'hysteria2', 'hy2', 'tuic'}
@@ -38,6 +40,16 @@ MAX_TEST_WORKERS = 200
 TCP_TIMEOUT = 4  # Increased to 4 seconds for deeper testing
 MAX_LATENCY_MS = 5000
 MAX_NAME_LENGTH = 40
+
+# --- CLOUDFLARE KV CONFIGURATION --- # ADDED
+CF_EMAIL = os.environ.get('CLOUDFLARE_EMAIL') # Optional if using API Token with Account ID
+CF_API_TOKEN = os.environ.get('CLOUDFLARE_API_TOKEN')
+CF_ACCOUNT_ID = os.environ.get('CLOUDFLARE_ACCOUNT_ID')
+CF_KV_NAMESPACE_ID = os.environ.get('CLOUDFLARE_KV_V2V_ID') # Using a more specific name for clarity
+
+KV_LIVE_CONFIGS_KEY = 'all_live_configs'
+KV_CACHE_VERSION_KEY = 'cache_version'
+
 
 # --- HELPER FUNCTIONS (UNCHANGED) ---
 def decode_base64_content(content: str) -> str:
@@ -91,6 +103,7 @@ def fetch_from_sources(sources: list, is_github: bool, pat: str = None, limit: i
 
 # parse_proxy_for_clash and generate_clash_yaml are kept for internal consistency
 # but are NOT used for public clash file generation in this script anymore.
+# They are included for completeness if needed for other purposes but won't affect KV upload.
 def parse_proxy_for_clash(config: str) -> Optional[Dict]:
     try:
         parsed_url = urlparse(config)
@@ -167,13 +180,13 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
             # No specific handshake for vmess, just check connection
         elif protocol in ['vless', 'trojan', 'ss']:
             hostname = parsed_url.hostname
-            port = parsed_url.port
+            port = int(parsed_url.port) # Ensure port is int
             params = dict(p.split('=', 1) for p in parsed_url.query.split('&') if '=' in p)
-            is_tls = params.get('security') == 'tls' or protocol == 'trojan' # Trojan implies TLS
+            is_tls = (params.get('security') == 'tls' or protocol == 'trojan' or port == 443) # Trojan implies TLS, port 443 implies TLS
         elif protocol in SINGBOX_ONLY_PROTOCOLS:
             # For UDP-based protocols, perform a basic UDP check
             hostname = parsed_url.hostname
-            port = parsed_url.port
+            port = int(parsed_url.port) # Ensure port is int
             if not all([hostname, port]): return None
             
             start_time = time.monotonic()
@@ -182,7 +195,15 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
                 # Send a small dummy packet
                 sock.sendto(b'ping', (hostname, port))
                 # Wait for a response (if any), indicating the port is active
-                sock.recvfrom(1024) 
+                # Using select/poll might be more robust than recvfrom directly for just checking "reachability"
+                # For simplicity, a non-blocking recvfrom after sendto is used to see if an error occurs
+                try:
+                    sock.recvfrom(1024) 
+                except socket.timeout:
+                    pass # It's okay if no response for UDP, just want to see if it's reachable
+                except Exception as udp_e:
+                    # print(f"DEBUG: UDP check failed for {hostname}:{port}. Reason: {udp_e}")
+                    return None
             end_time = time.monotonic()
             latency_ms = int((end_time - start_time) * 1000)
             return config, latency_ms
@@ -201,9 +222,6 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
             with context.wrap_socket(sock, server_hostname=hostname) as ssock:
                 # Attempt a read to see if the TLS handshake completes
                 ssock.do_handshake() 
-                # For VLESS, VMess, Trojan after TLS, we might send a small probe
-                # This part can be enhanced with actual protocol-specific probes if needed
-                # For now, successful TLS handshake is a strong indicator
                 end_time = time.monotonic()
                 latency_ms = int((end_time - start_time) * 1000)
                 return config, latency_ms
@@ -237,55 +255,64 @@ def select_configs_with_fluid_quota(configs_with_latency: List[Tuple[str, int]],
     protocol_iterators = {protocol: iter(configs) for protocol, configs in grouped_by_protocol.items()}
     
     # First pass: try to reach min_target_count ensuring diversity
-    for _ in range(min_target_count * len(protocol_iterators)): # Max iterations to fill min_target
-        added_in_this_round = 0
-        for protocol in protocol_iterators:
-            try:
-                next_config = next(protocol_iterators[protocol])
-                if next_config not in final_configs:
-                    final_configs.append(next_config)
-                    added_in_this_round += 1
-                if len(final_configs) >= min_target_count:
-                    break # Reached min target, can start filling up to max
-            except StopIteration:
-                continue
-        if len(final_configs) >= min_target_count or added_in_this_round == 0:
-            break
-            
-    # Second pass: continue adding up to max_final_count
-    if len(final_configs) < max_final_count:
-        # Re-initialize iterators to continue from where they left off or from start if exhausted
-        protocol_iterators = {protocol: iter(configs) for protocol, configs in grouped_by_protocol.items()}
-        # Advance iterators to skip already added configs
-        for cfg_already_added in final_configs:
-            proto_of_added = urlparse(cfg_already_added).scheme
-            if proto_of_added == 'hysteria2': proto_of_added = 'hy2'
-            try:
-                # Find and skip this config in its iterator
-                for _ in range(len(grouped_by_protocol[proto_of_added])): # max possible iteration to find it
-                    next_cfg_in_iter = next(protocol_iterators[proto_of_added])
-                    if next_cfg_in_iter == cfg_already_added:
-                        break
-            except StopIteration:
-                pass # This iterator might be exhausted
+    # This loop ensures we add at least one from each protocol available before hitting min_target
+    # and prioritizes filling up to min_target_count
+    current_protocol_index = 0
+    all_protocols = list(protocol_iterators.keys())
+    while len(final_configs) < min_target_count:
+        if not all_protocols: break # No protocols left
+        protocol = all_protocols[current_protocol_index % len(all_protocols)]
+        try:
+            next_config = next(protocol_iterators[protocol])
+            if next_config not in final_configs: # Ensure no duplicates if iterators overlap
+                final_configs.append(next_config)
+        except StopIteration:
+            # If a protocol is exhausted, remove it from the list for this round
+            all_protocols.pop(current_protocol_index % len(all_protocols))
+            if not all_protocols: break # All protocols exhausted
+            current_protocol_index -= 1 # Adjust index as an item was removed
 
-        while len(final_configs) < max_final_count:
-            added_in_this_round = 0
-            for protocol in protocol_iterators:
-                try:
-                    next_config = next(protocol_iterators[protocol])
-                    if next_config not in final_configs:
-                        final_configs.append(next_config)
-                        added_in_this_round += 1
-                    if len(final_configs) >= max_final_count:
-                        break
-                except StopIteration:
-                    continue # This protocol group is exhausted
-            
-            if added_in_this_round == 0:
-                break # All iterators are exhausted or no new configs to add
+        current_protocol_index += 1
+        if len(final_configs) >= max_final_count: # Safety break if somehow max is hit early
+            break
+
+    # Second pass: continue adding up to max_final_count, less strict on diversity after min_target
+    if len(final_configs) < max_final_count:
+        # Reset iterators or ensure they continue from where they left off
+        # A simpler approach is to iterate over all remaining, sorted configs
+        remaining_configs = [cfg for cfg, _ in configs_with_latency if cfg not in final_configs]
+        for cfg in remaining_configs:
+            if len(final_configs) >= max_final_count:
+                break
+            final_configs.append(cfg)
 
     return final_configs[:max_final_count]
+
+
+# --- CLOUDFLARE KV UPLOAD FUNCTION --- # ADDED
+def upload_to_cloudflare_kv(key: str, value: str):
+    if not all([CF_API_TOKEN, CF_ACCOUNT_ID, CF_KV_NAMESPACE_ID]):
+        print("WARNING: Cloudflare KV credentials not fully set (API Token, Account ID, KV Namespace ID). Skipping KV upload.")
+        return
+    
+    try:
+        cf = Cloudflare.Cloudflare(token=CF_API_TOKEN)
+        
+        # Ensure the KV namespace ID is correct
+        # You can find this ID in your Cloudflare dashboard under Workers -> KV -> your_kv_namespace -> Settings
+        # Based on your screenshot, CF_KV_NAMESPACE_ID should be 'a71ebd79ab2e4c3883e1303e16141537'
+        
+        cf.workers.kv_namespace.put(
+            account_id=CF_ACCOUNT_ID, 
+            namespace_id=CF_KV_NAMESPACE_ID, 
+            key=key, 
+            value=value
+        )
+        print(f"✅ Successfully uploaded key '{key}' to Cloudflare KV (Namespace: {CF_KV_NAMESPACE_ID}).")
+    except Cloudflare.exceptions.CloudflareAPIError as e:
+        print(f"ERROR: Cloudflare API Error when uploading '{key}' to KV: {e.code} - {e.message}")
+    except Exception as e:
+        print(f"ERROR: Failed to upload key '{key}' to Cloudflare KV: {e}")
 
 
 # --- MAIN EXECUTION ---
@@ -342,12 +369,16 @@ def main():
     # For Sing-box, prioritize its own protocols, then backfill with fast Xray configs
     singbox_final_sb_only = [cfg for cfg, lat in singbox_only_pool]
     # Backfill if needed, up to MAX_FINAL_CONFIGS_PER_CORE
+    # We use a set for xray_fillers to avoid duplicates with singbox_final_sb_only
+    xray_filler_set = {cfg for cfg, lat in xray_compatible_pool if cfg not in singbox_final_sb_only}
+    xray_fillers = list(xray_filler_set) # Convert back to list for slicing
+
     needed_for_singbox = MAX_FINAL_CONFIGS_PER_CORE - len(singbox_final_sb_only)
     if needed_for_singbox > 0:
-        xray_fillers = [cfg for cfg, lat in xray_compatible_pool if cfg not in singbox_final_sb_only]
         singbox_final_sb_only.extend(xray_fillers[:needed_for_singbox])
-    singbox_final = singbox_final_sb_only[:MAX_FINAL_CONFIGS_PER_CORE]
-    
+    singbox_final = singbox_final_sb_only[:MAX_FINAL_CONFIGS_PER_CORE] # Final trim
+
+
     print(f"✅ Selected {len(xray_final)} configs for Xray core.")
     print(f"✅ Selected {len(singbox_final)} configs for Sing-box core.")
 
@@ -365,21 +396,26 @@ def main():
         "singbox": group_by_protocol(singbox_final)
     }
 
-    with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
-        json.dump(output_data, f, indent=2, ensure_ascii=False)
-    print(f"✅ Wrote grouped configs to {OUTPUT_JSON_FILE}.")
+    # --- 5. Uploading to Cloudflare KV --- # ADDED / MODIFIED SECTION
+    print("\n--- 5. Uploading to Cloudflare KV ---")
+    current_timestamp = str(int(time.time()))
 
-    # Clash file generation removed
-    # clash_candidate_configs = [cfg for cfg, lat in xray_compatible_pool]
-    # clash_yaml_content = generate_clash_yaml(clash_candidate_configs[:TARGET_CONFIGS_PER_CORE])
-    # if clash_yaml_content:
-    #     with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f: f.write(clash_yaml_content)
-    #     print(f"✅ Wrote Clash subscription to {OUTPUT_CLASH_FILE}.")
+    # Upload all_live_configs JSON
+    upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json.dumps(output_data, indent=2, ensure_ascii=False))
 
-    with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f: f.write(str(int(time.time())))
-    print(f"✅ Cache version updated.")
+    # Upload cache_version
+    upload_to_cloudflare_kv(KV_CACHE_VERSION_KEY, current_timestamp)
+    
+    # Local file writing removed
+    # with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
+    #     json.dump(output_data, f, indent=2, ensure_ascii=False)
+    # print(f"✅ Wrote grouped configs to {OUTPUT_JSON_FILE}.")
+
+    # with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f: f.write(str(int(time.time())))
+    # print(f"✅ Cache version updated.")
     
     print("\n--- Process Completed ---")
 
 if __name__ == "__main__":
     main()
+
