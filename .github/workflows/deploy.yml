@@ -1,18 +1,21 @@
-# Workflow Name
-name: Deploy Cloudflare Worker
+# workflow name
+name: deploy cloudflare worker
 
 on:
+  # allows manual execution from the github actions tab
   workflow_dispatch:
+  
+  # triggers the workflow on push events to the main branch
   push:
     branches:
       - main
     paths:
+      # ensures the workflow only runs if worker-related files have changed
       - 'worker.js'
       - 'wrangler.toml'
-      - 'index.js'
-      - 'scraper.py'
-      - 'requirements.txt'
 
+# prevents multiple instances of this workflow from running simultaneously,
+# cancelling any in-progress runs when a new one is triggered.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -20,36 +23,19 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy Worker to Cloudflare
+    name: deploy worker to cloudflare
+    
+    # restricts the workflow's permissions to read-only for security
     permissions:
       contents: read
       
     steps:
-      - name: Checkout Repository
+      - name: checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11' # Use '3.12' if your scraper specifically needs 3.12.x
-
-      - name: Install Python Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: Run Scraper to Generate Data
-        run: python scraper.py
-        env:
-          # --- Environment variables for scraper.py from GitHub Secrets ---
-          GH_PAT: ${{ secrets.GH_PAT }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }} # This secret must be added to GitHub
-          # --- End of environment variables ---
-
-      - name: Deploy Worker to Cloudflare
+      - name: deploy worker to cloudflare
+        # uses the latest stable v3 release of the wrangler action
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apitoken: ${{ secrets.cloudflare_api_token }}
+          accountid: ${{ secrets.cloudflare_account_id }}
