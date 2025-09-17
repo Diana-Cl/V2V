@@ -1,20 +1,21 @@
-# Workflow name
-name: Deploy Cloudflare Worker
+# workflow name
+name: deploy cloudflare worker
 
 on:
-  # Allows manual execution from the GitHub Actions tab
+  # allows manual execution from the github actions tab
   workflow_dispatch:
   
-  # Triggers the workflow on push events to the main branch
+  # triggers the workflow on push events to the main branch
   push:
     branches:
       - main
     paths:
-      # Ensures the workflow only runs if Worker-related files have changed
+      # ensures the workflow only runs if worker-related files have changed
       - 'worker.js'
       - 'wrangler.toml'
+      - 'index.js' # این خط اضافه شد تا تغییرات در index.js نیز workflow را فعال کند
 
-# Prevents multiple instances of this workflow from running simultaneously,
+# prevents multiple instances of this workflow from running simultaneously,
 # cancelling any in-progress runs when a new one is triggered.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,21 +24,19 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy Worker to Cloudflare
+    name: deploy worker to cloudflare
     
-    # Restricts the workflow's permissions to read-only for security
+    # restricts the workflow's permissions to read-only for security
     permissions:
       contents: read
       
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: checkout repository
+        uses: actions/checkout@v4 # از uses: actions/checkout@v4 استفاده کردم چون v4 پایدارتر و جدیدتر است
 
-      - name: Deploy Worker to Cloudflare
-        # Uses the latest stable v3 release of the Wrangler action
+      - name: deploy worker to cloudflare
+        # uses the latest stable v3 release of the wrangler action
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-
+          apiToken: ${{ secrets.cloudflare_api_token }} # camelCase برای ورودی‌های اکشن
+          accountId: ${{ secrets.cloudflare_account_id }} # camelCase برای ورودی‌های اکشن
