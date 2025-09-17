@@ -17,7 +17,7 @@ from collections import defaultdict
 import itertools
 
 # !!! IMPORTANT: Ensure Cloudflare library is installed: pip install cloudflare !!!
-import Cloudflare # ADDED: Import Cloudflare library
+import cloudflare # ADDED: Import Cloudflare library
 
 print("INFO: Initializing V2V Scraper v33.1 (Deep Protocol Testing & Flexible Quota)...")
 
