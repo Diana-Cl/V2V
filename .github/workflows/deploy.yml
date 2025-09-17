@@ -1,21 +1,14 @@
-# workflow name
-name: deploy cloudflare worker
+name: Deploy Cloudflare Worker
 
 on:
-  # allows manual execution from the github actions tab
   workflow_dispatch:
-  
-  # triggers the workflow on push events to the main branch
   push:
     branches:
       - main
     paths:
-      # ensures the workflow only runs if worker-related files have changed
       - 'worker.js'
       - 'wrangler.toml'
 
-# prevents multiple instances of this workflow from running simultaneously,
-# cancelling any in-progress runs when a new one is triggered.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -23,19 +16,16 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: deploy worker to cloudflare
-    
-    # restricts the workflow's permissions to read-only for security
+    name: Deploy Worker to Cloudflare
     permissions:
       contents: read
       
     steps:
-      - name: checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: deploy worker to cloudflare
-        # uses the latest stable v3 release of the wrangler action
+      - name: Deploy Worker to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
-          apitoken: ${{ secrets.cloudflare_api_token }}
-          accountid: ${{ secrets.cloudflare_account_id }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
