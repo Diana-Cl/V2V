@@ -1,10 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURATION ---
     const WORKER_URL = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
-    const DATA_URL = 'all_live_configs.json'; // Fetched from mirrors
-    const CACHE_URL_WORKER = `${WORKER_URL}/cache-version`; // New: Fetches version from Worker/KV
+    const DATA_URL = 'all_live_configs.json'; // This will be fetched from a mirror
+    const CACHE_URL_WORKER = `${WORKER_URL}/cache-version`;
     const TEST_TIMEOUT = 8000;
-    const CONCURRENT_TESTS = 10;
 
     // --- DOM ELEMENTS ---
     const statusBar = document.getElementById('status-bar');
@@ -19,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toShamsi = (ts) => { if (!ts || isNaN(ts)) return 'N/A'; try { return new Date(parseInt(ts, 10) * 1000).toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' }); } catch { return 'N/A'; } };
     const showToast = (message, isError = false) => { toast.textContent = message; toast.className = `toast show ${isError ? 'error' : ''}`; setTimeout(() => { toast.className = 'toast'; }, 3000); };
     
-    // --- RENDER FUNCTION (Unchanged) ---
+    // --- RENDER FUNCTION ---
     async function renderCore(core, groupedConfigs) {
         const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
         wrapper.innerHTML = '';
@@ -38,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                    <div class="action-group-title">اشتراک شخصی</div>
                                    <div class="action-box">
                                        <div class="action-row"><span class="action-box-label">لینک Standard از موارد انتخابی</span><div class="action-box-buttons"><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="standard">کپی</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="standard" data-method="qr">QR</button></div></div>
-                                       ${isXray ? `<div class="action-row" style="margin-top:10px;"><span class="action-box-label">لینک Clash از موارد انتخابی</span><div class="action-box-buttons"><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash">کپی URL</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash" data-method="qr">QR</button></div></div>` : ''}
+                                       ${isXray ? `<div class="action-row" style="margin-top:10px;"><span class="action-box-label">لینک Clash از موارد انتخابی</span><div class="action-box-buttons"><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash">کپی URL</button><button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash" data-method="qr">QR</button></div></div>` : ''}
                                    </div>
                                </div>
                            </div>`;
@@ -52,9 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
             configs.forEach((config) => {
                 const safeConfig = config.replace(/'/g, "&apos;").replace(/"/g, '&quot;');
                 let name = 'V2V | Unnamed';
-                try {
-                    name = decodeURIComponent(new URL(config).hash.substring(1) || 'V2V Config');
-                } catch {}
+                try { name = decodeURIComponent(new URL(config).hash.substring(1) || 'V2V Config'); } catch {}
                 itemsHTML += `<li class="config-item" data-config='${safeConfig}'><input type="checkbox" class="config-checkbox"><div class="config-details"><span class="server">${name}</span><div class="ping-result-container"></div></div><div class="config-actions"><button class="copy-btn" data-action="copy-single">کپی</button><button class="copy-btn" data-action="qr-single">QR</button></div></li>`;
             });
             pGroupEl.innerHTML = `<div class="protocol-header" data-action="toggle-protocol"><div class="protocol-header-title"><span>${protocol.toUpperCase()} (${configs.length})</span><span class="toggle-icon">▼</span></div><div class="protocol-header-actions"><button class="action-btn-small" data-action="copy-protocol">کپی همه</button></div></div><ul class="config-list">${itemsHTML}</ul>`;
@@ -80,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })();
 
-    // --- ADVANCED TESTING LOGIC ---
+    // --- RELIABLE SEQUENTIAL TESTING LOGIC ---
     function parseConfig(configStr) {
         try {
             if (configStr.startsWith('vmess://')) {
@@ -100,38 +97,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const buttonText = testButton.querySelector('.test-button-text');
         if (testButton.disabled) return;
         testButton.disabled = true;
-        buttonText.innerHTML = `<span class="loader"></span> در حال تست...`;
         
         const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`));
-        allItems.forEach(item => {
-            item.querySelector('.ping-result-container').innerHTML = `
-                <span class="ping-label">TCP:</span><span class="ping-result-item" data-type="tcp">--</span>
-                <span class="ping-label">WS:</span><span class="ping-result-item" data-type="ws">--</span>
-                <span class="ping-label">WT:</span><span class="ping-result-item" data-type="wt">--</span>`;
-            item.dataset.finalScore = "9999";
-        });
-
-        const testQueue = allItems.map(item => async () => {
+        
+        for (let i = 0; i < allItems.length; i++) {
+            const item = allItems[i];
+            buttonText.innerHTML = `<span class="loader"></span> تست ${i + 1} از ${allItems.length}`;
             const config = parseConfig(item.dataset.config);
-            if (!config) { updateItemUI(item, 'FAIL'); return; }
-            const promises = [testBridgeTCP(config).then(res => updateItemUI(item, 'tcp', res.latency))];
-            if (config.transport === 'ws') {
-                promises.push(testDirectWebSocket(config).then(res => updateItemUI(item, 'ws', res.latency)));
+            
+            if (!config) {
+                updateItemUI(item, 'FAIL', null);
+                continue;
             }
+            
+            let result = { latency: null };
             if (config.transport === 'webtransport') {
-                promises.push(testDirectWebTransport(config).then(res => updateItemUI(item, 'wt', res.latency)));
+                result = await testDirectWebTransport(config);
+                updateItemUI(item, 'WT', result.latency);
+            } else { // All TCP-based protocols
+                result = await testBridgeTCP(config);
+                updateItemUI(item, 'TCP', result.latency);
             }
-            await Promise.allSettled(promises);
-        });
-
-        for (let i = 0; i < testQueue.length; i += CONCURRENT_TESTS) {
-            await Promise.all(testQueue.slice(i, i + CONCURRENT_TESTS).map(task => task()));
+            item.dataset.finalScore = result.latency !== null ? result.latency : 9999;
         }
-
-        allItems.forEach(item => {
-            const latencies = ['tcp', 'ws', 'wt'].map(t => parseInt(item.dataset[t] || 9999));
-            item.dataset.finalScore = Math.min(...latencies);
-        });
 
         document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => {
             const list = group.querySelector('.config-list');
@@ -155,19 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return await res.json();
         } catch { return { latency: null }; }
     }
-
-    async function testDirectWebSocket(config) {
-        return new Promise(resolve => {
-            try {
-                const ws = new WebSocket(`wss://${config.host}:${config.port}${config.path}`);
-                const startTime = Date.now();
-                const timeout = setTimeout(() => { ws.close(); resolve({ latency: null }); }, TEST_TIMEOUT);
-                ws.onopen = () => { clearTimeout(timeout); ws.close(); resolve({ latency: Date.now() - startTime }); };
-                ws.onerror = () => { clearTimeout(timeout); resolve({ latency: null }); };
-            } catch { resolve({ latency: null }); }
-        });
-    }
-
+    
     async function testDirectWebTransport(config) {
         if (typeof WebTransport === "undefined") return { latency: null };
         return new Promise(async resolve => {
@@ -184,18 +160,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateItemUI(item, type, latency) {
+        const container = item.querySelector('.ping-result-container');
         if (type === 'FAIL') {
-            item.querySelector('.ping-result-container').innerHTML = `<strong style="color:var(--ping-bad);">❌ نامعتبر</strong>`; return;
+            container.innerHTML = `<strong style="color:var(--ping-bad);">❌ نامعتبر</strong>`; return;
         }
-        const resultEl = item.querySelector(`.ping-result-item[data-type="${type}"]`);
-        if (!resultEl) return;
-        item.dataset[type] = latency;
+        let resultText, color;
         if (latency === null) {
-            resultEl.textContent = '❌'; resultEl.style.color = 'var(--ping-bad)';
+            resultText = '❌ ناموفق';
+            color = 'var(--ping-bad)';
         } else {
-            resultEl.textContent = `${latency}ms`;
-            resultEl.style.color = latency < 700 ? 'var(--ping-good)' : (latency < 1500 ? 'var(--ping-medium)' : 'var(--ping-bad)');
+            resultText = `[${type}] ${latency}ms`;
+            color = latency < 700 ? 'var(--ping-good)' : (latency < 1500 ? 'var(--ping-medium)' : 'var(--ping-bad)');
         }
+        container.innerHTML = `<strong style="color:${color};">${resultText}</strong>`;
     }
 
     // --- EVENT HANDLING & ACTIONS ---
