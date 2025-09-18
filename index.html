@@ -1,15 +1,27 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V2V Mirrors - Free Proxies</title>
+    <meta name="description" content="Free VLESS, VMESS, Trojan, SS, Hysteria2, TUIC proxies for censorship circumvention.">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+
     <style>
         *, *::before, *::after { box-sizing: border-box; }
         :root {
             --primary-bg: #121212; --secondary-bg: #1e1e1e; --text-color: #e0e0e0;
             --border-color: #333;
-            --action-orange: #FFA726; --action-orange-hover: #FFB74D;
+            --action-orange: #ffa726; --action-orange-hover: #ffb74d;
             --ping-good: #28a745; --ping-medium: #ffc107; --ping-bad: #dc3545;
             --ping-untested: #495057;
             --toast-bg: linear-gradient(135deg, #34d399, #10b981);
             --toast-error-bg: linear-gradient(135deg, #f87171, #ef4444);
         }
-        body { background-color: var(--primary-bg); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; margin: 0; }
+        body { background-color: var(--primary-bg); color: var(--text-color); font-family: -apple-system, blinkmacsystemfont, 'segoe ui', roboto, helvetica, arial, sans-serif; text-align: center; margin: 0; }
         .main-wrapper { width: 100%; max-width: 700px; padding: 15px; margin: 0 auto; }
         .header { margin-bottom: 20px; }
         .header img { width: 100px; height: 100px; }
@@ -26,8 +38,8 @@
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .action-group-collapsible { margin: 10px; border-top: 1px solid var(--border-color); }
         .action-group-collapsible .protocol-header { cursor: pointer; padding: 15px 5px; }
+        .action-group-collapsible.open .collapsible-content { max-height: 500px; } /* Increased max-height for better collapse */
         .action-group-collapsible .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-        .action-group-collapsible.open .collapsible-content { max-height: 500px; }
         .action-group-title { color: #ccc; font-size: 0.9em; text-align: right; margin: 15px 0 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border-color); }
         .action-box { display: flex; flex-direction: column; gap: 10px; }
         .action-row { display: flex; justify-content: space-between; align-items: center; background-color: #2a2a2a; padding: 10px 15px; border-radius: 8px; }
@@ -54,7 +66,51 @@
         .alert { padding: 20px; color: #f87171; }
         #qr-modal { display: none; position: fixed; z-index: 1000; inset: 0; background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; }
         .qr-content { background-color: white; padding: 25px; border-radius: 12px; }
-        .toast { visibility: hidden; min-width: 250px; background: var(--toast-bg); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 2000; left: 50%; transform: translateX(-50%); bottom: 30px; font-size: 17px; transition: all 0.5s; opacity: 0; }
+        .toast { visibility: hidden; min-width: 250px; background: var(--toast-bg); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 2000; left: 50%; transform: translatex(-50%); bottom: 30px; font-size: 17px; transition: all 0.5s; opacity: 0; }
         .toast.show { visibility: visible; opacity: 1; bottom: 50px; }
         .toast.error { background: var(--toast-error-bg); }
     </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <header class="header">
+            <img src="logo.png" alt="V2V Logo">
+            <h1>V2V Mirrors</h1>
+            <p class="slogan">کانفیگ‌های رایگان و پرسرعت برای عبور از فیلترینگ</p>
+        </header>
+
+        <div id="status-bar" class="status-bar">در حال بروزرسانی وضعیت...</div>
+
+        <main class="container">
+            <h2 id="xray-header" class="core-header">Xray Core</h2>
+            <section id="xray-section" class="core-section">
+                <div id="xray-content-wrapper">
+                    </div>
+            </section>
+
+            <h2 id="singbox-header" class="core-header">Sing-Box Core</h2>
+            <section id="singbox-section" class="core-section">
+                <div id="singbox-content-wrapper">
+                    </div>
+            </section>
+        </main>
+
+        <footer class="bottom-links">
+            <a href="https://github.com/SMBRYP" target="_blank">گیت‌هاب</a>
+            <a href="https://t.me/your_telegram_channel" target="_blank">کانال تلگرام</a>
+        </footer>
+    </div>
+
+    <div id="qr-modal">
+        <div class="qr-content">
+            <div id="qr-code-container"></div>
+            <p>این کد را با کلاینت خود اسکن کنید.</p>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.0.0/qrcode.min.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>
