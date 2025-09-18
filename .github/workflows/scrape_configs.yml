@@ -2,13 +2,13 @@ name: scrape, build, and deploy mirrors
 
 on:
   schedule:
-    - cron: "0 */4 * * *" # Runs every 4 hours
-  workflow_dispatch: # Manual trigger
+    - cron: "0 */4 * * *" # هر 4 ساعت یکبار اجرا می‌شود
+  workflow_dispatch: # امکان اجرای دستی
 
 permissions:
-  contents: write # Needed for git-auto-commit-action and checkout (if pushing)
-  pages: write    # Needed for deploying to GitHub Pages
-  id-token: write # Needed for GitHub Pages deployment (OIDC)
+  contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,77 +17,67 @@ concurrency:
 jobs:
   build_and_commit:
     runs-on: ubuntu-latest
-    name: 1. scrape data & upload to cloudflare kv
+    name: 1. Scrape data & Upload to Cloudflare KV
     steps:
-      - name: checkout repository
-        uses: actions/checkout@v4 # Updated to v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          token: ${{ secrets.GH_PAT }} # Use exact secret name, ensure PAT has 'public_repo' and 'search' scope
+          python-version: "3.12"
 
-      - name: set up python
-        uses: actions/setup-python@v5 # Updated to v5
-        with:
-          python-version: "3.12" # Ensure Python 3.12 for latest features
+      - name: Install and Upgrade Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade -r requirements.txt
 
-      - name: install python dependencies
-        run: pip install -r requirements.txt
-
-      - name: run scraper to generate data and upload to kv
-        run: python scraper.py
+      - name: Run Scraper
         env:
-          GH_PAT: ${{ secrets.GH_PAT }} # Use exact secret name
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Use exact secret name
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # Use exact secret name
-          CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }} # Use exact secret name
+          GH_PAT: ${{ secrets.GH_PAT }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
+        run: python scraper.py
 
-      - name: commit and push data files to repository
-        uses: stefanzweifel/git-auto-commit-action@v5 # Updated to v5
+      - name: Commit and Push Data Files
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 data: update configs"
-          file_pattern: "*.json *.yml *.txt" # Make sure this pattern covers all generated data files
-          # No need for token here, it uses github.token by default if contents: write permission is set.
-          # If you face issues, you might need: token: ${{ secrets.GITHUB_TOKEN }}
-          # The checkout step uses GH_PAT, but auto-commit uses default GITHUB_TOKEN or specified token.
+          file_pattern: "*.json *.yml *.txt"
 
   deploy_mirrors:
     needs: build_and_commit
     runs-on: ubuntu-latest
-    name: 2. deploy to vercel, arvancloud & github pages
+    name: 2. Deploy to Vercel, ArvanCloud & GitHub Pages
     steps:
-      - name: checkout repository with latest data
-        uses: actions/checkout@v4 # Updated to v4
-        # Fetch the committed data from the previous job.
-        # This will get the state of the repo *after* the build_and_commit job's push.
+      - name: Checkout Repository with Latest Data
+        uses: actions/checkout@v4
 
-      - name: deploy to vercel
-        uses: amondnet/vercel-action@v25 # Updated to v25
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }} # Use exact secret name
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }} # Use exact secret name
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }} # Use exact secret name
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: .
           vercel-args: '--prod'
 
-      - name: deploy to arvancloud s3
+      - name: Deploy to ArvanCloud S3
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }} # Use exact secret name
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }} # Use exact secret name
-          AWS_REGION: "us-east-1" # ArvanCloud uses this internally, it's fine
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+          AWS_REGION: "us-east-1"
           ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
-          ARVAN_S3_BUCKET: s3://v2v-data # Ensure this is your correct bucket name
+          ARVAN_S3_BUCKET: s3://v2v-data
         run: |
-          # Install AWS CLI which is usually pre-installed on ubuntu-latest runners, but good to ensure
-          # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          # unzip awscliv2.zip
-          # sudo ./aws/install
           aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --cache-control max-age=300
 
-      - name: create artifact for github pages
-        uses: actions/upload-pages-artifact@v3 # Updated to v3
+      - name: Create Artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # Upload current directory as artifact
+          path: '.'
 
-      - name: deploy to github pages
+      - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4 # Updated to v4
-        # No extra token needed, uses GITHUB_TOKEN automatically with id-token: write permission.
+        uses: actions/deploy-pages@v4
