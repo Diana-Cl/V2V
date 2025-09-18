@@ -1,229 +1,338 @@
-// This syntax is specific to Cloudflare Workers.
-import { connect } from 'cloudflare:sockets';
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Configuration ---
+    const worker_url = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
+    const cache_url_worker = `${worker_url}/cache-version`;
+    const test_timeout = 8000; // 8 seconds
 
-// --- Configuration ---
-const SUBSCRIPTION_TTL = 48 * 60 * 60; // 48 hours in seconds
-const MAX_NAME_LENGTH = 40;
-const KV_LIVE_CONFIGS_KEY = 'all_live_configs.json';
-const KV_CACHE_VERSION_KEY = 'cache_version.txt';
+    // --- DOM Elements ---
+    const statusBar = document.getElementById('status-bar');
+    const xrayWrapper = document.getElementById('xray-content-wrapper');
+    const singboxWrapper = document.getElementById('singbox-content-wrapper');
+    const qrModal = document.getElementById('qr-modal');
+    const qrCodeContainer = document.getElementById('qr-code-container');
+    const toastElement = document.getElementById('toast');
+    let allConfigs = { xray: {}, singbox: {} };
 
-// --- Headers ---
-const CORS_HEADERS = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-};
-const JSON_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
-const TEXT_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'text/plain;charset=utf-8' };
-const YAML_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'text/yaml;charset=utf-8' };
+    // --- Helpers ---
+    const toShamsi = (timestamp) => {
+        if (!timestamp || isNaN(timestamp)) return 'N/A';
+        try {
+            const ts = parseInt(timestamp, 10);
+            if (isNaN(ts)) return 'N/A';
+            return new Date(ts * 1000).toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' });
+        } catch {
+            return 'N/A';
+        }
+    };
 
-// --- Main Fetch Handler ---
-export default {
-    async fetch(request, env) {
-        // The KV binding in wrangler.toml is "V2V_KV", so we must use env.V2V_KV (case-sensitive).
-        const kv = env.V2V_KV;
+    const showToast = (message, isError = false) => {
+        toastElement.textContent = message;
+        toastElement.className = `toast show ${isError ? 'error' : ''}`;
+        setTimeout(() => {
+            toastElement.className = 'toast';
+        }, 3000);
+    };
 
-        if (request.method === 'OPTIONS') {
-            return new Response(null, { headers: CORS_HEADERS });
+    // --- Render Function ---
+    async function renderCore(core, groupedConfigs) {
+        const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
+        wrapper.innerHTML = ''; // Clear previous content
+
+        if (!groupedConfigs || Object.keys(groupedConfigs).length === 0) {
+            wrapper.innerHTML = `<div class="alert">هیچ کانفیگ فعالی برای هسته ${core} یافت نشد.</div>`;
+            return;
         }
 
-        const url = new URL(request.url);
+        const isXray = core === 'xray';
+        const actionsHtml = `
+            <button class="test-button" data-action="run-ping-test" data-core="${core}">
+                <span class="test-button-text">🚀 تست پیشرفته کانفیگ‌ها</span>
+            </button>
+            <div class="action-group-collapsible open">
+                <div class="protocol-header" data-action="toggle-actions"><span>گزینه‌های اشتراک</span><span class="toggle-icon">▼</span></div>
+                <div class="collapsible-content">
+                    <div class="action-group-title">اشتراک عمومی (همه کانفیگ‌ها)</div>
+                    <div class="action-box">
+                        <div class="action-row">
+                            <span class="action-box-label">لینک اشتراک Standard</span>
+                            <div class="action-box-buttons">
+                                <button class="action-btn-small" data-action="copy-sub" data-core="${core}">کپی</button>
+                                <button class="action-btn-small" data-action="qr-sub" data-core="${core}">QR</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="action-group-title">اشتراک شخصی (کانفیگ‌های انتخابی)</div>
+                    <div class="action-box">
+                        <div class="action-row">
+                            <span class="action-box-label">لینک Standard</span>
+                            <div class="action-box-buttons">
+                                <button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="standard">کپی</button>
+                                <button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="standard" data-method="qr">QR</button>
+                            </div>
+                        </div>
+                        ${isXray ? `
+                        <div class="action-row" style="margin-top:10px;">
+                            <span class="action-box-label">لینک Clash</span>
+                            <div class="action-box-buttons">
+                                <button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash" data-method="download">دانلود</button>
+                                <button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash">کپی URL</button>
+                                <button class="action-btn-small" data-action="create-personal-sub" data-core="${core}" data-type="clash" data-method="qr">QR</button>
+                            </div>
+                        </div>` : ''}
+                    </div>
+                </div>
+            </div>`;
+        wrapper.insertAdjacentHTML('beforeend', actionsHtml);
+        
+        for (const protocol in groupedConfigs) {
+            const pGroupEl = document.createElement('div');
+            pGroupEl.className = 'protocol-group open';
+            pGroupEl.dataset.protocolName = protocol;
+            const configs = groupedConfigs[protocol];
+            let itemsHtml = '';
+            configs.forEach((config) => {
+                const safeConfig = config.replace(/'/g, "&apos;").replace(/"/g, '&quot;');
+                let name = 'v2v | unnamed';
+                try { 
+                    if (config.startsWith('vmess://')) {
+                         const vmessData = JSON.parse(atob(config.substring(8)));
+                         name = decodeURIComponent(vmessData.ps || 'v2v config');
+                    } else {
+                        const urlObj = new URL(config);
+                        name = decodeURIComponent(urlObj.hash.substring(1) || 'v2v config'); 
+                    }
+                } catch (e) { console.warn("Could not parse config name:", config); }
+
+                itemsHtml += `
+                    <li class="config-item" data-config='${safeConfig}'>
+                        <input type="checkbox" class="config-checkbox">
+                        <div class="config-details">
+                            <span class="server">${name}</span>
+                            <div class="ping-result-container"></div>
+                        </div>
+                        <div class="config-actions">
+                            <button class="copy-btn" data-action="copy-single">کپی</button>
+                            <button class="copy-btn" data-action="qr-single">QR</button>
+                        </div>
+                    </li>`;
+            });
+            pGroupEl.innerHTML = `
+                <div class="protocol-header" data-action="toggle-protocol">
+                    <div class="protocol-header-title">
+                        <span>${protocol.toUpperCase()} (${configs.length})</span><span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="protocol-header-actions">
+                        <button class="action-btn-small" data-action="copy-protocol">کپی همه</button>
+                    </div>
+                </div>
+                <ul class="config-list">${itemsHtml}</ul>`;
+            wrapper.appendChild(pGroupEl);
+        }
+    }
+
+    // --- Initial Data Load ---
+    (async () => {
+        try {
+            const verRes = await fetch(`${cache_url_worker}?t=${Date.now()}`);
+            if (verRes.ok) statusBar.textContent = `آخرین بروزرسانی: ${toShamsi(await verRes.text())}`;
+        } catch (e) {
+            console.error("Error fetching cache version:", e);
+            statusBar.textContent = 'عدم دسترسی به نسخه بروزرسانی.';
+        }
+        try {
+            const dataRes = await fetch(`${worker_url}/configs`); 
+            if (!dataRes.ok) throw new Error('Failed to load configs from worker.');
+            allConfigs = await dataRes.json();
+            await renderCore('xray', allConfigs.xray || {});
+            await renderCore('singbox', allConfigs.singbox || {});
+        } catch (e) {
+            console.error("Error loading configs:", e);
+            const errorMessage = `<div class="alert">خطا در بارگذاری کانفیگ‌ها. لطفا صفحه را رفرش کنید.</div>`;
+            xrayWrapper.innerHTML = errorMessage;
+            singboxWrapper.innerHTML = errorMessage;
+        }
+    })();
+
+    // --- Reliable Sequential Testing Logic ---
+    function parseConfig(configStr) {
+        try {
+            if (configStr.startsWith('vmess://')) {
+                const data = JSON.parse(atob(configStr.substring(8)));
+                return { protocol: 'vmess', host: data.add, port: parseInt(data.port), transport: data.net, path: data.path || '/' };
+            }
+            const urlObj = new URL(configStr);
+            const params = new URLSearchParams(urlObj.search);
+            const protocol = urlObj.protocol.replace(':', '').toLowerCase();
+            let transport = params.get('type') || 'tcp';
+            if (['hysteria2', 'hy2', 'tuic'].includes(protocol)) transport = 'webtransport';
+            return { protocol, host: urlObj.hostname, port: parseInt(urlObj.port), transport, path: params.get('path') || '/' };
+        } catch { return null; }
+    }
+
+    async function runAdvancedPingTest(core, testButton) {
+        const buttonText = testButton.querySelector('.test-button-text');
+        if (testButton.disabled) return;
+        testButton.disabled = true;
+        
+        const allItems = Array.from(document.querySelectorAll(`#${core}-section .config-item`));
+        
+        for (let i = 0; i < allItems.length; i++) {
+            const item = allItems[i];
+            buttonText.innerHTML = `<span class="loader"></span> تست ${i + 1} از ${allItems.length}`;
+            const config = parseConfig(item.dataset.config);
+            
+            if (!config) { updateItemUI(item, 'fail', null); continue; }
+            
+            const result = (config.transport === 'webtransport') ? await testDirectWebTransport(config) : await testBridgeTCP(config);
+            const type = (config.transport === 'webtransport') ? 'wt' : 'tcp';
+            updateItemUI(item, type, result.latency);
+            item.dataset.finalScore = result.latency !== null ? result.latency : 9999;
+        }
+
+        document.querySelectorAll(`#${core}-section .protocol-group`).forEach(group => {
+            const list = group.querySelector('.config-list');
+            Array.from(list.children)
+                .sort((a, b) => (parseInt(a.dataset.finalScore) || 9999) - (parseInt(b.dataset.finalScore) || 9999))
+                .forEach(node => list.appendChild(node));
+        });
+
+        buttonText.innerHTML = '🚀 تست مجدد کانفیگ‌ها';
+        testButton.disabled = false;
+    }
+
+    async function testBridgeTCP(config) {
+        try {
+            const res = await fetch(`${worker_url}/tcp-probe`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ host: config.host, port: config.port }),
+                signal: AbortSignal.timeout(test_timeout)
+            });
+            if (!res.ok) return { latency: null };
+            return await res.json();
+        } catch (e) { return { latency: null }; }
+    }
+    
+    async function testDirectWebTransport(config) {
+        if (typeof WebTransport === "undefined") {
+            showToast('مرورگر شما از WebTransport پشتیبانی نمی‌کند.', true);
+            return { latency: null };
+        }
+        return new Promise(resolve => {
+            let transport;
+            const timeout = setTimeout(() => { 
+                if (transport && transport.state === "connecting") transport.close();
+                resolve({ latency: null }); 
+            }, test_timeout);
+            
+            try {
+                transport = new WebTransport(`https://${config.host}:${config.port}`);
+                const startTime = Date.now();
+                transport.ready.then(() => {
+                    clearTimeout(timeout);
+                    transport.close();
+                    resolve({ latency: Date.now() - startTime });
+                }).catch(() => {
+                    clearTimeout(timeout);
+                    resolve({ latency: null });
+                });
+            } catch (e) {
+                clearTimeout(timeout);
+                resolve({ latency: null });
+            }
+        });
+    }
+
+    function updateItemUI(item, type, latency) {
+        const container = item.querySelector('.ping-result-container');
+        if (type === 'fail') {
+            container.innerHTML = `<strong style="color:var(--ping-bad);">❌ نامعتبر</strong>`; return;
+        }
+        let resultText, color;
+        if (latency === null) {
+            resultText = '❌ ناموفق';
+            color = 'var(--ping-bad)';
+        } else {
+            resultText = `[${type.toUpperCase()}] ${latency}ms`;
+            color = latency < 700 ? 'var(--ping-good)' : (latency < 1500 ? 'var(--ping-medium)' : 'var(--ping-bad)');
+        }
+        container.innerHTML = `<strong style="color:${color};">${resultText}</strong>`;
+    }
+
+    // --- Event Handling & Actions ---
+    async function createPersonalSubscription(core, type, method) {
+        const selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`))
+            .map(cb => cb.closest('.config-item').dataset.config);
+        if (selectedConfigs.length === 0) { showToast('لطفاً حداقل یک کانفیگ را انتخاب کنید.', true); return; }
+        try {
+            const res = await fetch(`${worker_url}/api/subscribe`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ configs: selectedConfigs }) 
+            });
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json();
+            const finalUrl = `${worker_url}/sub${type === 'clash' ? '/clash' : ''}/${data.uuid}`;
+            if (method === 'qr') {
+                showQrCode(finalUrl);
+            } else if (method === 'download' && type === 'clash') {
+                const downloadRes = await fetch(finalUrl);
+                if (!downloadRes.ok) throw new Error('Failed to download Clash config.');
+                const blob = await downloadRes.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'v2v.yaml';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('فایل Clash دانلود شد.');
+            } else { 
+                await navigator.clipboard.writeText(finalUrl); 
+                showToast(`لینک اشتراک شخصی ${type === 'clash' ? 'Clash' : ''} کپی شد.`); 
+            }
+        } catch (e) { showToast(`خطا در ساخت لینک اشتراک: ${e.message}`, true); }
+    }
+
+    function showQrCode(text) { 
+        if (!window.QRCode) { showToast('کتابخانه QR در حال بارگذاری است...', true); return; } 
+        qrCodeContainer.innerHTML = ''; 
+        new QRCode(qrCodeContainer, { text, width: 256, height: 256 });
+        qrModal.style.display = 'flex'; 
+    }
+    
+    document.body.addEventListener('click', async (event) => {
+        const target = event.target.closest('[data-action]');
+        if (!target) return;
+        const { action, core, type, method } = target.dataset;
+        const item = target.closest('.config-item');
 
         try {
-            if (url.pathname === '/configs') {
-                return handleGetLiveConfigs(kv);
+            switch (action) {
+                case 'run-ping-test': await runAdvancedPingTest(core, target); break;
+                case 'copy-single': 
+                    await navigator.clipboard.writeText(item.dataset.config); 
+                    showToast('کانفیگ کپی شد.'); 
+                    break;
+                case 'qr-single': showQrCode(item.dataset.config); break;
+                case 'copy-sub': 
+                    await navigator.clipboard.writeText(`${worker_url}/sub/public/${core}`); 
+                    showToast('لینک اشتراک عمومی کپی شد.'); 
+                    break;
+                case 'qr-sub': showQrCode(`${worker_url}/sub/public/${core}`); break;
+                case 'create-personal-sub': await createPersonalSubscription(core, type, method); break;
+                case 'copy-protocol':
+                    const configs = Array.from(target.closest('.protocol-group').querySelectorAll('.config-item')).map(el => el.dataset.config);
+                    await navigator.clipboard.writeText(configs.join('\n'));
+                    showToast(`تمام ${configs.length} کانفیگ کپی شد.`);
+                    break;
+                case 'toggle-protocol': target.closest('.protocol-group').classList.toggle('open'); break;
+                case 'toggle-actions': target.closest('.action-group-collapsible').classList.toggle('open'); break;
             }
-            if (url.pathname === '/tcp-probe' && request.method === 'POST') {
-                return handleTcpProbe(request);
-            }
-            if (url.pathname === '/api/subscribe' && request.method === 'POST') {
-                return handleSubscribeRequest(request, kv);
-            }
-            const personalSubMatch = url.pathname.match(/^\/sub\/(clash\/)?([0-9a-f-]+)$/);
-            if (personalSubMatch) {
-                const isClash = !!personalSubMatch[1];
-                const uuid = personalSubMatch[2];
-                return handleGetPersonalSubscription(uuid, isClash, kv);
-            }
-            if (url.pathname === '/cache-version') {
-                return handleGetCacheVersion(kv);
-            }
-            const publicSubMatch = url.pathname.match(/^\/sub\/public\/(xray|singbox)$/);
-            if (publicSubMatch) {
-                const coreType = publicSubMatch[1]; // Corrected index from 2 to 1
-                return handleGetPublicSubscription(coreType, kv);
-            }
-
-            return new Response('V2V API Worker is operational.', { headers: TEXT_HEADERS });
-        } catch (error) {
-            console.error('Worker error:', error.stack);
-            return new Response(JSON.stringify({ message: error.message || 'Internal server error', stack: error.stack }), { status: 500, headers: JSON_HEADERS });
+        } catch (e) {
+            console.error("Action error:", e);
+            showToast(`خطایی رخ داد: ${e.message}`, true);
         }
-    }
-};
-
-// --- Handlers ---
-async function handleGetLiveConfigs(kv) {
-    if (!kv) return new Response(JSON.stringify({ error: 'KV namespace not configured.' }), { status: 500, headers: JSON_HEADERS });
-    
-    const liveConfigs = await kv.get(KV_LIVE_CONFIGS_KEY, { type: 'json' });
-
-    if (!liveConfigs) {
-        return new Response(JSON.stringify({ xray: {}, singbox: {} }), { status: 200, headers: JSON_HEADERS });
-    }
-    return new Response(JSON.stringify(liveConfigs), { headers: JSON_HEADERS });
-}
-
-async function handleTcpProbe(request) {
-    let socket;
-    try {
-        const { host, port } = await request.json();
-        if (!host || !port) {
-            return new Response(JSON.stringify({ error: 'Invalid host or port' }), { status: 400, headers: JSON_HEADERS });
-        }
-        const startTime = Date.now();
-        socket = connect({ hostname: host, port: port }, { allowHalfOpen: false });
-        
-        await socket.opened;
-        const latency = Date.now() - startTime;
-        
-        if (latency < 10) throw new Error("Unrealistic latency, likely a false positive.");
-        
-        return new Response(JSON.stringify({ latency }), { headers: JSON_HEADERS });
-    } catch (e) {
-        console.error("TCP Probe Failed:", e);
-        return new Response(JSON.stringify({ latency: null, error: e.message }), { headers: JSON_HEADERS });
-    } finally {
-        if (socket) await socket.close().catch(() => {});
-    }
-}
-
-async function handleSubscribeRequest(request, kv) {
-    if (!kv) return new Response(JSON.stringify({ error: 'KV namespace not configured.' }), { status: 500, headers: JSON_HEADERS });
-    const { configs } = await request.json();
-    if (!Array.isArray(configs) || configs.length === 0) return new Response(JSON.stringify({ error: "'configs' must be a non-empty array." }), { status: 400, headers: JSON_HEADERS });
-    const subUuid = crypto.randomUUID();
-    await kv.put(`sub:${subUuid}`, JSON.stringify(configs), { expirationTtl: SUBSCRIPTION_TTL });
-    return new Response(JSON.stringify({ uuid: subUuid }), { status: 201, headers: JSON_HEADERS });
-}
-
-async function handleGetPersonalSubscription(uuid, isClash, kv) {
-    if (!kv) return new Response('KV namespace not available.', { status: 500, headers: TEXT_HEADERS });
-    
-    const [userSubRaw, liveDataRaw] = await Promise.all([
-        kv.get(`sub:${uuid}`),
-        kv.get(KV_LIVE_CONFIGS_KEY)
-    ]);
-
-    if (!userSubRaw) return new Response('Subscription not found or has expired.', { status: 404, headers: TEXT_HEADERS });
-    if (!liveDataRaw) return new Response('Live configs unavailable for healing.', { status: 503, headers: TEXT_HEADERS });
-
-    const userConfigs = JSON.parse(userSubRaw);
-    const liveData = JSON.parse(liveDataRaw);
-    const allLiveConfigsSet = new Set(
-        Object.values(liveData.xray || {}).flat().concat(Object.values(liveData.singbox || {}).flat())
-    );
-
-    let healedConfigs = userConfigs.filter(cfg => allLiveConfigsSet.has(cfg));
-    const deadCount = userConfigs.length - healedConfigs.length;
-    if (deadCount > 0) {
-        const userConfigsSet = new Set(userConfigs);
-        const replacements = [...allLiveConfigsSet].filter(cfg => !userConfigsSet.has(cfg));
-        healedConfigs.push(...replacements.slice(0, deadCount));
-    }
-    if (healedConfigs.length === 0 && allLiveConfigsSet.size > 0) {
-        healedConfigs = [...allLiveConfigsSet].slice(0, Math.min(userConfigs.length || 10, allLiveConfigsSet.size));
-    }
-    
-    await kv.put(`sub:${uuid}`, JSON.stringify(healedConfigs), { expirationTtl: SUBSCRIPTION_TTL });
-    return generateSubscriptionResponse(healedConfigs, isClash);
-}
-
-async function handleGetPublicSubscription(coreType, kv) {
-    if (!kv) return new Response('KV namespace not available.', { status: 500, headers: TEXT_HEADERS });
-
-    const liveDataRaw = await kv.get(KV_LIVE_CONFIGS_KEY);
-    if (!liveDataRaw) return new Response('Live configs unavailable.', { status: 503, headers: TEXT_HEADERS });
-
-    const liveData = JSON.parse(liveDataRaw);
-    let configsToServe = [];
-
-    if (coreType === 'xray' && liveData.xray) {
-        configsToServe = Object.values(liveData.xray).flat();
-    } else if (coreType === 'singbox' && liveData.singbox) {
-        configsToServe = Object.values(liveData.singbox).flat();
-    } else {
-        return new Response('Invalid core type for public subscription.', { status: 400, headers: TEXT_HEADERS });
-    }
-    
-    return new Response(configsToServe.join('\n'), { headers: TEXT_HEADERS });
-}
-
-async function handleGetCacheVersion(kv) {
-    if (!kv) return new Response('KV namespace not available.', { status: 500, headers: TEXT_HEADERS });
-    const version = await kv.get(KV_CACHE_VERSION_KEY);
-    return new Response(version || Math.floor(Date.now() / 1000).toString(), { headers: TEXT_HEADERS });
-}
-
-function generateSubscriptionResponse(configs, isClash) {
-    if (isClash) {
-        const clashYaml = generateClashYaml(configs);
-        const headers = new Headers(YAML_HEADERS);
-        headers.set('Content-Disposition', 'attachment; filename="v2v.yaml"');
-        return new Response(clashYaml, { headers });
-    } else {
-        return new Response(configs.join('\n'), { headers: TEXT_HEADERS });
-    }
-}
-
-// --- Helpers & YAML Generation ---
-function parseProxyForClash(configStr) {
-    try {
-        const urlObj = new URL(configStr);
-        let name = decodeURIComponent(urlObj.hash.substring(1) || "v2v config").trim();
-        name = `v2v | ${name.substring(0, MAX_NAME_LENGTH)}`;
-        const base = { name, 'skip-cert-verify': true };
-        const params = new URLSearchParams(urlObj.search);
-
-        if (configStr.startsWith('vmess://')) {
-            const d = JSON.parse(atob(configStr.substring(8)));
-            const p = { ...base, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: parseInt(d.aid || 0), cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net, servername: d.sni || d.host };
-            if (d.net === 'ws') p['ws-opts'] = { path: d.path || '/', headers: { host: d.host || d.add }};
-            return p;
-        }
-        if (urlObj.protocol === 'vless:') {
-            const p = { ...base, type: 'vless', server: urlObj.hostname, port: parseInt(urlObj.port), uuid: urlObj.username, tls: params.get('security') === 'tls', network: params.get('type'), servername: params.get('sni')};
-            if (params.get('type') === 'ws') p['ws-opts'] = { path: params.get('path') || '/', headers: { host: params.get('host') || urlObj.hostname }};
-            return p;
-        }
-        if (urlObj.protocol === 'trojan:') return { ...base, type: 'trojan', server: urlObj.hostname, port: parseInt(urlObj.port), password: urlObj.username, sni: params.get('sni') };
-        if (urlObj.protocol === 'ss:') { const [c, p] = atob(urlObj.username).split(':'); return { ...base, type: 'ss', server: urlObj.hostname, port: parseInt(urlObj.port), cipher: c, password: p }; }
-    } catch (e) { console.error("Error parsing proxy for Clash:", configStr, e); return null; }
-    return null;
-}
-
-function generateClashYaml(configs) {
-    const proxies = configs.map(parseProxyForClash).filter(p => p);
-    if (proxies.length === 0) return "# No compatible proxies found for Clash.";
-    const proxyNames = proxies.map(p => p.name);
-    
-    return `proxies:
-${proxies.map(p => `  - ${JSON.stringify(p)}`).join('\n')}
-
-proxy-groups:
-  - name: "v2v-auto"
-    type: url-test
-    proxies:
-${proxyNames.map(name => `      - "${name}"`).join('\n')}
-    url: 'http://www.gstatic.com/generate_204'
-    interval: 300
-  - name: "v2v-select"
-    type: select
-    proxies:
-      - "v2v-auto"
-${proxyNames.map(name => `      - "${name}"`).join('\n')}
-
-rules:
-  - 'MATCH,v2v-select'
-`;
-}
+    });
+    qrModal.onclick = () => qrModal.style.display = 'none';
+});
