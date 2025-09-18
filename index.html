@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>V2V Mirrors - Free Proxies</title>
-    <meta name="description" content="Free VLESS, VMESS, Trojan, SS, Hysteria2, TUIC proxies for censorship circumvention.">
+    <title>v2v mirrors - free proxies</title>
+    <meta name="description" content="free vless, vmess, trojan, ss, hysteria2, tuic proxies for censorship circumvention.">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="manifest" href="manifest.json">
@@ -35,10 +35,10 @@
         .test-button:hover:not(:disabled) { background-color: rgba(255, 167, 38, 0.1); color: var(--action-orange-hover); border-color: var(--action-orange-hover); }
         .test-button:disabled { background-color: #2a2a2a; color: #666; border-color: #444; cursor: not-allowed; }
         .loader { width: 16px; height: 16px; border: 2px solid #666; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .action-group-collapsible { margin: 10px; border-top: 1px solid var(--border-color); }
         .action-group-collapsible .protocol-header { cursor: pointer; padding: 15px 5px; }
-        .action-group-collapsible.open .collapsible-content { max-height: 500px; } /* Increased max-height for better collapse */
+        .action-group-collapsible.open .collapsible-content { max-height: 500px; } /* increased max-height for better collapse */
         .action-group-collapsible .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
         .action-group-title { color: #ccc; font-size: 0.9em; text-align: right; margin: 15px 0 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border-color); }
         .action-box { display: flex; flex-direction: column; gap: 10px; }
@@ -66,6 +66,7 @@
         .alert { padding: 20px; color: #f87171; }
         #qr-modal { display: none; position: fixed; z-index: 1000; inset: 0; background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; }
         .qr-content { background-color: white; padding: 25px; border-radius: 12px; }
+        .qr-content #qr-code-container { padding: 10px; } /* Added padding for QR code */
         .toast { visibility: hidden; min-width: 250px; background: var(--toast-bg); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 2000; left: 50%; transform: translatex(-50%); bottom: 30px; font-size: 17px; transition: all 0.5s; opacity: 0; }
         .toast.show { visibility: visible; opacity: 1; bottom: 50px; }
         .toast.error { background: var(--toast-error-bg); }
@@ -74,30 +75,33 @@
 <body>
     <div class="main-wrapper">
         <header class="header">
-            <img src="logo.png" alt="V2V Logo">
-            <h1>V2V Mirrors</h1>
+            <img src="logo.png" alt="v2v logo">
+            <h1>v2v mirrors</h1>
             <p class="slogan">کانفیگ‌های رایگان و پرسرعت برای عبور از فیلترینگ</p>
         </header>
 
         <div id="status-bar" class="status-bar">در حال بروزرسانی وضعیت...</div>
 
         <main class="container">
-            <h2 id="xray-header" class="core-header">Xray Core</h2>
+            <h2 id="xray-header" class="core-header">xray core</h2>
             <section id="xray-section" class="core-section">
                 <div id="xray-content-wrapper">
-                    </div>
+                    <p class="alert">خطا در بارگذاری کانفیگ‌ها. لطفا صفحه را رفرش کنید.</p>
+                </div>
             </section>
 
-            <h2 id="singbox-header" class="core-header">Sing-Box Core</h2>
+            <h2 id="singbox-header" class="core-header">sing-box core</h2>
             <section id="singbox-section" class="core-section">
                 <div id="singbox-content-wrapper">
-                    </div>
+                    <p class="alert">خطا در بارگذاری کانفیگ‌ها. لطفا صفحه را رفرش کنید.</p>
+                </div>
             </section>
         </main>
 
         <footer class="bottom-links">
-            <a href="https://github.com/SMBRYP" target="_blank">گیت‌هاب</a>
-            <a href="https://t.me/your_telegram_channel" target="_blank">کانال تلگرام</a>
+            <a href="https://your-arvancloud-link.com" target="_blank">ابرآروان</a>
+            <a href="https://your-vercel-link.com" target="_blank">ورسل</a>
+            <a href="https://your-github-repo.com" target="_blank">مخزن گیت‌هاب</a>
         </footer>
     </div>
 
