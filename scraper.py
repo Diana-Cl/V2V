@@ -17,7 +17,7 @@ from collections import defaultdict
 # cloudflare library is required: pip install cloudflare
 from cloudflare import Cloudflare, APIError
 
-print("v2v scraper v40.4 (Deep JSON Serialization Fix)")
+print("v2v scraper v42.0 (Optimized for max config retrieval + robust JSON handling)")
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,7 +34,7 @@ GITHUB_PAT = os.environ.get('GH_PAT')
 MAX_CONFIGS_TO_TEST = 15000
 MIN_TARGET_CONFIGS_PER_CORE = 500
 MAX_FINAL_CONFIGS_PER_CORE = 1000
-MAX_TEST_WORKERS = 250
+MAX_TEST_WORKERS = 200
 TCP_TIMEOUT = 2.5
 MAX_LATENCY_MS = 2500
 MAX_NAME_LENGTH = 40
@@ -78,21 +78,31 @@ def is_valid_config(config: str) -> bool:
 def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, limit: int = 0) -> Set[str]:
     all_configs = set()
     if is_github:
-        if not pat: print("WARNING: GitHub PAT not found. Skipping dynamic search."); return set()
+        if not pat: 
+            print("WARNING: GitHub PAT not found. Skipping dynamic search.")
+            return set()
         try:
             gh_auth = Auth.Token(pat)
             g = Github(auth=gh_auth, timeout=30)
             
-            file_extensions_query_part = "extension:txt OR extension:md OR extension:yml OR extension:yaml OR extension:json OR extension:html"
+            # --- IMPROVED: Comprehensive GitHub Queries ---
+            # Search for common extensions and a general query for each protocol
+            file_extensions_part = "extension:txt OR extension:md OR extension:yml OR extension:yaml OR extension:json OR extension:html OR extension:log"
             base_negative_filters = "-user:mahdibland -filename:example -filename:sample -filename:test"
             
-            queries_to_run = [f'"{proto}" {file_extensions_query_part} {base_negative_filters}' for proto in VALID_PROTOCOLS]
+            queries_to_run = []
+            for proto in VALID_PROTOCOLS:
+                # Specific query for files with common extensions
+                queries_to_run.append(f'"{proto}://" {file_extensions_part} {base_negative_filters}')
+                # General query (less specific, but catches more) - use only for Xray protocols to limit API calls
+                if proto in XRAY_PROTOCOLS:
+                     queries_to_run.append(f'"{proto}://" {base_negative_filters} path:/') # search across all paths
 
             processed_files = set()
             total_files_processed = 0
-            MAX_FILES_PER_PROTOCOL_QUERY = 50
+            MAX_FILES_PER_GITHUB_QUERY = 50 # Limit how many files we process per GitHub search query to manage time
 
-            print(f"  Starting GitHub search across {len(queries_to_run)} protocol queries...")
+            print(f"  Starting GitHub search across {len(queries_to_run)} comprehensive queries...")
             for i, query in enumerate(queries_to_run):
                 if total_files_processed >= limit: 
                     print(f"  Reached global GitHub file limit of {limit}, stopping further search.")
@@ -100,17 +110,19 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                 
                 print(f"  Executing GitHub Search ({i+1}/{len(queries_to_run)} for {query.split(' ')[0].replace('"', '')})...")
                 try:
+                    # Fetch first few pages to get enough variety, up to 3 pages
+                    # This implicitly fetches more than 30 results per query
                     results_iterator = g.search_code(q=query, order='desc', sort='indexed', per_page=100)
                     
                     current_query_files_processed = 0
-                    for page_num in range(3):
-                        if total_files_processed >= limit or current_query_files_processed >= MAX_FILES_PER_PROTOCOL_QUERY: break
+                    for page_num in range(3): 
+                        if total_files_processed >= limit or current_query_files_processed >= MAX_FILES_PER_GITHUB_QUERY: break
 
                         try:
                             page_results = results_iterator.get_page(page_num)
                         except RateLimitExceededException:
-                            print(f"    GitHub API rate limit hit while fetching page {page_num}. Waiting 60s...")
-                            time.sleep(60)
+                            print(f"    GitHub API rate limit hit while fetching page {page_num}. Waiting 180s...") # Increased wait
+                            time.sleep(180)
                             page_results = results_iterator.get_page(page_num)
                         except Exception as e:
                             print(f"    Error fetching GitHub search page {page_num}: {type(e).__name__}. Skipping to next page/query.")
@@ -119,24 +131,32 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                         if not page_results: break
 
                         for content_file in page_results:
-                            if total_files_processed >= limit or current_query_files_processed >= MAX_FILES_PER_PROTOCOL_QUERY: break
+                            if total_files_processed >= limit or current_query_files_processed >= MAX_FILES_PER_GITHUB_QUERY: break
                             
                             if content_file.path in processed_files: continue
                             processed_files.add(content_file.path)
                             
                             try:
-                                time.sleep(random.uniform(0.1, 0.2))
+                                # Optimized: shorter delay for individual file fetches
+                                time.sleep(random.uniform(0.1, 0.3)) 
+                                
                                 decoded_content = content_file.decoded_content.decode('utf-8', 'ignore').replace('`', '')
                                 
                                 potential_configs = set()
-                                for line in decoded_content.splitlines()[:1000]:
+                                lines = decoded_content.splitlines()
+                                
+                                # Process a reasonable number of lines from each file
+                                max_lines_per_file = 2000 
+                                for line_num, line in enumerate(lines[:max_lines_per_file]):
                                     cleaned_line = line.strip()
                                     if is_valid_config(cleaned_line):
                                         potential_configs.add(cleaned_line)
+                                    # Check for base64 encoded strings
                                     elif 20 < len(cleaned_line) < 2000 and re.match(r'^[A-Za-z0-9+/=\s]+$', cleaned_line):
                                         try:
                                             decoded_sub_content = decode_base64_content(cleaned_line)
-                                            for sub_line in decoded_sub_content.splitlines()[:50]:
+                                            # Limit sub-lines to avoid excessively long processing for very large base64 blobs
+                                            for sub_line in decoded_sub_content.splitlines()[:100]: 
                                                 if is_valid_config(sub_line.strip()):
                                                     potential_configs.add(sub_line.strip())
                                         except Exception: continue
@@ -145,28 +165,30 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                                     all_configs.update(potential_configs)
                                     total_files_processed += 1
                                     current_query_files_processed += 1
+                                    print(f"    Processed {content_file.path} -> {len(potential_configs)} configs")
                                     
                             except UnknownObjectException:
-                                print(f"    WARNING: GitHub file {content_file.path} not found during content fetch. Skipping.")
+                                # File not found, likely deleted between search and fetch
                                 continue 
                             except RateLimitExceededException:
-                                print(f"    GitHub API rate limit hit while fetching content for {content_file.path}. Waiting 60s...")
-                                time.sleep(60)
+                                print(f"    GitHub API rate limit hit while fetching content for {content_file.path}. Waiting 180s...")
+                                time.sleep(180)
                                 continue 
                             except Exception as e:
                                 print(f"    Error processing GitHub file {content_file.path}: {type(e).__name__}: {e}. Skipping.")
                                 continue
 
                 except RateLimitExceededException:
-                    print("    GitHub API rate limit hit during query execution. Waiting 60s and retrying query...")
-                    time.sleep(60)
+                    print("    GitHub API rate limit hit during query execution. Waiting 180s and retrying query...")
+                    time.sleep(180)
                     continue 
                 except Exception as e:
                     print(f"    ERROR: GitHub search failed for query '{query}'. Reason: {type(e).__name__}: {e}. Skipping query.")
                     continue
                 
+                # Optimized: Shorter delay between queries if not rate limited
                 if i < len(queries_to_run) - 1:
-                    time.sleep(random.uniform(1, 2))
+                    time.sleep(random.uniform(2, 5)) 
             
             print(f"  Finished GitHub search. Found {len(all_configs)} configs from {total_files_processed} unique GitHub files.")
 
@@ -174,6 +196,7 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
             print("ERROR: GitHub PAT is invalid or lacks necessary scopes. Please check GH_PAT.")
         except Exception as e: 
             print(f"ERROR: General GitHub operation failed. Reason: {type(e).__name__}: {e}. Skipping GitHub search.")
+    
     else: # Fetching from static URLs
         print(f"  Fetching from {len(sources)} static URLs...")
         def fetch_url(url):
@@ -188,8 +211,7 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                 
                 for current_content in [content, decoded_full_content]:
                     if not current_content: continue
-                    for line_num, line in enumerate(current_content.splitlines()):
-                        if line_num >= 5000: break
+                    for line_num, line in enumerate(current_content.splitlines()[:5000]):
                         cleaned_line = line.strip()
                         if is_valid_config(cleaned_line):
                             potential_configs.add(cleaned_line)
@@ -210,12 +232,13 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                 print(f"    General error fetching/processing {url}: {e}. Skipping.")
                 return set()
 
-        with ThreadPoolExecutor(max_workers=20) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures = {executor.submit(fetch_url, url): url for url in sources}
             for future in as_completed(futures):
                 result = future.result()
                 if result: all_configs.update(result)
         print(f"  Finished fetching from static sources. Found {len(all_configs)} configs.")
+    
     return all_configs
 
 def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
@@ -325,24 +348,29 @@ def upload_to_cloudflare_kv(key: str, value: str):
     except APIError as e:
         print(f"❌ ERROR: Cloudflare API error uploading '{key}': code {e.code} - {e.message}")
         if e.code == 10000:
-            print("HINT: Ensure the CLOUDFLARE_API_TOKEN has 'Worker KV Storage Write' permission and is scoped to the correct account.")
+            print("HINT: Ensure the CLOUDFLARE_API_TOKEN has 'Worker KV Storage Write' permission.")
         if e.code == 10014:
-            print("HINT: Double-check that CLOUDFLARE_KV_NAMESPACE_ID is correct for your KV namespace and within the specified account.")
+            print("HINT: Double-check that CLOUDFLARE_KV_NAMESPACE_ID is correct.")
         raise
     except Exception as e:
         print(f"❌ ERROR: Failed to upload key '{key}' to Cloudflare KV: {type(e).__name__}: {e}")
         raise
 
-# --- Recursive function to ensure all bytes are decoded to str for JSON serialization ---
-def ensure_str_recursive(obj):
+# --- Enhanced: Robust JSON Cleaning Function ---
+def clean_for_json(obj):
+    """Recursively cleans object for JSON serialization, decoding bytes to strings and converting non-serializable types."""
     if isinstance(obj, bytes):
-        return obj.decode('utf-8', 'ignore')
+        return obj.decode('utf-8', 'ignore')  # Decode bytes to string
     elif isinstance(obj, dict):
-        return {ensure_str_recursive(k): ensure_str_recursive(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [ensure_str_recursive(elem) for elem in obj]
+        # Recursively clean dictionary keys and values
+        return {str(clean_for_json(k)): clean_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple, Set)): # Handle lists, tuples, and sets
+        return [clean_for_json(item) for item in obj]
+    elif isinstance(obj, (int, float, str, bool)) or obj is None:
+        return obj # Already JSON serializable
     else:
-        return obj
+        # For any other non-serializable object, convert to string as a last resort
+        return str(obj)
 
 # --- Main Execution ---
 def main():
@@ -352,7 +380,7 @@ def main():
             sources_config = json.load(f)
         
         static_sources = sources_config.get("static", [])
-        github_search_limit = sources_config.get("github_search_limit", 700)
+        github_search_limit = sources_config.get("github_search_limit", 700) # Increased back to default/higher
 
         print(f"✅ Loaded {len(static_sources)} static sources. GitHub search limit: {github_search_limit}.")
     except Exception as e:
@@ -373,24 +401,26 @@ def main():
         return
     print(f"📊 Total unique configs collected: {len(all_collected_configs)}")
 
-    print(f"\n--- 3. PERFORMING DEEP PROTOCOL HANDSHAKE TEST (Up to {MAX_CONFIGS_TO_TEST} configs, Max latency: {MAX_LATENCY_MS}ms) ---")
+    print(f"\n--- 3. PERFORMING DEEP PROTOCOL HANDSHAKE TEST ---")
     fast_configs_with_latency = []
     configs_to_test_list = list(all_collected_configs)[:MAX_CONFIGS_TO_TEST] 
-    print(f"  Testing {len(configs_to_test_list)} configs with {MAX_TEST_WORKERS} workers (TCP Timeout: {TCP_TIMEOUT}s)...")
+    print(f"  Testing {len(configs_to_test_list)} configs with {MAX_TEST_WORKERS} workers...")
+    
     with ThreadPoolExecutor(max_workers=MAX_TEST_WORKERS) as executor:
         futures = {executor.submit(test_full_protocol_handshake, cfg): cfg for cfg in configs_to_test_list}
         for i, future in enumerate(as_completed(futures)):
-            if (i + 1) % 500 == 0: print(f"  Tested {i+1}/{len(futures)} configs...")
+            if (i + 1) % 500 == 0: 
+                print(f"  Tested {i+1}/{len(futures)} configs...")
             result = future.result()
             if result and result[1] <= MAX_LATENCY_MS:
                 fast_configs_with_latency.append(result)
 
     if not fast_configs_with_latency: 
-        print("FATAL: No fast configs found after deep protocol handshake test. Exiting.")
+        print("FATAL: No fast configs found after testing. Exiting.")
         return
     print(f"🏆 Found {len(fast_configs_with_latency)} fast configs.")
 
-    print("\n--- 4. GROUPING AND FINALIZING CONFIGS WITH FLUID QUOTA ---")
+    print("\n--- 4. GROUPING AND FINALIZING CONFIGS ---")
     xray_eligible_pool = [(c, l) for c, l in fast_configs_with_latency if urlparse(c).scheme.lower() in XRAY_PROTOCOLS]
     singbox_eligible_pool = [(c, l) for c, l in fast_configs_with_latency if urlparse(c).scheme.lower() in VALID_PROTOCOLS]
 
@@ -413,25 +443,57 @@ def main():
         "singbox": group_by_protocol_for_output(singbox_final_selected)
     }
 
-    print("\n--- 5. UPLOADING FINALIZED CONFIGS TO CLOUDFLARE KV ---")
+    print("\n--- 5. UPLOADING TO CLOUDFLARE KV ---")
     try:
-        # ✅ THE ULTIMATE FIX FOR JSON SERIALIZATION:
-        # Recursively ensure all bytes objects are decoded to strings before JSON serialization.
-        # This handles cases where bytes objects might be nested within lists or dictionaries.
-        cleaned_output_data = ensure_str_recursive(output_data_for_kv)
+        print("  Cleaning data structure for JSON serialization...")
+        cleaned_output_data = clean_for_json(output_data_for_kv)
         
-        json_string_to_upload = json.dumps(cleaned_output_data, indent=2, ensure_ascii=False)
+        print("  Testing JSON serialization...")
+        try:
+            json_string_to_upload = json.dumps(cleaned_output_data, indent=2, ensure_ascii=False)
+            print(f"  JSON serialization successful. Data size: {len(json_string_to_upload)} characters")
+        except Exception as json_error:
+            print(f"  JSON serialization failed with ensure_ascii=False: {json_error}")
+            try:
+                # Fallback to ensure_ascii=True if non-ASCII characters cause issues
+                json_string_to_upload = json.dumps(cleaned_output_data, indent=2, ensure_ascii=True)
+                print(f"  JSON serialization with ASCII fallback successful.")
+            except Exception as json_error2:
+                print(f"  Even ASCII JSON serialization failed: {json_error2}")
+                raise json_error2 # Re-raise the error if both fail
         
+        print("  Uploading live configs to Cloudflare KV...")
         upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json_string_to_upload)
         
+        print("  Uploading cache version to Cloudflare KV...")
         upload_to_cloudflare_kv(KV_CACHE_VERSION_KEY, str(int(time.time())))
         
         print("\n--- PROCESS COMPLETED SUCCESSFULLY ---")
+        
+        # Summary statistics
+        total_xray = sum(len(configs) for configs in output_data_for_kv["xray"].values())
+        total_singbox = sum(len(configs) for configs in output_data_for_kv["singbox"].values())
+        print(f"Final Summary:")
+        print(f"   - Xray Configs: {total_xray}")
+        print(f"   - Sing-box Configs: {total_singbox}")
+        print(f"   - Total Configs Uploaded: {total_xray + total_singbox}")
+        
     except ValueError as e:
-        print(f"❌ FATAL: Cloudflare KV upload skipped due to missing credentials. Job will fail.")
+        print(f"❌ FATAL: Cloudflare KV upload skipped due to missing credentials: {e}")
         raise
     except Exception as e:
-        print(f"❌ FATAL: Could not complete Cloudflare KV upload. Reason: {e}. Job will fail.")
+        print(f"❌ FATAL: Could not complete Cloudflare KV upload: {type(e).__name__}: {e}")
+        
+        # Debug info for troubleshooting
+        print("\nDebug Info:")
+        print(f"  Output data type: {type(output_data_for_kv)}")
+        if isinstance(output_data_for_kv, dict):
+            for key, value in output_data_for_kv.items():
+                print(f"  - {key}: {type(value)}")
+                if isinstance(value, dict):
+                    for subkey, subvalue in value.items():
+                        print(f"    - {subkey}: {type(subvalue)} (length: {len(subvalue) if hasattr(subvalue, '__len__') else 'n/a'})")
+        
         raise
 
 if __name__ == "__main__":
