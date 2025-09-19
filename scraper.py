@@ -17,7 +17,7 @@ from collections import defaultdict
 # cloudflare library is required: pip install cloudflare
 from cloudflare import Cloudflare, APIError
 
-print("v2v scraper v43.0 (Timeout Avoidance Strategy - Reduced GitHub Scope)")
+print("v2v scraper v45.0 (Ultimate Timeout Avoidance Strategy)")
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -88,28 +88,28 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
             file_extensions_part = "extension:txt OR extension:md OR extension:yml OR extension:yaml OR extension:json OR extension:html OR extension:log"
             base_negative_filters = "-user:mahdibland -filename:example -filename:sample -filename:test"
             
-            queries_to_run = []
-            for proto in VALID_PROTOCOLS:
-                queries_to_run.append(f'"{proto}://" {file_extensions_part} {base_negative_filters}')
-                if proto in XRAY_PROTOCOLS:
-                     queries_to_run.append(f'"{proto}://" {base_negative_filters} path:/')
-
+            # ✅ تغییر اصلی در این قسمت: فقط یک کوئری عمومی برای یافتن همه پروتکل‌ها
+            protocols_query_part = ' OR '.join([f'"{p}://"' for p in VALID_PROTOCOLS])
+            
+            # ✅ تغییر اصلی: یک کوئری جامع به جای چندین کوئری
+            queries_to_run = [f'{protocols_query_part} {file_extensions_part} {base_negative_filters}']
+            
             processed_files = set()
             total_files_processed = 0
-            MAX_FILES_PER_GITHUB_QUERY = 50
+            # ✅ افزایش MAX_FILES_PER_GITHUB_QUERY به 75 (یا حتی 100 اگر باز هم timeout شد)
+            MAX_FILES_PER_GITHUB_QUERY = 75 # افزایش برای جبران کاهش تعداد کوئری‌ها
 
-            print(f"  Starting GitHub search across {len(queries_to_run)} comprehensive queries...")
-            for i, query in enumerate(queries_to_run):
+            print(f"  Starting GitHub search with {len(queries_to_run)} comprehensive query...")
+            for i, query in enumerate(queries_to_run): # اکنون فقط یک کوئری در اینجا خواهیم داشت
                 if total_files_processed >= limit: 
                     print(f"  Reached global GitHub file limit of {limit}, stopping further search.")
                     break
                 
-                print(f"  Executing GitHub Search ({i+1}/{len(queries_to_run)} for {query.split(' ')[0].replace('"', '')})...")
+                print(f"  Executing GitHub Search for common protocol patterns...")
                 try:
                     results_iterator = g.search_code(q=query, order='desc', sort='indexed', per_page=100)
                     
                     current_query_files_processed = 0
-                    # ✅ MODIFIED: Fetch up to 2 pages instead of 3 to reduce runtime
                     for page_num in range(2): 
                         if total_files_processed >= limit or current_query_files_processed >= MAX_FILES_PER_GITHUB_QUERY: break
 
@@ -132,7 +132,8 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                             processed_files.add(content_file.path)
                             
                             try:
-                                time.sleep(random.uniform(0.1, 0.3)) 
+                                # ✅ کاهش کمی زمان تاخیر بین فچ فایل‌ها
+                                time.sleep(random.uniform(0.05, 0.15)) 
                                 
                                 decoded_content = content_file.decoded_content.decode('utf-8', 'ignore').replace('`', '')
                                 
@@ -173,9 +174,11 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                     print(f"    ERROR: GitHub search failed for query '{query}'. Reason: {type(e).__name__}: {e}. Skipping query.")
                     continue
                 
-                if i < len(queries_to_run) - 1:
-                    time.sleep(random.uniform(2, 5)) 
-            
+                # ✅ حذف یا کاهش شدید این تاخیر، چون دیگر چندین کوئری نداریم
+                # if i < len(queries_to_run) - 1:
+                #     time.sleep(random.uniform(2, 5)) 
+                time.sleep(random.uniform(0.5, 1.0)) # یک تاخیر کوچک بعد از کوئری اصلی
+
             print(f"  Finished GitHub search. Found {len(all_configs)} configs from {total_files_processed} unique GitHub files.")
 
         except BadCredentialsException:
@@ -360,8 +363,7 @@ def main():
             sources_config = json.load(f)
         
         static_sources = sources_config.get("static", [])
-        # ✅ MODIFIED: Use the reduced GitHub search limit
-        github_search_limit = sources_config.get("github_search_limit", 300)
+        github_search_limit = sources_config.get("github_search_limit", 300) # استفاده از مقدار پیش‌فرض 300
 
         print(f"✅ Loaded {len(static_sources)} static sources. GitHub search limit set to: {github_search_limit}.")
     except Exception as e:
