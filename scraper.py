@@ -17,8 +17,7 @@ from collections import defaultdict
 # cloudflare library is required: pip install cloudflare
 from cloudflare import Cloudflare, APIError
 
-# Updated version string to reflect the latest fixes
-print("v2v scraper v40.2 (Cloudflare KV Upload Fixes Applied)")
+print("v2v scraper v40.3 (Final JSON Serialization Fix)")
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -315,13 +314,12 @@ def upload_to_cloudflare_kv(key: str, value: str):
     try:
         cf_client = Cloudflare(api_token=CF_API_TOKEN, timeout=60)
         
-        # ✅ FINAL FIX: Correctly pass 'account_id', 'namespace_id', 'key_name', 'value' (as bytes), and 'metadata'.
         cf_client.kv.namespaces.values.update(
-            account_id=CF_ACCOUNT_ID,    # Required argument for values.update
+            account_id=CF_ACCOUNT_ID,
             namespace_id=CF_KV_NAMESPACE_ID,
             key_name=key,
-            value=value.encode('utf-8'), # Value must be bytes
-            metadata={}                  # Required argument, empty dict if no metadata
+            value=value.encode('utf-8'),
+            metadata={}
         )
         print(f"✅ Successfully uploaded '{key}' to Cloudflare KV.")
     except APIError as e:
@@ -406,10 +404,18 @@ def main():
 
     print("\n--- 5. UPLOADING FINALIZED CONFIGS TO CLOUDFLARE KV ---")
     try:
-        # Pass data to Cloudflare KV (all_live_configs.json)
-        upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json.dumps(output_data_for_kv, indent=2, ensure_ascii=False))
+        # ✅ FINAL FIX FOR JSON SERIALIZATION:
+        # A custom JSON encoder is added to handle potential `bytes` objects.
+        class BytesEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, bytes):
+                    return obj.decode('utf-8', 'ignore') # Safely decode bytes to string
+                return super().default(obj)
+
+        json_string_to_upload = json.dumps(output_data_for_kv, indent=2, ensure_ascii=False, cls=BytesEncoder)
         
-        # Upload current timestamp as cache version
+        upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json_string_to_upload)
+        
         upload_to_cloudflare_kv(KV_CACHE_VERSION_KEY, str(int(time.time())))
         
         print("\n--- PROCESS COMPLETED SUCCESSFULLY ---")
