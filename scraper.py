@@ -17,7 +17,7 @@ from collections import defaultdict
 # cloudflare library is required: pip install cloudflare
 from cloudflare import Cloudflare, APIError
 
-print("v2v scraper v40.3 (Final JSON Serialization Fix)")
+print("v2v scraper v40.4 (Deep JSON Serialization Fix)")
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -333,6 +333,17 @@ def upload_to_cloudflare_kv(key: str, value: str):
         print(f"❌ ERROR: Failed to upload key '{key}' to Cloudflare KV: {type(e).__name__}: {e}")
         raise
 
+# --- Recursive function to ensure all bytes are decoded to str for JSON serialization ---
+def ensure_str_recursive(obj):
+    if isinstance(obj, bytes):
+        return obj.decode('utf-8', 'ignore')
+    elif isinstance(obj, dict):
+        return {ensure_str_recursive(k): ensure_str_recursive(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [ensure_str_recursive(elem) for elem in obj]
+    else:
+        return obj
+
 # --- Main Execution ---
 def main():
     print("--- 1. LOADING SOURCES ---")
@@ -404,15 +415,12 @@ def main():
 
     print("\n--- 5. UPLOADING FINALIZED CONFIGS TO CLOUDFLARE KV ---")
     try:
-        # ✅ FINAL FIX FOR JSON SERIALIZATION:
-        # A custom JSON encoder is added to handle potential `bytes` objects.
-        class BytesEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if isinstance(obj, bytes):
-                    return obj.decode('utf-8', 'ignore') # Safely decode bytes to string
-                return super().default(obj)
-
-        json_string_to_upload = json.dumps(output_data_for_kv, indent=2, ensure_ascii=False, cls=BytesEncoder)
+        # ✅ THE ULTIMATE FIX FOR JSON SERIALIZATION:
+        # Recursively ensure all bytes objects are decoded to strings before JSON serialization.
+        # This handles cases where bytes objects might be nested within lists or dictionaries.
+        cleaned_output_data = ensure_str_recursive(output_data_for_kv)
+        
+        json_string_to_upload = json.dumps(cleaned_output_data, indent=2, ensure_ascii=False)
         
         upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json_string_to_upload)
         
