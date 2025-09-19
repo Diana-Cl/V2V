@@ -17,7 +17,8 @@ from collections import defaultdict
 # cloudflare library is required: pip install cloudflare
 from cloudflare import Cloudflare, APIError
 
-print("v2v scraper v40.1 (Stable KV Upload) - Corrected Cloudflare API method")
+# Updated version string to reflect the latest fixes
+print("v2v scraper v40.2 (Cloudflare KV Upload Fixes Applied)")
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -314,11 +315,13 @@ def upload_to_cloudflare_kv(key: str, value: str):
     try:
         cf_client = Cloudflare(api_token=CF_API_TOKEN, timeout=60)
         
-        # ✅ CRITICAL FIX: The correct method is `values.update` and the parameter is `value`, not `data`.
+        # ✅ FINAL FIX: Correctly pass 'account_id', 'namespace_id', 'key_name', 'value' (as bytes), and 'metadata'.
         cf_client.kv.namespaces.values.update(
+            account_id=CF_ACCOUNT_ID,    # Required argument for values.update
             namespace_id=CF_KV_NAMESPACE_ID,
             key_name=key,
-            value=value.encode('utf-8') # Value must be bytes
+            value=value.encode('utf-8'), # Value must be bytes
+            metadata={}                  # Required argument, empty dict if no metadata
         )
         print(f"✅ Successfully uploaded '{key}' to Cloudflare KV.")
     except APIError as e:
@@ -403,8 +406,12 @@ def main():
 
     print("\n--- 5. UPLOADING FINALIZED CONFIGS TO CLOUDFLARE KV ---")
     try:
+        # Pass data to Cloudflare KV (all_live_configs.json)
         upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json.dumps(output_data_for_kv, indent=2, ensure_ascii=False))
+        
+        # Upload current timestamp as cache version
         upload_to_cloudflare_kv(KV_CACHE_VERSION_KEY, str(int(time.time())))
+        
         print("\n--- PROCESS COMPLETED SUCCESSFULLY ---")
     except ValueError as e:
         print(f"❌ FATAL: Cloudflare KV upload skipped due to missing credentials. Job will fail.")
