@@ -17,7 +17,7 @@ from collections import defaultdict
 # cloudflare library is required: pip install cloudflare
 from cloudflare import Cloudflare, APIError
 
-print("v2v scraper v42.0 (Optimized for max config retrieval + robust JSON handling)")
+print("v2v scraper v43.0 (Timeout Avoidance Strategy - Reduced GitHub Scope)")
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -85,22 +85,18 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
             gh_auth = Auth.Token(pat)
             g = Github(auth=gh_auth, timeout=30)
             
-            # --- IMPROVED: Comprehensive GitHub Queries ---
-            # Search for common extensions and a general query for each protocol
             file_extensions_part = "extension:txt OR extension:md OR extension:yml OR extension:yaml OR extension:json OR extension:html OR extension:log"
             base_negative_filters = "-user:mahdibland -filename:example -filename:sample -filename:test"
             
             queries_to_run = []
             for proto in VALID_PROTOCOLS:
-                # Specific query for files with common extensions
                 queries_to_run.append(f'"{proto}://" {file_extensions_part} {base_negative_filters}')
-                # General query (less specific, but catches more) - use only for Xray protocols to limit API calls
                 if proto in XRAY_PROTOCOLS:
-                     queries_to_run.append(f'"{proto}://" {base_negative_filters} path:/') # search across all paths
+                     queries_to_run.append(f'"{proto}://" {base_negative_filters} path:/')
 
             processed_files = set()
             total_files_processed = 0
-            MAX_FILES_PER_GITHUB_QUERY = 50 # Limit how many files we process per GitHub search query to manage time
+            MAX_FILES_PER_GITHUB_QUERY = 50
 
             print(f"  Starting GitHub search across {len(queries_to_run)} comprehensive queries...")
             for i, query in enumerate(queries_to_run):
@@ -110,18 +106,17 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                 
                 print(f"  Executing GitHub Search ({i+1}/{len(queries_to_run)} for {query.split(' ')[0].replace('"', '')})...")
                 try:
-                    # Fetch first few pages to get enough variety, up to 3 pages
-                    # This implicitly fetches more than 30 results per query
                     results_iterator = g.search_code(q=query, order='desc', sort='indexed', per_page=100)
                     
                     current_query_files_processed = 0
-                    for page_num in range(3): 
+                    # ✅ MODIFIED: Fetch up to 2 pages instead of 3 to reduce runtime
+                    for page_num in range(2): 
                         if total_files_processed >= limit or current_query_files_processed >= MAX_FILES_PER_GITHUB_QUERY: break
 
                         try:
                             page_results = results_iterator.get_page(page_num)
                         except RateLimitExceededException:
-                            print(f"    GitHub API rate limit hit while fetching page {page_num}. Waiting 180s...") # Increased wait
+                            print(f"    GitHub API rate limit hit while fetching page {page_num}. Waiting 180s...")
                             time.sleep(180)
                             page_results = results_iterator.get_page(page_num)
                         except Exception as e:
@@ -137,25 +132,19 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                             processed_files.add(content_file.path)
                             
                             try:
-                                # Optimized: shorter delay for individual file fetches
                                 time.sleep(random.uniform(0.1, 0.3)) 
                                 
                                 decoded_content = content_file.decoded_content.decode('utf-8', 'ignore').replace('`', '')
                                 
                                 potential_configs = set()
-                                lines = decoded_content.splitlines()
-                                
-                                # Process a reasonable number of lines from each file
                                 max_lines_per_file = 2000 
-                                for line_num, line in enumerate(lines[:max_lines_per_file]):
+                                for line_num, line in enumerate(decoded_content.splitlines()[:max_lines_per_file]):
                                     cleaned_line = line.strip()
                                     if is_valid_config(cleaned_line):
                                         potential_configs.add(cleaned_line)
-                                    # Check for base64 encoded strings
                                     elif 20 < len(cleaned_line) < 2000 and re.match(r'^[A-Za-z0-9+/=\s]+$', cleaned_line):
                                         try:
                                             decoded_sub_content = decode_base64_content(cleaned_line)
-                                            # Limit sub-lines to avoid excessively long processing for very large base64 blobs
                                             for sub_line in decoded_sub_content.splitlines()[:100]: 
                                                 if is_valid_config(sub_line.strip()):
                                                     potential_configs.add(sub_line.strip())
@@ -165,10 +154,8 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                                     all_configs.update(potential_configs)
                                     total_files_processed += 1
                                     current_query_files_processed += 1
-                                    print(f"    Processed {content_file.path} -> {len(potential_configs)} configs")
                                     
                             except UnknownObjectException:
-                                # File not found, likely deleted between search and fetch
                                 continue 
                             except RateLimitExceededException:
                                 print(f"    GitHub API rate limit hit while fetching content for {content_file.path}. Waiting 180s...")
@@ -186,7 +173,6 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                     print(f"    ERROR: GitHub search failed for query '{query}'. Reason: {type(e).__name__}: {e}. Skipping query.")
                     continue
                 
-                # Optimized: Shorter delay between queries if not rate limited
                 if i < len(queries_to_run) - 1:
                     time.sleep(random.uniform(2, 5)) 
             
@@ -329,7 +315,6 @@ def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: 
     
     return final_selected_configs
 
-# --- Cloudflare KV Upload ---
 def upload_to_cloudflare_kv(key: str, value: str):
     if not all([CF_API_TOKEN, CF_ACCOUNT_ID, CF_KV_NAMESPACE_ID]):
         print("FATAL: Cloudflare KV credentials not fully set. Skipping KV upload.")
@@ -356,23 +341,18 @@ def upload_to_cloudflare_kv(key: str, value: str):
         print(f"❌ ERROR: Failed to upload key '{key}' to Cloudflare KV: {type(e).__name__}: {e}")
         raise
 
-# --- Enhanced: Robust JSON Cleaning Function ---
 def clean_for_json(obj):
-    """Recursively cleans object for JSON serialization, decoding bytes to strings and converting non-serializable types."""
     if isinstance(obj, bytes):
-        return obj.decode('utf-8', 'ignore')  # Decode bytes to string
+        return obj.decode('utf-8', 'ignore')
     elif isinstance(obj, dict):
-        # Recursively clean dictionary keys and values
         return {str(clean_for_json(k)): clean_for_json(v) for k, v in obj.items()}
-    elif isinstance(obj, (list, tuple, Set)): # Handle lists, tuples, and sets
+    elif isinstance(obj, (list, tuple, Set)):
         return [clean_for_json(item) for item in obj]
     elif isinstance(obj, (int, float, str, bool)) or obj is None:
-        return obj # Already JSON serializable
+        return obj
     else:
-        # For any other non-serializable object, convert to string as a last resort
         return str(obj)
 
-# --- Main Execution ---
 def main():
     print("--- 1. LOADING SOURCES ---")
     try:
@@ -380,9 +360,10 @@ def main():
             sources_config = json.load(f)
         
         static_sources = sources_config.get("static", [])
-        github_search_limit = sources_config.get("github_search_limit", 700) # Increased back to default/higher
+        # ✅ MODIFIED: Use the reduced GitHub search limit
+        github_search_limit = sources_config.get("github_search_limit", 300)
 
-        print(f"✅ Loaded {len(static_sources)} static sources. GitHub search limit: {github_search_limit}.")
+        print(f"✅ Loaded {len(static_sources)} static sources. GitHub search limit set to: {github_search_limit}.")
     except Exception as e:
         print(f"FATAL: Cannot load or parse {SOURCES_FILE}: {e}. Exiting.")
         return
@@ -455,12 +436,11 @@ def main():
         except Exception as json_error:
             print(f"  JSON serialization failed with ensure_ascii=False: {json_error}")
             try:
-                # Fallback to ensure_ascii=True if non-ASCII characters cause issues
                 json_string_to_upload = json.dumps(cleaned_output_data, indent=2, ensure_ascii=True)
                 print(f"  JSON serialization with ASCII fallback successful.")
             except Exception as json_error2:
                 print(f"  Even ASCII JSON serialization failed: {json_error2}")
-                raise json_error2 # Re-raise the error if both fail
+                raise json_error2
         
         print("  Uploading live configs to Cloudflare KV...")
         upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json_string_to_upload)
@@ -470,13 +450,11 @@ def main():
         
         print("\n--- PROCESS COMPLETED SUCCESSFULLY ---")
         
-        # Summary statistics
         total_xray = sum(len(configs) for configs in output_data_for_kv["xray"].values())
         total_singbox = sum(len(configs) for configs in output_data_for_kv["singbox"].values())
         print(f"Final Summary:")
         print(f"   - Xray Configs: {total_xray}")
         print(f"   - Sing-box Configs: {total_singbox}")
-        print(f"   - Total Configs Uploaded: {total_xray + total_singbox}")
         
     except ValueError as e:
         print(f"❌ FATAL: Cloudflare KV upload skipped due to missing credentials: {e}")
@@ -484,7 +462,6 @@ def main():
     except Exception as e:
         print(f"❌ FATAL: Could not complete Cloudflare KV upload: {type(e).__name__}: {e}")
         
-        # Debug info for troubleshooting
         print("\nDebug Info:")
         print(f"  Output data type: {type(output_data_for_kv)}")
         if isinstance(output_data_for_kv, dict):
@@ -498,3 +475,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
