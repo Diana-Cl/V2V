@@ -1,100 +1,32 @@
-name: scrape, build, and deploy mirrors
+name: Deploy Cloudflare Worker
 
 on:
-  schedule:
-    - cron: "0 */4 * * *" # Runs every 4 hours
-  workflow_dispatch: # Allows manual trigger
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+  push:
+    branches:
+      - main # Or your default branch, e.g., 'master'
+    paths:
+      - 'worker.js'    # Workflow runs only if worker.js changes
+      - 'wrangler.toml'  # Workflow runs only if wrangler.toml changes
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: true # Cancel any previous runs if a new one is triggered
 
 jobs:
-  build_and_commit:
+  deploy:
     runs-on: ubuntu-latest
-    name: 1. Scrape data & upload to Cloudflare KV
-    timeout-minutes: 30 # ✅ Increased overall job timeout to 30 minutes
+    name: Deploy Worker to Cloudflare
+    permissions:
+      contents: read # Required for actions/checkout to clone the repository
+      
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # ✅ اصلاح شد: اضافه شدن علامت '@' قبل از v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Deploy Worker to Cloudflare
+        uses: cloudflare/wrangler-action@v3 # ✅ اصلاح شد: اضافه شدن علامت '@' قبل از v3
         with:
-          python-version: "3.12"
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade -r requirements.txt cloudflare # Ensure 'cloudflare' library is installed
-
-      - name: Run scraper and upload to Cloudflare KV
-        timeout-minutes: 25 # ✅ Increased specific scraper timeout to 25 minutes
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
-        run: python scraper.py
-
-      - name: Commit and push data files
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "📊 data: update live configs in Cloudflare KV"
-          # No local files committed by scraper in this setup unless you explicitly create them again
-          # if you still want to commit local files for Vercel/Arvan/GH Pages, you'd need to add them back in scraper.py
-          # For now, assuming KV is the primary output and other deployments read from KV via Worker or need separate files.
-          file_pattern: "" # ✅ Removed file_pattern as scraper output is directly to KV. Adjust if local files are needed.
-
-  deploy_mirrors:
-    needs: build_and_commit # Ensure scraper runs first
-    runs-on: ubuntu-latest
-    name: 2. Deploy to Vercel, ArvanCloud & GitHub Pages
-    timeout-minutes: 10 # Timeout for the deployment job
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4 # Checkout again to ensure latest code, though data comes from KV for worker
-
-      # NOTE: These deployment steps (Vercel, Arvan, GitHub Pages)
-      # will need to be configured to read from Cloudflare KV *if* they are supposed to serve the same data.
-      # If they are serving static files committed to the repo, then `file_pattern` in build_and_commit needs to be re-added
-      # and scraper.py modified to write to ./public locally.
-      # Based on your prompt, the KV is the source for Worker, so these mirrors might need adjustment.
-
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: .
-          vercel-args: '--prod'
-
-      - name: Deploy to ArvanCloud S3
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-          AWS_REGION: "us-east-1"
-          ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
-          ARVAN_S3_BUCKET: s3://v2v-data
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install --update
-          aws s3 sync ./public ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete
-          # NOTE: This syncs ./public. If scraper.py no longer writes to ./public, this will sync an empty or old directory.
-          # You might need to adjust scraper.py to also write local files if Vercel/Arvan need them.
-
-      - name: Create Artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './public' # NOTE: Same as above. Adjust scraper.py if this needs content.
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }} # ✅ اصلاح شد: استفاده از حروف بزرگ برای نام Secret (استاندارد)
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # ✅ اصلاح شد: استفاده از حروف بزرگ برای نام Secret (استاندارد)
+          # command: 'deploy --minify' # Optional: uncomment and add specific wrangler CLI commands if needed
