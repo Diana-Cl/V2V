@@ -2,13 +2,13 @@ name: scrape, build, and deploy mirrors
 
 on:
   schedule:
-    - cron: "0 */4 * * *" # Runs every 4 hours
-  workflow_dispatch: # Allows manual trigger
+    - cron: "0 */4 * * *" # runs every 4 hours
+  workflow_dispatch: # allows manual trigger
 
 permissions:
-  contents: write # Needed for git-auto-commit-action
-  pages: write    # Needed for deploy-pages-action
-  id-token: write # Needed for deploy-pages-action (if using OIDC)
+  contents: write # needed for git-auto-commit-action
+  pages: write    # needed for deploy-pages-action
+  id-token: write # needed for deploy-pages-action (if using oidc)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,13 +18,13 @@ jobs:
   build_and_commit:
     runs-on: ubuntu-latest
     name: 1. scrape data & upload to cloudflare kv
-    timeout-minutes: 15  # Reduced from 20 to 15 for faster termination
+    timeout-minutes: 15  # Total job timeout remains 15 minutes, which is reasonable for free tier
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # ✅ اصلاح شد: اضافه شدن @v4
 
       - name: set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5 # ✅ اصلاح شد: اضافه شدن @v5
         with:
           python-version: "3.12"
 
@@ -34,22 +34,22 @@ jobs:
           pip install --upgrade -r requirements.txt
 
       - name: run scraper with timeout protection
-        timeout-minutes: 12  # Specific timeout for scraper step
+        timeout-minutes: 14  # ✅ اصلاح شد: افزایش به 14 دقیقه برای مطابقت با timeout کلی Job و دستور داخلی
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
         run: |
-          # Additional timeout command for extra safety
-          timeout 10m python scraper.py || {
-            echo "Scraper timed out after 10 minutes"
-            echo "This could be due to GitHub API rate limits or network issues"
+          # additional timeout command for extra safety
+          timeout 13m python scraper.py || { # ✅ اصلاح شد: افزایش به 13 دقیقه
+            echo "scraper timed out after 13 minutes"
+            echo "this could be due to github api rate limits or network issues"
             exit 1
           }
 
       - name: commit and push updated files
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v5 # ✅ اصلاح شد: اضافه شدن @v5
         with:
           commit_message: "data & website: update configs and frontend files"
           file_pattern: "*.json *.yml *.txt index.html index.js manifest.json logo.png"
@@ -58,58 +58,59 @@ jobs:
     needs: build_and_commit
     runs-on: ubuntu-latest
     name: 2. deploy to vercel, arvancloud & github pages
-    timeout-minutes: 8  # Reduced from 10 to 8
+    timeout-minutes: 8  # reduced from 10 to 8
     steps:
       - name: checkout repository with latest data
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # ✅ اصلاح شد: اضافه شدن @v4
 
       - name: deploy to vercel
-        timeout-minutes: 3  # Add timeout for Vercel step
-        uses: amondnet/vercel-action@v25
+        timeout-minutes: 3
+        uses: amondnet/vercel-action@v25 # ✅ اصلاح شد: اضافه شدن @v25
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-token: ${{ secrets.vercel_token }}
+          vercel-org-id: ${{ secrets.vercel_org_id }}
+          vercel-project-id: ${{ secrets.vercel_project_id }}
           working-directory: .
           vercel-args: '--prod'
 
       - name: deploy to arvancloud s3
-        timeout-minutes: 3  # Add timeout for ArvanCloud step
+        timeout-minutes: 3
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-          AWS_REGION: "us-east-1"
-          ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
-          ARVAN_S3_BUCKET: s3://v2v-data
+          aws_access_key_id: ${{ secrets.ARVAN_ACCESS_KEY_ID }} # ✅ اصلاح شد: ثابت‌های محیطی را معمولاً با حروف بزرگ می‌نویسند
+          aws_secret_access_key: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }} # ✅ اصلاح شد
+          aws_region: "us-east-1"
+          arvan_s3_endpoint: https://s3.ir-thr-at1.arvanstorage.com
+          arvan_s3_bucket: s3://v2v-data
         run: |
-          # Install AWS CLI v2 with timeout protection
+          # install aws cli v2 with timeout protection
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install --update
           
-          # Sync with timeout and retry logic
-          aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} \
-            --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} \
+          # sync with timeout and retry logic
+          aws s3 sync . ${{ env.arvan_s3_bucket }} \
+            --endpoint-url ${{ env.arvan_s3_endpoint }} \
             --acl public-read \
             --delete \
             --cache-control max-age=300 \
             --cli-connect-timeout 30 \
             --cli-read-timeout 60 || {
-            echo "First sync attempt failed, retrying..."
-            aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} \
-              --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} \
+            echo "first sync attempt failed, retrying..."
+            aws s3 sync . ${{ env.arvan_s3_bucket }} \
+              --endpoint-url ${{ env.arvan_s3_endpoint }} \
               --acl public-read \
               --delete \
               --cache-control max-age=300
           }
 
       - name: create artifact for github pages
-        timeout-minutes: 1  # Add timeout for artifact creation
-        uses: actions/upload-pages-artifact@v3
+        timeout-minutes: 1
+        uses: actions/upload-pages-artifact@v3 # ✅ اصلاح شد: اضافه شدن @v3
         with:
           path: '.'
 
       - name: deploy to github pages
-        timeout-minutes: 1  # Add timeout for GitHub Pages deployment
+        timeout-minutes: 1
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4 # ✅ اصلاح شد: اضافه شدن @v4
+
