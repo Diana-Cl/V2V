@@ -314,11 +314,11 @@ def upload_to_cloudflare_kv(key: str, value: str):
     try:
         cf_client = Cloudflare(api_token=CF_API_TOKEN, timeout=60)
         
-        # ✅ CRITICAL FIX: Use the correct method `values.update` instead of `put`
+        # ✅ CRITICAL FIX: The correct method is `values.update` and the parameter is `value`, not `data`.
         cf_client.kv.namespaces.values.update(
             namespace_id=CF_KV_NAMESPACE_ID,
             key_name=key,
-            data=value.encode('utf-8') # Value must be bytes
+            value=value.encode('utf-8') # Value must be bytes
         )
         print(f"✅ Successfully uploaded '{key}' to Cloudflare KV.")
     except APIError as e:
