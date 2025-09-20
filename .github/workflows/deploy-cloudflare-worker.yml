@@ -8,17 +8,18 @@ on:
     paths:
       - 'worker.js'
       - 'wrangler-*.toml'
-      - 'scraper.py' # ✅ اگر scraper.py تغییر کرد، این workflow هم اجرا شود
-      - 'sources.json' # ✅ اگر sources.json تغییر کرد، این workflow هم اجرا شود
-      - 'all_live_configs.json' # ✅ برای آپلود KV
-      - 'cache_version.txt'     # ✅ برای آپلود KV
+      - 'scraper.py'
+      - 'sources.json'
+      - 'all_live_configs.json'
+      - 'cache_version.txt'
+      # - 'clash_subscription.yml' # ✅ حذف شده
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build_and_deploy: # ✅ تغییر نام job به build_and_deploy
+  build_and_deploy:
     runs-on: ubuntu-latest
     name: Build configs, deploy workers & upload to KV
     permissions:
@@ -28,31 +29,26 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v4
 
-      # ✅ مرحله جدید: نصب پایتون و وابستگی‌ها برای اجرای scraper.py
       - name: setup python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10' # یا هر نسخه Python 3.x که scraper.py شما نیاز دارد
-      
+          python-version: '3.10'
+
       - name: install python dependencies
         run: |
           pip install requests pyyaml
 
-      # ✅ مرحله جدید: اجرای scraper.py برای تولید فایل‌های JSON و TXT
       - name: run config scraper
         run: python scraper.py
         env:
-          # اگر scraper.py از PAT استفاده می‌کند، اینجا باید آن را پاس دهید
-          # GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }} # یا GITHUB_PAT: ${{ secrets.YOUR_PERSONAL_ACCESS_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }} # ✅ استفاده از نام Secret شما
 
-      # ✅ مرحله جدید: دیپلوی هر 4 ورکر
       - name: deploy rapid-scene-1da6 worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerConfigFile: 'wrangler-rapid-scene-1da6.toml'
-          # command: 'deploy --minify' # اگر نیاز به minify دارید، فعال کنید
 
       - name: deploy winter-hill-0307 worker
         uses: cloudflare/wrangler-action@v3
@@ -75,18 +71,15 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerConfigFile: 'wrangler-v2v-proxy.toml'
 
-      # ✅ مرحله جدید: آپلود all_live_configs.json به Cloudflare KV
       - name: upload all_live_configs.json to KV
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Key: نامی که در KV برای این داده ذخیره می‌شود. Path: مسیر فایل در Repository
           command: 'kv:key put "${{ env.KV_LIVE_CONFIGS_KEY }}" --path "all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"'
         env:
           KV_LIVE_CONFIGS_KEY: 'all_live_configs.json'
 
-      # ✅ مرحله جدید: آپلود cache_version.txt به Cloudflare KV
       - name: upload cache_version.txt to KV
         uses: cloudflare/wrangler-action@v3
         with:
@@ -96,13 +89,11 @@ jobs:
         env:
           KV_CACHE_VERSION_KEY: 'cache_version.txt'
 
-      # ✅ مرحله جدید: آپلود clash_subscription.yml به Cloudflare KV
-      # این مرحله اختیاری است و اگر نمیخواهید فایل clash.yml هم در KV باشد میتوانید حذف کنید
-      - name: upload clash_subscription.yml to KV
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: 'kv:key put "${{ env.KV_CLASH_SUBSCRIPTION_KEY }}" --path "clash_subscription.yml" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"'
-        env:
-          KV_CLASH_SUBSCRIPTION_KEY: 'clash_subscription.yml'
+      # - name: upload clash_subscription.yml to KV # ✅ حذف شده
+      #   uses: cloudflare/wrangler-action@v3
+      #   with:
+      #     apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      #     accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      #     command: 'kv:key put "${{ env.KV_CLASH_SUBSCRIPTION_KEY }}" --path "clash_subscription.yml" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"'
+      #   env:
+      #     KV_CLASH_SUBSCRIPTION_KEY: 'clash_subscription.yml'
