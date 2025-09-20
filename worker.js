@@ -1,229 +1,229 @@
-// This syntax is specific to Cloudflare Workers.
-import { connect } from 'cloudflare:sockets';
+// ✅ (1) Install `uuid` and `js-yaml` packages: `npm install uuid js-yaml`
+// ✅ (2) Ensure `nodejs_compat` is enabled in `wrangler.toml`:
+//    compatibility_date = "2024-03-20"
+//    compatibility_flags = ["nodejs_compat"]
 
-// --- Configuration ---
-const SUBSCRIPTION_TTL = 48 * 60 * 60; // 48 hours in seconds
-const MAX_NAME_LENGTH = 40;
-const KV_LIVE_CONFIGS_KEY = 'all_live_configs.json';
-const KV_CACHE_VERSION_KEY = 'cache_version.txt';
+import { v4 as uuidv4 } from 'uuid';
+import YAML from 'js-yaml';
+import { connect } from 'cloudflare:sockets'; // ✅ برای تست پینگ TCP از سمت ورکر
 
-// --- Headers ---
-const CORS_HEADERS = {
-    'Access-Control-Allow-Origin': '*',
+// --- Configuration Constants ---
+const ALL_LIVE_CONFIGS_KEY = 'all_live_configs.json';
+const CACHE_VERSION_KEY = 'cache_version.txt';
+const TTL_USER_SUBSCRIPTION_STORE = 60 * 60 * 24 * 30; // 30 days for personal subscription UUIDs
+const FRONTEND_DOMAIN = 'https://smbcryp.github.io'; // ✅ تغییر داده شد به آدرس دقیق فرانت‌اند شما
+
+// --- CORS Headers ---
+const corsHeaders = {
+    'Access-Control-Allow-Origin': FRONTEND_DOMAIN,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Cache-Version',
+    'Access-Control-Max-Age': '86400',
 };
-const JSON_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
-const TEXT_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'text/plain;charset=utf-8' };
-const YAML_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'text/yaml;charset=utf-8' };
 
-// --- Main Fetch Handler ---
-export default {
-    async fetch(request, env) {
-        // The KV binding in wrangler.toml is "V2V_KV", so we must use env.V2V_KV (case-sensitive).
-        const kv = env.V2V_KV;
+// --- Helper Functions ---
 
-        if (request.method === 'OPTIONS') {
-            return new Response(null, { headers: CORS_HEADERS });
+function handleOptions(request) {
+    const requestOrigin = request.headers.get('Origin');
+    if (FRONTEND_DOMAIN.split(',').indexOf(requestOrigin) === -1) {
+        return new Response(null, { status: 403, statusText: 'Forbidden' });
+    }
+    return new Response(null, { headers: corsHeaders });
+}
+
+function jsonResponse(data, status = 200) {
+    return new Response(JSON.stringify(data), {
+        status,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+}
+
+function textResponse(text, status = 200, filename = null) {
+    const headers = { 'Content-Type': 'text/plain; charset=utf-8', ...corsHeaders };
+    if (filename) {
+        headers['Content-Disposition'] = `attachment; filename="${filename}"`;
+    }
+    return new Response(text, { status, headers });
+}
+
+/**
+ * Generates a Clash Meta YAML subscription file.
+ * This function is now more robust to prevent duplicate names and parse errors.
+ * @param {string[]} configs - Array of config URLs.
+ * @returns {string|null} - The YAML string or null if no compatible proxies.
+ */
+function generateClashYaml(configs) {
+    const proxies = [];
+    const usedNames = new Set(); // ✅ برای جلوگیری از نام‌های تکراری
+
+    for (const configUrl of configs) {
+        try {
+            let proxy;
+            const urlParsed = new URL(configUrl);
+            const scheme = urlParsed.protocol.replace(':', '').toLowerCase();
+
+            // Function to generate a unique name
+            const getUniqueName = (baseName) => {
+                let name = baseName;
+                let counter = 1;
+                while (usedNames.has(name)) {
+                    name = `${baseName}-${counter++}`;
+                }
+                usedNames.add(name);
+                return name;
+            };
+
+            if (scheme === 'vmess') {
+                const decodedVmess = JSON.parse(atob(configUrl.substring(8)));
+                proxy = {
+                    name: getUniqueName(decodedVmess.ps || `vmess-${decodedVmess.add}`),
+                    type: 'vmess', server: decodedVmess.add, port: parseInt(decodedVmess.port),
+                    uuid: decodedVmess.id, alterId: parseInt(decodedVmess.aid || 0),
+                    cipher: decodedVmess.scy || 'auto', tls: decodedVmess.tls === 'tls',
+                };
+                if (decodedVmess.net === 'ws') {
+                    proxy.network = 'ws';
+                    proxy['ws-opts'] = { path: decodedVmess.path || '/', headers: { Host: decodedVmess.host || decodedVmess.add }};
+                }
+            } else if (scheme === 'vless') {
+                const params = new URLSearchParams(urlParsed.search);
+                proxy = {
+                    name: getUniqueName(decodeURIComponent(urlParsed.hash.substring(1)) || `vless-${urlParsed.hostname}`),
+                    type: 'vless', server: urlParsed.hostname, port: parseInt(urlParsed.port),
+                    uuid: urlParsed.username, tls: params.get('security') === 'tls',
+                    servername: params.get('sni') || urlParsed.hostname,
+                };
+                if (params.get('type') === 'ws') {
+                    proxy.network = 'ws';
+                    proxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || urlParsed.hostname }};
+                }
+            } else if (scheme === 'trojan') {
+                 const params = new URLSearchParams(urlParsed.search);
+                proxy = {
+                    name: getUniqueName(decodeURIComponent(urlParsed.hash.substring(1)) || `trojan-${urlParsed.hostname}`),
+                    type: 'trojan', server: urlParsed.hostname, port: parseInt(urlParsed.port),
+                    password: urlParsed.password, // Trojan requires a password
+                    sni: params.get('sni') || urlParsed.hostname,
+                };
+            }
+            // Add other protocols if needed for Clash
+
+            if (proxy) {
+                proxies.push(proxy);
+            }
+
+        } catch (e) {
+            console.error(`[Clash Gen] Skipping faulty config: ${configUrl.substring(0, 50)}...`, e.message);
+            continue; // ✅ از کانفیگ‌های معیوب رد شو
         }
+    }
 
+    if (proxies.length === 0) return null;
+
+    const proxyNames = proxies.map(p => p.name);
+    const yamlConfig = {
+        'mixed-port': 7890,
+        'allow-lan': true,
+        'mode': 'rule',
+        'log-level': 'info',
+        proxies: proxies,
+        'proxy-groups': [
+            { name: 'PROXY', type: 'select', proxies: ['AUTO', ...proxyNames] },
+            { name: 'AUTO', type: 'url-test', proxies: proxyNames, url: 'http://www.gstatic.com/generate_204', interval: 300 },
+        ],
+        rules: ['MATCH,PROXY'],
+    };
+    return YAML.dump(yamlConfig, { skipInvalid: true, sortKeys: false });
+}
+
+
+// --- Main Request Handler ---
+
+export default {
+    async fetch(request, env, ctx) {
         const url = new URL(request.url);
 
+        if (request.method === 'OPTIONS') {
+            return handleOptions(request);
+        }
+
         try {
+            // Endpoint 1: /configs - Get all live configs
             if (url.pathname === '/configs') {
-                return handleGetLiveConfigs(kv);
+                const allConfigs = await env.v2v_kv.get(ALL_LIVE_CONFIGS_KEY, { type: 'json' });
+                const cacheVersion = await env.v2v_kv.get(CACHE_VERSION_KEY);
+                if (!allConfigs) return jsonResponse({ error: 'Configs data not found.' }, 404);
+                const response = jsonResponse(allConfigs);
+                if (cacheVersion) response.headers.set('X-Cache-Version', cacheVersion);
+                return response;
             }
+
+            // ✅ Endpoint 2: /tcp-probe - For frontend ping tests of TCP-based configs
             if (url.pathname === '/tcp-probe' && request.method === 'POST') {
-                return handleTcpProbe(request);
-            }
-            if (url.pathname === '/api/subscribe' && request.method === 'POST') {
-                return handleSubscribeRequest(request, kv);
-            }
-            const personalSubMatch = url.pathname.match(/^\/sub\/(clash\/)?([0-9a-f-]+)$/);
-            if (personalSubMatch) {
-                const isClash = !!personalSubMatch[1];
-                const uuid = personalSubMatch[2];
-                return handleGetPersonalSubscription(uuid, isClash, kv);
-            }
-            if (url.pathname === '/cache-version') {
-                return handleGetCacheVersion(kv);
-            }
-            const publicSubMatch = url.pathname.match(/^\/sub\/public\/(xray|singbox)$/);
-            if (publicSubMatch) {
-                const coreType = publicSubMatch[1]; // Corrected index from 2 to 1
-                return handleGetPublicSubscription(coreType, kv);
+                const { host, port } = await request.json();
+                if (!host || !port) return jsonResponse({ error: 'Invalid host or port' }, 400);
+
+                let socket;
+                try {
+                    const startTime = Date.now();
+                    socket = connect({ hostname: host, port }, { allowHalfOpen: false });
+                    await socket.opened;
+                    const latency = Date.now() - startTime;
+                    return jsonResponse({ latency });
+                } catch (e) {
+                    return jsonResponse({ latency: null, error: e.message });
+                } finally {
+                    if (socket) await socket.close().catch(() => {});
+                }
             }
 
-            return new Response('V2V API Worker is operational.', { headers: TEXT_HEADERS });
-        } catch (error) {
-            console.error('Worker error:', error.stack);
-            return new Response(JSON.stringify({ message: error.message || 'Internal server error', stack: error.stack }), { status: 500, headers: JSON_HEADERS });
+            // Endpoint 3: /create-personal-sub - Create a new personal subscription
+            if (url.pathname === '/create-personal-sub' && request.method === 'POST') {
+                const { configs, uuid: clientUuid } = await request.json();
+                if (!configs || !Array.isArray(configs) || configs.length === 0) {
+                    return jsonResponse({ error: 'Invalid request payload. `configs` array is required.' }, 400);
+                }
+
+                const userUuid = clientUuid || uuidv4();
+                const subKey = `sub:${userUuid}`;
+
+                await env.v2v_kv.put(subKey, JSON.stringify({ configs }), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
+
+                return jsonResponse({
+                    uuid: userUuid,
+                    subscriptionUrl: `${url.origin}/sub/${userUuid}`,
+                    clashSubscriptionUrl: `${url.origin}/sub/clash/${userUuid}`,
+                });
+            }
+
+            // Endpoint 4: /sub/:uuid - Serve raw personal subscriptions (URL format with UUID)
+            const subMatch = url.pathname.match(/^\/sub\/(?!clash\/)([^/]+)/);
+            if (subMatch) {
+                const uuid = subMatch[1];
+                const storedData = await env.v2v_kv.get(`sub:${uuid}`, { type: 'json' });
+                if (!storedData) return textResponse('Subscription not found or expired.', 404);
+                return textResponse(btoa(storedData.configs.join('\n')), 200, `v2v-${uuid}.txt`);
+            }
+
+            // Endpoint 5: /sub/clash/:uuid - Serve personal Clash subscriptions (URL format with UUID)
+            const clashSubMatch = url.pathname.match(/^\/sub\/clash\/([^/]+)/);
+            if (clashSubMatch) {
+                const uuid = clashSubMatch[1];
+                const storedData = await env.v2v_kv.get(`sub:${uuid}`, { type: 'json' });
+                if (!storedData) return textResponse('Subscription not found or expired.', 404);
+
+                const clashYamlContent = generateClashYaml(storedData.configs);
+                if (!clashYamlContent) return textResponse('Failed to generate Clash YAML (no compatible configs).', 500);
+
+                return textResponse(clashYamlContent, 200, `v2v-clash-${uuid}.yaml`);
+            }
+
+            // Default route
+            return textResponse('v2v Worker is running.');
+
+        } catch (err) {
+            console.error(err);
+            return jsonResponse({ error: 'An unexpected error occurred.', details: err.message }, 500);
         }
-    }
+    },
 };
-
-// --- Handlers ---
-async function handleGetLiveConfigs(kv) {
-    if (!kv) return new Response(JSON.stringify({ error: 'KV namespace not configured.' }), { status: 500, headers: JSON_HEADERS });
-    
-    const liveConfigs = await kv.get(KV_LIVE_CONFIGS_KEY, { type: 'json' });
-
-    if (!liveConfigs) {
-        return new Response(JSON.stringify({ xray: {}, singbox: {} }), { status: 200, headers: JSON_HEADERS });
-    }
-    return new Response(JSON.stringify(liveConfigs), { headers: JSON_HEADERS });
-}
-
-async function handleTcpProbe(request) {
-    let socket;
-    try {
-        const { host, port } = await request.json();
-        if (!host || !port) {
-            return new Response(JSON.stringify({ error: 'Invalid host or port' }), { status: 400, headers: JSON_HEADERS });
-        }
-        const startTime = Date.now();
-        socket = connect({ hostname: host, port: port }, { allowHalfOpen: false });
-        
-        await socket.opened;
-        const latency = Date.now() - startTime;
-        
-        if (latency < 10) throw new Error("Unrealistic latency, likely a false positive.");
-        
-        return new Response(JSON.stringify({ latency }), { headers: JSON_HEADERS });
-    } catch (e) {
-        console.error("TCP Probe Failed:", e);
-        return new Response(JSON.stringify({ latency: null, error: e.message }), { headers: JSON_HEADERS });
-    } finally {
-        if (socket) await socket.close().catch(() => {});
-    }
-}
-
-async function handleSubscribeRequest(request, kv) {
-    if (!kv) return new Response(JSON.stringify({ error: 'KV namespace not configured.' }), { status: 500, headers: JSON_HEADERS });
-    const { configs } = await request.json();
-    if (!Array.isArray(configs) || configs.length === 0) return new Response(JSON.stringify({ error: "'configs' must be a non-empty array." }), { status: 400, headers: JSON_HEADERS });
-    const subUuid = crypto.randomUUID();
-    await kv.put(`sub:${subUuid}`, JSON.stringify(configs), { expirationTtl: SUBSCRIPTION_TTL });
-    return new Response(JSON.stringify({ uuid: subUuid }), { status: 201, headers: JSON_HEADERS });
-}
-
-async function handleGetPersonalSubscription(uuid, isClash, kv) {
-    if (!kv) return new Response('KV namespace not available.', { status: 500, headers: TEXT_HEADERS });
-    
-    const [userSubRaw, liveDataRaw] = await Promise.all([
-        kv.get(`sub:${uuid}`),
-        kv.get(KV_LIVE_CONFIGS_KEY)
-    ]);
-
-    if (!userSubRaw) return new Response('Subscription not found or has expired.', { status: 404, headers: TEXT_HEADERS });
-    if (!liveDataRaw) return new Response('Live configs unavailable for healing.', { status: 503, headers: TEXT_HEADERS });
-
-    const userConfigs = JSON.parse(userSubRaw);
-    const liveData = JSON.parse(liveDataRaw);
-    const allLiveConfigsSet = new Set(
-        Object.values(liveData.xray || {}).flat().concat(Object.values(liveData.singbox || {}).flat())
-    );
-
-    let healedConfigs = userConfigs.filter(cfg => allLiveConfigsSet.has(cfg));
-    const deadCount = userConfigs.length - healedConfigs.length;
-    if (deadCount > 0) {
-        const userConfigsSet = new Set(userConfigs);
-        const replacements = [...allLiveConfigsSet].filter(cfg => !userConfigsSet.has(cfg));
-        healedConfigs.push(...replacements.slice(0, deadCount));
-    }
-    if (healedConfigs.length === 0 && allLiveConfigsSet.size > 0) {
-        healedConfigs = [...allLiveConfigsSet].slice(0, Math.min(userConfigs.length || 10, allLiveConfigsSet.size));
-    }
-    
-    await kv.put(`sub:${uuid}`, JSON.stringify(healedConfigs), { expirationTtl: SUBSCRIPTION_TTL });
-    return generateSubscriptionResponse(healedConfigs, isClash);
-}
-
-async function handleGetPublicSubscription(coreType, kv) {
-    if (!kv) return new Response('KV namespace not available.', { status: 500, headers: TEXT_HEADERS });
-
-    const liveDataRaw = await kv.get(KV_LIVE_CONFIGS_KEY);
-    if (!liveDataRaw) return new Response('Live configs unavailable.', { status: 503, headers: TEXT_HEADERS });
-
-    const liveData = JSON.parse(liveDataRaw);
-    let configsToServe = [];
-
-    if (coreType === 'xray' && liveData.xray) {
-        configsToServe = Object.values(liveData.xray).flat();
-    } else if (coreType === 'singbox' && liveData.singbox) {
-        configsToServe = Object.values(liveData.singbox).flat();
-    } else {
-        return new Response('Invalid core type for public subscription.', { status: 400, headers: TEXT_HEADERS });
-    }
-    
-    return new Response(configsToServe.join('\n'), { headers: TEXT_HEADERS });
-}
-
-async function handleGetCacheVersion(kv) {
-    if (!kv) return new Response('KV namespace not available.', { status: 500, headers: TEXT_HEADERS });
-    const version = await kv.get(KV_CACHE_VERSION_KEY);
-    return new Response(version || Math.floor(Date.now() / 1000).toString(), { headers: TEXT_HEADERS });
-}
-
-function generateSubscriptionResponse(configs, isClash) {
-    if (isClash) {
-        const clashYaml = generateClashYaml(configs);
-        const headers = new Headers(YAML_HEADERS);
-        headers.set('Content-Disposition', 'attachment; filename="v2v.yaml"');
-        return new Response(clashYaml, { headers });
-    } else {
-        return new Response(configs.join('\n'), { headers: TEXT_HEADERS });
-    }
-}
-
-// --- Helpers & YAML Generation ---
-function parseProxyForClash(configStr) {
-    try {
-        const urlObj = new URL(configStr);
-        let name = decodeURIComponent(urlObj.hash.substring(1) || "v2v config").trim();
-        name = `v2v | ${name.substring(0, MAX_NAME_LENGTH)}`;
-        const base = { name, 'skip-cert-verify': true };
-        const params = new URLSearchParams(urlObj.search);
-
-        if (configStr.startsWith('vmess://')) {
-            const d = JSON.parse(atob(configStr.substring(8)));
-            const p = { ...base, type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: parseInt(d.aid || 0), cipher: d.scy || 'auto', tls: d.tls === 'tls', network: d.net, servername: d.sni || d.host };
-            if (d.net === 'ws') p['ws-opts'] = { path: d.path || '/', headers: { host: d.host || d.add }};
-            return p;
-        }
-        if (urlObj.protocol === 'vless:') {
-            const p = { ...base, type: 'vless', server: urlObj.hostname, port: parseInt(urlObj.port), uuid: urlObj.username, tls: params.get('security') === 'tls', network: params.get('type'), servername: params.get('sni')};
-            if (params.get('type') === 'ws') p['ws-opts'] = { path: params.get('path') || '/', headers: { host: params.get('host') || urlObj.hostname }};
-            return p;
-        }
-        if (urlObj.protocol === 'trojan:') return { ...base, type: 'trojan', server: urlObj.hostname, port: parseInt(urlObj.port), password: urlObj.username, sni: params.get('sni') };
-        if (urlObj.protocol === 'ss:') { const [c, p] = atob(urlObj.username).split(':'); return { ...base, type: 'ss', server: urlObj.hostname, port: parseInt(urlObj.port), cipher: c, password: p }; }
-    } catch (e) { console.error("Error parsing proxy for Clash:", configStr, e); return null; }
-    return null;
-}
-
-function generateClashYaml(configs) {
-    const proxies = configs.map(parseProxyForClash).filter(p => p);
-    if (proxies.length === 0) return "# No compatible proxies found for Clash.";
-    const proxyNames = proxies.map(p => p.name);
-    
-    return `proxies:
-${proxies.map(p => `  - ${JSON.stringify(p)}`).join('\n')}
-
-proxy-groups:
-  - name: "v2v-auto"
-    type: url-test
-    proxies:
-${proxyNames.map(name => `      - "${name}"`).join('\n')}
-    url: 'http://www.gstatic.com/generate_204'
-    interval: 300
-  - name: "v2v-select"
-    type: select
-    proxies:
-      - "v2v-auto"
-${proxyNames.map(name => `      - "${name}"`).join('\n')}
-
-rules:
-  - 'MATCH,v2v-select'
-`;
-}
