@@ -17,7 +17,7 @@ from collections import defaultdict
 # cloudflare library is required: pip install cloudflare
 from cloudflare import Cloudflare, APIError
 
-print("v2v scraper v43.3 (Fixing Cloudflare KV upload encoding issue)") # ✅ Changed version
+print("v2v scraper v43.4 (Reinforced JSON Serialization Cleaning)") # ✅ Changed version for final fix
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,7 +28,7 @@ SINGBOX_ONLY_PROTOCOLS = {'hysteria2', 'hy2', 'tuic'}
 VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_ONLY_PROTOCOLS)
 
 HEADERS = {'User-Agent': 'v2v-scraper/1.0'}
-GITHUB_PAT = os.environ.get('GH_PAT') # ✅ Standardized to GH_PAT
+GITHUB_PAT = os.environ.get('GH_PAT') # Standardized to GH_PAT for consistency
 
 # --- Performance & Filtering Parameters ---
 MAX_CONFIGS_TO_TEST = 15000
@@ -40,24 +40,28 @@ MAX_LATENCY_MS = 2500
 MAX_NAME_LENGTH = 40
 
 # --- Cloudflare KV Configuration ---
-CF_API_TOKEN = os.environ.get('CLOUDFLARE_API_TOKEN') # ✅ Standardized
-CF_ACCOUNT_ID = os.environ.get('CLOUDFLARE_ACCOUNT_ID') # ✅ Standardized
-CF_KV_NAMESPACE_ID = os.environ.get('CLOUDFLARE_KV_NAMESPACE_ID') # ✅ Standardized
+CF_API_TOKEN = os.environ.get('CLOUDFLARE_API_TOKEN') # Standardized
+CF_ACCOUNT_ID = os.environ.get('CLOUDFLARE_ACCOUNT_ID') # Standardized
+CF_KV_NAMESPACE_ID = os.environ.get('CLOUDFLARE_KV_NAMESPACE_ID') # Standardized
 
 KV_LIVE_CONFIGS_KEY = 'all_live_configs.json'
 KV_CACHE_VERSION_KEY = 'cache_version.txt'
 
 # --- Helper Functions ---
 def decode_base64_content(content: str) -> str:
+    """Decodes a base64 string, handling padding and common errors."""
     if not isinstance(content, str) or not content.strip(): return ""
     try:
         content = content.strip().replace('\n', '').replace('\r', '')
         missing_padding = len(content) % 4
         if missing_padding: content += '=' * (4 - missing_padding)
         return base64.b64decode(content).decode('utf-8', 'ignore')
-    except Exception: return ""
+    except Exception as e:
+        # print(f"DEBUG: Base64 decode failed for content snippet: '{content[:50]}...'. Error: {e}")
+        return ""
 
 def is_valid_config(config: str) -> bool:
+    """Checks if a string resembles a valid proxy configuration URL."""
     if not isinstance(config, str) or not config.strip(): return False
     try:
         parsed = urlparse(config)
@@ -76,6 +80,10 @@ def is_valid_config(config: str) -> bool:
     except Exception: return False
 
 def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, limit: int = 0) -> Set[str]:
+    """
+    Fetches configurations from either static URLs or GitHub code search.
+    Ensures all collected configs are strings.
+    """
     all_configs = set()
     if is_github:
         if not pat: 
@@ -88,6 +96,7 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
             file_extensions_part = "extension:txt OR extension:md OR extension:yml OR extension:yaml OR extension:json OR extension:html OR extension:log"
             base_negative_filters = "-user:mahdibland -filename:example -filename:sample -filename:test"
             
+            # Restored original v43.0 query logic
             queries_to_run = []
             for proto in VALID_PROTOCOLS:
                 queries_to_run.append(f'"{proto}://" {file_extensions_part} {base_negative_filters}')
@@ -133,21 +142,22 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                             try:
                                 time.sleep(random.uniform(0.1, 0.3)) 
                                 
-                                # Make sure content is decoded string before processing
-                                decoded_content = content_file.decoded_content.decode('utf-8', 'ignore').replace('`', '')
+                                # Crucial: Ensure content is decoded string here
+                                file_content_bytes = content_file.decoded_content # This is bytes
+                                decoded_content_str = file_content_bytes.decode('utf-8', 'ignore').replace('`', '')
                                 
                                 potential_configs = set()
                                 max_lines_per_file = 2000 
-                                for line_num, line in enumerate(decoded_content.splitlines()[:max_lines_per_file]):
+                                for line_num, line in enumerate(decoded_content_str.splitlines()[:max_lines_per_file]):
                                     cleaned_line = line.strip()
                                     if is_valid_config(cleaned_line):
-                                        potential_configs.add(cleaned_line)
+                                        potential_configs.add(cleaned_line) # Always adds strings
                                     elif 20 < len(cleaned_line) < 2000 and re.match(r'^[A-Za-z0-9+/=\s]+$', cleaned_line):
                                         try:
                                             decoded_sub_content = decode_base64_content(cleaned_line)
                                             for sub_line in decoded_sub_content.splitlines()[:100]: 
                                                 if is_valid_config(sub_line.strip()):
-                                                    potential_configs.add(sub_line.strip())
+                                                    potential_configs.add(sub_line.strip()) # Always adds strings
                                         except Exception: continue
                                 
                                 if potential_configs:
@@ -190,17 +200,17 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                 time.sleep(random.uniform(0.5, 1.5))
                 response = requests.get(url, headers=HEADERS, timeout=10)
                 response.raise_for_status() 
-                content = response.text
+                content = response.text # This is already a string
                 
                 potential_configs = set()
-                decoded_full_content = decode_base64_content(content)
+                decoded_full_content = decode_base64_content(content) # This is also a string
                 
                 for current_content in [content, decoded_full_content]:
                     if not current_content: continue
                     for line_num, line in enumerate(current_content.splitlines()[:5000]):
                         cleaned_line = line.strip()
                         if is_valid_config(cleaned_line):
-                            potential_configs.add(cleaned_line)
+                            potential_configs.add(cleaned_line) # Always adds strings
                 
                 return potential_configs
             except requests.exceptions.HTTPError as e:
@@ -228,6 +238,10 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
     return all_configs
 
 def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
+    """
+    Performs a TCP handshake test for the given configuration.
+    Expects config to be a string.
+    """
     try:
         parsed_url = urlparse(config)
         protocol = parsed_url.scheme.lower()
@@ -268,13 +282,14 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
                         ssock.do_handshake()
         
         latency = int((time.monotonic() - start_time) * 1000)
-        return config, latency
+        return config, latency # Returns config as string
     except (socket.timeout, ConnectionRefusedError, ssl.SSLError, OSError): 
         return None 
     except Exception:
         return None 
 
 def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: int, max_target: int) -> List[str]:
+    """Selects a fluid quota of configs based on protocol and latency."""
     if not configs: return []
     
     sorted_configs_with_latency = sorted(configs, key=lambda item: item[1])
@@ -316,24 +331,28 @@ def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: 
     return final_selected_configs
 
 def upload_to_cloudflare_kv(key: str, value: str):
+    """
+    Uploads a string value to a Cloudflare KV namespace.
+    The value is expected to be a string and will be encoded to utf-8 bytes before upload.
+    """
     if not all([CF_API_TOKEN, CF_ACCOUNT_ID, CF_KV_NAMESPACE_ID]):
         print("FATAL: Cloudflare KV credentials not fully set. Skipping KV upload.")
         raise ValueError("Cloudflare API token, account ID, or KV namespace ID is missing from environment variables.")
+    
+    # Critical Check: Ensure that the `value` passed is indeed a string.
+    # json.dumps (which produces `json_string_to_upload`) should always return a string.
+    if not isinstance(value, str):
+        print(f"CRITICAL ERROR: Attempted to upload non-string value for KV key '{key}'. Type: {type(value).__name__}.")
+        raise TypeError(f"KV value for '{key}' must be a string, but received type {type(value).__name__}.")
+
     try:
         cf_client = Cloudflare(api_token=CF_API_TOKEN, timeout=60)
         
-        # ✅ Modification: Ensure value is string before encoding
-        if not isinstance(value, str):
-            # This should ideally not happen if json_string_to_upload is always a string,
-            # but this is a defensive check based on the error.
-            print(f"WARNING: Value for KV key '{key}' is not a string (type: {type(value).__name__}). Attempting to convert to string.")
-            value = str(value)
-
         cf_client.kv.namespaces.values.update(
             account_id=CF_ACCOUNT_ID,
             namespace_id=CF_KV_NAMESPACE_ID,
             key_name=key,
-            value=value.encode('utf-8'), 
+            value=value.encode('utf-8'), # Encoded to bytes for KV storage
             metadata={}
         )
         print(f"✅ Successfully uploaded '{key}' to Cloudflare KV.")
@@ -349,15 +368,31 @@ def upload_to_cloudflare_kv(key: str, value: str):
         raise
 
 def clean_for_json(obj):
+    """
+    Recursively cleans a Python object to ensure all components are JSON-serializable.
+    Specifically converts bytes to strings and ensures dictionary keys are strings.
+    """
     if isinstance(obj, bytes):
         return obj.decode('utf-8', 'ignore')
     elif isinstance(obj, dict):
-        return {clean_for_json(k): clean_for_json(v) for k, v in obj.items()} # ✅ Modified: Removed str() from key
-    elif isinstance(obj, (list, tuple, Set)):
+        cleaned_dict = {}
+        for k, v in obj.items():
+            # Ensure key is a string after recursive cleaning
+            cleaned_key = clean_for_json(k)
+            if not isinstance(cleaned_key, str):
+                # This should ideally not be hit if clean_for_json(k) works correctly,
+                # but it's a final defensive layer.
+                print(f"WARNING: Dictionary key '{k}' of type {type(k).__name__} resulted in non-string after cleaning (type: {type(cleaned_key).__name__}). Forcing to string.")
+                cleaned_key = str(cleaned_key) 
+            cleaned_dict[cleaned_key] = clean_for_json(v)
+        return cleaned_dict
+    elif isinstance(obj, (list, tuple, set)):
         return [clean_for_json(item) for item in obj]
     elif isinstance(obj, (int, float, str, bool)) or obj is None:
         return obj
     else:
+        # Fallback for any other unexpected type, convert to string
+        print(f"WARNING: Found unexpected type '{type(obj).__name__}' during JSON cleaning. Converting to string.")
         return str(obj)
 
 def main():
@@ -433,7 +468,6 @@ def main():
     print("\n--- 5. UPLOADING TO CLOUDFLARE KV ---")
     try:
         print("  Cleaning data structure for JSON serialization...")
-        # Ensure that `clean_for_json` is indeed producing a serializable structure
         cleaned_output_data = clean_for_json(output_data_for_kv)
         
         print("  Testing JSON serialization...")
@@ -448,14 +482,14 @@ def main():
                 print(f"  JSON serialization with ASCII fallback successful.")
             except Exception as json_error2:
                 print(f"  Even ASCII JSON serialization failed: {json_error2}")
-                raise json_error2
+                raise json_error2 # Re-raise the original error or the last one encountered
         
         print("  Uploading live configs to Cloudflare KV...")
-        # ✅ Pass a string to upload_to_cloudflare_kv
+        # json_string_to_upload is guaranteed to be a string here
         upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json_string_to_upload)
         
         print("  Uploading cache version to Cloudflare KV...")
-        # ✅ Ensure str(int(time.time())) is always a string
+        # str(int(time.time())) is always a string
         upload_to_cloudflare_kv(KV_CACHE_VERSION_KEY, str(int(time.time())))
         
         print("\n--- PROCESS COMPLETED SUCCESSFULLY ---")
