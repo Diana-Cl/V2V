@@ -17,7 +17,7 @@ from collections import defaultdict
 # cloudflare library is required: pip install cloudflare
 from cloudflare import Cloudflare, APIError
 
-print("v2v scraper v43.1 (Restored to proven fast logic)") # ✅ Changed version
+print("v2v scraper v43.3 (Fixing Cloudflare KV upload encoding issue)") # ✅ Changed version
 
 # --- Configuration ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -88,16 +88,15 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
             file_extensions_part = "extension:txt OR extension:md OR extension:yml OR extension:yaml OR extension:json OR extension:html OR extension:log"
             base_negative_filters = "-user:mahdibland -filename:example -filename:sample -filename:test"
             
-            # ✅ Restored original v43.0 query logic
             queries_to_run = []
             for proto in VALID_PROTOCOLS:
                 queries_to_run.append(f'"{proto}://" {file_extensions_part} {base_negative_filters}')
                 if proto in XRAY_PROTOCOLS:
-                     queries_to_run.append(f'"{proto}://" {base_negative_filters} path:/') # This was in your v43.0 and adds more queries
+                     queries_to_run.append(f'"{proto}://" {base_negative_filters} path:/')
 
             processed_files = set()
             total_files_processed = 0
-            MAX_FILES_PER_GITHUB_QUERY = 50 # ✅ Restored to 50 as per your v43.0
+            MAX_FILES_PER_GITHUB_QUERY = 50 
 
             print(f"  Starting GitHub search across {len(queries_to_run)} comprehensive queries (v43.1 logic)...")
             for i, query in enumerate(queries_to_run):
@@ -110,7 +109,7 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                     results_iterator = g.search_code(q=query, order='desc', sort='indexed', per_page=100)
                     
                     current_query_files_processed = 0
-                    for page_num in range(2): # Your v43.0 also used 2 pages
+                    for page_num in range(2):
                         if total_files_processed >= limit or current_query_files_processed >= MAX_FILES_PER_GITHUB_QUERY: break
 
                         try:
@@ -132,8 +131,9 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                             processed_files.add(content_file.path)
                             
                             try:
-                                time.sleep(random.uniform(0.1, 0.3)) # Your v43.0 delay
+                                time.sleep(random.uniform(0.1, 0.3)) 
                                 
+                                # Make sure content is decoded string before processing
                                 decoded_content = content_file.decoded_content.decode('utf-8', 'ignore').replace('`', '')
                                 
                                 potential_configs = set()
@@ -174,7 +174,7 @@ def fetch_from_sources(sources: List[str], is_github: bool, pat: str = None, lim
                     continue
                 
                 if i < len(queries_to_run) - 1:
-                    time.sleep(random.uniform(2, 5)) # Your v43.0 delay between queries
+                    time.sleep(random.uniform(2, 5))
             
             print(f"  Finished GitHub search. Found {len(all_configs)} configs from {total_files_processed} unique GitHub files.")
 
@@ -322,11 +322,18 @@ def upload_to_cloudflare_kv(key: str, value: str):
     try:
         cf_client = Cloudflare(api_token=CF_API_TOKEN, timeout=60)
         
+        # ✅ Modification: Ensure value is string before encoding
+        if not isinstance(value, str):
+            # This should ideally not happen if json_string_to_upload is always a string,
+            # but this is a defensive check based on the error.
+            print(f"WARNING: Value for KV key '{key}' is not a string (type: {type(value).__name__}). Attempting to convert to string.")
+            value = str(value)
+
         cf_client.kv.namespaces.values.update(
             account_id=CF_ACCOUNT_ID,
             namespace_id=CF_KV_NAMESPACE_ID,
             key_name=key,
-            value=value.encode('utf-8'),
+            value=value.encode('utf-8'), 
             metadata={}
         )
         print(f"✅ Successfully uploaded '{key}' to Cloudflare KV.")
@@ -345,7 +352,7 @@ def clean_for_json(obj):
     if isinstance(obj, bytes):
         return obj.decode('utf-8', 'ignore')
     elif isinstance(obj, dict):
-        return {str(clean_for_json(k)): clean_for_json(v) for k, v in obj.items()}
+        return {clean_for_json(k): clean_for_json(v) for k, v in obj.items()} # ✅ Modified: Removed str() from key
     elif isinstance(obj, (list, tuple, Set)):
         return [clean_for_json(item) for item in obj]
     elif isinstance(obj, (int, float, str, bool)) or obj is None:
@@ -426,10 +433,12 @@ def main():
     print("\n--- 5. UPLOADING TO CLOUDFLARE KV ---")
     try:
         print("  Cleaning data structure for JSON serialization...")
+        # Ensure that `clean_for_json` is indeed producing a serializable structure
         cleaned_output_data = clean_for_json(output_data_for_kv)
         
         print("  Testing JSON serialization...")
         try:
+            # json.dumps must operate on a fully string-based data structure
             json_string_to_upload = json.dumps(cleaned_output_data, indent=2, ensure_ascii=False)
             print(f"  JSON serialization successful. Data size: {len(json_string_to_upload)} characters")
         except Exception as json_error:
@@ -442,9 +451,11 @@ def main():
                 raise json_error2
         
         print("  Uploading live configs to Cloudflare KV...")
+        # ✅ Pass a string to upload_to_cloudflare_kv
         upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json_string_to_upload)
         
         print("  Uploading cache version to Cloudflare KV...")
+        # ✅ Ensure str(int(time.time())) is always a string
         upload_to_cloudflare_kv(KV_CACHE_VERSION_KEY, str(int(time.time())))
         
         print("\n--- PROCESS COMPLETED SUCCESSFULLY ---")
