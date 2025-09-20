@@ -1,32 +1,77 @@
-name: Deploy Cloudflare Worker
+name: deploy cloudflare worker
 
 on:
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+  workflow_dispatch:
   push:
     branches:
-      - main # Or your default branch, e.g., 'master'
+      - main
     paths:
-      - 'worker.js'    # Workflow runs only if worker.js changes
-      - 'wrangler.toml'  # Workflow runs only if wrangler.toml changes
+      - 'worker.js'
+      - 'wrangler-*.toml' # ✅ حالا برای تغییرات در هر فایل wrangler TOML نیز اجرا می‌شود
+      - 'all_live_configs.json' # ✅ برای آپلود KV
+      - 'cache_version.txt'     # ✅ برای آپلود KV
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true # Cancel any previous runs if a new one is triggered
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy Worker to Cloudflare
+    name: deploy workers to cloudflare
     permissions:
-      contents: read # Required for actions/checkout to clone the repository
+      contents: read
       
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4 # ✅ اصلاح شد: اضافه شدن علامت '@' قبل از v4
+      - name: checkout repository
+        uses: actions/checkout@v4
 
-      - name: Deploy Worker to Cloudflare
-        uses: cloudflare/wrangler-action@v3 # ✅ اصلاح شد: اضافه شدن علامت '@' قبل از v3
+      # ✅ مرحله جدید: دیپلوی هر 4 ورکر
+      - name: deploy rapid-scene-1da6 worker
+        uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }} # ✅ اصلاح شد: استفاده از حروف بزرگ برای نام Secret (استاندارد)
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # ✅ اصلاح شد: استفاده از حروف بزرگ برای نام Secret (استاندارد)
-          # command: 'deploy --minify' # Optional: uncomment and add specific wrangler CLI commands if needed
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerConfigFile: 'wrangler-rapid-scene-1da6.toml' # ✅ استفاده از فایل TOML مشخص
+          # command: 'deploy --minify' # اگر نیاز به minify دارید، فعال کنید
+
+      - name: deploy winter-hill-0307 worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerConfigFile: 'wrangler-winter-hill-0307.toml' # ✅ استفاده از فایل TOML مشخص
+
+      - name: deploy v2v worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerConfigFile: 'wrangler-v2v.toml' # ✅ استفاده از فایل TOML مشخص
+
+      - name: deploy v2v-proxy worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerConfigFile: 'wrangler-v2v-proxy.toml' # ✅ استفاده از فایل TOML مشخص
+
+      # ✅ مرحله جدید: آپلود all_live_configs.json به Cloudflare KV
+      - name: upload all_live_configs.json to KV
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: 'kv:key put "${{ env.KV_LIVE_CONFIGS_KEY }}" --path "all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"'
+        env:
+          KV_LIVE_CONFIGS_KEY: 'all_live_configs.json' # ✅ Key name در KV
+
+      # ✅ مرحله جدید: آپلود cache_version.txt به Cloudflare KV
+      - name: upload cache_version.txt to KV
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: 'kv:key put "${{ env.KV_CACHE_VERSION_KEY }}" --path "cache_version.txt" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"'
+        env:
+          KV_CACHE_VERSION_KEY: 'cache_version.txt' # ✅ Key name در KV
