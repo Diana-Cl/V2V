@@ -1,27 +1,35 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Configuration ---
-    const worker_url = 'https://rapid-scene-1da6.mbrgh87.workers.dev';
+    // --- configuration ---
+    const worker_urls = [
+        'https://rapid-scene-1da6.mbrgh87.workers.dev',
+        'https://winter-hill-0307.mbrgh87.workers.dev',
+        'https://v2v.mbrgh87.workers.dev',
+        'https://v2v-proxy.mbrgh87.workers.dev'
+    ];
+    // انتخاب رندوم یکی از ورکرها برای توزیع بار در هر بار لود صفحه
+    const worker_url = worker_urls[Math.floor(Math.random() * worker_urls.length)]; 
+
     const cache_url_worker = `${worker_url}/cache-version`;
     const test_timeout = 8000; // 8 seconds
 
-    // --- DOM Elements ---
-    const statusBar = document.getElementById('status-bar');
+    // --- dom elements ---
+    const statusbar = document.getElementById('status-bar');
     const xrayWrapper = document.getElementById('xray-content-wrapper');
     const singboxWrapper = document.getElementById('singbox-content-wrapper');
     const qrModal = document.getElementById('qr-modal');
-    const qrCodeContainer = document.getElementById('qr-code-container');
+    const qrcodeContainer = document.getElementById('qr-code-container');
     const toastElement = document.getElementById('toast');
     let allConfigs = { xray: {}, singbox: {} };
 
-    // --- Helpers ---
+    // --- helpers ---
     const toShamsi = (timestamp) => {
-        if (!timestamp || isNaN(timestamp)) return 'N/A';
+        if (!timestamp || isNaN(timestamp)) return 'n/a';
         try {
             const ts = parseInt(timestamp, 10);
-            if (isNaN(ts)) return 'N/A';
+            if (isNaN(ts)) return 'n/a';
             return new Date(ts * 1000).toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' });
         } catch {
-            return 'N/A';
+            return 'n/a';
         }
     };
 
@@ -33,10 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     };
 
-    // --- Render Function ---
+    // --- render function ---
     async function renderCore(core, groupedConfigs) {
         const wrapper = core === 'xray' ? xrayWrapper : singboxWrapper;
-        wrapper.innerHTML = ''; // Clear previous content
+        wrapper.innerHTML = ''; // clear previous content
 
         if (!groupedConfigs || Object.keys(groupedConfigs).length === 0) {
             wrapper.innerHTML = `<div class="alert">هیچ کانفیگ فعالی برای هسته ${core} یافت نشد.</div>`;
@@ -130,14 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Initial Data Load ---
+    // --- initial data load ---
     (async () => {
         try {
             const verRes = await fetch(`${cache_url_worker}?t=${Date.now()}`);
-            if (verRes.ok) statusBar.textContent = `آخرین بروزرسانی: ${toShamsi(await verRes.text())}`;
+            if (verRes.ok) statusbar.textContent = `آخرین بروزرسانی: ${toShamsi(await verRes.text())}`;
         } catch (e) {
             console.error("Error fetching cache version:", e);
-            statusBar.textContent = 'عدم دسترسی به نسخه بروزرسانی.';
+            statusbar.textContent = 'عدم دسترسی به نسخه بروزرسانی.';
         }
         try {
             const dataRes = await fetch(`${worker_url}/configs`); 
@@ -153,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })();
 
-    // --- Reliable Sequential Testing Logic ---
+    // --- reliable sequential testing logic ---
     function parseConfig(configStr) {
         try {
             if (configStr.startsWith('vmess://')) {
@@ -183,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!config) { updateItemUI(item, 'fail', null); continue; }
             
-            const result = (config.transport === 'webtransport') ? await testDirectWebTransport(config) : await testBridgeTCP(config);
+            const result = (config.transport === 'webtransport') ? await testDirectWebtransport(config) : await testBridgeTCP(config);
             const type = (config.transport === 'webtransport') ? 'wt' : 'tcp';
             updateItemUI(item, type, result.latency);
             item.dataset.finalScore = result.latency !== null ? result.latency : 9999;
@@ -212,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { return { latency: null }; }
     }
     
-    async function testDirectWebTransport(config) {
+    async function testDirectWebtransport(config) {
         if (typeof WebTransport === "undefined") {
             showToast('مرورگر شما از WebTransport پشتیبانی نمی‌کند.', true);
             return { latency: null };
@@ -258,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = `<strong style="color:${color};">${resultText}</strong>`;
     }
 
-    // --- Event Handling & Actions ---
+    // --- event handling & actions ---
     async function createPersonalSubscription(core, type, method) {
         const selectedConfigs = Array.from(document.querySelectorAll(`#${core}-section .config-checkbox:checked`))
             .map(cb => cb.closest('.config-item').dataset.config);
@@ -273,10 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             const finalUrl = `${worker_url}/sub${type === 'clash' ? '/clash' : ''}/${data.uuid}`;
             if (method === 'qr') {
-                showQrCode(finalUrl);
+                showQRCode(finalUrl);
             } else if (method === 'download' && type === 'clash') {
                 const downloadRes = await fetch(finalUrl);
-                if (!downloadRes.ok) throw new Error('Failed to download Clash config.');
+                if (!downloadRes.ok) throw new Error('Failed to download clash config.');
                 const blob = await downloadRes.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -294,10 +302,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { showToast(`خطا در ساخت لینک اشتراک: ${e.message}`, true); }
     }
 
-    function showQrCode(text) { 
+    function showQRCode(text) { 
         if (!window.QRCode) { showToast('کتابخانه QR در حال بارگذاری است...', true); return; } 
-        qrCodeContainer.innerHTML = ''; 
-        new QRCode(qrCodeContainer, { text, width: 256, height: 256 });
+        qrcodeContainer.innerHTML = ''; 
+        new QRCode(qrcodeContainer, { text, width: 256, height: 256 });
         qrModal.style.display = 'flex'; 
     }
     
@@ -314,12 +322,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     await navigator.clipboard.writeText(item.dataset.config); 
                     showToast('کانفیگ کپی شد.'); 
                     break;
-                case 'qr-single': showQrCode(item.dataset.config); break;
+                case 'qr-single': showQRCode(item.dataset.config); break;
                 case 'copy-sub': 
                     await navigator.clipboard.writeText(`${worker_url}/sub/public/${core}`); 
                     showToast('لینک اشتراک عمومی کپی شد.'); 
                     break;
-                case 'qr-sub': showQrCode(`${worker_url}/sub/public/${core}`); break;
+                case 'qr-sub': showQRCode(`${worker_url}/sub/public/${core}`); break;
                 case 'create-personal-sub': await createPersonalSubscription(core, type, method); break;
                 case 'copy-protocol':
                     const configs = Array.from(target.closest('.protocol-group').querySelectorAll('.config-item')).map(el => el.dataset.config);
