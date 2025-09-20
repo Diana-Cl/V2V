@@ -18,38 +18,39 @@ jobs:
   build_and_commit:
     runs-on: ubuntu-latest
     name: 1. scrape data & upload to cloudflare kv
-    timeout-minutes: 15  # Total job timeout, maximum allowed for free tier
+    timeout-minutes: 30 # ✅ افزایش زمان کلی جاب برای فراهم کردن زمان کافی
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4 # ✅ اصلاح شد: اضافه شدن @v4
+        uses: actions/checkout@v4 # ✅ استفاده از @v4
 
       - name: set up python
-        uses: actions/setup-python@v5 # ✅ اصلاح شد: اضافه شدن @v5
+        uses: actions/setup-python@v5 # ✅ استفاده از @v5
         with:
           python-version: "3.12"
 
       - name: install and upgrade python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests PyGithub cloudflare # ✅ اصلاح شد: مطمئن شوید cloudflare نصب می‌شود. (قبلاً در requirement.txt نبود)
+          pip install requests pygithub cloudflare PyYAML # ✅ اضافه شدن PyYAML برای generate_clash_yaml
 
       - name: run scraper with timeout protection
-        timeout-minutes: 14  # Specific timeout for scraper step, slightly less than job timeout
+        # زمان این مرحله کمتر از timeout-minutes جاب باشد تا جاب فرصت برای تمیزکاری داشته باشد
+        timeout-minutes: 28 # ✅ افزایش زمان مرحله اجرای اسکرپر
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
+          GH_PAT: ${{ secrets.GH_PAT }} # ✅ استانداردسازی به حروف بزرگ
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # ✅ استانداردسازی به حروف بزرگ
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # ✅ استانداردسازی به حروف بزرگ
+          CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }} # ✅ استانداردسازی به حروف بزرگ
         run: |
-          # additional timeout command for extra safety
-          timeout 13m python scraper.py || { # ✅ اصلاح شد: افزایش به 13 دقیقه (یک دقیقه کمتر از timeout-minutes مرحله)
-            echo "scraper timed out after 13 minutes"
+          # دستور timeout لینوکس نیز برای اطمینان بیشتر، کمی کمتر از timeout-minutes مرحله
+          timeout 27m python scraper.py || {
+            echo "scraper timed out after 27 minutes"
             echo "this could be due to github api rate limits or network issues"
             exit 1
           }
 
       - name: commit and push updated files
-        uses: stefanzweifel/git-auto-commit-action@v5 # ✅ اصلاح شد: اضافه شدن @v5
+        uses: stefanzweifel/git-auto-commit-action@v5 # ✅ استفاده از @v5
         with:
           commit_message: "data & website: update configs and frontend files"
           file_pattern: "*.json *.yml *.txt index.html index.js manifest.json logo.png"
@@ -58,37 +59,34 @@ jobs:
     needs: build_and_commit
     runs-on: ubuntu-latest
     name: 2. deploy to vercel, arvancloud & github pages
-    timeout-minutes: 8  # Adjusted to a reasonable deployment time
+    timeout-minutes: 8
     steps:
       - name: checkout repository with latest data
-        uses: actions/checkout@v4 # ✅ اصلاح شد: اضافه شدن @v4
+        uses: actions/checkout@v4 # ✅ استفاده از @v4
 
       - name: deploy to vercel
         timeout-minutes: 3
-        uses: amondnet/vercel-action@v25 # ✅ اصلاح شد: اضافه شدن @v25
+        uses: amondnet/vercel-action@v25 # ✅ استفاده از @v25
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }} # ✅ اصلاح شد: حروف بزرگ برای متغیرهای Secrets
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }} # ✅ اصلاح شد
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }} # ✅ اصلاح شد
+          vercel-token: ${{ secrets.VERCEL_TOKEN }} # ✅ استانداردسازی به حروف بزرگ
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }} # ✅ استانداردسازی به حروف بزرگ
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }} # ✅ استانداردسازی به حروف بزرگ
           working-directory: .
           vercel-args: '--prod'
 
       - name: deploy to arvancloud s3
         timeout-minutes: 3
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }} # ✅ اصلاح شد: ثابت‌های محیطی با حروف بزرگ
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }} # ✅ اصلاح شد
-          AWS_REGION: "us-east-1" # ✅ اصلاح شد: استاندارد AWS (قبلاً aws_region بود)
-          ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com # ✅ اصلاح شد
-          ARVAN_S3_BUCKET: s3://v2v-data # ✅ اصلاح شد
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }} # ✅ استانداردسازی به حروف بزرگ
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }} # ✅ استانداردسازی به حروف بزرگ
+          AWS_REGION: "us-east-1" # ✅ استانداردسازی
+          ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com # ✅ استانداردسازی
+          ARVAN_S3_BUCKET: s3://v2v-data # ✅ استانداردسازی
         run: |
-          # install aws cli v2 with timeout protection
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install --update
           
-          # sync with timeout and retry logic
-          # از متغیرهای محیطی با حروف بزرگ استفاده می‌کنیم
           aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} \
             --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} \
             --acl public-read \
@@ -106,11 +104,11 @@ jobs:
 
       - name: create artifact for github pages
         timeout-minutes: 1
-        uses: actions/upload-pages-artifact@v3 # ✅ اصلاح شد: اضافه شدن @v3
+        uses: actions/upload-pages-artifact@v3 # ✅ استفاده از @v3
         with:
           path: '.'
 
       - name: deploy to github pages
         timeout-minutes: 1
         id: deployment
-        uses: actions/deploy-pages@v4 # ✅ اصلاح شد: اضافه شدن @v4
+        uses: actions/deploy-pages@v4 # ✅ استفاده از @v4
