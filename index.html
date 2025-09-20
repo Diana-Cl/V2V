@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>پروژه V2V</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://rapid-scene-1da6.mbrgh87.workers.dev;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.mbrgh87.workers.dev;">
     <meta name="theme-color" content="#121212">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="logo.png">
     <link rel="manifest" href="manifest.json">
     <style>
+        /* CSS شما بدون تغییر */
         *, *::before, *::after { box-sizing: border-box; }
         :root {
             --primary-bg: #121212; --secondary-bg: #1e1e1e; --text-color: #e0e0e0;
@@ -18,11 +19,7 @@
             --toast-bg: linear-gradient(135deg, #34d399, #10b981);
             --toast-error-bg: linear-gradient(135deg, #f87171, #ef4444);
         }
-        body {
-            background-color: var(--primary-bg); color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            text-align: center; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
-        }
+        body { background-color: var(--primary-bg); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .main-wrapper { width: 100%; max-width: 700px; padding: 15px; }
         .header { margin-bottom: 20px; }
         .header img { width: 100px; height: 100px; }
@@ -34,16 +31,13 @@
         .core-header { color: white; padding: 15px; border-radius: 10px; font-size: 1.3em; font-weight: bold; margin-bottom: 20px; }
         #xray-header { background: linear-gradient(135deg, #c31432, #240b36); }
         #singbox-header { background: linear-gradient(135deg, #159957, #155799); }
-        .test-button { background: var(--action-blue); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; width: 100%; transition: all 0.3s ease; display: inline-flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 20px; }
+        .test-button { background: var(--action-blue); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; width: 100%; transition: all 0.3s ease; display: inline-flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 15px; }
         .test-button:hover { background-color: var(--action-blue-hover); transform: translateY(-2px); }
         .test-button:disabled { background-color: #555; cursor: not-allowed; transform: none; }
         .loader { width: 16px; height: 16px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .action-group-collapsible .protocol-header { padding: 10px; background-color: #2a2a2a; border-radius: 8px;}
-        .collapsible-content { padding-top: 15px; }
-        .action-group-title { color: #ccc; font-size: 0.9em; font-weight: bold; text-align: right; margin: 15px 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid var(--border-color); }
-        .action-box { display: flex; flex-direction: column; background-color: var(--action-gray); padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; }
-        .action-row { display: flex; justify-content: space-between; align-items: center; width: 100%;}
+        .action-group-title { color: #ccc; font-size: 0.9em; font-weight: bold; text-align: right; margin: 25px 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid var(--border-color); }
+        .action-box { display: flex; justify-content: space-between; align-items: center; background-color: var(--action-gray); padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; }
         .action-box-label { font-size: 0.9em; font-weight: 500; }
         .action-box-buttons { display: flex; gap: 8px; }
         .action-btn-small { background-color: #444; border: 1px solid #555; color: var(--text-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8em; transition: background-color 0.2s; white-space: nowrap;}
@@ -51,15 +45,14 @@
         .protocol-group { border-top: 1px solid var(--border-color); }
         .protocol-header { padding: 15px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .toggle-icon { transition: transform 0.3s; }
-        .protocol-group.open .toggle-icon, .action-group-collapsible.open .toggle-icon { transform: rotate(180deg); }
-        .config-list, .collapsible-content { max-height: 0; transition: max-height 0.4s ease-in-out; overflow: hidden; }
-        .protocol-group.open .config-list, .action-group-collapsible.open .collapsible-content { max-height: 1000px; }
+        .protocol-group.open .toggle-icon { transform: rotate(180deg); }
+        .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.4s ease-in-out; overflow: hidden; }
+        .protocol-group.open .config-list { max-height: 2000px; } /* Increased max-height */
         .config-item { padding: 10px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
         .config-checkbox { flex-shrink: 0; transform: scale(1.2); accent-color: var(--logo-green); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .server { font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-        .ping-result-container { font-size: 0.85em; min-height: 1.2em;}
-        .config-actions { display: flex; gap: 5px;}
+        .ping-result-container { font-size: 0.85em; min-width: 80px; text-align: left; }
         .copy-btn { background-color: #3e3e3e; border: 1px solid #555; padding: 5px 10px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
         .bottom-links { margin-top: auto; padding-top: 20px; width: 100%; display: flex; gap: 20px; justify-content: center; }
         .bottom-links a { color: #aaa; text-decoration: none; font-size: 0.9em; }
@@ -78,7 +71,7 @@
             <img src="logo.png" alt="V2V Logo">
             <p class="slogan">سپاس هرآنکه خواه یا ناخواه دستی بر این راهک رهایی داشت</p>
         </header>
-        <div class="status-bar" id="status-bar"></div>
+        <div class="status-bar" id="status-bar">درحال اتصال...</div>
         <div class="container">
             <section id="xray-section" class="core-section">
                 <div class="core-header" id="xray-header">هسته Xray</div>
@@ -96,10 +89,9 @@
         </footer>
     </div>
 
-    <div id="qr-modal">
-        <div class="qr-content" id="qr-code-container"></div>
-    </div>
-    
+    <div id="qr-modal"><div class="qr-content" id="qr-code-container"></div></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
     <script src="index.js"></script>
 </body>
