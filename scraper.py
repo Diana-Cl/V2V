@@ -1,549 +1,417 @@
-# -*- coding: utf-8 -*-
-import requests
-import base64
-import os
 import json
-import re
+import base64
 import time
+import re
+from urllib.parse import urlparse, parse_qs
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import defaultdict
 import socket
 import ssl
-import random
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from urllib.parse import urlparse
-from github import Github, Auth, BadCredentialsException, RateLimitExceededException, UnknownObjectException
-from typing import Optional, Set, List, Dict, Tuple
-from collections import defaultdict
-import yaml # ✅ اضافه شدن PyYAML
 
-# cloudflare library is required: pip install cloudflare
-from cloudflare import Cloudflare, APIError
+# --- configuration ---
+sources_file = 'sources.json'
+output_json_file = 'all_live_configs.json'
+output_clash_file = 'clash_subscription.yml'
+cache_version_file = 'cache_version.txt'
 
-print("INFO: V2V Scraper v44.0 (Hybrid Fast-Fetch + Advanced Features)") # ✅ نسخه جدید
+github_pat = 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' # ⚠️ Replace with your GitHub PAT if needed for higher limits
+github_search_limit = 1000 # Max number of configs to fetch from GitHub
 
-# --- CONFIGURATION ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
-OUTPUT_JSON_FILE = os.path.join(BASE_DIR, "all_live_configs.json")
-OUTPUT_CLASH_FILE = os.path.join(BASE_DIR, "clash_subscription.yml")
-CACHE_VERSION_FILE = os.path.join(BASE_DIR, "cache_version.txt")
+# Test parameters
+max_configs_to_test = 2000 # Number of configs to test from all collected
+max_latency_ms = 2500      # Max acceptable latency for a config to be considered "fast"
+max_test_workers = 50      # Number of concurrent workers for handshake testing
+test_timeout_sec = 8       # Timeout for each handshake test
 
-# Protocol definitions
-XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
-SINGBOX_ONLY_PROTOCOLS = {'hysteria2', 'hy2', 'tuic'}
-VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_ONLY_PROTOCOLS)
+# Final config selection parameters
+min_target_configs_per_core = 300 # Minimum number of configs to aim for each core (Xray/Sing-box)
+max_final_configs_per_core = 500  # Maximum number of configs to keep for each core (Xray/Sing-box)
 
-HEADERS = {'User-Agent': 'V2V-Scraper/1.0'}
+# Protocols
+xray_protocols = {'vless', 'vmess', 'trojan', 'ss'}
+singbox_protocols = {'vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hy2', 'hysteria2', 'tuic'}
+# All valid protocols for both cores
+valid_protocols = xray_protocols.union(singbox_protocols)
 
-# Environment variables for sensitive data
-GITHUB_PAT = os.environ.get('GH_PAT') # ✅ استانداردسازی به حروف بزرگ
-CLOUDFLARE_API_TOKEN = os.environ.get('CLOUDFLARE_API_TOKEN') # ✅ استانداردسازی به حروف بزرگ
-CLOUDFLARE_ACCOUNT_ID = os.environ.get('CLOUDFLARE_ACCOUNT_ID') # ✅ استانداردسازی به حروف بزرگ
-CLOUDFLARE_KV_NAMESPACE_ID = os.environ.get('CLOUDFLARE_KV_NAMESPACE_ID') # ✅ استانداردسازی به حروف بزرگ
+# Clash Meta compatible transports for Xray configs (VMess, VLESS, Trojan)
+clash_compatible_transports = ['tcp', 'ws', 'h2', 'grpc', 'udp', 'quic'] # Add more if Clash Meta supports them
 
-# --- PERFORMANCE & FILTERING PARAMETERS (Managed in scraper.py) ---
-MAX_CONFIGS_TO_TEST = 15000
-MIN_TARGET_CONFIGS_PER_CORE = 500
-MAX_FINAL_CONFIGS_PER_CORE = 1000
-MAX_TEST_WORKERS = 200
-TCP_TIMEOUT = 2.5
-MAX_LATENCY_MS = 2500
-MAX_NAME_LENGTH = 40
-GITHUB_SEARCH_LIMIT = 150 # ✅ مقدار پیش‌فرض GitHub search limit (از sources.json حذف شد)
-UPDATE_INTERVAL_HOURS = 3 # ✅ مقدار پیش‌فرض update interval (از sources.json حذف شد)
 
-# Cloudflare KV keys
-KV_LIVE_CONFIGS_KEY = 'all_live_configs.json'
-KV_CACHE_VERSION_KEY = 'cache_version.txt'
+# --- helpers ---
+def fetch_from_static_sources(static_sources: list[str]) -> set[str]:
+    """Fetches configs from predefined static URLs."""
+    print("  Fetching from static sources...")
+    collected = set()
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = []
+        for url in static_sources:
+            if url.startswith("github:"):
+                repo_path = url[len("github:"):]
+                owner, repo, file_path = repo_path.split('/', 2)
+                raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/main/{file_path}"
+                futures.append(executor.submit(fetch_url_content, raw_url))
+            else:
+                futures.append(executor.submit(fetch_url_content, url))
 
-# --- HELPER FUNCTIONS (Robust Parsing & Validation) ---
+        for i, future in enumerate(as_completed(futures)):
+            content = future.result()
+            if content:
+                for line in content.splitlines():
+                    line = line.strip()
+                    if any(line.lower().startswith(p + "://") for p in valid_protocols):
+                        collected.add(line)
+            if (i + 1) % 10 == 0:
+                print(f"  Fetched from {i+1} static sources...")
+    print(f"  ✅ Found {len(collected)} configs from static sources.")
+    return collected
 
-def decode_base64_content(content: str) -> str:
-    """Safely decodes base64 content, handling padding and other errors."""
-    if not isinstance(content, str) or not content.strip():
-        return ""
+def fetch_url_content(url: str) -> str | None:
+    """Fetches content from a single URL."""
     try:
-        content = content.strip().replace('\n', '').replace('\r', '')
-        # Add padding if missing
-        missing_padding = len(content) % 4
-        if missing_padding:
-            content += '=' * (4 - missing_padding)
-        return base64.b64decode(content).decode('utf-8', 'ignore')
-    except Exception as e:
-        # print(f"DEBUG: Base64 decode failed for content snippet: '{content[:50]}...'. Error: {e}")
-        return ""
+        import requests
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=test_timeout_sec)
+        response.raise_for_status()
+        return response.text
+    except requests.exceptions.RequestException as e:
+        print(f"  ⚠️ Failed to fetch {url}: {e}")
+        return None
 
-def is_valid_config(config: str) -> bool:
-    """More robustly validates the format of a config string."""
-    if not isinstance(config, str) or not config.strip():
-        return False
+def fetch_from_github(pat: str, search_limit: int) -> set[str]:
+    """Fetches configs from GitHub using API search."""
+    print("  Fetching from GitHub...")
+    collected = set()
     try:
-        parsed = urlparse(config)
-        scheme = parsed.scheme.lower()
-        if scheme not in VALID_PROTOCOLS:
-            return False
+        import requests
+        headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/vnd.github.v3.text-match+json'}
+        if pat:
+            headers['Authorization'] = f'token {pat}'
+
+        queries = [
+            'vless in:file extension:txt',
+            'vmess in:file extension:txt',
+            'trojan in:file extension:txt',
+            'ss in:file extension:txt',
+            'hysteria2 in:file extension:txt',
+            'tuic in:file extension:txt'
+        ]
         
-        if scheme == 'vmess':
-            vmess_data_encoded = config.replace("vmess://", "")
-            if not vmess_data_encoded: return False
-            try:
-                decoded_vmess = json.loads(decode_base64_content(vmess_data_encoded))
-                return bool(decoded_vmess.get('add')) and bool(decoded_vmess.get('port'))
-            except Exception: return False
-        
-        # All other protocols require a hostname and port directly from URL parse
-        return bool(parsed.hostname) and bool(parsed.port)
-    except Exception:
-        return False
-
-# --- SCRAPING & CLASH GENERATION FUNCTIONS ---
-
-def fetch_from_static_sources(sources: List[str]) -> Set[str]:
-    """
-    Fetches configs from a list of static subscription links.
-    Uses v25.0's approach of decoding entire content as base64 first.
-    """
-    all_configs = set()
-    print(f"  Fetching from {len(sources)} static URLs...")
-
-    def fetch_url(url):
-        try:
-            # Add a small random delay to avoid hitting server limits too aggressively
-            time.sleep(random.uniform(0.5, 1.5)) 
-            response = requests.get(url, headers=HEADERS, timeout=10)
-            response.raise_for_status()
-            content = response.text # Already a string
-            
-            potential_configs = set()
-            
-            # First, try to decode the *entire* response content as a single Base64 string (v25.0 approach)
-            decoded_full_content = decode_base64_content(content) 
-            
-            # Check both raw content and decoded full content for configs
-            for current_content in [content, decoded_full_content]:
-                if not current_content: continue # Skip if content is empty
-                
-                # Limit lines to prevent excessive processing for very large files
-                for line_num, line in enumerate(current_content.splitlines()):
-                    if line_num >= 5000: break # Process max 5000 lines per static file
-                    
-                    cleaned_line = line.strip()
-                    if is_valid_config(cleaned_line):
-                        potential_configs.add(cleaned_line)
-                    # Also check if a line itself might be a Base64 encoded sub-list
-                    elif 20 < len(cleaned_line) < 2000 and re.match(r'^[a-zA-Z0-9+/=\s]+$', cleaned_line):
-                        try:
-                            decoded_sub_content = decode_base64_content(cleaned_line)
-                            for sub_line in decoded_sub_content.splitlines():
-                                if is_valid_config(sub_line.strip()):
-                                    potential_configs.add(sub_line.strip())
-                        except Exception:
-                            pass # Not a valid base64 line
-            
-            return potential_configs
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 429:
-                print(f"    Rate limit hit for {url} (HTTP 429). Waiting 60s and retrying...")
-                time.sleep(60)
-                return fetch_url(url) # Recursive retry
-            elif e.response.status_code != 404: # Ignore 404s, but log other HTTP errors
-                print(f"    HTTP Error {e.response.status_code} for {url}. Skipping.")
-            return set()
-        except requests.RequestException as e:
-            print(f"    Network/Request Error for {url}: {e}. Skipping.")
-            return set()
-        except Exception as e:
-            print(f"    General Error fetching/processing {url}: {type(e).__name__}: {e}. Skipping.")
-            return set()
-
-    with ThreadPoolExecutor(max_workers=10) as executor: # Keep max_workers low for static sources
-        futures = {executor.submit(fetch_url, url) for url in sources}
-        for future in as_completed(futures):
-            all_configs.update(future.result())
-    
-    return all_configs
-
-def fetch_from_github(pat: str, limit: int) -> Set[str]:
-    """
-    Fetches configs by searching public GitHub repositories.
-    Uses v25.0's simpler query and direct content decoding.
-    """
-    if not pat:
-        print("WARNING: GitHub PAT not found. Skipping dynamic search.")
-        return set()
-    
-    all_configs = set()
-    total_files_processed = 0
-
-    try:
-        auth_obj = Auth.Token(pat)
-        g = Github(auth=auth_obj, timeout=30)
-        
-        # Simpler query from v25.0, focusing on common extensions
-        query = " OR ".join(VALID_PROTOCOLS) + " extension:txt extension:md extension:yml extension:yaml extension:json extension:html -user:mahdibland"
-        
-        print(f"  Starting GitHub search with query: '{query}' (limit: {limit})...")
-        
-        # Results iterator, no explicit page_num loop as in v25.0, rely on 'limit'
-        results = g.search_code(query, order='desc', sort='indexed', per_page=100) # per_page for efficient fetching
-
-        for content_file in results:
-            if total_files_processed >= limit:
-                print(f"  Reached GitHub file limit of {limit}, stopping further search.")
+        for query in queries:
+            if len(collected) >= search_limit:
+                print(f"  Reached GitHub search limit ({search_limit}). Stopping.")
                 break
 
-            try:
-                # Add a small random delay
-                time.sleep(random.uniform(0.1, 0.3)) 
-
-                # Use content_file.content (bytes) and decode manually (v25.0 approach)
-                file_content_bytes = content_file.content 
-                decoded_content_str = file_content_bytes.decode('utf-8', 'ignore').replace('`', '')
+            response = requests.get(
+                f"https://api.github.com/search/code?q={query}+size:<=1000",
+                headers=headers,
+                timeout=test_timeout_sec
+            )
+            response.raise_for_status()
+            
+            items = response.json().get('items', [])
+            for item in items:
+                if len(collected) >= search_limit: break
                 
-                potential_configs = set()
-                # Limit lines to prevent excessive processing for very large files
-                for line_num, line in enumerate(decoded_content_str.splitlines()):
-                    if line_num >= 2000: break # Process max 2000 lines per GitHub file
-                    
-                    cleaned_line = line.strip()
-                    if is_valid_config(cleaned_line):
-                        potential_configs.add(cleaned_line)
-                    # Also check if a line itself might be a Base64 encoded sub-list
-                    elif 20 < len(cleaned_line) < 2000 and re.match(r'^[a-zA-Z0-9+/=\s]+$', cleaned_line):
-                        try:
-                            decoded_sub_content = decode_base64_content(cleaned_line)
-                            for sub_line in decoded_sub_content.splitlines():
-                                if is_valid_config(sub_line.strip()):
-                                    potential_configs.add(sub_line.strip())
-                        except Exception:
-                            pass # Not a valid base64 line
+                repo_url = item['repository']['html_url']
+                file_path = item['path']
+                raw_url = f"https://raw.githubusercontent.com/{repo_url.split('/')[-2]}/{repo_url.split('/')[-1]}/main/{file_path}"
                 
-                if potential_configs:
-                    all_configs.update(potential_configs)
-                    total_files_processed += 1
-                                    
-            except UnknownObjectException:
-                # File might have been deleted between search and fetch
-                continue 
-            except RateLimitExceededException:
-                print(f"    GitHub API rate limit hit while fetching content for {content_file.path}. Waiting 180s...")
-                time.sleep(180)
-                continue # Try next file after waiting
-            except Exception as e:
-                print(f"    Error processing GitHub file {content_file.path}: {type(e).__name__}: {e}. Skipping.")
-                continue
+                content = fetch_url_content(raw_url)
+                if content:
+                    for line in content.splitlines():
+                        line = line.strip()
+                        if any(line.lower().startswith(p + "://") for p in valid_protocols):
+                            collected.add(line)
         
-        print(f"  Finished GitHub search. Found {len(all_configs)} configs from {total_files_processed} unique GitHub files.")
-        return all_configs
-
-    except BadCredentialsException:
-        print("ERROR: GitHub PAT is invalid or lacks necessary scopes. Please check GH_PAT.")
-        return set()
-    except RateLimitExceededException:
-        print("WARNING: GitHub API rate limit hit during query. Waiting 300s and trying again for the query itself...")
-        time.sleep(300)
-        return fetch_from_github(pat, limit) # Retry the entire search
-    except Exception as e: 
-        print(f"ERROR: General GitHub operation failed. Reason: {type(e).__name__}: {e}. Skipping GitHub search.")
-        return set()
-
-def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
-    """
-    Performs a TCP/TLS handshake test for the given configuration.
-    Expects config to be a string.
-    """
-    try:
-        parsed_url = urlparse(config)
-        protocol = parsed_url.scheme.lower()
-        
-        hostname, port, is_tls, sni = None, None, False, None
-        
-        if protocol == 'vmess':
-            decoded = json.loads(decode_base64_content(config.replace("vmess://", "")))
-            hostname, port = decoded.get('add'), int(decoded.get('port', 0))
-            is_tls = decoded.get('tls') in ['tls', 'xtls']
-            sni = decoded.get('sni') or decoded.get('host') or hostname
-        elif protocol in VALID_PROTOCOLS: 
-            hostname, port = parsed_url.hostname, int(parsed_url.port or 0)
-            query_params = dict(qp.split('=', 1) for qp in parsed_url.query.split('&') if '=' in qp) if parsed_url.query else {}
-            is_tls = query_params.get('security') in ['tls', 'xtls'] or protocol == 'trojan'
-            sni = query_params.get('sni') or hostname
-        else: return None
-
-        if not all([hostname, port]) or port == 0: return None
-
-        start_time = time.monotonic()
-        
-        # Special handling for UDP-based protocols like Hysteria2/TUIC (Sing-box only)
-        if protocol in SINGBOX_ONLY_PROTOCOLS:
-            # We can't do a full handshake, just check if port is open for UDP
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-                sock.settimeout(TCP_TIMEOUT)
-                try:
-                    # Send a dummy packet to check if port is reachable
-                    sock.sendto(b'\x00\x00', (hostname, port)) 
-                    # Try to receive, but don't fail if no response (UDP is connectionless)
-                    sock.recvfrom(1024) 
-                except socket.timeout:
-                    pass # Timeout is okay for UDP, means no immediate response
-                except Exception:
-                    return None # Other errors mean it's not working
-
-        else: # TCP-based protocols
-            with socket.create_connection((hostname, port), timeout=TCP_TIMEOUT) as sock:
-                if is_tls:
-                    context = ssl.create_default_context()
-                    context.check_hostname = False
-                    context.verify_mode = ssl.CERT_NONE
-                    with context.wrap_socket(sock, server_hostname=sni or hostname) as ssock:
-                        ssock.do_handshake()
-        
-        latency = int((time.monotonic() - start_time) * 1000)
-        return config, latency
-    except (socket.timeout, ConnectionRefusedError, ssl.SSLError, OSError): 
-        return None 
+    except requests.exceptions.RequestException as e:
+        print(f"  ⚠️ Failed to fetch from GitHub API: {e}")
     except Exception as e:
-        # print(f"DEBUG: Handshake test failed for {config}. Error: {type(e).__name__}: {e}")
-        return None 
+        print(f"  ⚠️ An error occurred during GitHub fetching: {e}")
+    print(f"  ✅ Found {len(collected)} configs from GitHub.")
+    return collected
 
-def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: int, max_target: int) -> List[str]:
+def parse_config_address(config_url: str) -> tuple[str, int, str, str] | None:
+    """Parses config URL to extract host and port."""
+    try:
+        if config_url.startswith("vmess://"):
+            decoded_vmess = base64.b64decode(config_url[8:]).decode('utf-8')
+            vmess_json = json.loads(decoded_vmess)
+            return vmess_json['add'], int(vmess_json['port']), vmess_json.get('net', 'tcp'), vmess_json.get('type', 'auto')
+        
+        url_parsed = urlparse(config_url)
+        scheme = url_parsed.scheme.lower()
+
+        if scheme in ['vless', 'trojan', 'ss']:
+            host = url_parsed.hostname
+            port = url_parsed.port
+            query_params = parse_qs(url_parsed.query)
+            # Default transport to tcp if not specified, or infer from 'type' param for VLESS
+            transport = query_params.get('type', ['tcp'])[0] if scheme == 'vless' else 'tcp'
+            return host, int(port), transport, scheme
+        
+        elif scheme in ['hy2', 'hysteria2', 'tuic']:
+            host = url_parsed.hostname
+            port = url_parsed.port
+            return host, int(port), 'webtransport', scheme # Hysteria2 and TUIC typically use WebTransport-like connections
+        
+        return None
+    except Exception as e:
+        # print(f"  ⚠️ Failed to parse config address {config_url[:50]}...: {e}")
+        return None
+
+def test_full_protocol_handshake(config_url: str) -> tuple[str, int] | None:
+    """Tests the full handshake for a given config URL, returning latency if successful."""
+    parsed = parse_config_address(config_url)
+    if not parsed:
+        return None
+
+    host, port, transport, scheme = parsed
+    
+    # We'll use a simple TCP connect for all, as deeper protocol handshakes are complex in Python
+    # This is a basic reachability test, not a full protocol negotiation
+    
+    if not host or not port:
+        return None
+
+    sock = None
+    start_time = time.time()
+    try:
+        # Resolve hostname
+        addr_info = socket.getaddrinfo(host, port, socket.AF_UNSPEC, socket.SOCK_STREAM)
+        if not addr_info:
+            return None
+        
+        # Try connecting to the first available address
+        family, socktype, proto, canonname, sa = addr_info[0]
+        sock = socket.socket(family, socktype, proto)
+        sock.settimeout(test_timeout_sec)
+        
+        # Wrap socket with SSL if protocol implies TLS
+        if scheme in ['vless', 'trojan', 'vmess', 'hysteria2', 'hy2', 'tuic']: # Most modern protocols use TLS
+            context = ssl.create_default_context()
+            context.check_hostname = False # Not verifying hostname for faster test
+            context.verify_mode = ssl.CERT_NONE # Not verifying certs
+            sock = context.wrap_socket(sock, server_hostname=host)
+
+        sock.connect(sa)
+        end_time = time.time()
+        latency_ms = int((end_time - start_time) * 1000)
+        return config_url, latency_ms
+    except Exception as e:
+        # print(f"  ⚠️ Handshake failed for {host}:{port} ({scheme}/{transport}): {e}")
+        return None
+    finally:
+        if sock:
+            sock.close()
+
+def select_configs_with_fluid_quota(
+    configs_with_latency: list[tuple[str, int]], 
+    min_target: int, 
+    max_final: int
+) -> list[str]:
     """
-    Selects a fluid quota of configs based on protocol and latency.
-    Prioritizes specific protocols and then fills up with remaining fast configs.
+    Selects configs, prioritizing lower latency, trying to meet min_target
+    but not exceeding max_final. Uses a fluid quota system for protocols.
     """
-    if not configs: return []
-    
-    # Sort all configs by latency first (ascending)
-    sorted_configs_with_latency = sorted(configs, key=lambda item: item[1])
-    
-    # Group configs by protocol
-    grouped = defaultdict(list)
-    for cfg, lat in sorted_configs_with_latency:
-        proto = urlparse(cfg).scheme.lower()
-        if proto == 'hysteria2': proto = 'hy2' # Normalize hysteria2
-        grouped[proto].append(cfg)
-    
-    final_selected_configs = []
-    current_final_set = set() # To ensure uniqueness
+    # Sort by latency
+    configs_with_latency.sort(key=lambda x: x[1])
 
-    # 1. Prioritize a small number of each protocol type (e.g., top 10 per protocol)
-    for proto in sorted(grouped.keys()): # Iterate consistently
-        take_count = min(10, len(grouped[proto]))
-        for cfg in grouped[proto][:take_count]:
-            if cfg not in current_final_set:
-                final_selected_configs.append(cfg)
-                current_final_set.add(cfg)
-        # Remove selected configs from their groups
-        grouped[proto] = [cfg for cfg in grouped[proto] if cfg not in current_final_set]
-
-    # 2. Fill up to min_target by cycling through remaining configs from all protocols
-    iters = {p: iter(c) for p, c in grouped.items()}
-    protos_in_play = list(iters.keys()) # Copy for safe modification
-
-    while len(final_selected_configs) < min_target and protos_in_play:
-        for proto in protos_in_play[:]: # Iterate over a copy to allow modification
-            try:
-                cfg = next(iters[proto])
-                if cfg not in current_final_set:
-                    final_selected_configs.append(cfg)
-                    current_final_set.add(cfg)
-            except StopIteration:
-                protos_in_play.remove(proto) # No more configs for this protocol
+    final_configs = []
+    protocol_counts = defaultdict(int)
+    
+    # Add configs up to max_final, prioritizing lowest latency
+    for config_url, _ in configs_with_latency:
+        if len(final_configs) >= max_final:
+            break
+        
+        protocol = urlparse(config_url).scheme.lower()
+        if protocol == 'hysteria2': protocol = 'hy2' # Normalize
+        
+        final_configs.append(config_url)
+        protocol_counts[protocol] += 1
             
-            if len(final_selected_configs) >= min_target: break # Stop if min_target reached
+    return final_configs
 
-    # 3. Fill up to max_target with any remaining fastest configs
-    all_remaining_from_original_sorted = [cfg for cfg, _ in sorted_configs_with_latency if cfg not in current_final_set]
-    
-    configs_needed_to_reach_max = max_target - len(final_selected_configs)
-    final_selected_configs.extend(all_remaining_from_original_sorted[:configs_needed_to_reach_max])
-    
-    return final_selected_configs
 
-def generate_clash_yaml(configs: List[str]) -> Optional[str]:
-    """Generates a Clash Meta compatible YAML string from a list of configs."""
+def generate_clash_yaml(configs: list[str]) -> str | None:
+    """Generates a Clash Meta YAML subscription file from Xray-compatible configs."""
     proxies = []
-    unique_check = set()
-    
-    for config in configs:
+    for config_url in configs:
         try:
-            parsed_proxy = parse_proxy_for_clash(config)
-            if parsed_proxy:
-                # Use a combination of server, port, and name to ensure uniqueness
-                key = f"{parsed_proxy['server']}:{parsed_proxy['port']}:{parsed_proxy['name']}"
-                if key not in unique_check:
-                    proxies.append(parsed_proxy)
-                    unique_check.add(key)
-        except Exception:
-            continue # Skip malformed configs
-            
+            scheme = urlparse(config_url).scheme.lower()
+            if scheme == 'vmess':
+                # VMess specific parsing
+                decoded_vmess = base64.b64decode(config_url[8:]).decode('utf-8')
+                vmess_json = json.loads(decoded_vmess)
+                
+                # Check if transport is compatible with Clash Meta
+                vmess_net = vmess_json.get('net', 'tcp')
+                if vmess_net not in clash_compatible_transports:
+                    continue # Skip if not compatible
+
+                proxy = {
+                    "name": vmess_json.get('ps', 'vmess_proxy'),
+                    "type": "vmess",
+                    "server": vmess_json['add'],
+                    "port": int(vmess_json['port']),
+                    "uuid": vmess_json['id'],
+                    "alterId": int(vmess_json.get('aid', 0)),
+                    "cipher": vmess_json.get('scy', 'auto'), # scy for security
+                    "tls": vmess_json.get('tls', '') == 'tls',
+                }
+                if vmess_net == "ws":
+                    proxy["network"] = "ws"
+                    proxy["ws-path"] = vmess_json.get('path', '/')
+                    proxy["ws-headers"] = {"Host": vmess_json.get('host', vmess_json['add'])}
+                elif vmess_net == "h2":
+                    proxy["network"] = "h2"
+                    proxy["h2-path"] = vmess_json.get('path', '/')
+                    proxy["h2-headers"] = {"Host": vmess_json.get('host', vmess_json['add'])}
+                # Add other network types if Clash Meta supports them (e.g., grpc)
+                elif vmess_net == "grpc":
+                    proxy["network"] = "grpc"
+                    proxy["grpc-service-name"] = vmess_json.get('path', '')
+                    proxy["grpc-auto-tls"] = False # Adjust based on actual config
+                # Else it's tcp
+                proxies.append(proxy)
+
+            elif scheme == 'vless':
+                # VLESS specific parsing
+                url_parsed = urlparse(config_url)
+                params = parse_qs(url_parsed.query)
+
+                vless_type = params.get('type', [''])[0]
+                if vless_type not in clash_compatible_transports:
+                    continue # Skip if not compatible
+
+                proxy = {
+                    "name": url_parsed.fragment or 'vless_proxy',
+                    "type": "vless",
+                    "server": url_parsed.hostname,
+                    "port": int(url_parsed.port),
+                    "uuid": url_parsed.username,
+                    "tls": params.get('security', [''])[0] == 'tls',
+                    "flow": params.get('flow', [''])[0] or None,
+                }
+                if vless_type == "ws":
+                    proxy["network"] = "ws"
+                    proxy["ws-path"] = params.get('path', ['/'])[0]
+                    proxy["ws-headers"] = {"Host": params.get('host', [url_parsed.hostname])[0]}
+                elif vless_type == "h2":
+                    proxy["network"] = "h2"
+                    proxy["h2-path"] = params.get('path', ['/'])[0]
+                    proxy["h2-headers"] = {"Host": params.get('host', [url_parsed.hostname])[0]}
+                elif vless_type == "grpc":
+                    proxy["network"] = "grpc"
+                    proxy["grpc-service-name"] = params.get('serviceName', [''])[0]
+                    proxy["grpc-auto-tls"] = params.get('tls', [''])[0] == '1' # Assuming 1 for true
+                # Else it's tcp
+                proxies.append(proxy)
+                
+            elif scheme == 'trojan':
+                # Trojan specific parsing
+                url_parsed = urlparse(config_url)
+                params = parse_qs(url_parsed.query)
+
+                proxy = {
+                    "name": url_parsed.fragment or 'trojan_proxy',
+                    "type": "trojan",
+                    "server": url_parsed.hostname,
+                    "port": int(url_parsed.port),
+                    "password": url_parsed.password,
+                    "tls": True, # Trojan inherently uses TLS
+                    "flow": params.get('flow', [''])[0] or None,
+                }
+                # Check if transport is compatible with Clash Meta (e.g., ws or grpc over Trojan)
+                trojan_type = params.get('type', [''])[0]
+                if trojan_type == "ws":
+                    proxy["network"] = "ws"
+                    proxy["ws-path"] = params.get('path', ['/'])[0]
+                    proxy["ws-headers"] = {"Host": params.get('host', [url_parsed.hostname])[0]}
+                elif trojan_type == "grpc":
+                    proxy["network"] = "grpc"
+                    proxy["grpc-service-name"] = params.get('serviceName', [''])[0]
+                # Else it's tcp over tls
+                proxies.append(proxy)
+                
+            elif scheme == 'ss' or scheme == 'shadowsocks':
+                # Shadowsocks specific parsing (usually ss://<base64_encoded_method:password>@server:port#name)
+                # Clash Meta supports ss:// directly
+                # However, for advanced features like plugins, it might be more complex
+                # This basic implementation assumes direct SS config without plugins in URL
+                if "@" in config_url:
+                    parts = config_url[5:].split("@")
+                    if len(parts) == 2:
+                        method_password_encoded = parts[0]
+                        server_port_name = parts[1]
+                        
+                        try:
+                            # Decode base64 for method:password
+                            method, password = base64.b64decode(method_password_encoded).decode('utf-8').split(':', 1)
+                        except: # If not base64, assume it's direct method:password
+                            method, password = method_password_encoded.split(':', 1)
+                            
+                        server_part, name = (server_port_name.split("#") + ["shadowsocks_proxy"])[:2]
+                        server, port = server_part.split(':')
+                        
+                        proxies.append({
+                            "name": name,
+                            "type": "ss",
+                            "server": server,
+                            "port": int(port),
+                            "cipher": method,
+                            "password": password
+                        })
+                
+        except Exception as e:
+            print(f"  ⚠️ Error parsing config for Clash YAML ({config_url[:50]}...): {e}")
+            continue
+
     if not proxies:
         return None
 
+    import yaml
     proxy_names = [p['name'] for p in proxies]
-    
-    # Ensure URL is correct and interval is reasonable
-    clash_config = {
-        'proxies': proxies,
-        'proxy-groups': [
-            {'name': 'V2V-Auto', 'type': 'url-test', 'proxies': proxy_names, 'url': 'http://www.gstatic.com/generate_204', 'interval': 300, 'tolerance': 50},
-            {'name': 'V2V-Select', 'type': 'select', 'proxies': ['V2V-Auto', *proxy_names]}
+    yaml_config = {
+        "proxies": proxies,
+        "proxy-groups": [
+            {
+                "name": "🚀 Manual Proxy",
+                "type": "select",
+                "proxies": proxy_names
+            },
+            {
+                "name": "🌐 Auto Select",
+                "type": "url-test",
+                "url": "http://www.gstatic.com/generate_204",
+                "interval": 300,
+                "proxies": proxy_names
+            }
         ],
-        'rules': ['MATCH,V2V-Select']
+        "rules": [
+            "MATCH,🚀 Manual Proxy"
+        ]
     }
-    
-    class NoAliasDumper(yaml.Dumper):
-        def ignore_aliases(self, data):
-            return True
+    return yaml.dump(yaml_config, allow_unicode=True, sort_keys=False)
 
-    return yaml.dump(clash_config, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False, indent=2)
-
-def parse_proxy_for_clash(config: str) -> Optional[Dict]:
-    """Parses a single config URI into a Clash proxy dictionary."""
-    try:
-        # Generate a unique and clean name
-        name_raw = urlparse(config).fragment or f"V2V-{int(time.time() * 1000) % 10000}"
-        # Remove emojis and special characters, limit length
-        name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251\W_]+', '', name_raw).strip()
-        name = name[:MAX_NAME_LENGTH] # Truncate name if too long
-        if not name: name = f"V2V-Unnamed-{int(time.time() * 1000) % 10000}"
-
-        base = {'name': name, 'skip-cert-verify': True}
-        protocol = urlparse(config).scheme.lower()
-
-        # VMess parsing
-        if protocol == 'vmess':
-            decoded = json.loads(decode_base64_content(config.replace("vmess://", "")))
-            vmess_proxy = {
-                **base, 'type': 'vmess', 'server': decoded.get('add'), 'port': int(decoded.get('port')),
-                'uuid': decoded.get('id'), 'alterId': int(decoded.get('aid', 0)), 'cipher': decoded.get('scy', 'auto'),
-                'tls': decoded.get('tls') == 'tls', 'network': decoded.get('net'), 'servername': decoded.get('sni') or decoded.get('host')
-            }
-            if decoded.get('net') == 'ws':
-                vmess_proxy['ws-opts'] = {'path': decoded.get('path', '/'), 'headers': {'Host': decoded.get('host', decoded.get('add'))}}
-            elif decoded.get('net') == 'h2': # HTTP/2
-                vmess_proxy['h2-opts'] = {'host': [decoded.get('host', decoded.get('add'))]}
-            return vmess_proxy
-        
-        # Generic URL-parsed protocols (VLESS, Trojan, SS)
-        parsed_url = urlparse(config)
-        params = dict(p.split('=', 1) for p in parsed_url.query.split('&') if '=' in p) if parsed_url.query else {}
-
-        if protocol == 'vless':
-            vless_proxy = {
-                **base, 'type': 'vless', 'server': parsed_url.hostname, 'port': parsed_url.port,
-                'uuid': parsed_url.username, 'tls': params.get('security') == 'tls', 'network': params.get('type'),
-                'servername': params.get('sni') or parsed_url.hostname
-            }
-            if params.get('type') == 'ws':
-                vless_proxy['ws-opts'] = {'path': params.get('path', '/'), 'headers': {'Host': params.get('host', parsed_url.hostname)}}
-            elif params.get('type') == 'h2': # HTTP/2
-                vless_proxy['h2-opts'] = {'host': [params.get('host', parsed_url.hostname)]}
-            elif params.get('type') == 'grpc': # gRPC
-                vless_proxy['grpc-opts'] = {'service-name': params.get('serviceName', '')}
-            return vless_proxy
-            
-        if protocol == 'trojan':
-            if not parsed_url.username: return None # Trojan requires password
-            return {
-                **base, 'type': 'trojan', 'server': parsed_url.hostname, 'port': parsed_url.port, 
-                'password': parsed_url.username, 'sni': params.get('sni') or parsed_url.hostname
-            }
-            
-        if protocol == 'ss':
-            # Shadowsocks userinfo is base64(cipher:password)
-            decoded_user = decode_base64_content(parsed_url.username)
-            if not decoded_user or ':' not in decoded_user: return None
-            cipher, password = decoded_user.split(':', 1)
-            return {
-                **base, 'type': 'ss', 'server': parsed_url.hostname, 'port': parsed_url.port, 
-                'cipher': cipher, 'password': password
-            }
-    except Exception as e:
-        # print(f"DEBUG: Error parsing config for Clash: {config}. Error: {type(e).__name__}: {e}")
-        return None
-        
-    return None
-
-def upload_to_cloudflare_kv(key: str, value: str):
-    """
-    Uploads a string value to a Cloudflare KV namespace.
-    The value is expected to be a string and will be encoded to UTF-8 bytes before upload.
-    """
-    if not all([CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_KV_NAMESPACE_ID]):
-        print("FATAL: Cloudflare KV credentials not fully set. Skipping KV upload.")
-        raise ValueError("Cloudflare API Token, Account ID, or KV Namespace ID is missing from environment variables.")
-    
-    if not isinstance(value, str):
-        print(f"CRITICAL ERROR: Attempted to upload non-string value for KV key '{key}'. Type: {type(value).__name__}.")
-        raise TypeError(f"KV value for '{key}' must be a string, but received type {type(value).__name__}.")
-
-    try:
-        cf_client = Cloudflare(api_token=CLOUDFLARE_API_TOKEN, timeout=60)
-        
-        cf_client.kv.namespaces.values.update(
-            account_id=CLOUDFLARE_ACCOUNT_ID,
-            namespace_id=CLOUDFLARE_KV_NAMESPACE_ID,
-            key_name=key,
-            value=value.encode('utf-8'), # Encoded to bytes for KV storage
-            metadata={}
-        )
-        print(f"✅ Successfully uploaded '{key}' to Cloudflare KV.")
-    except APIError as e:
-        print(f"❌ ERROR: Cloudflare API error uploading '{key}': Code {e.code} - {e.message}")
-        if e.code == 10000:
-            print("  HINT: Ensure the CLOUDFLARE_API_TOKEN has 'Worker KV Storage Write' permission.")
-        if e.code == 10014:
-            print("  HINT: Double-check that CLOUDFLARE_KV_NAMESPACE_ID is correct.")
-        raise
-    except Exception as e:
-        print(f"❌ ERROR: Failed to upload key '{key}' to Cloudflare KV: {type(e).__name__}: {e}")
-        raise
-
-def clean_for_json(obj):
-    """
-    Recursively cleans a Python object to ensure all components are JSON-serializable.
-    Specifically converts bytes to strings and ensures dictionary keys are strings.
-    """
-    if isinstance(obj, bytes):
-        return obj.decode('utf-8', 'ignore')
-    elif isinstance(obj, dict):
-        cleaned_dict = {}
-        for k, v in obj.items():
-            # Ensure key is a string after recursive cleaning
-            cleaned_key = clean_for_json(k)
-            if not isinstance(cleaned_key, str):
-                cleaned_key = str(cleaned_key) 
-            cleaned_dict[cleaned_key] = clean_for_json(v)
-        return cleaned_dict
-    elif isinstance(obj, (list, tuple, set)):
-        return [clean_for_json(item) for item in obj]
-    elif isinstance(obj, (int, float, str, bool)) or obj is None:
-        return obj
-    else:
-        print(f"WARNING: Found unexpected type '{type(obj).__name__}' during JSON cleaning. Converting to string.")
-        return str(obj)
-
-# --- MAIN LOGIC ---
+# --- main logic ---
 def main():
-    print("--- 1. Loading Sources ---")
+    print("--- 1. loading sources ---")
     try:
-        with open(SOURCES_FILE, 'r', encoding='utf-8') as f:
+        with open(sources_file, 'r', encoding='utf-8') as f:
             sources_config = json.load(f)
         
         static_sources = sources_config.get("static", [])
-        # github_search_limit و update_interval_hours اکنون از متغیرهای ثابت بالا استفاده می‌کنند.
-        # نیازی به خواندن آنها از sources_config نیست.
-
-        print(f"✅ Loaded {len(static_sources)} static sources. GitHub search limit set to: {GITHUB_SEARCH_LIMIT}.")
+        print(f"✅ loaded {len(static_sources)} static sources. Github search limit set to: {github_search_limit}.")
     except Exception as e:
-        print(f"FATAL: Cannot load or parse {SOURCES_FILE}: {e}. Exiting.")
+        print(f"FATAL: Cannot load or parse {sources_file}: {e}. Exiting.")
         return
 
-    print("\n--- 2. Fetching Configs ---")
+    print("\n--- 2. fetching configs ---")
     all_collected_configs = set()
-    with ThreadPoolExecutor(max_workers=2) as executor: # Use fewer workers for overall fetching coordination
+    with ThreadPoolExecutor(max_workers=5) as executor: # Reduced workers for fetching to avoid IP bans
         static_future = executor.submit(fetch_from_static_sources, static_sources)
-        dynamic_future = executor.submit(fetch_from_github, GITHUB_PAT, GITHUB_SEARCH_LIMIT)
+        dynamic_future = executor.submit(fetch_from_github, github_pat, github_search_limit)
         
         all_collected_configs.update(static_future.result())
         all_collected_configs.update(dynamic_future.result())
@@ -553,19 +421,18 @@ def main():
         return
     print(f"📊 Total unique configs collected: {len(all_collected_configs)}")
 
-    print(f"\n--- 3. Performing Deep Protocol Handshake Test ---")
+    print(f"\n--- 3. performing deep protocol handshake test ---")
     fast_configs_with_latency = []
-    # Limit the number of configs to test to prevent excessively long runs
-    configs_to_test_list = list(all_collected_configs)[:MAX_CONFIGS_TO_TEST] 
-    print(f"  Testing {len(configs_to_test_list)} configs with {MAX_TEST_WORKERS} workers...")
+    configs_to_test_list = list(all_collected_configs)[:max_configs_to_test] 
+    print(f"  Testing {len(configs_to_test_list)} configs with {max_test_workers} workers...")
     
-    with ThreadPoolExecutor(max_workers=MAX_TEST_WORKERS) as executor:
+    with ThreadPoolExecutor(max_workers=max_test_workers) as executor:
         futures = {executor.submit(test_full_protocol_handshake, cfg): cfg for cfg in configs_to_test_list}
         for i, future in enumerate(as_completed(futures)):
-            if (i + 1) % 500 == 0: # Progress update every 500 tests
+            if (i + 1) % 500 == 0:
                 print(f"  Tested {i+1}/{len(futures)} configs...")
             result = future.result()
-            if result and result[1] <= MAX_LATENCY_MS: # Filter by max latency
+            if result and result[1] <= max_latency_ms:
                 fast_configs_with_latency.append(result)
 
     if not fast_configs_with_latency: 
@@ -573,24 +440,21 @@ def main():
         return
     print(f"🏆 Found {len(fast_configs_with_latency)} fast configs.")
 
-    print("\n--- 4. Grouping and Finalizing Configs ---")
-    # Xray can handle all protocols except Sing-box-only ones
-    xray_eligible_pool = [(c, l) for c, l in fast_configs_with_latency if urlparse(c).scheme.lower() in XRAY_PROTOCOLS]
-    # Sing-box can handle all VALID_PROTOCOLS
-    singbox_eligible_pool = [(c, l) for c, l in fast_configs_with_latency if urlparse(c).scheme.lower() in VALID_PROTOCOLS]
+    print("\n--- 4. grouping and finalizing configs ---")
+    xray_eligible_pool = [(c, l) for c, l in fast_configs_with_latency if urlparse(c).scheme.lower() in xray_protocols]
+    singbox_eligible_pool = [(c, l) for c, l in fast_configs_with_latency if urlparse(c).scheme.lower() in singbox_protocols] # Fixed to singbox_protocols
 
-    xray_final_selected = select_configs_with_fluid_quota(xray_eligible_pool, MIN_TARGET_CONFIGS_PER_CORE, MAX_FINAL_CONFIGS_PER_CORE)
-    singbox_final_selected = select_configs_with_fluid_quota(singbox_eligible_pool, MIN_TARGET_CONFIGS_PER_CORE, MAX_FINAL_CONFIGS_PER_CORE)
+    xray_final_selected = select_configs_with_fluid_quota(xray_eligible_pool, min_target_configs_per_core, max_final_configs_per_core)
+    singbox_final_selected = select_configs_with_fluid_quota(singbox_eligible_pool, min_target_configs_per_core, max_final_configs_per_core)
     
     print(f"✅ Selected {len(xray_final_selected)} configs for Xray core.")
     print(f"✅ Selected {len(singbox_final_selected)} configs for Sing-box core.")
 
-    # Helper to group by protocol for JSON output structure
-    def group_by_protocol_for_output(configs: List[str]) -> Dict[str, List[str]]:
+    def group_by_protocol_for_output(configs: list[str]) -> dict[str, list[str]]:
         grouped = defaultdict(list)
         for cfg in configs:
             proto = urlparse(cfg).scheme.lower()
-            if proto == 'hysteria2': proto = 'hy2' # Normalize
+            if proto == 'hysteria2': proto = 'hy2'
             grouped[proto].append(cfg)
         return dict(grouped)
 
@@ -599,64 +463,34 @@ def main():
         "singbox": group_by_protocol_for_output(singbox_final_selected)
     }
 
-    print("\n--- 5. Writing Local Files ---")
-    # Writing all_live_configs.json
-    with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
+    print("\n--- 5. writing local files ---")
+    # writing all_live_configs.json
+    with open(output_json_file, 'w', encoding='utf-8') as f:
         json.dump(output_data_for_kv, f, indent=2, ensure_ascii=False)
-    print(f"✅ Wrote combined configs to {OUTPUT_JSON_FILE}.")
+    print(f"✅ Wrote combined configs to {output_json_file}.")
 
-    # Writing clash_subscription.yml (using Xray configs for Clash Meta)
+    # writing clash_subscription.yml (using Xray configs for Clash Meta)
     clash_yaml_content = generate_clash_yaml(xray_final_selected)
     if clash_yaml_content:
-        with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f:
+        with open(output_clash_file, 'w', encoding='utf-8') as f:
             f.write(clash_yaml_content)
-        print(f"✅ Wrote Clash subscription with {len(xray_final_selected)} configs to {OUTPUT_CLASH_FILE}.")
+        print(f"✅ Wrote Clash subscription with {len(xray_final_selected)} configs to {output_clash_file}.")
     else:
         print("⚠️ Could not generate Clash subscription file (no compatible Xray configs found).")
 
-    # Writing cache_version.txt
-    with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f:
+    # writing cache_version.txt
+    with open(cache_version_file, 'w', encoding='utf-8') as f:
         f.write(str(int(time.time())))
-    print(f"✅ Cache version updated in {CACHE_VERSION_FILE}.")
+    print(f"✅ Cache version updated in {cache_version_file}.")
 
-    print("\n--- 6. Uploading to Cloudflare KV ---")
-    try:
-        print("  Cleaning data structure for JSON serialization...")
-        cleaned_output_data = clean_for_json(output_data_for_kv)
-        
-        print("  Testing JSON serialization...")
-        json_string_to_upload = json.dumps(cleaned_output_data, indent=2, ensure_ascii=False)
-        print(f"  JSON serialization successful. Data size: {len(json_string_to_upload)} characters")
-        
-        print("  Uploading live configs to Cloudflare KV...")
-        upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json_string_to_upload)
-        
-        print("  Uploading cache version to Cloudflare KV...")
-        upload_to_cloudflare_kv(KV_CACHE_VERSION_KEY, str(int(time.time())))
-        
-        print("\n--- Process Completed Successfully ---")
-        
-        total_xray = sum(len(configs) for configs in output_data_for_kv["xray"].values())
-        total_singbox = sum(len(configs) for configs in output_data_for_kv["singbox"].values())
-        print(f"Final Summary:")
-        print(f"   - Xray configs: {total_xray}")
-        print(f"   - Sing-box configs: {total_singbox}")
-        
-    except ValueError as e:
-        print(f"❌ FATAL: Cloudflare KV upload skipped due to missing credentials: {e}")
-        raise
-    except Exception as e:
-        print(f"❌ FATAL: Could not complete Cloudflare KV upload: {type(e).__name__}: {e}")
-        # Add debug info for KV upload failure
-        print("\nDEBUG INFO (KV upload failure):")
-        print(f"  Output data type: {type(output_data_for_kv)}")
-        if isinstance(output_data_for_kv, dict):
-            for key, value in output_data_for_kv.items():
-                print(f"  - Key '{key}': Type {type(value)}")
-                if isinstance(value, dict):
-                    for subkey, subvalue in value.items():
-                        print(f"    - SubKey '{subkey}': Type {type(subvalue)} (length: {len(subvalue) if hasattr(subvalue, '__len__') else 'n/a'})")
-        raise
+    print("\n--- Cloudflare KV upload will be handled by GitHub Actions ---")
+    print("\n--- Process completed successfully ---")
+    
+    total_xray = sum(len(configs) for configs in output_data_for_kv["xray"].values())
+    total_singbox = sum(len(configs) for configs in output_data_for_kv["singbox"].values())
+    print(f"Final Summary:")
+    print(f"   - Xray configs: {total_xray}")
+    print(f"   - Sing-box configs: {total_singbox}")
 
 if __name__ == "__main__":
     main()
