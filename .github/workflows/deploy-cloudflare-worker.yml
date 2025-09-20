@@ -1,4 +1,4 @@
-name: Deploy Cloudflare Workers & Update KV
+name: deploy cloudflare workers & update kv
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ on:
       - 'sources.json'
       - 'all_live_configs.json'
       - 'cache_version.txt'
-      # - 'clash_subscription.yml' # ✅ حذف شده
+      # - 'clash_subscription.yml' # حذف شده
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,16 +21,16 @@ concurrency:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    name: Build configs, deploy workers & upload to KV
+    name: build configs, deploy workers & upload to kv
     permissions:
       contents: read
-      
+
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # ✅ از آخرین نسخه checkout action استفاده کنید
 
       - name: setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5 # ✅ از آخرین نسخه setup-python action استفاده کنید
         with:
           python-version: '3.10'
 
@@ -41,59 +41,66 @@ jobs:
       - name: run config scraper
         run: python scraper.py
         env:
-          GH_PAT: ${{ secrets.GH_PAT }} # ✅ استفاده از نام Secret شما
+          gh_pat: ${{ secrets.gh_pat }} # استفاده از نام secret شما
+
+      # ✅ مرحله جدید: نصب وابستگی‌های Node.js برای ورکر
+      - name: install nodejs dependencies
+        run: npm install
 
       - name: deploy rapid-scene-1da6 worker
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.cloudflare_api_token }}
+          accountId: ${{ secrets.cloudflare_account_id }}
           wranglerConfigFile: 'wrangler-rapid-scene-1da6.toml'
+          # ✅ اضافه شدن دو خط زیر
+          command: 'deploy'
+          workingDirectory: './'
 
       - name: deploy winter-hill-0307 worker
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.cloudflare_api_token }}
+          accountId: ${{ secrets.cloudflare_account_id }}
           wranglerConfigFile: 'wrangler-winter-hill-0307.toml'
+          # ✅ اضافه شدن دو خط زیر
+          command: 'deploy'
+          workingDirectory: './'
 
       - name: deploy v2v worker
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.cloudflare_api_token }}
+          accountId: ${{ secrets.cloudflare_account_id }}
           wranglerConfigFile: 'wrangler-v2v.toml'
+          # ✅ اضافه شدن دو خط زیر
+          command: 'deploy'
+          workingDirectory: './'
 
       - name: deploy v2v-proxy worker
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.cloudflare_api_token }}
+          accountId: ${{ secrets.cloudflare_account_id }}
           wranglerConfigFile: 'wrangler-v2v-proxy.toml'
+          # ✅ اضافه شدن دو خط زیر
+          command: 'deploy'
+          workingDirectory: './'
 
-      - name: upload all_live_configs.json to KV
+      - name: upload all_live_configs.json to kv
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: 'kv:key put "${{ env.KV_LIVE_CONFIGS_KEY }}" --path "all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"'
+          apiToken: ${{ secrets.cloudflare_api_token }}
+          accountId: ${{ secrets.cloudflare_account_id }}
+          command: 'kv:key put "${{ env.kv_live_configs_key }}" --path "all_live_configs.json" --namespace-id "${{ secrets.cloudflare_kv_namespace_id }}"'
         env:
-          KV_LIVE_CONFIGS_KEY: 'all_live_configs.json'
+          kv_live_configs_key: 'all_live_configs.json'
 
-      - name: upload cache_version.txt to KV
+      - name: upload cache_version.txt to kv
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: 'kv:key put "${{ env.KV_CACHE_VERSION_KEY }}" --path "cache_version.txt" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"'
+          apiToken: ${{ secrets.cloudflare_api_token }}
+          accountId: ${{ secrets.cloudflare_account_id }}
+          command: 'kv:key put "${{ env.kv_cache_version_key }}" --path "cache_version.txt" --namespace-id "${{ secrets.cloudflare_kv_namespace_id }}"'
         env:
-          KV_CACHE_VERSION_KEY: 'cache_version.txt'
-
-      # - name: upload clash_subscription.yml to KV # ✅ حذف شده
-      #   uses: cloudflare/wrangler-action@v3
-      #   with:
-      #     apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      #     accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      #     command: 'kv:key put "${{ env.KV_CLASH_SUBSCRIPTION_KEY }}" --path "clash_subscription.yml" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"'
-      #   env:
-      #     KV_CLASH_SUBSCRIPTION_KEY: 'clash_subscription.yml'
+          kv_cache_version_key: 'cache_version.txt'
