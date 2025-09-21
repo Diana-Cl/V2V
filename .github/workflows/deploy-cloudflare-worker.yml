@@ -8,11 +8,11 @@ on:
     paths:
       - 'worker.js'
       - 'wrangler-*.toml'
+      - 'package.json'
       - 'scraper.py'
       - 'sources.json'
       - 'all_live_configs.json'
       - 'cache_version.txt'
-      # - 'clash_subscription.yml' # حذف شده
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,13 +24,13 @@ jobs:
     name: build configs, deploy workers & upload to kv
     permissions:
       contents: read
-
+      
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4 # ✅ از آخرین نسخه checkout action استفاده کنید
+        uses: actions/checkout@v4
 
       - name: setup python
-        uses: actions/setup-python@v5 # ✅ از آخرین نسخه setup-python action استفاده کنید
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -41,9 +41,8 @@ jobs:
       - name: run config scraper
         run: python scraper.py
         env:
-          gh_pat: ${{ secrets.gh_pat }} # استفاده از نام secret شما
+          gh_pat: ${{ secrets.gh_pat }}
 
-      # ✅ مرحله جدید: نصب وابستگی‌های Node.js برای ورکر
       - name: install nodejs dependencies
         run: npm install
 
@@ -52,40 +51,36 @@ jobs:
         with:
           apiToken: ${{ secrets.cloudflare_api_token }}
           accountId: ${{ secrets.cloudflare_account_id }}
-          wranglerConfigFile: 'wrangler-rapid-scene-1da6.toml'
-          # ✅ اضافه شدن دو خط زیر
           command: 'deploy'
           workingDirectory: './'
+          name: 'rapid-scene-1da6'
 
       - name: deploy winter-hill-0307 worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.cloudflare_api_token }}
           accountId: ${{ secrets.cloudflare_account_id }}
-          wranglerConfigFile: 'wrangler-winter-hill-0307.toml'
-          # ✅ اضافه شدن دو خط زیر
           command: 'deploy'
           workingDirectory: './'
+          name: 'winter-hill-0307'
 
       - name: deploy v2v worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.cloudflare_api_token }}
           accountId: ${{ secrets.cloudflare_account_id }}
-          wranglerConfigFile: 'wrangler-v2v.toml'
-          # ✅ اضافه شدن دو خط زیر
           command: 'deploy'
           workingDirectory: './'
+          name: 'v2v'
 
       - name: deploy v2v-proxy worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.cloudflare_api_token }}
           accountId: ${{ secrets.cloudflare_account_id }}
-          wranglerConfigFile: 'wrangler-v2v-proxy.toml'
-          # ✅ اضافه شدن دو خط زیر
           command: 'deploy'
           workingDirectory: './'
+          name: 'v2v-proxy'
 
       - name: upload all_live_configs.json to kv
         uses: cloudflare/wrangler-action@v3
