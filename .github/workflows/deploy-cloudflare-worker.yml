@@ -1,4 +1,4 @@
-name: deploy cloudflare workers & update kv
+name: Deploy Cloudflare Workers & Update KV
 
 on:
   workflow_dispatch:
@@ -9,10 +9,13 @@ on:
       - 'worker.js'
       - 'wrangler-*.toml'
       - 'package.json'
-      - 'scraper.py'
-      - 'sources.json'
-      - 'all_live_configs.json'
-      - 'cache_version.txt'
+      # Data-related files are removed from push paths to prevent frequent scraper runs
+      # - 'scraper.py' 
+      # - 'sources.json' 
+      # - 'all_live_configs.json' 
+      # - 'cache_version.txt' 
+  schedule:
+    - cron: '0 */4 * * *' # Runs every 4 hours (e.g., at 00:00, 04:00, 08:00 UTC)
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,72 +24,68 @@ concurrency:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    name: build configs, deploy workers & upload to kv
+    name: Build configs, deploy workers & upload to KV
     permissions:
-      contents: read
-
+      contents: read # Read permission for checking out repository contents
+      
     steps:
-      - name: checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: setup python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: install python dependencies
+      - name: Install Python dependencies
         run: |
           pip install requests pyyaml
 
-      - name: run config scraper
+      - name: Run config scraper
         run: python scraper.py
         env:
-          gh_pat: ${{ secrets.gh_pat }}
+          GH_PAT: ${{ secrets.GH_PAT }} # GitHub Personal Access Token
 
-      # ✅ مرحله نصب Node.js و وابستگی‌ها (همان قبلی)
-      - name: setup Node.js
-        uses: actions/setup-node@v3 # ✅ از Node.js Setup Action استفاده کنید
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: '18' # ✅ یا '20'، نسخه پایدار Node.js
-
-      - name: install nodejs dependencies
+          node-version: '18' # Using Node.js v18 for better compatibility with Wrangler v3
+          
+      - name: Install Node.js dependencies
         run: npm install
 
-      # ✅ استفاده از حلقه (loop) برای دیپلوی هر Worker
-      - name: deploy workers
+      - name: Deploy Workers
         run: |
           WORKERS=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
           for worker_name in "${WORKERS[@]}"; do
             echo "Deploying worker: $worker_name"
-            # ✅ استفاده از npx wrangler deploy با --config و --script
-            # این کار به Wrangler مستقیماً می گوید فایل پیکربندی و اسکریپت کجاست.
+            # Deploy command using direct Wrangler CLI with explicit config and script paths
+            # API Token and Account ID are passed via environment variables (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID)
             npx wrangler deploy "$worker_name" --config "wrangler-$worker_name.toml" --script "worker.js" \
-              --compatibility-date "2024-03-20" --compatibility-flag "nodejs_compat" \
-              --api-token "${{ secrets.cloudflare_api_token }}" --account-id "${{ secrets.cloudflare_account_id }}"
-            if [ $? -ne 0 ]; then
+              --compatibility-date "2024-03-20" --compatibility-flag "nodejs_compat"
+            if [ $? -ne 0 ]; then # Check if the previous command failed
               echo "Error deploying $worker_name. Exiting."
-              exit 1
+              exit 1 # Exit the job if a deployment fails
             fi
           done
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }} # ✅ Wrangler از این متغیر استفاده می کند
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.cloudflare_account_id }} # ✅ Wrangler از این متغیر استفاده می کند
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Cloudflare API Token for Worker deployment
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # Cloudflare Account ID
 
-      # --- مراحل آپلود KV بدون تغییر ---
-      - name: upload all_live_configs.json to kv
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.cloudflare_api_token }}
-          accountId: ${{ secrets.cloudflare_account_id }}
-          command: 'kv:key put "${{ env.kv_live_configs_key }}" --path "all_live_configs.json" --namespace-id "${{ secrets.cloudflare_kv_namespace_id }}"'
+      - name: Upload all_live_configs.json to KV
+        run: |
+          # Direct Wrangler CLI command to put KV key
+          npx wrangler kv:key put "${{ env.KV_LIVE_CONFIGS_KEY }}" --path "all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
         env:
-          kv_live_configs_key: 'all_live_configs.json'
+          KV_LIVE_CONFIGS_KEY: 'all_live_configs.json'
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Cloudflare API Token for KV operations
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # Cloudflare Account ID
 
-      - name: upload cache_version.txt to kv
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.cloudflare_api_token }}
-          accountId: ${{ secrets.cloudflare_account_id }}
-          command: 'kv:key put "${{ env.kv_cache_version_key }}" --path "cache_version.txt" --namespace-id "${{ secrets.cloudflare_kv_namespace_id }}"'
+      - name: Upload cache_version.txt to KV
+        run: |
+          # Direct Wrangler CLI command to put KV key
+          npx wrangler kv:key put "${{ env.KV_CACHE_VERSION_KEY }}" --path "cache_version.txt" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
         env:
-          kv_cache_version_key: 'cache_version.txt'
+          KV_CACHE_VERSION_KEY: 'cache_version.txt'
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Cloudflare API Token for KV operations
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # Cloudflare Account ID
