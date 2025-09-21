@@ -1,15 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Configuration ---
     const WORKER_URLS = [
         'https://rapid-scene-1da6.mbrgh87.workers.dev',
         'https://v2v-proxy.mbrgh87.workers.dev',
         'https://v2v.mbrgh87.workers.dev',
         'https://winter-hill-0307.mbrgh87.workers.dev',
     ];
-    const workerUrl = WORKER_URLS[Math.floor(Math.random() * WORKER_URLS.length)]; // Load balance on client side
-    const PING_TIMEOUT = 5000; // 5 seconds for each ping test
+    const workerUrl = WORKER_URLS[Math.floor(Math.random() * WORKER_URLS.length)];
+    const PING_TIMEOUT = 5000;
 
-    // --- DOM Elements ---
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
     const xrayWrapper = getEl('xray-content-wrapper');
@@ -19,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastEl = getEl('toast');
     let userUuid = localStorage.getItem('v2v_user_uuid') || null;
 
-    // --- Helper & Utility Functions ---
     const showToast = (message, isError = false) => {
         toastEl.textContent = message;
         toastEl.className = `toast show ${isError ? 'error' : ''}`;
@@ -46,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
         qrModal.style.display = 'flex';
     };
 
-    // --- Core Logic: Fetching and Rendering ---
     const fetchAndRender = async () => {
         statusBar.textContent = 'در حال دریافت کانفیگ‌ها...';
         try {
@@ -122,7 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.innerHTML = html;
     };
 
-    // --- Ping Test Logic ---
     const parseConfigForPing = (configStr) => {
         try {
             if (configStr.startsWith('vmess://')) {
@@ -222,7 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
         testButton.disabled = false;
     };
 
-    // --- Personal Subscription Logic ---
     window.createPersonalSubscription = async (coreName, format, method = 'copy') => {
         const selectedConfigs = Array.from(document.querySelectorAll(`#${coreName}-section .config-checkbox:checked`)).map(cb => cb.closest('.config-item').dataset.config);
         if (selectedConfigs.length === 0) {
@@ -240,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
 
-            userUuid = data.uuid; // Save the new or existing UUID
+            userUuid = data.uuid;
             localStorage.setItem('v2v_user_uuid', userUuid);
 
             const urlToUse = format === 'clash' ? data.clashSubscriptionUrl : data.subscriptionUrl;
@@ -257,8 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-
-    // --- Init & Event Listeners ---
     fetchAndRender();
     qrModal.addEventListener('click', () => (qrModal.style.display = 'none'));
     document.addEventListener('keydown', (e) => e.key === 'Escape' && (qrModal.style.display = 'none'));
