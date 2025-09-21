@@ -7,7 +7,7 @@ on:
       - main
     paths:
       - 'worker.js'
-      - 'wrangler-*.toml'
+      - 'wrangler-*.toml' # همه فایل‌های wrangler-*.toml در ریشه
       - 'package.json'
   schedule:
     - cron: '0 */4 * * *'
@@ -43,23 +43,25 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18' # Node.js 18 or newer is recommended for Wrangler v3/v4
+          node-version: '20' # ✅ استفاده از Node.js v20 (مطابق نیاز Wrangler جدید)
           
       - name: Install Node.js dependencies and Global Wrangler
         run: |
-          npm install # نصب dependencyهای پروژه (اگر package.json دارید)
-          npm install -g wrangler@latest # ✅ Wrangler را به صورت سراسری (Global) و آخرین نسخه نصب می‌کنیم
+          npm install # نصب dependencyهای پروژه از package.json (اگر در ریشه دارید)
+          npm install -g wrangler@latest # ✅ نصب Wrangler به صورت سراسری و با آخرین نسخه
           echo "Installed Wrangler version (Global):"
-          wrangler --version # ✅ بررسی نسخه Wrangler نصب شده سراسری
-
-      # --- مرحله دیپلوی Workerها با فراخوانی مستقیم Wrangler ---
-      - name: Deploy Workers
+          wrangler --version # ✅ بررسی و نمایش نسخه Wrangler نصب شده
+          echo "Node.js version:"
+          node -v # ✅ بررسی و نمایش نسخه Node.js
+          
+      # --- مرحله دیپلوی هر چهار Worker ---
+      - name: Deploy All Workers
         run: |
-          WORKERS=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
-          for worker_name in "${WORKERS[@]}"; do
+          WORKER_NAMES=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy") # لیست چهار Worker
+          for worker_name in "${WORKER_NAMES[@]}"; do
             echo "--- Deploying worker: $worker_name ---"
-            # ✅ FIX: فراخوانی مستقیم 'wrangler' (نصب شده سراسری)
-            # و مشخص کردن entry-point و config file و نام Worker
+            # ✅ فراخوانی مستقیم 'wrangler' (نصب شده سراسری)
+            # با مشخص کردن صریح entry-point، فایل پیکربندی (در ریشه) و نام Worker
             wrangler deploy "worker.js" \
               --config "wrangler-${worker_name}.toml" \
               --name "$worker_name" \
@@ -70,15 +72,14 @@ jobs:
               echo "!!! Error deploying $worker_name. Exiting."
               exit 1
             fi
+            echo "--- Deployment of $worker_name successful ---"
           done
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # ✅ استفاده از API Token جدید و امن (توصیه شده)
-          # OR if using Global API Key (LESS SECURE):
-          # CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          # CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # استفاده از API Token جدید و امن
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # --- مراحل آپلود KV با فراخوانی مستقیم Wrangler ---
+      # --- مراحل آپلود KV به Namespace مشترک/مرکزی ---
+      # فرض بر این است که CLOUDFLARE_KV_NAMESPACE_ID شناسه KV Namespace مشترک است
       - name: Upload all_live_configs.json to KV
         run: |
           wrangler kv:key put "all_live_configs.json" \
@@ -86,9 +87,6 @@ jobs:
             --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          # OR if using Global API Key (LESS SECURE):
-          # CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          # CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Upload cache_version.txt to KV
@@ -98,7 +96,4 @@ jobs:
             --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          # OR if using Global API Key (LESS SECURE):
-          # CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          # CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
