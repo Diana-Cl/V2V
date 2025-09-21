@@ -1,43 +1,38 @@
 name: deploy cloudflare workers & update kv
 
 on:
-  workflow_dispatch: # اجرای دستی Workflow
+  workflow_dispatch:
   push:
     branches:
       - main
     paths:
-      - 'worker.js' # تغییر در کد Worker
-      - 'wrangler-*.toml' # تغییر در پیکربندی Workerها
-      - 'package.json' # تغییر در وابستگی‌های Node.js
-      - 'scraper.py' # تغییر در اسکریپت تولید پیکربندی
-      # نیازی به اضافه کردن all_live_configs.json و cache_version.txt نیست، چون توسط scraper تولید می‌شوند.
-      # اگر این فایل‌ها به صورت دستی تغییر کنند، یعنی کد scraper یا logic آن‌ها تغییر کرده و پوشش داده می‌شود.
+      - 'worker.js'
+      - 'wrangler-*.toml'
+      - 'package.json'
+      - 'scraper.py'
   schedule:
-    - cron: '0 */4 * * *' # اجرای خودکار هر 4 ساعت
+    - cron: '0 */4 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true # لغو اجرای قبلی در صورت شروع اجرای جدید
+  cancel-in-progress: true
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     name: build configs, deploy workers & upload to kv
     permissions:
-      contents: read # برای checkout کردن کد
-      id-token: write # برای احراز هویت OIDC با Cloudflare (اگر در آینده استفاده شود)
-      # برای CLOUDFLARE_API_TOKEN، فقط نیاز به تنظیم آن در Secrets دارید.
+      contents: read
+      id-token: write
       
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4 # استفاده از آخرین نسخه پایدار اکشن checkout
+        uses: actions/checkout@v4
 
       - name: setup python 3.10
-        uses: actions/setup-python@v5 # استفاده از آخرین نسخه پایدار اکشن setup-python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          # cache: 'pip' # اگر فایل requirements.txt دارید، این خط و خط بعدی را فعال کنید
-          # cache-dependency-path: 'requirements.txt'
           
       - name: install python dependencies
         run: pip install requests pyyaml
@@ -45,37 +40,26 @@ jobs:
       - name: run config scraper
         run: python scraper.py
         env:
-          GH_PAT: ${{ secrets.GH_PAT }} # نام متغیر محیطی با حروف بزرگ
+          GH_PAT: ${{ secrets.GH_PAT }}
 
-      # ✅ اصلاح 1 (مهم): استفاده از اکشن رسمی setup-node برای نصب Node.js
-      # این روش پایدارتر، سریع‌تر و استانداردتر است.
       - name: setup node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # cache: 'npm' # ❌ این خط را حذف می‌کنیم تا خطای "Dependencies lock file is not found" برطرف شود
-                          # چون package-lock.json در ریشه ریپازیتوری شما وجود ندارد.
 
-      # ✅ اصلاح 2 (مهم): نصب wrangler به صورت محلی و بررسی نسخه آن
-      # با استفاده از setup-node@v4، npm در PATH قرار می‌گیرد.
       - name: install node.js dependencies and local wrangler
         run: |
           echo "Installing project Node.js dependencies..."
-          npm install # نصب dependencyهای پروژه از package.json شما
-          echo "Installing wrangler globally via npm (latest version)..."
-          npm install -g wrangler@latest # ⚡️ تغییر: نصب Wrangler به صورت گلوبال
-          # دلیل: برخی ابزارها (مثل Wrangler) برای راحتی کار انتظار دارند که به صورت گلوبال در PATH باشند.
-          # همچنین، با وجود package.json شما، نصب `wrangler` در `devDependencies` آن هم صورت می‌گیرد.
-          # نصب گلوبال اینجا اطمینان می‌دهد که `wrangler` همیشه در PATH است.
-          
-          echo "Installed wrangler version:"
-          wrangler --version # نیازی به ./node_modules/.bin نیست چون گلوبال نصب شده.
+          npm install 
+          echo "Installing wrangler locally (latest version)..."
+          npm install wrangler@latest
+          echo "Installed wrangler version (local):"
+          ./node_modules/.bin/wrangler --version
           
       # --- مرحله دیپلوی هر چهار worker ---
       - name: deploy all workers
         run: |
-          worker_names=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy") # لیست چهار worker
-          # تأیید می‌کنیم که CLOUDFLARE_ACCOUNT_ID در secrets وجود دارد.
+          worker_names=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
           if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
             echo "Error: CLOUDFLARE_ACCOUNT_ID secret is not set. Exiting."
             exit 1
@@ -83,7 +67,7 @@ jobs:
 
           for worker_name in "${worker_names[@]}"; do
             echo "--- Deploying worker: $worker_name ---"
-            wrangler deploy "worker.js" \
+            npx wrangler deploy "worker.js" \
               --config "wrangler-${worker_name}.toml" \
               --name "$worker_name" \
               --compatibility-date "2024-03-20" \
@@ -96,24 +80,24 @@ jobs:
             echo "--- Deployment of $worker_name successful ---"
           done
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # نام متغیر محیطی با حروف بزرگ
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # نام متغیر محیطی با حروف بزرگ
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       # --- مراحل آپلود kv به namespace مشترک/مرکزی ---
-      # ✅ اصلاح 3 (مهم): استفاده صحیح از cat و pipe برای آپلود all_live_configs.json به KV
+      # ✅ اصلاح نهایی و قطعی: استفاده از سینتکس جدید Wrangler v3 با --path
       - name: upload all_live_configs.json to kv
         run: |
-          # اطمینان حاصل می‌کنیم که CLOUDFLARE_KV_NAMESPACE_ID در secrets وجود دارد.
           if [ -z "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
             echo "Error: CLOUDFLARE_KV_NAMESPACE_ID secret is not set. Skipping KV upload."
-            exit 1 # این را می‌توان به "continue" تغییر داد اگر نمی‌خواهید کل Workflow متوقف شود.
+            exit 1
           fi
           
-          if [ -f "all_live_configs.json" ]; then # بررسی وجود فایل قبل از آپلود
+          if [ -f "all_live_configs.json" ]; then
             echo "Uploading all_live_configs.json to KV (Key: all_live_configs.json)..."
-            cat all_live_configs.json | \
-            wrangler kv:key put "all_live_configs.json" \
-              --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+            # ✅ سینتکس صحیح Wrangler v3: استفاده از --path برای آپلود محتوای فایل
+            npx wrangler kv:key put "all_live_configs.json" \
+              --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
+              --path "all_live_configs.json"
             echo "all_live_configs.json uploaded successfully."
           else
             echo "Warning: all_live_configs.json not found, skipping KV upload."
@@ -122,20 +106,20 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # ✅ اصلاح 4 (مهم): استفاده صحیح از cat و pipe برای آپلود cache_version.txt به KV
+      # ✅ اصلاح نهایی و قطعی: استفاده از سینتکس جدید Wrangler v3 با --path
       - name: upload cache_version.txt to kv
         run: |
-          # اطمینان حاصل می‌کنیم که CLOUDFLARE_KV_NAMESPACE_ID در secrets وجود دارد.
           if [ -z "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
             echo "Error: CLOUDFLARE_KV_NAMESPACE_ID secret is not set. Skipping KV upload."
             exit 1
           fi
 
-          if [ -f "cache_version.txt" ]; then # بررسی وجود فایل قبل از آپلود
+          if [ -f "cache_version.txt" ]; then
             echo "Uploading cache_version.txt to KV (Key: cache_version.txt)..."
-            cat cache_version.txt | \
-            wrangler kv:key put "cache_version.txt" \
-              --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+            # ✅ سینتکس صحیح Wrangler v3: استفاده از --path برای آپلود محتوای فایل
+            npx wrangler kv:key put "cache_version.txt" \
+              --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
+              --path "cache_version.txt"
             echo "cache_version.txt uploaded successfully."
           else
             echo "Warning: cache_version.txt not found, skipping KV upload."
