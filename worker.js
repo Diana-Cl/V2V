@@ -1,27 +1,18 @@
-// ✅ (1) Install `uuid` and `js-yaml` packages: `npm install uuid js-yaml`
-// ✅ (2) Ensure `nodejs_compat` is enabled in `wrangler.toml`:
-//    compatibility_date = "2024-03-20"
-//    compatibility_flags = ["nodejs_compat"]
-
 import { v4 as uuidv4 } from 'uuid';
 import YAML from 'js-yaml';
-import { connect } from 'cloudflare:sockets'; // ✅ برای تست پینگ TCP از سمت ورکر
+import { connect } from 'cloudflare:sockets';
 
-// --- Configuration Constants ---
 const ALL_LIVE_CONFIGS_KEY = 'all_live_configs.json';
 const CACHE_VERSION_KEY = 'cache_version.txt';
-const TTL_USER_SUBSCRIPTION_STORE = 60 * 60 * 24 * 30; // 30 days for personal subscription UUIDs
-const FRONTEND_DOMAIN = 'https://smbcryp.github.io'; // ✅ تغییر داده شد به آدرس دقیق فرانت‌اند شما
+const TTL_USER_SUBSCRIPTION_STORE = 60 * 60 * 24 * 30;
+const FRONTEND_DOMAIN = 'https://smbcryp.github.io';
 
-// --- CORS Headers ---
 const corsHeaders = {
     'Access-Control-Allow-Origin': FRONTEND_DOMAIN,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Cache-Version',
     'Access-Control-Max-Age': '86400',
 };
-
-// --- Helper Functions ---
 
 function handleOptions(request) {
     const requestOrigin = request.headers.get('Origin');
@@ -46,15 +37,9 @@ function textResponse(text, status = 200, filename = null) {
     return new Response(text, { status, headers });
 }
 
-/**
- * Generates a Clash Meta YAML subscription file.
- * This function is now more robust to prevent duplicate names and parse errors.
- * @param {string[]} configs - Array of config URLs.
- * @returns {string|null} - The YAML string or null if no compatible proxies.
- */
 function generateClashYaml(configs) {
     const proxies = [];
-    const usedNames = new Set(); // ✅ برای جلوگیری از نام‌های تکراری
+    const usedNames = new Set();
 
     for (const configUrl of configs) {
         try {
@@ -62,7 +47,6 @@ function generateClashYaml(configs) {
             const urlParsed = new URL(configUrl);
             const scheme = urlParsed.protocol.replace(':', '').toLowerCase();
 
-            // Function to generate a unique name
             const getUniqueName = (baseName) => {
                 let name = baseName;
                 let counter = 1;
@@ -102,11 +86,10 @@ function generateClashYaml(configs) {
                 proxy = {
                     name: getUniqueName(decodeURIComponent(urlParsed.hash.substring(1)) || `trojan-${urlParsed.hostname}`),
                     type: 'trojan', server: urlParsed.hostname, port: parseInt(urlParsed.port),
-                    password: urlParsed.password, // Trojan requires a password
+                    password: urlParsed.password,
                     sni: params.get('sni') || urlParsed.hostname,
                 };
             }
-            // Add other protocols if needed for Clash
 
             if (proxy) {
                 proxies.push(proxy);
@@ -114,7 +97,7 @@ function generateClashYaml(configs) {
 
         } catch (e) {
             console.error(`[Clash Gen] Skipping faulty config: ${configUrl.substring(0, 50)}...`, e.message);
-            continue; // ✅ از کانفیگ‌های معیوب رد شو
+            continue;
         }
     }
 
@@ -136,9 +119,6 @@ function generateClashYaml(configs) {
     return YAML.dump(yamlConfig, { skipInvalid: true, sortKeys: false });
 }
 
-
-// --- Main Request Handler ---
-
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
@@ -148,7 +128,6 @@ export default {
         }
 
         try {
-            // Endpoint 1: /configs - Get all live configs
             if (url.pathname === '/configs') {
                 const allConfigs = await env.v2v_kv.get(ALL_LIVE_CONFIGS_KEY, { type: 'json' });
                 const cacheVersion = await env.v2v_kv.get(CACHE_VERSION_KEY);
@@ -158,7 +137,6 @@ export default {
                 return response;
             }
 
-            // ✅ Endpoint 2: /tcp-probe - For frontend ping tests of TCP-based configs
             if (url.pathname === '/tcp-probe' && request.method === 'POST') {
                 const { host, port } = await request.json();
                 if (!host || !port) return jsonResponse({ error: 'Invalid host or port' }, 400);
@@ -177,7 +155,6 @@ export default {
                 }
             }
 
-            // Endpoint 3: /create-personal-sub - Create a new personal subscription
             if (url.pathname === '/create-personal-sub' && request.method === 'POST') {
                 const { configs, uuid: clientUuid } = await request.json();
                 if (!configs || !Array.isArray(configs) || configs.length === 0) {
@@ -196,7 +173,6 @@ export default {
                 });
             }
 
-            // Endpoint 4: /sub/:uuid - Serve raw personal subscriptions (URL format with UUID)
             const subMatch = url.pathname.match(/^\/sub\/(?!clash\/)([^/]+)/);
             if (subMatch) {
                 const uuid = subMatch[1];
@@ -205,7 +181,6 @@ export default {
                 return textResponse(btoa(storedData.configs.join('\n')), 200, `v2v-${uuid}.txt`);
             }
 
-            // Endpoint 5: /sub/clash/:uuid - Serve personal Clash subscriptions (URL format with UUID)
             const clashSubMatch = url.pathname.match(/^\/sub\/clash\/([^/]+)/);
             if (clashSubMatch) {
                 const uuid = clashSubMatch[1];
@@ -218,7 +193,6 @@ export default {
                 return textResponse(clashYamlContent, 200, `v2v-clash-${uuid}.yaml`);
             }
 
-            // Default route
             return textResponse('v2v Worker is running.');
 
         } catch (err) {
