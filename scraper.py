@@ -16,7 +16,7 @@ output_json_file = 'all_live_configs.json'
 cache_version_file = 'cache_version.txt'
 
 github_pat = os.getenv('GH_PAT', '') # ✅ استفاده از نام Secret شما (GH_PAT)
-github_search_limit = 2000
+github_search_limit = 500
 
 # Test parameters
 max_configs_to_test = 3000
