@@ -9,11 +9,6 @@ on:
       - 'worker.js'
       - 'wrangler-*.toml'
       - 'package.json'
-      # Data-related files are removed from push paths to prevent frequent scraper runs
-      # - 'scraper.py' 
-      # - 'sources.json' 
-      # - 'all_live_configs.json' 
-      # - 'cache_version.txt' 
   schedule:
     - cron: '0 */4 * * *' # Runs every 4 hours (e.g., at 00:00, 04:00, 08:00 UTC)
 
@@ -26,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build configs, deploy workers & upload to KV
     permissions:
-      contents: read # Read permission for checking out repository contents
+      contents: read
       
     steps:
       - name: Checkout repository
@@ -44,48 +39,72 @@ jobs:
       - name: Run config scraper
         run: python scraper.py
         env:
-          GH_PAT: ${{ secrets.GH_PAT }} # GitHub Personal Access Token
+          GH_PAT: ${{ secrets.GH_PAT }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18' # Using Node.js v18 for better compatibility with Wrangler v3
+          node-version: '18' # Ensure a compatible Node.js version
           
-      - name: Install Node.js dependencies
-        run: npm install
-
-      - name: Deploy Workers
+      - name: Install Node.js dependencies & specific Wrangler version
         run: |
-          WORKERS=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
-          for worker_name in "${WORKERS[@]}"; do
-            echo "Deploying worker: $worker_name"
-            # Deploy command using direct Wrangler CLI with explicit config and script paths
-            # API Token and Account ID are passed via environment variables (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID)
-            npx wrangler deploy "$worker_name" --config "wrangler-$worker_name.toml" --script "worker.js" \
-              --compatibility-date "2024-03-20" --compatibility-flag "nodejs_compat"
-            if [ $? -ne 0 ]; then # Check if the previous command failed
-              echo "Error deploying $worker_name. Exiting."
-              exit 1 # Exit the job if a deployment fails
-            fi
-          done
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Cloudflare API Token for Worker deployment
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # Cloudflare Account ID
+          npm install
+          npm install wrangler@3 # ✅ Install Wrangler v3 explicitly, ensuring npx uses this version
 
+      # --- Deploying Workers using cloudflare/wrangler-action with explicit config file ---
+      - name: Deploy rapid-scene-1da6 worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: 'deploy'
+          # No 'name' argument needed; it's read from the toml file.
+          wranglerConfigFile: 'wrangler-rapid-scene-1da6.toml' # ✅ Explicitly point to the TOML config
+          workingDirectory: './' # Ensure it runs from the root where worker.js and toml files are
+
+      - name: Deploy winter-hill-0307 worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: 'deploy'
+          wranglerConfigFile: 'wrangler-winter-hill-0307.toml' # ✅ Explicitly point to the TOML config
+          workingDirectory: './'
+
+      - name: Deploy v2v worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: 'deploy'
+          wranglerConfigFile: 'wrangler-v2v.toml' # ✅ Explicitly point to the TOML config
+          workingDirectory: './'
+
+      - name: Deploy v2v-proxy worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: 'deploy'
+          wranglerConfigFile: 'wrangler-v2v-proxy.toml' # ✅ Explicitly point to the TOML config
+          workingDirectory: './'
+
+      # --- Uploading KV keys using cloudflare/wrangler-action ---
+      # For KV, it's safer to use the action's direct command
       - name: Upload all_live_configs.json to KV
-        run: |
-          # Direct Wrangler CLI command to put KV key
-          npx wrangler kv:key put "${{ env.KV_LIVE_CONFIGS_KEY }}" --path "all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: 'kv:key put "${{ env.KV_LIVE_CONFIGS_KEY }}" --path "all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"'
         env:
           KV_LIVE_CONFIGS_KEY: 'all_live_configs.json'
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Cloudflare API Token for KV operations
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # Cloudflare Account ID
 
       - name: Upload cache_version.txt to KV
-        run: |
-          # Direct Wrangler CLI command to put KV key
-          npx wrangler kv:key put "${{ env.KV_CACHE_VERSION_KEY }}" --path "cache_version.txt" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: 'kv:key put "${{ env.KV_CACHE_VERSION_KEY }}" --path "cache_version.txt" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"'
         env:
           KV_CACHE_VERSION_KEY: 'cache_version.txt'
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # Cloudflare API Token for KV operations
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # Cloudflare Account ID
