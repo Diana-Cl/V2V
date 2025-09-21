@@ -49,18 +49,17 @@ jobs:
       - name: Install Node.js dependencies & specific Wrangler version
         run: |
           npm install
-          npm install -g wrangler@3 # ✅ Install Wrangler v3 GLOBALLY to ensure npx finds it
-                                  #    This helps override any pre-installed versions
+          npm install -g wrangler@3 # ✅ Install Wrangler v3 GLOBALLY (as you had)
 
-      # --- Deploying Workers using direct npx wrangler deploy command ---
+      # --- Deploying Workers using direct npx wrangler deploy command (based on your fix) ---
       - name: Deploy Workers
         run: |
           WORKERS=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
           for worker_name in "${WORKERS[@]}"; do
             echo "Deploying worker: $worker_name"
-            # Using 'wrangler.toml' directly implies 'name' and 'main' are read from it.
-            # Compatibility flags are passed explicitly for safety, though they should be in .toml too.
-            npx wrangler deploy "$worker_name" --config "wrangler-$worker_name.toml" \
+            # ✅ FIX: Removed "$worker_name" as the first positional argument
+            # Wrangler will read the worker name and entry-point from the --config file
+            npx wrangler deploy --config "wrangler-$worker_name.toml" \
               --compatibility-date "2024-03-20" --compatibility-flag "nodejs_compat"
             if [ $? -ne 0 ]; then
               echo "Error deploying $worker_name. Exiting."
@@ -68,7 +67,6 @@ jobs:
             fi
           done
         env:
-          # Pass Cloudflare credentials as environment variables for Wrangler
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
