@@ -22,7 +22,7 @@ jobs:
     name: Build configs, deploy workers & upload to KV
     permissions:
       contents: read
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,20 +44,18 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          
+
       - name: Install Node.js dependencies
         run: npm install
 
-      # --- مرحله دیپلوی ساده شده ---
       - name: Deploy ONE Worker (rapid-scene-1da6)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # این پارامتر به اکشن می‌گوید کدام فایل پیکربندی را بخواند
           wranglerConfigFile: wrangler-rapid-scene-1da6.toml
+          scriptPath: worker.js # مسیر فایل ورودی (entry-point) Worker را به صورت صریح مشخص می‌کنیم
 
-      # --- مراحل آپلود KV ---
       - name: Upload all_live_configs.json to KV
         uses: cloudflare/wrangler-action@v3
         with:
