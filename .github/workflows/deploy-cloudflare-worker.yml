@@ -45,36 +45,29 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install Node.js dependencies and Wrangler
+      - name: Install Node.js dependencies
         run: npm install
 
-      - name: Deploy Workers
-        # این مرحله، دستور deploy را برای هر worker اجرا می‌کند.
-        # برای احراز هویت، به متغیرهای محیطی (Environment Variables) متکی است که روش استاندارد است.
-        run: |
-          WORKERS=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
-          for worker_name in "${WORKERS[@]}"; do
-            echo "--- Deploying worker: $worker_name ---"
-            # فقط فایل پیکربندی را مشخص می‌کنیم؛ Wrangler نام Worker و ورودی را از TOML می‌خواند.
-            # اطلاعات احراز هویت (توکن و Account ID) از متغیرهای محیطی تامین می‌شوند.
-            npx wrangler deploy --config "wrangler-${worker_name}.toml"
-            if [ $? -ne 0 ]; then
-              echo "!!! Error deploying $worker_name. Exiting."
-              exit 1
-            fi
-          done
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # --- مرحله دیپلوی ساده شده ---
+      - name: Deploy ONE Worker (rapid-scene-1da6)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # این پارامتر به اکشن می‌گوید کدام فایل پیکربندی را بخواند
+          wranglerConfigFile: wrangler-rapid-scene-1da6.toml
 
+      # --- مراحل آپلود KV ---
       - name: Upload all_live_configs.json to KV
-        run: npx wrangler kv:key put "all_live_configs.json" --path "all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: kv:key put "all_live_configs.json" --path "./all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
 
       - name: Upload cache_version.txt to KV
-        run: npx wrangler kv:key put "cache_version.txt" --path "cache_version.txt" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: kv:key put "cache_version.txt" --path "./cache_version.txt" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
