@@ -46,41 +46,47 @@ jobs:
       - name: install nodejs dependencies
         run: npm install
 
+      # --- تغییرات در اینجا اعمال می شود ---
       - name: deploy rapid-scene-1da6 worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.cloudflare_api_token }}
           accountId: ${{ secrets.cloudflare_account_id }}
+          # wranglerConfigFile: 'wrangler-rapid-scene-1da6.toml' # همچنان حذف شده
           command: 'deploy'
           workingDirectory: './'
-          name: 'rapid-scene-1da6'
+          script: 'worker.js' # ✅ اضافه شدن این خط برای مشخص کردن صریح فایل Worker
 
       - name: deploy winter-hill-0307 worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.cloudflare_api_token }}
           accountId: ${{ secrets.cloudflare_account_id }}
+          # wranglerConfigFile: 'wrangler-winter-hill-0307.toml'
           command: 'deploy'
           workingDirectory: './'
-          name: 'winter-hill-0307'
+          script: 'worker.js' # ✅ اضافه شدن این خط
 
       - name: deploy v2v worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.cloudflare_api_token }}
           accountId: ${{ secrets.cloudflare_account_id }}
+          # wranglerConfigFile: 'wrangler-v2v.toml'
           command: 'deploy'
           workingDirectory: './'
-          name: 'v2v'
+          script: 'worker.js' # ✅ اضافه شدن این خط
 
       - name: deploy v2v-proxy worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.cloudflare_api_token }}
           accountId: ${{ secrets.cloudflare_account_id }}
+          # wranglerConfigFile: 'wrangler-v2v-proxy.toml'
           command: 'deploy'
           workingDirectory: './'
-          name: 'v2v-proxy'
+          script: 'worker.js' # ✅ اضافه شدن این خط
+      # --- پایان تغییرات ---
 
       - name: upload all_live_configs.json to kv
         uses: cloudflare/wrangler-action@v3
