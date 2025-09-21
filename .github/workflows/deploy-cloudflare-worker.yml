@@ -22,7 +22,7 @@ jobs:
     name: Build configs, deploy workers & upload to KV
     permissions:
       contents: read
-
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,29 +43,62 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '18' # Node.js 18 or newer is recommended for Wrangler v3/v4
+          
+      - name: Install Node.js dependencies and Global Wrangler
+        run: |
+          npm install # نصب dependencyهای پروژه (اگر package.json دارید)
+          npm install -g wrangler@latest # ✅ Wrangler را به صورت سراسری (Global) و آخرین نسخه نصب می‌کنیم
+          echo "Installed Wrangler version (Global):"
+          wrangler --version # ✅ بررسی نسخه Wrangler نصب شده سراسری
 
-      - name: Install Node.js dependencies
-        run: npm install
+      # --- مرحله دیپلوی Workerها با فراخوانی مستقیم Wrangler ---
+      - name: Deploy Workers
+        run: |
+          WORKERS=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
+          for worker_name in "${WORKERS[@]}"; do
+            echo "--- Deploying worker: $worker_name ---"
+            # ✅ FIX: فراخوانی مستقیم 'wrangler' (نصب شده سراسری)
+            # و مشخص کردن entry-point و config file و نام Worker
+            wrangler deploy "worker.js" \
+              --config "wrangler-${worker_name}.toml" \
+              --name "$worker_name" \
+              --compatibility-date "2024-03-20" \
+              --compatibility-flag "nodejs_compat"
+            
+            if [ $? -ne 0 ]; then
+              echo "!!! Error deploying $worker_name. Exiting."
+              exit 1
+            fi
+          done
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }} # ✅ استفاده از API Token جدید و امن (توصیه شده)
+          # OR if using Global API Key (LESS SECURE):
+          # CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Deploy ONE Worker (rapid-scene-1da6)
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerConfigFile: wrangler-rapid-scene-1da6.toml
-          scriptPath: worker.js # مسیر فایل ورودی (entry-point) Worker را به صورت صریح مشخص می‌کنیم
-
+      # --- مراحل آپلود KV با فراخوانی مستقیم Wrangler ---
       - name: Upload all_live_configs.json to KV
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: kv:key put "all_live_configs.json" --path "./all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+        run: |
+          wrangler kv:key put "all_live_configs.json" \
+            --path "./all_live_configs.json" \
+            --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # OR if using Global API Key (LESS SECURE):
+          # CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Upload cache_version.txt to KV
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: kv:key put "cache_version.txt" --path "./cache_version.txt" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+        run: |
+          wrangler kv:key put "cache_version.txt" \
+            --path "./cache_version.txt" \
+            --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # OR if using Global API Key (LESS SECURE):
+          # CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
