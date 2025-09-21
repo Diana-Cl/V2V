@@ -45,17 +45,40 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install Node.js dependencies and Wrangler
-        run: npm install
+      - name: Install Node.js dependencies and local Wrangler
+        run: |
+          npm install
+          npm install wrangler@latest # Install latest Wrangler locally, NOT globally
+          echo "Installed Wrangler version:"
+          ./node_modules/.bin/wrangler --version # Verify local install
+        
+      # --- مرحله تشخیص: تست مستقیم Cloudflare API ---
+      # هشدار امنیتی: این مرحله اطلاعات احراز هویت را در لاگ‌ها نمایش می‌دهد.
+      # فقط برای تشخیص مشکل استفاده شود و بلافاصله پس از اجرا، کلید API خود را بچرخانید.
+      - name: Diagnostic: Test Cloudflare API Authentication
+        run: |
+          echo "Attempting to list Workers for account using curl..."
+          # از curl برای تست مستقیم API با Global API Key استفاده می‌کنیم
+          # اگر این مرحله موفق شود، یعنی کلید شما معتبر است.
+          curl -X GET "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts" \
+               -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+               -H "Content-Type: application/json"
+          echo "" # برای یک خط جدید در لاگ
+          echo "--- End of API Test ---"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # --- پایان مرحله تشخیص ---
+
 
       - name: Deploy Workers
-        # This step runs the deploy command for each worker.
-        # It relies on environment variables for authentication, which is the standard practice.
+        # از Wrangler نصب شده به صورت محلی استفاده می‌کنیم.
         run: |
           WORKERS=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
           for worker_name in "${WORKERS[@]}"; do
             echo "--- Deploying worker: $worker_name ---"
-            npx wrangler deploy --config "wrangler-${worker_name}.toml"
+            # فراخوانی صریح Wrangler از node_modules/.bin
+            ./node_modules/.bin/wrangler deploy --config "wrangler-${worker_name}.toml"
             if [ $? -ne 0 ]; then
               echo "!!! Error deploying $worker_name. Exiting."
               exit 1
@@ -66,13 +89,15 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Upload all_live_configs.json to KV
-        run: npx wrangler kv:key put "all_live_configs.json" --path "all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+        # فراخوانی صریح Wrangler از node_modules/.bin
+        run: ./node_modules/.bin/wrangler kv:key put "all_live_configs.json" --path "all_live_configs.json" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Upload cache_version.txt to KV
-        run: npx wrangler kv:key put "cache_version.txt" --path "cache_version.txt" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+        # فراخوانی صریح Wrangler از node_modules/.bin
+        run: ./node_modules/.bin/wrangler kv:key put "cache_version.txt" --path "cache_version.txt" --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
