@@ -1,129 +1,13 @@
-name: deploy cloudflare workers & update kv
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'worker.js'
-      - 'wrangler-*.toml'
-      - 'package.json'
-      - 'scraper.py'
-  schedule:
-    - cron: '0 */4 * * *'
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  build_and_deploy:
-    runs-on: ubuntu-latest
-    name: build configs, deploy workers & upload to kv
-    permissions:
-      contents: read
-      id-token: write
-      
-    steps:
-      - name: checkout repository
-        uses: actions/checkout@v4
-
-      - name: setup python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          
-      - name: install python dependencies
-        run: pip install requests pyyaml
-
-      - name: run config scraper
-        run: python scraper.py
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-
-      - name: setup node.js 20
+- name: setup node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: install node.js dependencies and local wrangler
+      - name: install node.js dependencies and wrangler v3
         run: |
           echo "Installing project Node.js dependencies..."
-          npm install 
-          echo "Installing wrangler locally (latest version)..."
-          npm install wrangler@latest
-          echo "Installed wrangler version (local):"
-          ./node_modules/.bin/wrangler --version
-          
-      # --- مرحله دیپلوی هر چهار worker ---
-      - name: deploy all workers
-        run: |
-          worker_names=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
-          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
-            echo "Error: CLOUDFLARE_ACCOUNT_ID secret is not set. Exiting."
-            exit 1
-          fi
-
-          for worker_name in "${worker_names[@]}"; do
-            echo "--- Deploying worker: $worker_name ---"
-            npx wrangler deploy "worker.js" \
-              --config "wrangler-${worker_name}.toml" \
-              --name "$worker_name" \
-              --compatibility-date "2024-03-20" \
-              --compatibility-flag "nodejs_compat"
-            
-            if [ $? -ne 0 ]; then
-              echo "!!! Error deploying $worker_name. Exiting."
-              exit 1
-            fi
-            echo "--- Deployment of $worker_name successful ---"
-          done
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      # --- مراحل آپلود kv به namespace مشترک/مرکزی ---
-      # ✅ اصلاح نهایی و قطعی: استفاده از سینتکس جدید Wrangler v3 با --path
-      - name: upload all_live_configs.json to kv
-        run: |
-          if [ -z "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
-            echo "Error: CLOUDFLARE_KV_NAMESPACE_ID secret is not set. Skipping KV upload."
-            exit 1
-          fi
-          
-          if [ -f "all_live_configs.json" ]; then
-            echo "Uploading all_live_configs.json to KV (Key: all_live_configs.json)..."
-            # ✅ سینتکس صحیح Wrangler v3: استفاده از --path برای آپلود محتوای فایل
-            npx wrangler kv:key put "all_live_configs.json" \
-              --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
-              --path "all_live_configs.json"
-            echo "all_live_configs.json uploaded successfully."
-          else
-            echo "Warning: all_live_configs.json not found, skipping KV upload."
-          fi
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      # ✅ اصلاح نهایی و قطعی: استفاده از سینتکس جدید Wrangler v3 با --path
-      - name: upload cache_version.txt to kv
-        run: |
-          if [ -z "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
-            echo "Error: CLOUDFLARE_KV_NAMESPACE_ID secret is not set. Skipping KV upload."
-            exit 1
-          fi
-
-          if [ -f "cache_version.txt" ]; then
-            echo "Uploading cache_version.txt to KV (Key: cache_version.txt)..."
-            # ✅ سینتکس صحیح Wrangler v3: استفاده از --path برای آپلود محتوای فایل
-            npx wrangler kv:key put "cache_version.txt" \
-              --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
-              --path "cache_version.txt"
-            echo "cache_version.txt uploaded successfully."
-          else
-            echo "Warning: cache_version.txt not found, skipping KV upload."
-          fi
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          npm install
+          echo "Installing Wrangler globally (v3)..."
+          npm install -g wrangler@3
+          echo "Installed wrangler version (global):"
+          wrangler --version
