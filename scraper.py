@@ -1,3 +1,5 @@
+# scraper.py
+
 import json
 import base64
 import time
@@ -10,352 +12,252 @@ import ssl
 import os
 
 # --- configuration ---
-sources_file = 'sources.json'
-output_json_file = 'all_live_configs.json'
-# output_clash_file = 'clash_subscription.yml' # ✅ حذف شده
-cache_version_file = 'cache_version.txt'
+SOURCES_FILE = 'sources.json'
+OUTPUT_DIR = 'output'  # Directory for all generated files
+CONFIGS_JSON_FALLBACK = 'configs.json' # Main fallback file for GH Pages
+XRAY_RAW_FALLBACK = 'xray_raw_configs.txt'
+SINGBOX_RAW_FALLBACK = 'singbox_raw_configs.txt'
+CACHE_VERSION_FILE = 'cache_version.txt'
 
-github_pat = os.getenv('GH_PAT', '') # ✅ استفاده از نام Secret شما (GH_PAT)
-github_search_limit = 500
+GITHUB_PAT = os.getenv('GH_PAT', '')
+GITHUB_SEARCH_LIMIT = int(os.getenv('GITHUB_SEARCH_LIMIT', 500))
 
 # Test parameters
-max_configs_to_test = 3000
-max_latency_ms = 1500
-max_test_workers = 100
-test_timeout_sec = 8
+MAX_CONFIGS_TO_TEST = 3000
+MAX_LATENCY_MS = 1500
+MAX_TEST_WORKERS = 100
+TEST_TIMEOUT_SEC = 8
 
 # Final config selection parameters
-min_target_configs_per_core = 500
-max_final_configs_per_core = 1000
+MAX_FINAL_CONFIGS_PER_CORE = 1000
 
 # Protocols
-xray_protocols = {'vless', 'vmess', 'trojan', 'ss'}
-singbox_protocols = {'vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hy2', 'hysteria2', 'tuic'}
-valid_protocols = xray_protocols.union(singbox_protocols)
+XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
+SINGBOX_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hy2', 'hysteria2', 'tuic'}
+VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_PROTOCOLS)
 
-# Clash Meta compatible transports for Xray configs (VMess, VLESS, Trojan)
-# این لیست هنوز در اینجا هست تا اگر ورکر خواست Clash تولید کند، از آن استفاده کند.
-clash_compatible_transports = ['tcp', 'ws', 'h2', 'grpc', 'udp', 'quic']
+# Ensure output directory exists
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # --- helpers ---
-def fetch_from_static_sources(static_sources: list[str]) -> set[str]:
-    """Fetches configs from predefined static URLs."""
+def fetch_url_content(url: str, headers: dict = None) -> str | None:
+    try:
+        import requests
+        if headers is None:
+            headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=TEST_TIMEOUT_SEC)
+        response.raise_for_status()
+        
+        content = response.text
+        try:
+            # Attempt to decode if it looks like base64
+            decoded_content = base64.b64decode(content).decode('utf-8')
+            return decoded_content
+        except (base64.binascii.Error, UnicodeDecodeError):
+            return content # Not base64, return as is
+            
+    except requests.exceptions.RequestException:
+        return None
+
+def fetch_from_sources(sources: list[str]) -> set[str]:
     print("  Fetching from static sources...")
     collected = set()
-    
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36'}
     
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = []
-        for url in static_sources:
-            if url.startswith("github:"):
-                repo_path = url[len("github:"):]
-                owner, repo, file_path = repo_path.split('/', 2)
-                raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/main/{file_path}"
-                futures.append(executor.submit(fetch_url_content, raw_url, headers))
-            else:
-                futures.append(executor.submit(fetch_url_content, url, headers))
-
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        futures = {executor.submit(fetch_url_content, url, headers): url for url in sources}
         for i, future in enumerate(as_completed(futures)):
             content = future.result()
             if content:
                 for line in content.splitlines():
                     line = line.strip()
-                    if any(line.lower().startswith(p + "://") for p in valid_protocols):
+                    if any(line.lower().startswith(p + "://") for p in VALID_PROTOCOLS):
                         collected.add(line)
             if (i + 1) % 10 == 0:
-                print(f"  Fetched from {i+1} static sources...")
+                print(f"  Fetched from {i+1} sources...")
     print(f"  ✅ Found {len(collected)} configs from static sources.")
     return collected
 
-def fetch_url_content(url: str, headers: dict = None) -> str | None:
-    """Fetches content from a single URL."""
-    try:
-        import requests
-        if headers is None:
-            headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers, timeout=test_timeout_sec)
-        response.raise_for_status()
-        return response.text
-    except requests.exceptions.RequestException as e:
-        print(f"  ⚠️ Failed to fetch {url}: {e}")
-        return None
-
 def fetch_from_github(pat: str, search_limit: int) -> set[str]:
-    """Fetches configs from GitHub using API search."""
     print("  Fetching from GitHub...")
     collected = set()
     try:
         import requests
-        headers = {'User-Agent': 'Mozilla/50 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36', 'Accept': 'application/vnd.github.v3.text-match+json'}
-        if pat: # ✅ بررسی وجود PAT
+        headers = {
+            'User-Agent': 'Mozilla/5.0',
+            'Accept': 'application/vnd.github.v3.raw'
+        }
+        if pat:
             headers['Authorization'] = f'token {pat}'
         else:
-            print("  ⚠️ GitHub PAT not provided. Using unauthenticated requests which have lower rate limits.")
+            print("  ⚠️ GitHub PAT not provided. Using unauthenticated requests with lower rate limits.")
 
         queries = [
-            'vless in:file extension:txt', 'vmess in:file extension:txt', 'trojan in:file extension:txt', 'ss in:file extension:txt',
-            'hysteria2 in:file extension:txt', 'tuic in:file extension:txt',
-            'vless in:file extension:yaml', 'vmess in:file extension:yaml', 'trojan in:file extension:yaml', 'ss in:file extension:yaml',
-            'hysteria2 in:file extension:yaml', 'tuic in:file extension:yaml',
-            'vless in:file extension:yml', 'vmess in:file extension:yml', 'trojan in:file extension:yml', 'ss in:file extension:yml',
-            'hysteria2 in:file extension:yml', 'tuic in:file extension:yml',
+            'filename:vless', 'filename:vmess', 'filename:trojan', 'filename:ss', 'filename:hy2', 'filename:tuic',
+            'filename:hysteria', 'filename:shadowsocks', 'path:*.txt "vless://"', 'path:*.yaml "vless://"'
         ]
         
         for query in queries:
             if len(collected) >= search_limit:
                 print(f"  Reached GitHub search limit ({search_limit}). Stopping.")
                 break
-
-            response = requests.get(
-                f"https://api.github.com/search/code?q={query}+size:<=1000",
-                headers=headers,
-                timeout=test_timeout_sec
-            )
+            
+            api_url = f"https://api.github.com/search/code?q={query}+size:1..10000&per_page=100"
+            response = requests.get(api_url, headers=headers, timeout=TEST_TIMEOUT_SEC)
             response.raise_for_status()
             
             items = response.json().get('items', [])
-            for item in items:
-                if len(collected) >= search_limit: break
-                
-                repo_url = item['repository']['html_url']
-                file_path = item['path']
-                raw_url = f"https://raw.githubusercontent.com/{item['repository']['owner']['login']}/{item['repository']['name']}/main/{file_path}"
-                
-                content = fetch_url_content(raw_url, headers)
-                if content:
-                    for line in content.splitlines():
-                        line = line.strip()
-                        if any(line.lower().startswith(p + "://") for p in valid_protocols):
-                            collected.add(line)
+            with ThreadPoolExecutor(max_workers=20) as executor:
+                fetch_futures = {}
+                for item in items:
+                    if len(collected) + len(fetch_futures) >= search_limit: break
+                    raw_url = item['html_url'].replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/')
+                    fetch_futures[executor.submit(fetch_url_content, raw_url, headers)] = raw_url
+
+                for future in as_completed(fetch_futures):
+                    content = future.result()
+                    if content:
+                        for line in content.splitlines():
+                            line = line.strip()
+                            if any(line.lower().startswith(p + "://") for p in VALID_PROTOCOLS):
+                                collected.add(line)
         
-    except requests.exceptions.RequestException as e:
-        print(f"  ⚠️ Failed to fetch from GitHub API: {e}")
-        if e.response is not None:
-            if e.response.status_code == 401:
-                print("  HINT: GitHub PAT is invalid or missing. Ensure GH_PAT secret is set correctly.")
-            elif e.response.status_code == 403:
-                print("  HINT: GitHub API rate limit exceeded. Try again later or use a valid PAT.")
     except Exception as e:
         print(f"  ⚠️ An error occurred during GitHub fetching: {e}")
     print(f"  ✅ Found {len(collected)} configs from GitHub.")
     return collected
 
-def parse_config_address(config_url: str) -> tuple[str, int, str, str] | None:
-    """Parses config URL to extract host and port."""
+def parse_config_for_test(config_url: str) -> dict | None:
     try:
         if config_url.startswith("vmess://"):
-            decoded_vmess = base64.b64decode(config_url[8:]).decode('utf-8')
-            vmess_json = json.loads(decoded_vmess)
-            return vmess_json['add'], int(vmess_json['port']), vmess_json.get('net', 'tcp'), vmess_json.get('type', 'auto')
+            decoded_vmess = json.loads(base64.b64decode(config_url[8:]).decode('utf-8'))
+            return {'host': decoded_vmess.get('add'), 'port': int(decoded_vmess.get('port')), 'tls': decoded_vmess.get('tls') == 'tls', 'protocol': 'vmess'}
         
         url_parsed = urlparse(config_url)
         scheme = url_parsed.scheme.lower()
+        query_params = parse_qs(url_parsed.query)
 
-        if scheme in ['vless', 'trojan', 'ss']:
-            host = url_parsed.hostname
-            port = url_parsed.port
-            query_params = parse_qs(url_parsed.query)
-            transport = query_params.get('type', ['tcp'])[0] if scheme == 'vless' else 'tcp'
-            return host, int(port), transport, scheme
-        
+        if scheme in ['vless', 'trojan']:
+            return {'host': url_parsed.hostname, 'port': int(url_parsed.port), 'tls': query_params.get('security', [''])[0] in ['tls', 'reality'], 'protocol': scheme}
+        elif scheme == 'ss':
+            return {'host': url_parsed.hostname, 'port': int(url_parsed.port), 'tls': False, 'protocol': 'ss'}
         elif scheme in ['hy2', 'hysteria2', 'tuic']:
-            host = url_parsed.hostname
-            port = url_parsed.port
-            return host, int(port), 'webtransport', scheme
+            return {'host': url_parsed.hostname, 'port': int(url_parsed.port), 'tls': False, 'protocol': scheme, 'transport': 'udp'}
         
         return None
-    except Exception as e:
+    except Exception:
         return None
 
-def test_full_protocol_handshake(config_url: str) -> tuple[str, int] | None:
-    """Tests the full handshake for a given config URL, returning latency if successful."""
-    parsed = parse_config_address(config_url)
-    if not parsed:
-        return None
+def test_config(config_url: str) -> tuple[str, int] | None:
+    details = parse_config_for_test(config_url)
+    if not details: return None
 
-    host, port, transport, scheme = parsed
-    
-    if not host or not port:
-        return None
+    host, port, protocol, tls = details.get('host'), details.get('port'), details.get('protocol'), details.get('tls', False)
+    if not host or not port: return None
 
-    sock = None
-    start_time = time.time()
+    start_time = time.monotonic()
     try:
-        addr_info = socket.getaddrinfo(host, port, socket.AF_UNSPEC, socket.SOCK_STREAM)
-        if not addr_info:
-            return None
+        if details.get('transport') == 'udp':
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.settimeout(TEST_TIMEOUT_SEC / 2)
+                sock.sendto(b'ping', (host, port))
+        else:
+            with socket.create_connection((host, port), timeout=TEST_TIMEOUT_SEC) as sock:
+                if tls:
+                    context = ssl.create_default_context()
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE
+                    with context.wrap_socket(sock, server_hostname=host) as ssock:
+                        ssock.do_handshake()
         
-        family, socktype, proto, canonname, sa = addr_info[0]
-        sock = socket.socket(family, socktype, proto)
-        sock.settimeout(test_timeout_sec)
-        
-        if scheme in ['vless', 'trojan', 'vmess', 'hysteria2', 'hy2', 'tuic']:
-            context = ssl.create_default_context()
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
-            sock = context.wrap_socket(sock, server_hostname=host)
-
-        sock.connect(sa)
-        end_time = time.time()
-        latency_ms = int((end_time - start_time) * 1000)
+        latency_ms = int((time.monotonic() - start_time) * 1000)
         return config_url, latency_ms
-    except socket.timeout:
+    except (socket.timeout, ConnectionRefusedError, ssl.SSLError, OSError, Exception):
         return None
-    except Exception as e:
-        return None
-    finally:
-        if sock:
-            sock.close()
 
-def select_configs_with_fluid_quota(
-    configs_with_latency: list[tuple[str, int]], 
-    min_target: int, 
-    max_final: int,
-    target_protocols: set[str]
-) -> list[str]:
-    """
-    Selects configs, prioritizing lower latency, trying to meet min_target
-    but not exceeding max_final. Ensures diversity of target protocols.
-    """
-    configs_with_latency.sort(key=lambda x: x[1])
-
-    final_configs_set = set()
-    protocol_counts = defaultdict(int)
-    
-    initial_diversity_target = 2
-    for config_url, _ in configs_with_latency:
-        if len(final_configs_set) >= max_final: break
-        protocol = urlparse(config_url).scheme.lower()
-        if protocol == 'hysteria2': protocol = 'hy2'
-        
-        if protocol in target_protocols and protocol_counts[protocol] < initial_diversity_target:
-            final_configs_set.add(config_url)
-            protocol_counts[protocol] += 1
-            
-    for config_url, _ in configs_with_latency:
-        if len(final_configs_set) >= min_target: break
-        if len(final_configs_set) >= max_final: break
-        
-        final_configs_set.add(config_url)
-
-    for config_url, _ in configs_with_latency:
-        if len(final_configs_set) >= max_final: break
-        final_configs_set.add(config_url)
-
-    return list(final_configs_set)
-
-# ✅ تابع generate_clash_yaml از اینجا حذف شده است.
-
-# --- main logic ---
 def main():
-    print("--- 1. loading sources ---")
+    print("--- 1. Loading sources ---")
     try:
-        with open(sources_file, 'r', encoding='utf-8') as f:
+        with open(SOURCES_FILE, 'r', encoding='utf-8') as f:
             sources_config = json.load(f)
-        
         static_sources = sources_config.get("static", [])
-        print(f"✅ loaded {len(static_sources)} static sources. Github search limit set to: {github_search_limit}.")
+        print(f"✅ Loaded {len(static_sources)} static sources. GitHub search limit: {GITHUB_SEARCH_LIMIT}.")
     except Exception as e:
-        print(f"FATAL: Cannot load or parse {sources_file}: {e}. Exiting.")
-        return
+        print(f"FATAL: Cannot load {SOURCES_FILE}: {e}. Exiting."); return
 
-    print("\n--- 2. fetching configs ---")
-    all_collected_configs = set()
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        static_future = executor.submit(fetch_from_static_sources, static_sources)
-        dynamic_future = executor.submit(fetch_from_github, github_pat, github_search_limit)
-        
-        all_collected_configs.update(static_future.result())
-        all_collected_configs.update(dynamic_future.result())
+    print("\n--- 2. Fetching configs ---")
+    all_configs = set()
+    all_configs.update(fetch_from_sources(static_sources))
+    all_configs.update(fetch_from_github(GITHUB_PAT, GITHUB_SEARCH_LIMIT))
     
-    if not all_collected_configs: 
-        print("FATAL: No configs found after fetching from all sources. Exiting.")
-        return
-    print(f"📊 Total unique configs collected: {len(all_collected_configs)}")
+    if not all_configs: 
+        print("FATAL: No configs found. Exiting."); return
+    print(f"📊 Total unique configs collected: {len(all_configs)}")
 
-    print(f"\n--- 3. performing deep protocol handshake test ---")
-    fast_configs_with_latency = []
-    configs_to_test_list = list(all_collected_configs)[:max_configs_to_test] 
-    print(f"  Testing {len(configs_to_test_list)} configs with {max_test_workers} workers...")
+    print(f"\n--- 3. Testing configs ---")
+    live_configs = []
+    configs_to_test = list(all_configs)[:MAX_CONFIGS_TO_TEST]
+    print(f"  Testing {len(configs_to_test)} configs with {MAX_TEST_WORKERS} workers...")
     
-    with ThreadPoolExecutor(max_workers=max_test_workers) as executor:
-        futures = {executor.submit(test_full_protocol_handshake, cfg): cfg for cfg in configs_to_test_list}
+    with ThreadPoolExecutor(max_workers=MAX_TEST_WORKERS) as executor:
+        futures = {executor.submit(test_config, cfg): cfg for cfg in configs_to_test}
         for i, future in enumerate(as_completed(futures)):
-            if (i + 1) % 500 == 0:
-                print(f"  Tested {i+1}/{len(futures)} configs...")
+            if (i + 1) % 500 == 0: print(f"  Tested {i+1}/{len(configs_to_test)} configs...")
             result = future.result()
-            if result and result[1] <= max_latency_ms:
-                fast_configs_with_latency.append(result)
+            if result and result[1] <= MAX_LATENCY_MS:
+                live_configs.append(result)
 
-    if not fast_configs_with_latency: 
-        print("FATAL: No fast configs found after testing. Exiting.")
-        return
-    print(f"🏆 Found {len(fast_configs_with_latency)} fast configs.")
+    if not live_configs: 
+        print("FATAL: No live configs found after testing. Exiting."); return
+    live_configs.sort(key=lambda x: x[1])
+    print(f"🏆 Found {len(live_configs)} live configs with latency <= {MAX_LATENCY_MS}ms.")
 
-    print("\n--- 4. grouping and finalizing configs ---")
-    xray_eligible_pool = [(c, l) for c, l in fast_configs_with_latency if urlparse(c).scheme.lower() in xray_protocols]
-    singbox_eligible_pool = [(c, l) for c, l in fast_configs_with_latency if urlparse(c).scheme.lower() in singbox_protocols]
-
-    xray_final_selected = select_configs_with_fluid_quota(xray_eligible_pool, min_target_configs_per_core, max_final_configs_per_core, xray_protocols)
-    singbox_final_selected = select_configs_with_fluid_quota(singbox_eligible_pool, min_target_configs_per_core, max_final_configs_per_core, singbox_protocols)
+    print("\n--- 4. Grouping and finalizing configs ---")
+    xray_pool = [cfg for cfg in live_configs if urlparse(cfg[0]).scheme.lower() in XRAY_PROTOCOLS]
+    singbox_pool = [cfg for cfg in live_configs if urlparse(cfg[0]).scheme.lower() in SINGBOX_PROTOCOLS]
     
-    if len(xray_final_selected) < min_target_configs_per_core:
-        print(f"  Xray configs below min_target ({len(xray_final_selected)}). Attempting to fill from Sing-box.")
-        for cfg, _ in singbox_eligible_pool: # ✅ پر کردن از eligible_pool نه final_selected برای تنوع بیشتر
-            if urlparse(cfg).scheme.lower() in xray_protocols and cfg not in xray_final_selected and len(xray_final_selected) < max_final_configs_per_core:
-                xray_final_selected.append(cfg)
-        print(f"  Xray configs after filling: {len(xray_final_selected)}")
+    xray_final_urls = [cfg[0] for cfg in xray_pool[:MAX_FINAL_CONFIGS_PER_CORE]]
+    singbox_final_urls = [cfg[0] for cfg in singbox_pool[:MAX_FINAL_CONFIGS_PER_CORE]]
 
-    if len(singbox_final_selected) < min_target_configs_per_core:
-        print(f"  Sing-box configs below min_target ({len(singbox_final_selected)}). Attempting to fill from Xray.")
-        for cfg, _ in xray_eligible_pool: # ✅ پر کردن از eligible_pool نه final_selected برای تنوع بیشتر
-            if urlparse(cfg).scheme.lower() in singbox_protocols and cfg not in singbox_final_selected and len(singbox_final_selected) < max_final_configs_per_core:
-                singbox_final_selected.append(cfg)
-        print(f"  Sing-box configs after filling: {len(singbox_final_selected)}")
+    print(f"✅ Finalized {len(xray_final_urls)} configs for Xray.")
+    print(f"✅ Finalized {len(singbox_final_urls)} configs for Sing-box.")
 
-    print(f"✅ Selected {len(xray_final_selected)} configs for Xray core.")
-    print(f"✅ Selected {len(singbox_final_selected)} configs for Sing-box core.")
-
-    def group_by_protocol_for_output(configs: list[str]) -> dict[str, list[str]]:
+    def group_by_protocol(configs: list[str]) -> dict:
         grouped = defaultdict(list)
         for cfg in configs:
             proto = urlparse(cfg).scheme.lower()
             if proto == 'hysteria2': proto = 'hy2'
+            if proto == 'shadowsocks': proto = 'ss'
             grouped[proto].append(cfg)
         return dict(grouped)
 
     output_data_for_kv = {
-        "xray": group_by_protocol_for_output(xray_final_selected), 
-        "singbox": group_by_protocol_for_output(singbox_final_selected)
+        "xray": group_by_protocol(xray_final_urls), 
+        "singbox": group_by_protocol(singbox_final_urls)
     }
 
-    print("\n--- 5. writing local files ---")
-    with open(output_json_file, 'w', encoding='utf-8') as f:
+    print("\n--- 5. Writing local files for upload ---")
+    with open(os.path.join(OUTPUT_DIR, 'all_live_configs.json'), 'w', encoding='utf-8') as f:
         json.dump(output_data_for_kv, f, indent=2, ensure_ascii=False)
-    print(f"✅ Wrote combined configs to {output_json_file}.")
+    print(f"✅ Wrote KV data to {os.path.join(OUTPUT_DIR, 'all_live_configs.json')}.")
 
-    # ✅ حذف تولید و نوشتن clash_subscription.yml
-    # clash_yaml_content = generate_clash_yaml(xray_final_selected) 
-    # if clash_yaml_content:
-    #     with open(output_clash_file, 'w', encoding='utf-8') as f:
-    #         f.write(clash_yaml_content)
-    #     print(f"✅ Wrote Clash subscription with {len(xray_final_selected)} configs to {output_clash_file}.")
-    # else:
-    #     print("⚠️ Could not generate Clash subscription file (no compatible Xray configs found).")
-
-    with open(cache_version_file, 'w', encoding='utf-8') as f:
-        f.write(str(int(time.time())))
-    print(f"✅ Cache version updated in {cache_version_file}.")
-
-    print("\n--- Cloudflare KV upload will be handled by GitHub Actions ---")
-    print("\n--- Process completed successfully ---")
+    with open(os.path.join(OUTPUT_DIR, CONFIGS_JSON_FALLBACK), 'w', encoding='utf-8') as f:
+        json.dump(output_data_for_kv, f, indent=2, ensure_ascii=False)
+    print(f"✅ Wrote fallback data to {os.path.join(OUTPUT_DIR, CONFIGS_JSON_FALLBACK)}.")
     
-    total_xray = sum(len(configs) for configs in output_data_for_kv["xray"].values())
-    total_singbox = sum(len(configs) for configs in output_data_for_kv["singbox"].values())
-    print(f"Final Summary:")
-    print(f"   - Xray configs: {total_xray}")
-    print(f"   - Sing-box configs: {total_singbox}")
+    with open(os.path.join(OUTPUT_DIR, XRAY_RAW_FALLBACK), 'w', encoding='utf-8') as f:
+        f.write("\n".join(xray_final_urls))
+    print(f"✅ Wrote raw Xray fallback to {os.path.join(OUTPUT_DIR, XRAY_RAW_FALLBACK)}.")
+    
+    with open(os.path.join(OUTPUT_DIR, SINGBOX_RAW_FALLBACK), 'w', encoding='utf-8') as f:
+        f.write("\n".join(singbox_final_urls))
+    print(f"✅ Wrote raw Sing-box fallback to {os.path.join(OUTPUT_DIR, SINGBOX_RAW_FALLBACK)}.")
+    
+    with open(os.path.join(OUTPUT_DIR, CACHE_VERSION_FILE), 'w', encoding='utf-8') as f:
+        f.write(str(int(time.time())))
+    print(f"✅ Cache version updated in {os.path.join(OUTPUT_DIR, CACHE_VERSION_FILE)}.")
+    
+    print("\n--- Process completed successfully ---")
 
 if __name__ == "__main__":
     main()
