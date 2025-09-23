@@ -1,4 +1,6 @@
-name: deploy cloudflare workers & update kv
+# deploy-cloudflare-worker.yml
+
+name: Build, Deploy Workers & Update Data
 
 on:
   workflow_dispatch:
@@ -8,8 +10,8 @@ on:
     paths:
       - 'worker.js'
       - 'wrangler-*.toml'
-      - 'package.json'
       - 'scraper.py'
+      - 'sources.json'
   schedule:
     - cron: '0 */4 * * *'
 
@@ -20,106 +22,64 @@ concurrency:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    name: build configs, deploy workers & upload to kv
-    permissions:
-      contents: read
-      id-token: write
-      
+    name: Build, Deploy Workers & Upload Data
+    
     steps:
-      - name: checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: setup python 3.10
+      - name: Setup Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           
-      - name: install python dependencies
-        run: pip install requests pyyaml
+      - name: Install Python Dependencies
+        run: pip install requests
 
-      - name: run config scraper
+      - name: Run Config Scraper
         run: python scraper.py
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_SEARCH_LIMIT: 500
 
-      - name: setup node.js 20
+      - name: Deploy Fallback Data to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./output
+          repository: smbcryp/v2v-data 
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Update static fallback data'
+
+      - name: Setup Node.js 20 and Wrangler
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - run: npm install -g wrangler@3
 
-      - name: install node.js dependencies and wrangler v3
-        run: |
-          echo "Installing project Node.js dependencies..."
-          npm install 
-          echo "Installing Wrangler globally (v3)..."
-          npm install -g wrangler@3
-          echo "Installed wrangler version (global):"
-          wrangler --version
-          
-      # --- مرحله دیپلوی هر چهار worker ---
-      - name: deploy all workers
+      - name: Deploy All Workers
         run: |
           worker_names=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
-          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
-            echo "Error: CLOUDFLARE_ACCOUNT_ID secret is not set. Exiting."
-            exit 1
-          fi
-
           for worker_name in "${worker_names[@]}"; do
-            echo "--- Deploying worker: $worker_name ---"
+            echo "--- Deploying worker: $worker_name from wrangler-${worker_name}.toml ---"
             wrangler deploy "worker.js" \
               --config "wrangler-${worker_name}.toml" \
-              --name "$worker_name" \
-              --compatibility-date "2024-03-20" \
-              --compatibility-flag "nodejs_compat"
-            
-            if [ $? -ne 0 ]; then
-              echo "!!! Error deploying $worker_name. Exiting."
-              exit 1
-            fi
-            echo "--- Deployment of $worker_name successful ---"
+              --name "$worker_name"
           done
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # --- مراحل آپلود kv به namespace مشترک/مرکزی ---
-      - name: upload all_live_configs.json to kv
+      - name: Upload Data to Cloudflare KV
         run: |
-          if [ -z "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
-            echo "Error: CLOUDFLARE_KV_NAMESPACE_ID secret is not set. Skipping KV upload."
-            exit 1
-          fi
-          
-          if [ -f "all_live_configs.json" ]; then
-            echo "Uploading all_live_configs.json to KV (Key: all_live_configs.json)..."
-            wrangler kv:key put "all_live_configs.json" \
-              --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
-              --path "all_live_configs.json"
-            echo "all_live_configs.json uploaded successfully."
-          else
-            echo "Warning: all_live_configs.json not found, skipping KV upload."
-          fi
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: upload cache_version.txt to kv
-        run: |
-          if [ -z "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
-            echo "Error: CLOUDFLARE_KV_NAMESPACE_ID secret is not set. Skipping KV upload."
-            exit 1
-          fi
-
-          if [ -f "cache_version.txt" ]; then
-            echo "Uploading cache_version.txt to KV (Key: cache_version.txt)..."
-            wrangler kv:key put "cache_version.txt" \
-              --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
-              --path "cache_version.txt"
-            echo "cache_version.txt uploaded successfully."
-          else
-            echo "Warning: cache_version.txt not found, skipping KV upload."
-          fi
+          echo "Uploading all_live_configs.json to KV..."
+          wrangler kv:key put "all_live_configs.json" --path "./output/all_live_configs.json" \
+            --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
+            
+          echo "Uploading cache_version.txt to KV..."
+          wrangler kv:key put "cache_version.txt" --path "./output/cache_version.txt" \
+            --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
