@@ -47,7 +47,12 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./output
-          repository: smbcryp/v2v-data 
+          # IMPORTANT: This assumes you have a repo named 'v2v-data'
+          # If you want to publish to a branch (e.g., 'gh-pages') of THIS repo, 
+          # remove the 'repository' line and set 'publish_branch: gh-pages'
+          repository: smbcryp/v2v-data
+          # Keep the CNAME file if you have a custom domain for your data repo
+          keep_files: true 
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
           commit_message: 'Update static fallback data'
@@ -58,6 +63,9 @@ jobs:
           node-version: '20'
       - run: npm install -g wrangler@3
 
+      - name: Install Worker Dependencies
+        run: npm install
+
       - name: Deploy All Workers
         run: |
           worker_names=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
@@ -65,7 +73,9 @@ jobs:
             echo "--- Deploying worker: $worker_name from wrangler-${worker_name}.toml ---"
             wrangler deploy "worker.js" \
               --config "wrangler-${worker_name}.toml" \
-              --name "$worker_name"
+              --name "$worker_name" \
+              --compatibility-date "2024-03-20" \
+              --compatibility-flag "nodejs_compat"
           done
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -83,3 +93,4 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
