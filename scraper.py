@@ -1,4 +1,4 @@
-# scraper.py
+# scraper.py (Final Version)
 
 import json
 import base64
@@ -51,10 +51,15 @@ def fetch_url_content(url: str, headers: dict = None) -> str | None:
         content = response.text
         try:
             # Attempt to decode if it looks like base64
+            # We need to handle potential padding issues
+            missing_padding = len(content) % 4
+            if missing_padding:
+                content += '=' * (4 - missing_padding)
             return base64.b64decode(content).decode('utf-8')
         except (base64.binascii.Error, UnicodeDecodeError):
             return content # Not base64, return as is
-    except requests.exceptions.RequestException:
+    except requests.exceptions.RequestException as e:
+        # print(f"Error fetching {url}: {e}"); # Optional: uncomment for verbose error logging
         return None
 
 def fetch_from_static_sources(static_sources: list[str]) -> set[str]:
@@ -84,7 +89,13 @@ def fetch_from_github(pat: str, search_limit: int) -> set[str]:
             headers['Authorization'] = f'token {pat}'
         else:
             print("  ⚠️ GitHub PAT not provided, rate limits will be lower.")
-        queries = ['filename:vless', 'filename:vmess', 'filename:trojan', 'filename:ss', 'filename:hy2', 'path:*.txt "vless://"']
+        # Expanded queries for better discovery
+        queries = [
+            'filename:vless', 'filename:vmess', 'filename:trojan', 'filename:ss', 'filename:hy2',
+            'path:*.txt "vless://"', 'path:*.txt "vmess://"', 'path:*.txt "trojan://"',
+            'path:*.md "vless://"', 'path:*.md "vmess://"', 'path:*.md "trojan://"',
+            'path:*.conf "vless://"', 'path:*.conf "vmess://"', 'path:*.conf "trojan://"'
+        ]
         for query in queries:
             if len(collected) >= search_limit: break
             api_url = f"https://api.github.com/search/code?q={query}+size:1..10000&per_page=100"
@@ -113,19 +124,32 @@ def test_config(config_url: str) -> tuple[str, int] | None:
         if not hostname or not port:
             return None
         
-        is_tls = 'tls' in parsed_url.query or 'reality' in parsed_url.query or parsed_url.scheme in ['trojan', 'hy2', 'hysteria2']
+        # Determine if TLS is likely based on scheme or query parameters
+        is_tls = False
+        scheme = parsed_url.scheme.lower()
+        if scheme in ['trojan', 'hy2', 'hysteria2', 'vless', 'vmess', 'ss']:
+            # Check for security=tls or similar parameters
+            query_params = new URLSearchParams(parsed_url.query)
+            if query_params.get('security') == 'tls':
+                is_tls = True
+            elif 'tls' in parsed_url.query: # e.g. for vmess in base64
+                 is_tls = True
+            elif scheme in ['trojan', 'hy2', 'hysteria2']: # These protocols usually imply TLS
+                is_tls = True
 
         start_time = time.monotonic()
         with socket.create_connection((hostname, port), timeout=TEST_TIMEOUT_SEC) as sock:
             if is_tls:
                 context = ssl.create_default_context()
                 context.check_hostname = False
-                context.verify_mode = ssl.CERT_NONE
+                context.verify_mode = ssl.CERT_NONE # We just want to check connection, not full cert validation
                 with context.wrap_socket(sock, server_hostname=hostname) as ssock:
                     ssock.do_handshake()
+            # For non-TLS, just connection establishment is enough for latency
         latency_ms = int((time.monotonic() - start_time) * 1000)
         return config_url, latency_ms
-    except (socket.timeout, ConnectionRefusedError, ssl.SSLError, OSError, Exception):
+    except (socket.timeout, ConnectionRefusedError, ssl.SSLError, OSError, Exception) as e:
+        # print(f"Test failed for {config_url}: {e}"); # Optional: uncomment for verbose error logging
         return None
 
 # --- main logic ---
@@ -176,12 +200,11 @@ def main():
     output_data = {"xray": group_by_protocol(xray_final), "singbox": group_by_protocol(singbox_final)}
 
     print("\n--- 5. Writing local files for upload ---")
-    # File for KV and primary fallback
+    # All files are written to the OUTPUT_DIR for consistency
     with open(os.path.join(OUTPUT_DIR, OUTPUT_JSON_FILE), 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
     print(f"✅ Wrote main config to {os.path.join(OUTPUT_DIR, OUTPUT_JSON_FILE)}.")
 
-    # Raw fallback files
     with open(os.path.join(OUTPUT_DIR, XRAY_RAW_FALLBACK_FILE), 'w', encoding='utf-8') as f:
         f.write("\n".join(xray_final))
     print(f"✅ Wrote raw Xray fallback to {os.path.join(OUTPUT_DIR, XRAY_RAW_FALLBACK_FILE)}.")
@@ -190,7 +213,6 @@ def main():
         f.write("\n".join(singbox_final))
     print(f"✅ Wrote raw Sing-box fallback to {os.path.join(OUTPUT_DIR, SINGBOX_RAW_FALLBACK_FILE)}.")
     
-    # Cache version file
     with open(os.path.join(OUTPUT_DIR, CACHE_VERSION_FILE), 'w', encoding='utf-8') as f:
         f.write(str(int(time.time())))
     print(f"✅ Wrote cache version to {os.path.join(OUTPUT_DIR, CACHE_VERSION_FILE)}.")
