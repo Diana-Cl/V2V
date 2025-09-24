@@ -10,6 +10,7 @@ const TTL_USER_SUBSCRIPTION_STORE = 60 * 60 * 24 * 3; // 3 days
 const ALLOWED_ORIGINS = [
     'https://smbcryp.github.io',
     'https://v2v-vercel.vercel.app',
+    // Add other frontend domains like Arvan if needed
 ];
 
 function generateCorsHeaders(requestOrigin) {
@@ -22,11 +23,6 @@ function generateCorsHeaders(requestOrigin) {
         };
     }
     return { 'Access-Control-Allow-Origin': ALLOWED_ORIGINS[0] }; // Fallback to primary
-}
-
-function handleOptions(request) {
-    const origin = request.headers.get('Origin');
-    return new Response(null, { headers: generateCorsHeaders(origin) });
 }
 
 function jsonResponse(data, status = 200, corsHeaders) {
@@ -52,7 +48,7 @@ function generateClashYaml(configs) {
     const proxies = [];
     const usedNames = new Set();
     const getUniqueName = (baseName) => {
-        let name = baseName.replace(/ /g, '_').replace(/[^\w-]/g, '');
+        let name = baseName.replace(/[^\w-]/g, ' ').trim();
         let counter = 1;
         while (usedNames.has(name)) name = `${baseName}-${counter++}`;
         usedNames.add(name);
@@ -65,24 +61,24 @@ function generateClashYaml(configs) {
             const scheme = url.protocol.replace(':', '');
             let proxy;
             if (scheme === 'vmess') {
-                const decoded = JSON.parse(atob(configUrl.substring(8)));
-                proxy = { name: getUniqueName(decoded.ps || decoded.add), type: 'vmess', server: decoded.add, port: parseInt(decoded.port), uuid: decoded.id, alterId: parseInt(decoded.aid || 0), cipher: decoded.scy || 'auto', tls: decoded.tls === 'tls', servername: decoded.sni || decoded.host };
-                if (decoded.net === 'ws') proxy['ws-opts'] = { path: decoded.path || '/', headers: { Host: decoded.host || decoded.add }};
+                const d = JSON.parse(atob(configUrl.substring(8)));
+                proxy = { name: getUniqueName(d.ps || d.add), type: 'vmess', server: d.add, port: parseInt(d.port), uuid: d.id, alterId: parseInt(d.aid || 0), cipher: d.scy || 'auto', tls: d.tls === 'tls', servername: d.sni || d.host };
+                if (d.net === 'ws') proxy['ws-opts'] = { path: d.path || '/', headers: { Host: d.host || d.add }};
             } else if (scheme === 'vless') {
-                const params = new URLSearchParams(url.search);
-                proxy = { name: getUniqueName(decodeURIComponent(url.hash.substring(1)) || url.hostname), type: 'vless', server: url.hostname, port: parseInt(url.port), uuid: url.username, tls: params.get('security') === 'tls', servername: params.get('sni') || url.hostname, flow: params.get('flow') || '' };
-                if (params.get('type') === 'ws') proxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || url.hostname }};
+                const p = new URLSearchParams(url.search);
+                proxy = { name: getUniqueName(decodeURIComponent(url.hash.substring(1)) || url.hostname), type: 'vless', server: url.hostname, port: parseInt(url.port), uuid: url.username, tls: p.get('security') === 'tls', servername: p.get('sni') || url.hostname, flow: p.get('flow') || '' };
+                if (p.get('type') === 'ws') proxy['ws-opts'] = { path: p.get('path') || '/', headers: { Host: p.get('host') || url.hostname }};
             } else if (scheme === 'trojan') {
                 proxy = { name: getUniqueName(decodeURIComponent(url.hash.substring(1)) || url.hostname), type: 'trojan', server: url.hostname, port: parseInt(url.port), password: url.password, sni: new URLSearchParams(url.search).get('sni') || url.hostname };
             } else if (scheme === 'ss') {
                 proxy = { name: getUniqueName(decodeURIComponent(url.hash.substring(1)) || url.hostname), type: 'ss', server: url.hostname, port: parseInt(url.port), cipher: url.username, password: url.password };
             }
             if (proxy) proxies.push(proxy);
-        } catch (e) { console.error(`[Clash Gen] Skipping faulty config: ${configUrl.substring(0, 30)}...`); }
+        } catch (e) { console.error(`[Clash Gen] Skipping: ${configUrl.substring(0, 30)}...`); }
     }
     if (proxies.length === 0) return null;
     const proxyNames = proxies.map(p => p.name);
-    return YAML.dump({ 'mixed-port': 7890, 'allow-lan': true, mode: 'rule', 'log-level': 'info', proxies: proxies, 'proxy-groups': [{ name: 'PROXY', type: 'select', proxies: ['AUTO', ...proxyNames] }, { name: 'AUTO', type: 'url-test', proxies: proxyNames, url: 'http://www.gstatic.com/generate_204', interval: 300 }], rules: ['MATCH,PROXY'] }, { skipInvalid: true, sortKeys: false });
+    return YAML.dump({ 'mixed-port': 7890, 'allow-lan': true, mode: 'rule', 'log-level': 'info', proxies, 'proxy-groups': [{ name: 'PROXY', type: 'select', proxies: ['AUTO', ...proxyNames] }, { name: 'AUTO', type: 'url-test', proxies: proxyNames, url: 'http://www.gstatic.com/generate_204', interval: 300 }], rules: ['MATCH,PROXY'] }, { skipInvalid: true, sortKeys: false });
 }
 
 function generateSingboxJson(configs) {
@@ -113,14 +109,14 @@ function generateSingboxJson(configs) {
                 outbound = { type: 'tuic', tag, server: url.hostname, server_port: parseInt(url.port), uuid: url.username, password: url.password };
             }
             if (outbound) outbounds.push(outbound);
-        } catch (e) { console.error(`[Sing-box Gen] Skipping faulty config: ${configUrl.substring(0, 30)}...`); }
+        } catch (e) { console.error(`[Sing-box Gen] Skipping: ${configUrl.substring(0, 30)}...`); }
     }
     if (outbounds.length === 0) return null;
-    return JSON.stringify({ "log": { "level": "info" }, "inbounds": [{ "type": "mixed", "listen": "127.0.0.1", "listen_port": 2080 }], "outbounds": [{ "type": "selector", "tag": "proxy", "outbounds": outbounds.map(o => o.tag) }, ...outbounds] }, null, 2);
+    return JSON.stringify({ "log": { "level": "info" }, "inbounds": [{ "type": "mixed", "listen": "127.0.0.1", "listen_port": 2080 }], "outbounds": [{ "type": "selector", "tag": "proxy", "outbounds": outbounds.map(o => o.tag), "default": outbounds[0]?.tag || '' }, ...outbounds]}, null, 2);
 }
 
 export default {
-    async fetch(request, env, ctx) {
+    async fetch(request, env) {
         const url = new URL(request.url);
         const origin = request.headers.get('Origin');
         const corsHeaders = generateCorsHeaders(origin);
@@ -149,11 +145,10 @@ export default {
                         await tlsSocket.close();
                     } else {
                         const writer = socket.writable.getWriter();
-                        await writer.write(new Uint8Array([0]));
+                        await writer.write(new Uint8Array([0])); // Send a byte to initiate connection
                         await writer.close();
                     }
-                    const latency = Date.now() - startTime;
-                    return jsonResponse({ latency, status: 'Live' }, 200, corsHeaders);
+                    return jsonResponse({ latency: Date.now() - startTime, status: 'Live' }, 200, corsHeaders);
                 } catch (e) {
                     return jsonResponse({ latency: null, status: 'Dead', error: e.message }, 200, corsHeaders);
                 }
@@ -163,8 +158,7 @@ export default {
                 const { configs, uuid: clientUuid } = await request.json();
                 if (!Array.isArray(configs) || configs.length === 0) return jsonResponse({ error: '`configs` array is required.' }, 400, corsHeaders);
                 const userUuid = clientUuid || uuidv4();
-                const subKey = `sub:${userUuid}`;
-                await env.v2v_kv.put(subKey, JSON.stringify(configs), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
+                await env.v2v_kv.put(`sub:${userUuid}`, JSON.stringify(configs), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
                 return jsonResponse({ uuid: userUuid, subscriptionUrl: `${url.origin}/sub/raw/${userUuid}`, clashSubscriptionUrl: `${url.origin}/sub/clash/${userUuid}`, singboxSubscriptionUrl: `${url.origin}/sub/singbox/${userUuid}` }, 200, corsHeaders);
             }
             
@@ -175,22 +169,15 @@ export default {
                 if (!storedData) return textResponse('Subscription not found or expired.', 404, null, corsHeaders);
                 if (format === 'raw') return textResponse(btoa(storedData.join('\n')), 200, `v2v-${uuid}.txt`, corsHeaders);
                 if (format === 'clash') {
-                    const clashContent = generateClashYaml(storedData);
-                    if (!clashContent) return textResponse('Failed to generate Clash config.', 500, null, corsHeaders);
-                    return yamlResponse(clashContent, 200, `v2v-clash-${uuid}.yaml`, corsHeaders);
+                    const content = generateClashYaml(storedData);
+                    return content ? yamlResponse(content, 200, `v2v-clash-${uuid}.yaml`, corsHeaders) : textResponse('Failed to generate Clash config.', 500, null, corsHeaders);
                 }
                 if (format === 'singbox') {
-                    const singboxContent = generateSingboxJson(storedData);
-                    if (!singboxContent) return textResponse('Failed to generate Sing-box config.', 500, null, corsHeaders);
-                    return jsonResponse(JSON.parse(singboxContent), 200, corsHeaders);
+                    const content = generateSingboxJson(storedData);
+                    return content ? jsonResponse(JSON.parse(content), 200, corsHeaders) : textResponse('Failed to generate Sing-box config.', 500, null, corsHeaders);
                 }
             }
             
-            const rawSubMatch = url.pathname.match(/^\/sub\/([^/]+)/);
-            if (rawSubMatch && !['clash', 'singbox', 'raw'].includes(rawSubMatch[1])) {
-                return Response.redirect(`${url.origin}/sub/raw/${rawSubMatch[1]}`, 301);
-            }
-
             return textResponse('v2v Worker is running.', 200, null, corsHeaders);
         } catch (err) {
             console.error(err.stack);
