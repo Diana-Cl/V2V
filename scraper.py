@@ -1,5 +1,4 @@
 # scraper.py
-
 import json
 import base64
 import time
@@ -20,17 +19,17 @@ XRAY_RAW_FALLBACK_FILE = 'xray_raw_configs.txt'
 SINGBOX_RAW_FALLBACK_FILE = 'singbox_raw_configs.txt'
 
 GITHUB_PAT = os.getenv('GH_PAT', '')
-GITHUB_SEARCH_LIMIT = 500
+GITHUB_SEARCH_LIMIT = 1000
 
-MAX_CONFIGS_TO_TEST = 3000
+MAX_CONFIGS_TO_TEST = 5000 # Increased to find more configs
 MAX_LATENCY_MS = 1500
-MAX_TEST_WORKERS = 100
+MAX_TEST_WORKERS = 200
 TEST_TIMEOUT_SEC = 8
 MAX_FINAL_CONFIGS_PER_CORE = 1000
 
 XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
 SINGBOX_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hy2', 'hysteria2', 'tuic'}
-VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_PROTOCOLS)
+COMMON_PROTOCOLS = XRAY_PROTOCOLS.intersection(SINGBOX_PROTOCOLS)
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -119,18 +118,27 @@ def test_config(config_url: str) -> tuple[str, int] | None:
                 context.verify_mode = ssl.CERT_NONE
                 with context.wrap_socket(sock, server_hostname=hostname) as ssock:
                     ssock.do_handshake()
+            
+            # Additional check for reliability
+            sock.settimeout(TEST_TIMEOUT_SEC)
+            sock.sendall(b'GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n')
+            response = sock.recv(1024)
+            if not response:
+                raise Exception("No response received")
+        
         latency_ms = int((time.monotonic() - start_time) * 1000)
         return config_url, latency_ms
     except Exception:
         return None
 
-# --- main logic ---
 def main():
     print("--- 1. Fetching configs ---")
     all_configs = fetch_from_sources(json.load(open(SOURCES_FILE, 'r')).get("static", []))
     all_configs.update(fetch_from_github(GITHUB_PAT, GITHUB_SEARCH_LIMIT))
-    if not all_configs: print("FATAL: No configs found."); return
-    print(f"📊 Total unique configs: {len(all_configs)}")
+    if not all_configs: 
+        print("FATAL: No configs found.")
+        return
+    print(f"📊 Total unique configs fetched: {len(all_configs)}")
 
     print("\n--- 2. Testing configs ---")
     live_configs = []
@@ -140,13 +148,39 @@ def main():
             result = future.result()
             if result and result[1] <= MAX_LATENCY_MS:
                 live_configs.append(result)
-    if not live_configs: print("FATAL: No live configs found."); return
+    if not live_configs: 
+        print("FATAL: No live configs found.")
+        return
     live_configs.sort(key=lambda x: x[1])
-    print(f"🏆 Found {len(live_configs)} live configs.")
+    print(f"🏆 Found {len(live_configs)} live configs with acceptable latency.")
 
-    print("\n--- 3. Grouping configs ---")
-    xray_final = [cfg for cfg, _ in live_configs if urlparse(cfg).scheme.lower() in XRAY_PROTOCOLS][:MAX_FINAL_CONFIGS_PER_CORE]
-    singbox_final = [cfg for cfg, _ in live_configs if urlparse(cfg).scheme.lower() in SINGBOX_PROTOCOLS][:MAX_FINAL_CONFIGS_PER_CORE]
+    print("\n--- 3. Grouping and filling configs ---")
+    xray_initial = [cfg for cfg, _ in live_configs if urlparse(cfg).scheme.lower() in XRAY_PROTOCOLS]
+    singbox_initial = [cfg for cfg, _ in live_configs if urlparse(cfg).scheme.lower() in SINGBOX_PROTOCOLS]
+
+    xray_final = xray_initial[:MAX_FINAL_CONFIGS_PER_CORE]
+    singbox_final = singbox_initial[:MAX_FINAL_CONFIGS_PER_CORE]
+
+    # Fill Sing-box with common configs from Xray if needed
+    if len(singbox_final) < MAX_FINAL_CONFIGS_PER_CORE:
+        print("  Sing-box list is not full. Filling with common configs from Xray.")
+        common_xray_configs = [cfg for cfg in xray_initial if urlparse(cfg).scheme.lower() in COMMON_PROTOCOLS]
+        for cfg in common_xray_configs:
+            if len(singbox_final) >= MAX_FINAL_CONFIGS_PER_CORE: break
+            if cfg not in singbox_final:
+                singbox_final.append(cfg)
+    
+    # Fill Xray with common configs from Sing-box if needed
+    if len(xray_final) < MAX_FINAL_CONFIGS_PER_CORE:
+        print("  Xray list is not full. Filling with common configs from Sing-box.")
+        common_singbox_configs = [cfg for cfg in singbox_initial if urlparse(cfg).scheme.lower() in COMMON_PROTOCOLS]
+        for cfg in common_singbox_configs:
+            if len(xray_final) >= MAX_FINAL_CONFIGS_PER_CORE: break
+            if cfg not in xray_final:
+                xray_final.append(cfg)
+    
+    print(f"✅ Final Xray configs: {len(xray_final)} / {MAX_FINAL_CONFIGS_PER_CORE}")
+    print(f"✅ Final Sing-box configs: {len(singbox_final)} / {MAX_FINAL_CONFIGS_PER_CORE}")
 
     def group_by_protocol(configs):
         grouped = defaultdict(list)
