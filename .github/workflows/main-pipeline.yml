@@ -59,7 +59,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(data): Update configs and frontend files for static mirrors"
-          file_pattern: "output/*.json output/*.txt index.html index.js manifest.json logo.png"
+          file_pattern: "output/ index.html index.js manifest.json logo.png"
 
   deploy_services:
     needs: build_and_commit
@@ -77,8 +77,21 @@ jobs:
       - run: |
           npm install
           npm install -g wrangler@3
+      
+      - name: Create vercel.json for static site deployment
+        run: |
+          echo '{"trailingSlash": false, "rewrites": [{"source": "/output/(.*)", "destination": "/output/$1"}]}' > vercel.json
+      
+      - name: Deploy to Vercel
+        timeout-minutes: 5
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
 
-      - name: Deploy Cloudflare Workers
+      - name: Deploy to Cloudflare Workers
         timeout-minutes: 5
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -89,21 +102,6 @@ jobs:
             echo "--- Deploying worker: $name ---"
             wrangler deploy "worker.js" --config "wrangler-${name}.toml" --name "$name"
           done
-
-      - name: Build static site for deployment
-        run: |
-          mkdir -p dist
-          cp index.html index.js logo.png manifest.json dist/
-          cp output/* dist/
-
-      - name: Deploy to Vercel
-        timeout-minutes: 5
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod --prebuilt'
 
       - name: Deploy to ArvanCloud S3
         timeout-minutes: 5
@@ -117,14 +115,13 @@ jobs:
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install --update
-          aws s3 sync ./dist/ ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --cache-control max-age=300
+          aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --cache-control max-age=300
 
       - name: Create artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
