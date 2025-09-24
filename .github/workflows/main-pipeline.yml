@@ -90,6 +90,12 @@ jobs:
             wrangler deploy "worker.js" --config "wrangler-${name}.toml" --name "$name"
           done
 
+      - name: Build static site for deployment
+        run: |
+          mkdir -p dist
+          cp index.html index.js logo.png manifest.json dist/
+          cp output/* dist/
+
       - name: Deploy to Vercel
         timeout-minutes: 5
         uses: amondnet/vercel-action@v25
@@ -97,7 +103,7 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
+          vercel-args: '--prod --prebuilt'
 
       - name: Deploy to ArvanCloud S3
         timeout-minutes: 5
@@ -111,13 +117,14 @@ jobs:
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install --update
-          aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --cache-control max-age=300
+          aws s3 sync ./dist/ ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --cache-control max-age=300
 
       - name: Create artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: './dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
