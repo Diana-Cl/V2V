@@ -9,12 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'https://winter-hill-0307.mbrgh87.workers.dev',
     ];
     
-    const FALLBACK_STATIC_URLS = [
-        'https://smbcryp.github.io/v2v-data/output/all_live_configs.json',
-        'https://v2v-vercel.vercel.app/output/all_live_configs.json',
-        'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/output/all_live_configs.json',
-    ];
-
+    // Use relative paths to make the site self-contained and independent
+    const FALLBACK_STATIC_URLS = ['/all_live_configs.json'];
     const PING_TIMEOUT = 5000;
     
     // --- DOM Elements ---
@@ -50,6 +46,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Core Logic ---
     const fetchWithFailover = async (urls) => {
+        // First, try to fetch from the Cloudflare Workers
+        for (const url of WORKER_URLS) {
+            try {
+                const workerResponse = await fetch(`${url}/output/all_live_configs.json`, { signal: AbortSignal.timeout(8000) });
+                if (workerResponse.ok) {
+                    console.log(`Successfully fetched from Worker: ${url}`);
+                    return workerResponse;
+                }
+            } catch (error) {
+                console.warn(`Failed to fetch from Worker ${url}:`, error.message);
+            }
+        }
+
+        // If all Workers fail, fall back to the static URLs
         for (const url of urls) {
             try {
                 const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
@@ -57,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log(`Successfully fetched from: ${url}`);
                 return response;
             } catch (error) {
-                console.warn(`Failed to fetch from ${url}:`, error.message);
+                console.warn(`Failed to fetch from static URL ${url}:`, error.message);
             }
         }
         throw new Error('تمام منابع دریافت کانفیگ از دسترس خارج هستند.');
@@ -72,16 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
             allLiveConfigsData = await configResponse.json();
             
             let cacheVersion = 'نامشخص';
-            for (const url of FALLBACK_STATIC_URLS) {
-                try {
-                    const versionUrl = url.replace('all_live_configs.json', 'cache_version.txt');
-                    const versionResponse = await fetch(versionUrl, { signal: AbortSignal.timeout(3000) });
-                    if (versionResponse.ok) {
-                        cacheVersion = await versionResponse.text();
-                        break;
-                    }
-                } catch (error) {}
-            }
+            const versionUrl = `/cache_version.txt`;
+            try {
+                const versionResponse = await fetch(versionUrl, { signal: AbortSignal.timeout(3000) });
+                if (versionResponse.ok) {
+                    cacheVersion = await versionResponse.text();
+                }
+            } catch (error) {}
 
             statusBar.textContent = `آخرین بروزرسانی: ${new Date(parseInt(cacheVersion) * 1000).toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' })}`;
             renderCore('xray', allLiveConfigsData.xray, xrayWrapper);
