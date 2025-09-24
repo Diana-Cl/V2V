@@ -1,4 +1,5 @@
 # scraper.py
+
 import json
 import base64
 import time
@@ -19,17 +20,19 @@ XRAY_RAW_FALLBACK_FILE = 'xray_raw_configs.txt'
 SINGBOX_RAW_FALLBACK_FILE = 'singbox_raw_configs.txt'
 
 GITHUB_PAT = os.getenv('GH_PAT', '')
-GITHUB_SEARCH_LIMIT = 1000
+GITHUB_SEARCH_LIMIT = 500  # Updated based on your request
 
-MAX_CONFIGS_TO_TEST = 5000 # Increased to find more configs
-MAX_LATENCY_MS = 1500
+MAX_CONFIGS_TO_TEST = 5000
+MAX_LATENCY_MS = 5000 # Updated based on your request
 MAX_TEST_WORKERS = 200
 TEST_TIMEOUT_SEC = 8
 MAX_FINAL_CONFIGS_PER_CORE = 1000
+MIN_FINAL_CONFIGS_PER_CORE = 500
 
 XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
 SINGBOX_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hy2', 'hysteria2', 'tuic'}
 COMMON_PROTOCOLS = XRAY_PROTOCOLS.intersection(SINGBOX_PROTOCOLS)
+VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_PROTOCOLS)
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -131,6 +134,7 @@ def test_config(config_url: str) -> tuple[str, int] | None:
     except Exception:
         return None
 
+# --- main logic ---
 def main():
     print("--- 1. Fetching configs ---")
     all_configs = fetch_from_sources(json.load(open(SOURCES_FILE, 'r')).get("static", []))
@@ -162,7 +166,7 @@ def main():
     singbox_final = singbox_initial[:MAX_FINAL_CONFIGS_PER_CORE]
 
     # Fill Sing-box with common configs from Xray if needed
-    if len(singbox_final) < MAX_FINAL_CONFIGS_PER_CORE:
+    if len(singbox_final) < MIN_FINAL_CONFIGS_PER_CORE:
         print("  Sing-box list is not full. Filling with common configs from Xray.")
         common_xray_configs = [cfg for cfg in xray_initial if urlparse(cfg).scheme.lower() in COMMON_PROTOCOLS]
         for cfg in common_xray_configs:
@@ -171,13 +175,19 @@ def main():
                 singbox_final.append(cfg)
     
     # Fill Xray with common configs from Sing-box if needed
-    if len(xray_final) < MAX_FINAL_CONFIGS_PER_CORE:
+    if len(xray_final) < MIN_FINAL_CONFIGS_PER_CORE:
         print("  Xray list is not full. Filling with common configs from Sing-box.")
         common_singbox_configs = [cfg for cfg in singbox_initial if urlparse(cfg).scheme.lower() in COMMON_PROTOCOLS]
         for cfg in common_singbox_configs:
             if len(xray_final) >= MAX_FINAL_CONFIGS_PER_CORE: break
             if cfg not in xray_final:
                 xray_final.append(cfg)
+
+    # Ensure min configs are met and warn if not
+    if len(xray_final) < MIN_FINAL_CONFIGS_PER_CORE:
+        print(f"⚠️ Warning: Not enough live configs found to fill Xray core. Found only {len(xray_final)}.")
+    if len(singbox_final) < MIN_FINAL_CONFIGS_PER_CORE:
+        print(f"⚠️ Warning: Not enough live configs found to fill Sing-box core. Found only {len(singbox_final)}.")
     
     print(f"✅ Final Xray configs: {len(xray_final)} / {MAX_FINAL_CONFIGS_PER_CORE}")
     print(f"✅ Final Sing-box configs: {len(singbox_final)} / {MAX_FINAL_CONFIGS_PER_CORE}")
