@@ -1,9 +1,9 @@
-# scraper.py (Final Version - Corrected URL parsing for ping test)
+# scraper.py
 
 import json
 import base64
 import time
-from urllib.parse import urlparse, parse_qs # Import parse_qs
+from urllib.parse import urlparse, parse_qs
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 import socket
@@ -22,84 +22,55 @@ SINGBOX_RAW_FALLBACK_FILE = 'singbox_raw_configs.txt'
 GITHUB_PAT = os.getenv('GH_PAT', '')
 GITHUB_SEARCH_LIMIT = 500
 
-# Test parameters
 MAX_CONFIGS_TO_TEST = 3000
 MAX_LATENCY_MS = 1500
 MAX_TEST_WORKERS = 100
 TEST_TIMEOUT_SEC = 8
-
-# Final config selection parameters
 MAX_FINAL_CONFIGS_PER_CORE = 1000
 
-# Protocols
 XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
 SINGBOX_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hy2', 'hysteria2', 'tuic'}
 VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_PROTOCOLS)
 
-# Ensure output directory exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-
 
 # --- helpers ---
 def fetch_url_content(url: str, headers: dict = None) -> str | None:
-    """Fetches content from a single URL, with base64 decoding attempt."""
     try:
-        if headers is None:
-            headers = {'User-Agent': 'Mozilla/5.0'}
+        if headers is None: headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers, timeout=TEST_TIMEOUT_SEC)
         response.raise_for_status()
         content = response.text
         try:
-            # Attempt to decode if it looks like base64
-            # We need to handle potential padding issues
-            # Check if content looks like base64 (e.g., only base64 chars, length divisible by 4)
-            if all(c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=' for c in content) and len(content) % 4 == 0:
-                 return base64.b64decode(content).decode('utf-8')
-            
-            # If not base64, return as is. This also covers partial base64 (missing padding)
-            # because we only try strict base64 decoding if it matches the pattern.
-            return content 
-
-        except (base64.binascii.Error, UnicodeDecodeError):
-            return content # Not base64, return as is.
-    except requests.exceptions.RequestException as e:
-        # print(f"Error fetching {url}: {e}"); # Optional: uncomment for verbose error logging
+            missing_padding = len(content) % 4
+            if missing_padding: content += '=' * (4 - missing_padding)
+            return base64.b64decode(content).decode('utf-8')
+        except (Exception):
+            return content
+    except requests.exceptions.RequestException:
         return None
 
-def fetch_from_static_sources(static_sources: list[str]) -> set[str]:
-    """Fetches configs from predefined static URLs."""
-    print("  Fetching from static sources...")
+def fetch_from_sources(sources: list[str]) -> set[str]:
     collected = set()
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36'}
+    print("  Fetching from static sources...")
     with ThreadPoolExecutor(max_workers=20) as executor:
-        futures = {executor.submit(fetch_url_content, url, headers) for url in static_sources}
+        futures = {executor.submit(fetch_url_content, url) for url in sources}
         for future in as_completed(futures):
             content = future.result()
             if content:
                 for line in content.splitlines():
-                    line = line.strip()
-                    if any(line.lower().startswith(p + "://") for p in VALID_PROTOCOLS):
-                        collected.add(line)
+                    if any(line.strip().lower().startswith(p + "://") for p in VALID_PROTOCOLS):
+                        collected.add(line.strip())
     print(f"  ✅ Found {len(collected)} configs from static sources.")
     return collected
 
 def fetch_from_github(pat: str, search_limit: int) -> set[str]:
-    """Fetches configs from GitHub using API search."""
-    print("  Fetching from GitHub...")
     collected = set()
+    print("  Fetching from GitHub...")
     try:
         headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/vnd.github.v3.raw'}
-        if pat:
-            headers['Authorization'] = f'token {pat}'
-        else:
-            print("  ⚠️ GitHub PAT not provided, rate limits will be lower.")
-        # Expanded queries for better discovery
-        queries = [
-            'filename:vless', 'filename:vmess', 'filename:trojan', 'filename:ss', 'filename:hy2',
-            'path:*.txt "vless://"', 'path:*.txt "vmess://"', 'path:*.txt "trojan://"',
-            'path:*.md "vless://"', 'path:*.md "vmess://"', 'path:*.md "trojan://"',
-            'path:*.conf "vless://"', 'path:*.conf "vmess://"', 'path:*.conf "trojan://"'
-        ]
+        if pat: headers['Authorization'] = f'token {pat}'
+        queries = ['filename:vless', 'filename:vmess', 'filename:trojan', 'path:*.txt "vless://"']
         for query in queries:
             if len(collected) >= search_limit: break
             api_url = f"https://api.github.com/search/code?q={query}+size:1..10000&per_page=100"
@@ -115,101 +86,69 @@ def fetch_from_github(pat: str, search_limit: int) -> set[str]:
                         if any(line.strip().lower().startswith(p + "://") for p in VALID_PROTOCOLS):
                             collected.add(line.strip())
     except Exception as e:
-        print(f"  ⚠️ An error occurred during GitHub fetching: {e}")
+        print(f"  ⚠️ Error during GitHub fetching: {e}")
     print(f"  ✅ Found {len(collected)} configs from GitHub.")
     return collected
 
 def test_config(config_url: str) -> tuple[str, int] | None:
-    """Performs a basic TCP/TLS handshake test on a config URL."""
     try:
         parsed_url = urlparse(config_url)
         hostname = parsed_url.hostname
         port = parsed_url.port
-        if not hostname or not port:
-            return None
+        if not hostname or not port: return None
         
         is_tls = False
         scheme = parsed_url.scheme.lower()
+        query_params = parse_qs(parsed_url.query)
         
-        # Parse query parameters
-        query_params = parse_qs(parsed_url.query) # Corrected: use parse_qs
-
         if scheme in ['trojan', 'hy2', 'hysteria2']:
             is_tls = True
-        elif scheme == 'vless' or scheme == 'vmess':
-            if query_params.get('security') == ['tls']: # parse_qs returns lists
-                is_tls = True
-            elif 'tls' in query_params: # e.g. for vmess in base64 if it has &tls=1
-                is_tls = True
-            elif scheme == 'vmess' and config_url.startswith('vmess://'):
-                # For vmess, need to decode the base64 part
-                try:
-                    vmess_data_str = base64.b64decode(config_url[len('vmess://'):]).decode('utf-8')
-                    vmess_data = json.loads(vmess_data_str)
-                    if vmess_data.get('tls') == 'tls':
-                        is_tls = True
-                except Exception:
-                    pass # Ignore decoding errors
-        elif scheme == 'ss':
-            # SS usually doesn't involve TLS directly in the config URL, but some might.
-            # For this simple test, we'll assume ss is non-TLS unless specific param indicates it.
-            if query_params.get('security') == ['tls']:
-                 is_tls = True
+        elif scheme == 'vless' and query_params.get('security') == ['tls']:
+            is_tls = True
+        elif scheme == 'vmess' and config_url.startswith('vmess://'):
+            try:
+                vmess_data = json.loads(base64.b64decode(config_url[8:]).decode('utf-8'))
+                if vmess_data.get('tls') == 'tls': is_tls = True
+            except Exception: pass
 
         start_time = time.monotonic()
         with socket.create_connection((hostname, port), timeout=TEST_TIMEOUT_SEC) as sock:
             if is_tls:
                 context = ssl.create_default_context()
                 context.check_hostname = False
-                context.verify_mode = ssl.CERT_NONE # We just want to check connection, not full cert validation
+                context.verify_mode = ssl.CERT_NONE
                 with context.wrap_socket(sock, server_hostname=hostname) as ssock:
                     ssock.do_handshake()
-            # For non-TLS, just connection establishment is enough for latency
         latency_ms = int((time.monotonic() - start_time) * 1000)
         return config_url, latency_ms
-    except (socket.timeout, ConnectionRefusedError, ssl.SSLError, OSError, Exception) as e:
-        # print(f"Test failed for {config_url}: {e}"); # Optional: uncomment for verbose error logging
+    except Exception:
         return None
 
 # --- main logic ---
 def main():
-    print("--- 1. Loading sources ---")
-    try:
-        with open(SOURCES_FILE, 'r', encoding='utf-8') as f:
-            sources_config = json.load(f)
-        static_sources = sources_config.get("static", [])
-        print(f"✅ Loaded {len(static_sources)} static sources.")
-    except Exception as e:
-        print(f"FATAL: Cannot load {SOURCES_FILE}: {e}. Exiting."); return
-
-    print("\n--- 2. Fetching configs ---")
-    all_configs = fetch_from_static_sources(static_sources)
+    print("--- 1. Fetching configs ---")
+    all_configs = fetch_from_sources(json.load(open(SOURCES_FILE, 'r')).get("static", []))
     all_configs.update(fetch_from_github(GITHUB_PAT, GITHUB_SEARCH_LIMIT))
-    if not all_configs: print("FATAL: No configs found. Exiting."); return
-    print(f"📊 Total unique configs collected: {len(all_configs)}")
+    if not all_configs: print("FATAL: No configs found."); return
+    print(f"📊 Total unique configs: {len(all_configs)}")
 
-    print(f"\n--- 3. Testing configs ---")
-    live_configs_with_latency = []
-    configs_to_test = list(all_configs)[:MAX_CONFIGS_TO_TEST]
+    print("\n--- 2. Testing configs ---")
+    live_configs = []
     with ThreadPoolExecutor(max_workers=MAX_TEST_WORKERS) as executor:
-        futures = {executor.submit(test_config, cfg): cfg for cfg in configs_to_test}
-        for i, future in enumerate(as_completed(futures)):
-            if (i + 1) % 500 == 0: print(f"  Tested {i+1}/{len(configs_to_test)}...")
+        futures = {executor.submit(test_config, cfg): cfg for cfg in list(all_configs)[:MAX_CONFIGS_TO_TEST]}
+        for future in as_completed(futures):
             result = future.result()
             if result and result[1] <= MAX_LATENCY_MS:
-                live_configs_with_latency.append(result)
-    if not live_configs_with_latency: print("FATAL: No live configs found. Exiting."); return
-    live_configs_with_latency.sort(key=lambda x: x[1])
-    print(f"🏆 Found {len(live_configs_with_latency)} live configs with latency <= {MAX_LATENCY_MS}ms.")
+                live_configs.append(result)
+    if not live_configs: print("FATAL: No live configs found."); return
+    live_configs.sort(key=lambda x: x[1])
+    print(f"🏆 Found {len(live_configs)} live configs.")
 
-    print("\n--- 4. Grouping and finalizing configs ---")
-    xray_pool = [cfg for cfg, lat in live_configs_with_latency if urlparse(cfg).scheme.lower() in XRAY_PROTOCOLS]
-    singbox_pool = [cfg for cfg, lat in live_configs_with_latency if urlparse(cfg).scheme.lower() in SINGBOX_PROTOCOLS]
-    xray_final = xray_pool[:MAX_FINAL_CONFIGS_PER_CORE]
-    singbox_final = singbox_pool[:MAX_FINAL_CONFIGS_PER_CORE]
-    print(f"✅ Finalized {len(xray_final)} configs for Xray and {len(singbox_final)} for Sing-box.")
+    print("\n--- 3. Grouping configs ---")
+    xray_final = [cfg for cfg, _ in live_configs if urlparse(cfg).scheme.lower() in XRAY_PROTOCOLS][:MAX_FINAL_CONFIGS_PER_CORE]
+    singbox_final = [cfg for cfg, _ in live_configs if urlparse(cfg).scheme.lower() in SINGBOX_PROTOCOLS][:MAX_FINAL_CONFIGS_PER_CORE]
 
-    def group_by_protocol(configs: list[str]) -> dict:
+    def group_by_protocol(configs):
         grouped = defaultdict(list)
         for cfg in configs:
             proto = urlparse(cfg).scheme.lower().replace('hysteria2', 'hy2').replace('shadowsocks', 'ss')
@@ -218,26 +157,16 @@ def main():
 
     output_data = {"xray": group_by_protocol(xray_final), "singbox": group_by_protocol(singbox_final)}
 
-    print("\n--- 5. Writing local files for upload ---")
-    # All files are written to the OUTPUT_DIR for consistency
+    print("\n--- 4. Writing output files ---")
     with open(os.path.join(OUTPUT_DIR, OUTPUT_JSON_FILE), 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
-    print(f"✅ Wrote main config to {os.path.join(OUTPUT_DIR, OUTPUT_JSON_FILE)}.")
-
     with open(os.path.join(OUTPUT_DIR, XRAY_RAW_FALLBACK_FILE), 'w', encoding='utf-8') as f:
         f.write("\n".join(xray_final))
-    print(f"✅ Wrote raw Xray fallback to {os.path.join(OUTPUT_DIR, XRAY_RAW_FALLBACK_FILE)}.")
-    
     with open(os.path.join(OUTPUT_DIR, SINGBOX_RAW_FALLBACK_FILE), 'w', encoding='utf-8') as f:
         f.write("\n".join(singbox_final))
-    print(f"✅ Wrote raw Sing-box fallback to {os.path.join(OUTPUT_DIR, SINGBOX_RAW_FALLBACK_FILE)}.")
-    
     with open(os.path.join(OUTPUT_DIR, CACHE_VERSION_FILE), 'w', encoding='utf-8') as f:
         f.write(str(int(time.time())))
-    print(f"✅ Wrote cache version to {os.path.join(OUTPUT_DIR, CACHE_VERSION_FILE)}.")
-    
-    print("\n--- Process completed successfully ---")
+    print("✅ All output files written successfully.")
 
 if __name__ == "__main__":
     main()
-
