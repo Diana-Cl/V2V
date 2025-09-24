@@ -8,7 +8,7 @@ const TTL_USER_SUBSCRIPTION_STORE = 60 * 60 * 24 * 3; // 3 days
 const ALLOWED_ORIGINS = [
     'https://smbcryp.github.io',
     'https://v2v-vercel.vercel.app',
-    // Add other frontend domains like Arvan if needed
+    'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir',
 ];
 
 function generateCorsHeaders(requestOrigin) {
