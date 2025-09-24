@@ -1,9 +1,9 @@
-# scraper.py (Final Version)
+# scraper.py (Final Version - Corrected URL parsing for ping test)
 
 import json
 import base64
 import time
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs # Import parse_qs
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 import socket
@@ -52,12 +52,16 @@ def fetch_url_content(url: str, headers: dict = None) -> str | None:
         try:
             # Attempt to decode if it looks like base64
             # We need to handle potential padding issues
-            missing_padding = len(content) % 4
-            if missing_padding:
-                content += '=' * (4 - missing_padding)
-            return base64.b64decode(content).decode('utf-8')
+            # Check if content looks like base64 (e.g., only base64 chars, length divisible by 4)
+            if all(c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=' for c in content) and len(content) % 4 == 0:
+                 return base64.b64decode(content).decode('utf-8')
+            
+            # If not base64, return as is. This also covers partial base64 (missing padding)
+            # because we only try strict base64 decoding if it matches the pattern.
+            return content 
+
         except (base64.binascii.Error, UnicodeDecodeError):
-            return content # Not base64, return as is
+            return content # Not base64, return as is.
     except requests.exceptions.RequestException as e:
         # print(f"Error fetching {url}: {e}"); # Optional: uncomment for verbose error logging
         return None
@@ -124,18 +128,33 @@ def test_config(config_url: str) -> tuple[str, int] | None:
         if not hostname or not port:
             return None
         
-        # Determine if TLS is likely based on scheme or query parameters
         is_tls = False
         scheme = parsed_url.scheme.lower()
-        if scheme in ['trojan', 'hy2', 'hysteria2', 'vless', 'vmess', 'ss']:
-            # Check for security=tls or similar parameters
-            query_params = new URLSearchParams(parsed_url.query)
-            if query_params.get('security') == 'tls':
+        
+        # Parse query parameters
+        query_params = parse_qs(parsed_url.query) # Corrected: use parse_qs
+
+        if scheme in ['trojan', 'hy2', 'hysteria2']:
+            is_tls = True
+        elif scheme == 'vless' or scheme == 'vmess':
+            if query_params.get('security') == ['tls']: # parse_qs returns lists
                 is_tls = True
-            elif 'tls' in parsed_url.query: # e.g. for vmess in base64
+            elif 'tls' in query_params: # e.g. for vmess in base64 if it has &tls=1
+                is_tls = True
+            elif scheme == 'vmess' and config_url.startswith('vmess://'):
+                # For vmess, need to decode the base64 part
+                try:
+                    vmess_data_str = base64.b64decode(config_url[len('vmess://'):]).decode('utf-8')
+                    vmess_data = json.loads(vmess_data_str)
+                    if vmess_data.get('tls') == 'tls':
+                        is_tls = True
+                except Exception:
+                    pass # Ignore decoding errors
+        elif scheme == 'ss':
+            # SS usually doesn't involve TLS directly in the config URL, but some might.
+            # For this simple test, we'll assume ss is non-TLS unless specific param indicates it.
+            if query_params.get('security') == ['tls']:
                  is_tls = True
-            elif scheme in ['trojan', 'hy2', 'hysteria2']: # These protocols usually imply TLS
-                is_tls = True
 
         start_time = time.monotonic()
         with socket.create_connection((hostname, port), timeout=TEST_TIMEOUT_SEC) as sock:
@@ -221,3 +240,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
