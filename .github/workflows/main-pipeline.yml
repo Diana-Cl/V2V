@@ -1,0 +1,185 @@
+# .github/workflows/main-pipeline.yml
+
+name: V2V - Full CI/CD Pipeline (Static Data Primary)
+
+on:
+  schedule:
+    - cron: "0 */4 * * *" # Runs every 4 hours
+  workflow_dispatch: # Allows manual trigger
+  push:
+    branches:
+      - main
+    paths:
+      # Trigger if worker logic, scraping logic, or frontend changes
+      - 'worker.js'
+      - 'scraper.py'
+      - 'index.html'
+      - 'index.js'
+      - 'sources.json'
+      - 'wrangler-*.toml'
+      - 'manifest.json'
+      - 'logo.png'
+      # Also trigger if existing output files are somehow changed manually
+      - 'output/**'
+
+permissions:
+  contents: write # Needed for git-auto-commit-action
+  pages: write    # Needed for deploy-pages-action
+  id-token: write # Needed for deploy-pages-action (if using oidc)
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Scrape data, generate output files, and commit to repo
+  build_and_commit_data:
+    runs-on: ubuntu-latest
+    name: 1. Scrape Data, Generate Files, & Commit
+    timeout-minutes: 30 # Increased overall job timeout for robustness
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pygithub pyyaml # pyyaml for clash generation in scraper
+          
+      - name: Run scraper to generate data files
+        # The scraper MUST ONLY generate files into 'output/' and NOT interact with Cloudflare KV directly.
+        # Cloudflare secrets are NOT passed here, as scraper should not access KV directly.
+        timeout-minutes: 25 # Set a timeout for the scraper run
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }} # Pass GH_PAT for GitHub search in scraper
+        run: |
+          mkdir -p output # Ensure output directory exists
+          timeout 24m python scraper.py || { # Add Linux timeout for extra safety
+            echo "Scraper timed out or failed. Check scraper.py logs."
+            exit 1
+          }
+
+      - name: Commit and push updated files
+        # Commits generated data files and any frontend changes (if pushed manually)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(data): Update configs and frontend files for static mirrors"
+          # Only commit files that are generated or directly modified for the static site
+          file_pattern: "output/*.json output/*.txt index.html index.js manifest.json logo.png"
+          # Ensure it runs even if there are no changes, helpful for cron/schedule
+          # commit_options: '--no-edit --allow-empty' # This might not be needed with updated file_pattern
+
+
+  # Job 2: Deploy Cloudflare Workers and all Static Mirrors
+  deploy_services:
+    needs: build_and_commit_data # This job waits for the first job to complete
+    runs-on: ubuntu-latest
+    name: 2. Deploy Cloudflare Workers & Static Mirrors
+    timeout-minutes: 15 # Increased overall job timeout
+    steps:
+      - name: Checkout repository with latest data
+        uses: actions/checkout@v4
+
+      # --- DEPLOY CLOUDFLARE WORKERS ---
+      # Worker for ping testing and personal subscription management ONLY.
+      # It will NOT serve all_live_configs.json from KV.
+      - name: Setup Node.js 20 & install Wrangler v3
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: |
+          echo "Installing project Node.js dependencies..."
+          npm install 
+          echo "Installing wrangler globally (v3)..."
+          npm install -g wrangler@3
+          echo "Installed wrangler version (global):"
+          wrangler --version
+
+      - name: Deploy Cloudflare Workers
+        timeout-minutes: 5 # Give enough time for all 4 workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # CLOUDFLARE_KV_NAMESPACE_ID is NOT needed here for worker deploy itself, 
+          # only for KV interactions within worker.js (for sub data)
+        run: |
+          worker_configs=("wrangler-rapid-scene-1da6.toml" "wrangler-winter-hill-0307.toml" "wrangler-v2v.toml" "wrangler-v2v-proxy.toml")
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "Error: CLOUDFLARE_ACCOUNT_ID secret is not set. Exiting worker deployment."
+            exit 1
+          fi
+
+          for config_file in "${worker_configs[@]}"; do
+            worker_name=$(basename "$config_file" .toml | sed 's/wrangler-//')
+            echo "--- Deploying worker: $worker_name from $config_file ---"
+            wrangler deploy "worker.js" \
+              --config "$config_file" \
+              --name "$worker_name" \
+              --compatibility-date "2024-03-20" \
+              --compatibility-flag "nodejs_compat" # Removed quotes
+            if [ $? -ne 0 ]; then
+              echo "!!! Error deploying $worker_name. Exiting."
+              exit 1
+            fi
+            echo "--- Deployment of $worker_name successful ---"
+          done
+
+      # --- NO CLOUDFLARE KV UPLOAD FOR all_live_configs.json HERE ---
+      # Because the strategy is that static hosts are primary for configs.
+      # KV is only for worker's internal use (personal subs).
+
+      # --- DEPLOY STATIC MIRRORS ---
+      # These mirrors will serve all_live_configs.json directly from the 'output/' directory committed to the repo.
+      - name: Deploy to Vercel
+        timeout-minutes: 3
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: .
+          vercel-args: '--prod'
+
+      - name: Deploy to ArvanCloud S3
+        timeout-minutes: 3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+          AWS_REGION: "us-east-1"
+          ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
+          ARVAN_S3_BUCKET: s3://v2v-data
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install --update
+          
+          aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} \
+            --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} \
+            --acl public-read \
+            --delete \
+            --cache-control max-age=300 \
+            --cli-connect-timeout 30 \
+            --cli-read-timeout 60 || {
+            echo "First sync attempt failed, retrying..."
+            aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} \
+              --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} \
+              --acl public-read \
+              --delete \
+              --cache-control max-age=300
+          }
+
+      - name: Create artifact for GitHub Pages
+        timeout-minutes: 1
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # Uploads the entire repo content as artifact
+
+      - name: Deploy to GitHub Pages
+        timeout-minutes: 1
+        id: deployment
+        uses: actions/deploy-pages@v4
