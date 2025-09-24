@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // First, try to fetch from the Cloudflare Workers
         for (const url of WORKER_URLS) {
             try {
-                const workerResponse = await fetch(`${url}/output/all_live_configs.json`, { signal: AbortSignal.timeout(8000) });
+                const workerResponse = await fetch(`${url}/all_live_configs.json`, { signal: AbortSignal.timeout(8000) });
                 if (workerResponse.ok) {
                     console.log(`Successfully fetched from Worker: ${url}`);
                     return workerResponse;
