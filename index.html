@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>پروژه V2V</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.mbrgh87.workers.dev https://smbcryp.github.io https://v2v-vercel.vercel.app;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.mbrgh87.workers.dev https://smbcryp.github.io https://v2v-vercel.vercel.app;">
     <meta name="theme-color" content="#121212">
     <link rel="icon" href="logo.png" type="image/png">
     <link rel="apple-touch-icon" href="logo.png">
@@ -39,13 +39,17 @@
         .action-box-buttons { display: flex; gap: 8px; }
         .action-btn-small { background-color: #444; border: 1px solid #555; color: var(--text-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8em; transition: background-color 0.2s; white-space: nowrap;}
         .action-btn-small:hover { background-color: #555; }
-        .config-list-container { list-style: none; padding: 0; margin: 0; }
+        .protocol-group { border-top: 1px solid var(--border-color); }
+        .protocol-header { padding: 15px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .toggle-icon { transition: transform 0.3s; }
+        .protocol-group.open .toggle-icon { transform: rotate(180deg); }
+        .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.4s ease-in-out; overflow: hidden; }
+        .protocol-group.open .config-list { max-height: 2000px; } /* Adjust as needed */
         .config-item { padding: 10px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
         .config-checkbox { flex-shrink: 0; transform: scale(1.2); accent-color: var(--ping-good); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
         .server { font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-        .protocol-badge { font-size: 0.7em; background-color: #444; padding: 2px 5px; border-radius: 4px; color: #ccc; }
-        .ping-result-container { font-size: 0.85em; min-width: 60px; text-align: left; font-weight: bold; display: flex; align-items: center; justify-content: flex-end; }
+        .ping-result-container { font-size: 0.85em; min-width: 65px; text-align: right; font-weight: bold; display: flex; align-items: center; justify-content: flex-end; }
         .copy-btn { background-color: #3e3e3e; border: 1px solid #555; padding: 5px 10px; border-radius: 5px; cursor: pointer; color: var(--text-color); font-size: 0.85em; }
         .loader-small { width: 14px; height: 14px; border: 2px solid #ffab40; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; vertical-align: middle; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -84,6 +88,7 @@
         </footer>
     </div>
     <div id="qr-modal"><div class="qr-content" id="qr-code-container"></div></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
     <script src="index.js"></script>
 </body>
