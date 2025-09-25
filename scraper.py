@@ -10,6 +10,8 @@ import socket
 import ssl
 import os
 import requests
+import re
+import yaml
 
 # --- configuration ---
 SOURCES_FILE = 'sources.json'
@@ -18,12 +20,13 @@ OUTPUT_JSON_FILE = 'all_live_configs.json'
 CACHE_VERSION_FILE = 'cache_version.txt'
 XRAY_RAW_FALLBACK_FILE = 'xray_raw_configs.txt'
 SINGBOX_RAW_FALLBACK_FILE = 'singbox_raw_configs.txt'
+CLASH_ALL_YAML_FILE = 'v2v-clash-all.yaml'
 
 GITHUB_PAT = os.getenv('GH_PAT', '')
-GITHUB_SEARCH_LIMIT = 500  # Updated based on your request
+GITHUB_SEARCH_LIMIT = 500
 
 MAX_CONFIGS_TO_TEST = 5000
-MAX_LATENCY_MS = 5000 # Updated based on your request
+MAX_LATENCY_MS = 5000
 MAX_TEST_WORKERS = 200
 TEST_TIMEOUT_SEC = 8
 MAX_FINAL_CONFIGS_PER_CORE = 1000
@@ -134,6 +137,63 @@ def test_config(config_url: str) -> tuple[str, int] | None:
     except Exception:
         return None
 
+def shorten_name(url: str, latency: int, max_len: int = 20) -> str:
+    parts = urlparse(url)
+    protocol = parts.scheme
+    hostname = parts.hostname
+    
+    # Clean hostname and add latency
+    short_name = hostname.replace('www.', '').split('.')[0]
+    
+    # Add protocol and latency
+    final_name = f"v2v-{protocol}-{short_name}-{latency}ms"
+    
+    # Ensure it doesn't exceed max_len
+    if len(final_name) > max_len:
+        # Trim from the middle if needed
+        trimmed_len = max_len - (len(protocol) + len(str(latency)) + 6) # v2v- -ms
+        if trimmed_len > 0:
+            short_name = short_name[:trimmed_len]
+            final_name = f"v2v-{protocol}-{short_name}-{latency}ms"
+        else:
+            final_name = f"v2v-{protocol}-{latency}ms"
+            
+    return re.sub(r'[^a-zA-Z0-9-]', '', final_name)
+
+def generate_clash_yaml(configs):
+    proxies = []
+    proxy_groups = []
+    
+    for url, latency in configs:
+        parsed_url = urlparse(url)
+        protocol = parsed_url.scheme.lower()
+        
+        # Standardize name and shorten
+        name = shorten_name(url, latency, max_len=20)
+        
+        # This part requires a detailed parsing function for each protocol
+        # Placeholder for real implementation
+        proxy_config = {
+            'name': name,
+            'type': protocol,
+            'server': parsed_url.hostname,
+            'port': parsed_url.port,
+            # Add other necessary fields (uuid, tls, etc.) here
+        }
+        proxies.append(proxy_config)
+    
+    # Example proxy groups - requires full implementation
+    proxy_groups.append({
+        'name': 'v2v-auto-select',
+        'type': 'url-test',
+        'url': 'http://www.gstatic.com/generate_204',
+        'interval': 300,
+        'tolerance': 50,
+        'proxies': [p['name'] for p in proxies]
+    })
+    
+    return yaml.dump({'proxies': proxies, 'proxy-groups': proxy_groups, 'rules': []}, allow_unicode=True)
+
 # --- main logic ---
 def main():
     print("--- 1. Fetching configs ---")
@@ -194,12 +254,12 @@ def main():
 
     def group_by_protocol(configs):
         grouped = defaultdict(list)
-        for cfg in configs:
+        for cfg, latency in configs:
             proto = urlparse(cfg).scheme.lower().replace('hysteria2', 'hy2').replace('shadowsocks', 'ss')
-            grouped[proto].append(cfg)
+            grouped[proto].append((cfg, latency))
         return dict(grouped)
 
-    output_data = {"xray": group_by_protocol(xray_final), "singbox": group_by_protocol(singbox_final)}
+    output_data = {"xray": group_by_protocol(zip(xray_final, [t[1] for t in live_configs if t[0] in xray_final])), "singbox": group_by_protocol(zip(singbox_final, [t[1] for t in live_configs if t[0] in singbox_final]))}
 
     print("\n--- 4. Writing output files ---")
     with open(os.path.join(OUTPUT_DIR, OUTPUT_JSON_FILE), 'w', encoding='utf-8') as f:
@@ -208,9 +268,12 @@ def main():
         f.write("\n".join(xray_final))
     with open(os.path.join(OUTPUT_DIR, SINGBOX_RAW_FALLBACK_FILE), 'w', encoding='utf-8') as f:
         f.write("\n".join(singbox_final))
+    with open(os.path.join(OUTPUT_DIR, CLASH_ALL_YAML_FILE), 'w', encoding='utf-8') as f:
+        f.write(generate_clash_yaml(live_configs))
     with open(os.path.join(OUTPUT_DIR, CACHE_VERSION_FILE), 'w', encoding='utf-8') as f:
         f.write(str(int(time.time())))
     print("✅ All output files written successfully.")
 
 if __name__ == "__main__":
     main()
+
