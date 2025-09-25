@@ -10,10 +10,11 @@ import os
 import requests
 import re
 import yaml
+import string
 
 # --- configuration ---
 SOURCES_FILE = 'sources.json'
-OUTPUT_DIR = '.'  # Changed to root directory
+OUTPUT_DIR = '.'
 OUTPUT_JSON_FILE = 'all_live_configs.json'
 CACHE_VERSION_FILE = 'cache_version.txt'
 XRAY_RAW_FALLBACK_FILE = 'xray_raw_configs.txt'
@@ -35,9 +36,19 @@ SINGBOX_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hy2', 'hy
 COMMON_PROTOCOLS = XRAY_PROTOCOLS.intersection(SINGBOX_PROTOCOLS)
 VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_PROTOCOLS)
 
-# os.makedirs(OUTPUT_DIR, exist_ok=True) # This line is no longer needed
+BASE58_ALPHABET = string.digits + string.ascii_uppercase + string.ascii_lowercase + '-_~'
 
-# --- helpers ---
+def base58_decode(s: str) -> bytes:
+    base = len(BASE58_ALPHABET)
+    value = 0
+    for i, c in enumerate(s[::-1]):
+        value += BASE58_ALPHABET.index(c) * (base ** i)
+    result = bytearray()
+    while value > 0:
+        result.insert(0, value % 256)
+        value //= 256
+    return bytes(result)
+
 def fetch_url_content(url: str, headers: dict = None) -> str | None:
     try:
         if headers is None: headers = {'User-Agent': 'Mozilla/5.0'}
@@ -49,7 +60,10 @@ def fetch_url_content(url: str, headers: dict = None) -> str | None:
             if missing_padding: content += '=' * (4 - missing_padding)
             return base64.b64decode(content).decode('utf-8')
         except (Exception):
-            return content
+            try:
+                return base58_decode(content).decode('utf-8')
+            except (Exception):
+                return content
     except requests.exceptions.RequestException:
         return None
 
@@ -73,7 +87,9 @@ def fetch_from_github(pat: str, search_limit: int) -> set[str]:
     try:
         headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/vnd.github.v3.raw'}
         if pat: headers['Authorization'] = f'token {pat}'
-        queries = ['filename:vless', 'filename:vmess', 'filename:trojan', 'path:*.txt "vless://"']
+        # More specific queries for different protocols
+        queries = ['filename:vless', 'filename:vmess', 'filename:trojan', 'filename:ss', 'filename:hy2', 'filename:tuic', 'path:*.txt "vless://"', 'path:*.txt "vmess://"']
+        
         for query in queries:
             if len(collected) >= search_limit: break
             api_url = f"https://api.github.com/search/code?q={query}+size:1..10000&per_page=100"
@@ -104,9 +120,9 @@ def test_config(config_url: str) -> tuple[str, int] | None:
         scheme = parsed_url.scheme.lower()
         query_params = parse_qs(parsed_url.query)
         
-        if scheme in ['trojan', 'hy2', 'hysteria2']:
+        if scheme in ['trojan', 'hy2', 'hysteria2', 'tuic']:
             is_tls = True
-        elif scheme == 'vless' and query_params.get('security') == ['tls']:
+        elif scheme == 'vless' and (query_params.get('security') == ['tls'] or 'tls' in parsed_url.path):
             is_tls = True
         elif scheme == 'vmess' and config_url.startswith('vmess://'):
             try:
@@ -123,7 +139,6 @@ def test_config(config_url: str) -> tuple[str, int] | None:
                 with context.wrap_socket(sock, server_hostname=hostname) as ssock:
                     ssock.do_handshake()
             
-            # Additional check for reliability
             sock.settimeout(TEST_TIMEOUT_SEC)
             sock.sendall(b'GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n')
             response = sock.recv(1024)
@@ -140,16 +155,12 @@ def shorten_name(url: str, latency: int, max_len: int = 20) -> str:
     protocol = parts.scheme
     hostname = parts.hostname
     
-    # Clean hostname and add latency
     short_name = hostname.replace('www.', '').split('.')[0]
     
-    # Add protocol and latency
     final_name = f"v2v-{protocol}-{short_name}-{latency}ms"
     
-    # Ensure it doesn't exceed max_len
     if len(final_name) > max_len:
-        # Trim from the middle if needed
-        trimmed_len = max_len - (len(protocol) + len(str(latency)) + 6) # v2v- -ms
+        trimmed_len = max_len - (len(protocol) + len(str(latency)) + 6)
         if trimmed_len > 0:
             short_name = short_name[:trimmed_len]
             final_name = f"v2v-{protocol}-{short_name}-{latency}ms"
@@ -158,39 +169,100 @@ def shorten_name(url: str, latency: int, max_len: int = 20) -> str:
             
     return re.sub(r'[^a-zA-Z0-9-]', '', final_name)
 
-def generate_clash_yaml(configs):
-    proxies = []
-    proxy_groups = []
-    
-    for url, latency in configs:
+def parse_config_to_clash_proxy(url, name):
+    try:
         parsed_url = urlparse(url)
         protocol = parsed_url.scheme.lower()
         
-        # Standardize name and shorten
-        name = shorten_name(url, latency, max_len=20)
-        
-        # This part requires a detailed parsing function for each protocol
-        # Placeholder for real implementation
-        proxy_config = {
+        proxy = {
             'name': name,
-            'type': protocol,
             'server': parsed_url.hostname,
             'port': parsed_url.port,
-            # Add other necessary fields (uuid, tls, etc.) here
         }
-        proxies.append(proxy_config)
+        
+        # Vmess
+        if protocol == 'vmess':
+            proxy['type'] = 'vmess'
+            decoded_data = json.loads(base64.b64decode(parsed_url.netloc).decode('utf-8'))
+            proxy['uuid'] = decoded_data.get('id', '')
+            proxy['alterId'] = decoded_data.get('aid', 0)
+            proxy['cipher'] = 'auto'
+            if 'ws' in decoded_data.get('net', ''):
+                proxy['network'] = 'ws'
+                proxy['ws-path'] = decoded_data.get('path', '/')
+                proxy['ws-headers'] = {'Host': decoded_data.get('host', '')}
+            if decoded_data.get('tls') == 'tls':
+                proxy['tls'] = True
+                proxy['sni'] = decoded_data.get('host', '')
+
+        # Vless
+        elif protocol == 'vless':
+            proxy['type'] = 'vless'
+            proxy['uuid'] = parsed_url.username
+            query_params = parse_qs(parsed_url.query)
+            if query_params.get('security'):
+                proxy['tls'] = query_params['security'][0] == 'tls'
+            if query_params.get('flow'):
+                proxy['flow'] = query_params['flow'][0]
+            if query_params.get('encryption'):
+                proxy['encryption'] = query_params['encryption'][0]
+            if query_params.get('sni'):
+                proxy['sni'] = query_params['sni'][0]
+            if query_params.get('type') and query_params['type'][0] == 'ws':
+                proxy['network'] = 'ws'
+                if query_params.get('path'):
+                    proxy['ws-path'] = query_params['path'][0]
+                if query_params.get('host'):
+                    proxy['ws-headers'] = {'Host': query_params['host'][0]}
+        
+        # Trojan
+        elif protocol == 'trojan':
+            proxy['type'] = 'trojan'
+            proxy['password'] = parsed_url.username
+            proxy['skip-cert-verify'] = True
+            query_params = parse_qs(parsed_url.query)
+            if query_params.get('sni'):
+                proxy['sni'] = query_params['sni'][0]
+
+        # Shadowsocks
+        elif protocol in ('ss', 'shadowsocks'):
+            proxy['type'] = 'ss'
+            user_info = base64.b64decode(parsed_url.username).decode('utf-8')
+            method, password = user_info.split(':', 1)
+            proxy['cipher'] = method
+            proxy['password'] = password
+            
+        return proxy
+    except Exception as e:
+        print(f"⚠️ Error parsing config {url}: {e}")
+        return None
+
+def generate_clash_yaml(configs):
+    proxies = []
     
-    # Example proxy groups - requires full implementation
-    proxy_groups.append({
-        'name': 'v2v-auto-select',
-        'type': 'url-test',
-        'url': 'http://www.gstatic.com/generate_204',
-        'interval': 300,
-        'tolerance': 50,
-        'proxies': [p['name'] for p in proxies]
-    })
+    for url, latency in configs:
+        name = shorten_name(url, latency, max_len=20)
+        proxy_config = parse_config_to_clash_proxy(url, name)
+        if proxy_config:
+            proxies.append(proxy_config)
     
-    return yaml.dump({'proxies': proxies, 'proxy-groups': proxy_groups, 'rules': []}, allow_unicode=True)
+    proxy_groups = []
+    
+    if proxies:
+        proxy_groups.append({
+            'name': 'v2v-auto-select',
+            'type': 'url-test',
+            'url': 'http://www.gstatic.com/generate_204',
+            'interval': 300,
+            'proxies': [p['name'] for p in proxies]
+        })
+        proxy_groups.append({
+            'name': 'v2v-all',
+            'type': 'select',
+            'proxies': ['v2v-auto-select'] + [p['name'] for p in proxies]
+        })
+    
+    return yaml.dump({'proxies': proxies, 'proxy-groups': proxy_groups, 'rules': []}, allow_unicode=True, sort_keys=False)
 
 # --- main logic ---
 def main():
@@ -217,31 +289,29 @@ def main():
     print(f"🏆 Found {len(live_configs)} live configs with acceptable latency.")
 
     print("\n--- 3. Grouping and filling configs ---")
-    xray_initial = [cfg for cfg, _ in live_configs if urlparse(cfg).scheme.lower() in XRAY_PROTOCOLS]
-    singbox_initial = [cfg for cfg, _ in live_configs if urlparse(cfg).scheme.lower() in SINGBOX_PROTOCOLS]
+    
+    xray_configs_with_ping = [(cfg, ping) for cfg, ping in live_configs if urlparse(cfg).scheme.lower() in XRAY_PROTOCOLS]
+    singbox_configs_with_ping = [(cfg, ping) for cfg, ping in live_configs if urlparse(cfg).scheme.lower() in SINGBOX_PROTOCOLS]
 
-    xray_final = xray_initial[:MAX_FINAL_CONFIGS_PER_CORE]
-    singbox_final = singbox_initial[:MAX_FINAL_CONFIGS_PER_CORE]
-
-    # Fill Sing-box with common configs from Xray if needed
+    xray_final = xray_configs_with_ping[:MAX_FINAL_CONFIGS_PER_CORE]
+    singbox_final = singbox_configs_with_ping[:MAX_FINAL_CONFIGS_PER_CORE]
+    
     if len(singbox_final) < MIN_FINAL_CONFIGS_PER_CORE:
         print("  Sing-box list is not full. Filling with common configs from Xray.")
-        common_xray_configs = [cfg for cfg in xray_initial if urlparse(cfg).scheme.lower() in COMMON_PROTOCOLS]
+        common_xray_configs = [cfg for cfg, _ in xray_configs_with_ping if urlparse(cfg).scheme.lower() in COMMON_PROTOCOLS]
         for cfg in common_xray_configs:
             if len(singbox_final) >= MAX_FINAL_CONFIGS_PER_CORE: break
-            if cfg not in singbox_final:
-                singbox_final.append(cfg)
+            if cfg not in [c[0] for c in singbox_final]:
+                singbox_final.append( (cfg, [p for p in live_configs if p[0] == cfg][0][1]) )
     
-    # Fill Xray with common configs from Sing-box if needed
     if len(xray_final) < MIN_FINAL_CONFIGS_PER_CORE:
         print("  Xray list is not full. Filling with common configs from Sing-box.")
-        common_singbox_configs = [cfg for cfg in singbox_initial if urlparse(cfg).scheme.lower() in COMMON_PROTOCOLS]
+        common_singbox_configs = [cfg for cfg, _ in singbox_configs_with_ping if urlparse(cfg).scheme.lower() in COMMON_PROTOCOLS]
         for cfg in common_singbox_configs:
             if len(xray_final) >= MAX_FINAL_CONFIGS_PER_CORE: break
-            if cfg not in xray_final:
-                xray_final.append(cfg)
+            if cfg not in [c[0] for c in xray_final]:
+                xray_final.append( (cfg, [p for p in live_configs if p[0] == cfg][0][1]) )
 
-    # Ensure min configs are met and warn if not
     if len(xray_final) < MIN_FINAL_CONFIGS_PER_CORE:
         print(f"⚠️ Warning: Not enough live configs found to fill Xray core. Found only {len(xray_final)}.")
     if len(singbox_final) < MIN_FINAL_CONFIGS_PER_CORE:
@@ -250,22 +320,25 @@ def main():
     print(f"✅ Final Xray configs: {len(xray_final)} / {MAX_FINAL_CONFIGS_PER_CORE}")
     print(f"✅ Final Sing-box configs: {len(singbox_final)} / {MAX_FINAL_CONFIGS_PER_CORE}")
 
-    def group_by_protocol(configs):
-        grouped = defaultdict(list)
+    def group_by_protocol(configs, all_protocols):
+        grouped = {p: [] for p in all_protocols}
         for cfg, latency in configs:
             proto = urlparse(cfg).scheme.lower().replace('hysteria2', 'hy2').replace('shadowsocks', 'ss')
             grouped[proto].append((cfg, latency))
         return dict(grouped)
 
-    output_data = {"xray": group_by_protocol(zip(xray_final, [t[1] for t in live_configs if t[0] in xray_final])), "singbox": group_by_protocol(zip(singbox_final, [t[1] for t in live_configs if t[0] in singbox_final]))}
+    output_data = {
+        "xray": group_by_protocol(xray_final, XRAY_PROTOCOLS),
+        "singbox": group_by_protocol(singbox_final, SINGBOX_PROTOCOLS)
+    }
 
     print("\n--- 4. Writing output files ---")
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
     with open(XRAY_RAW_FALLBACK_FILE, 'w', encoding='utf-8') as f:
-        f.write("\n".join(xray_final))
+        f.write("\n".join([c[0] for c in xray_final]))
     with open(SINGBOX_RAW_FALLBACK_FILE, 'w', encoding='utf-8') as f:
-        f.write("\n".join(singbox_final))
+        f.write("\n".join([c[0] for c in singbox_final]))
     with open(CLASH_ALL_YAML_FILE, 'w', encoding='utf-8') as f:
         f.write(generate_clash_yaml(live_configs))
     with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f:
