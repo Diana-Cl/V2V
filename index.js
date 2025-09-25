@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration ---
-    // Use relative path for static files to ensure mirror independence
     const STATIC_CONFIG_URL = './all_live_configs.json';
     const STATIC_CACHE_VERSION_URL = './cache_version.txt';
     const PING_TIMEOUT = 5000;
+    const WORKER_URL = 'https://v2v-proxy.mbrgh87.workers.dev';
     
     // --- DOM Elements ---
     const getEl = (id) => document.getElementById(id);
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const runPingButton = `<button class="test-button" onclick="runPingTest('${coreName}')" id="ping-${coreName}-btn">تست پینگ</button>`;
+        const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">تست پینگ</button>`;
         const actionGroupTitle = (title) => `<div class="action-group-title">${title}</div>`;
 
         let contentHtml = runPingButton + `
@@ -76,22 +76,28 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="action-box">
                 <span class="action-box-label">لینک تک‌کانفیگ</span>
                 <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="createPersonalSubscription('${coreName}', 'base64', 'copy')">کپی</button>
-                    <button class="action-btn-small" onclick="createPersonalSubscription('${coreName}', 'base64', 'qr')">QR</button>
+                    <button class="action-btn-small" onclick="window.copyConfigs('${coreName}', 'selected')">کپی انتخابی</button>
+                    <button class="action-btn-small" onclick="window.copyConfigs('${coreName}', 'all')">کپی همه</button>
+                </div>
+            </div>
+            <div class="action-box">
+                <span class="action-box-label">فایل YAML کلش</span>
+                <div class="action-box-buttons">
+                    <button class="action-btn-small" onclick="window.generateClashFile('${coreName}', 'selected', 'download')">دانلود انتخابی</button>
+                    <button class="action-btn-small" onclick="window.generateClashFile('${coreName}', 'all', 'download')">دانلود همه</button>
                 </div>
             </div>
             <div class="action-box">
                 <span class="action-box-label">لینک اشتراک</span>
                 <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="createPersonalSubscription('${coreName}', 'sub', 'copy')">کپی</button>
-                    <button class="action-btn-small" onclick="createPersonalSubscription('${coreName}', 'sub', 'qr')">QR</button>
+                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'selected', 'clash', 'copy')">کلش انتخابی</button>
+                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'selected', 'singbox', 'copy')">سینگ‌باکس انتخابی</button>
                 </div>
             </div>
         `;
 
         for (const protocol in coreData) {
             const configs = coreData[protocol];
-            if (configs.length === 0) continue;
             const protocolName = protocol.charAt(0).toUpperCase() + protocol.slice(1);
             contentHtml += `
                 <div class="protocol-group">
@@ -102,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <ul class="config-list">
                         ${configs.map(cfg => `
                             <li class="config-item" data-url="${cfg[0]}" data-ping="${cfg[1] || '0'}">
-                                <input type="checkbox" class="config-checkbox" checked>
+                                <input type="checkbox" class="config-checkbox">
                                 <div class="config-details">
                                     <span class="server">${cfg[0]}</span>
                                 </div>
@@ -161,18 +167,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                // Here we still call a Worker, but only for the ping test, which is a specific task.
-                // The main config fetching is now local. This is a deliberate design choice.
-                const workerUrl = `https://v2v-proxy.mbrgh87.workers.dev/ping?host=${pingInfo.host}&port=${pingInfo.port}&tls=${pingInfo.tls}`;
-                const response = await fetch(workerUrl, { signal: AbortSignal.timeout(PING_TIMEOUT) });
+                const response = await fetch(`${WORKER_URL}/ping`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pingInfo),
+                    signal: AbortSignal.timeout(PING_TIMEOUT)
+                });
                 const result = await response.json();
                 
-                if (result.status === 'ok') {
-                    pingResultEl.textContent = `${result.ping}ms`;
-                    if (result.ping < 200) pingResultEl.style.color = 'var(--ping-good)';
-                    else if (result.ping < 500) pingResultEl.style.color = 'var(--ping-medium)';
+                if (response.ok && result.status === 'Live') {
+                    const ping = result.latency;
+                    pingResultEl.textContent = `${ping}ms`;
+                    if (ping < 200) pingResultEl.style.color = 'var(--ping-good)';
+                    else if (ping < 500) pingResultEl.style.color = 'var(--ping-medium)';
                     else pingResultEl.style.color = 'var(--ping-bad)';
-                    configElement.dataset.ping = result.ping;
+                    configElement.dataset.ping = ping;
                 } else {
                     pingResultEl.textContent = 'خطا';
                     pingResultEl.style.color = 'red';
@@ -188,51 +197,104 @@ document.addEventListener('DOMContentLoaded', () => {
         const promises = allConfigs.map(testSingleConfig);
         await Promise.allSettled(promises);
         
-        // Sort configs after ping test
         const sortedConfigs = allConfigs.sort((a, b) => parseInt(a.dataset.ping) - parseInt(b.dataset.ping));
-        const ul = wrapper.querySelector('.config-list');
-        sortedConfigs.forEach(el => ul.appendChild(el));
+        wrapper.querySelectorAll('.config-list').forEach(ul => ul.innerHTML = '');
+        const grouped = {};
+        sortedConfigs.forEach(el => {
+            const protocol = el.dataset.url.split('://')[0].replace('hysteria2', 'hy2').replace('shadowsocks', 'ss');
+            if (!grouped[protocol]) grouped[protocol] = [];
+            grouped[protocol].push(el);
+        });
+
+        for (const protocol in grouped) {
+            const ul = wrapper.querySelector(`.protocol-group:has(.protocol-header:contains('${protocol}')) .config-list`);
+            if (ul) grouped[protocol].forEach(el => ul.appendChild(el));
+        }
 
         pingButton.disabled = false;
         pingButton.innerHTML = 'تست پینگ';
         showToast('تست پینگ به پایان رسید.');
     };
 
-    window.createPersonalSubscription = async (coreName, format, method = 'copy') => {
-        const configs = Array.from(document.querySelectorAll(`#${coreName}-section .config-item`))
-                            .filter(el => el.querySelector('.config-checkbox').checked)
-                            .map(el => el.dataset.url);
+    window.copyConfigs = (coreName, type) => {
+        const configs = (type === 'all')
+            ? Array.from(document.querySelectorAll(`#${coreName}-section .config-item`)).map(el => el.dataset.url)
+            : Array.from(document.querySelectorAll(`#${coreName}-section .config-item input.config-checkbox:checked`)).map(el => el.closest('.config-item').dataset.url);
+
+        if (configs.length === 0) {
+            showToast('لطفاً حداقل یک کانفیگ را انتخاب کنید.', true);
+            return;
+        }
+        copyToClipboard(configs.join('\n'));
+    };
+
+    window.generateSubscriptionUrl = async (coreName, type, client, method) => {
+        const configs = (type === 'all')
+            ? Array.from(document.querySelectorAll(`#${coreName}-section .config-item`)).map(el => el.dataset.url)
+            : Array.from(document.querySelectorAll(`#${coreName}-section .config-item input.config-checkbox:checked`)).map(el => el.closest('.config-item').dataset.url);
 
         if (configs.length === 0) {
             showToast('لطفاً حداقل یک کانفیگ را انتخاب کنید.', true);
             return;
         }
 
-        let content = '';
-        if (format === 'base64') {
-            content = btoa(unescape(encodeURIComponent(configs.join('\n'))));
-        } else if (format === 'sub') {
-            const workerUrl = `https://v2v-proxy.mbrgh87.workers.dev/sub?core=${coreName}&uuid=${userUuid || 'none'}`;
-            try {
-                const response = await fetch(workerUrl, {
-                    method: 'POST',
-                    body: JSON.stringify(configs),
-                    headers: { 'Content-Type': 'application/json' },
-                });
-                if (!response.ok) throw new Error('خطا در ایجاد لینک اشتراک.');
-                content = await response.text();
-            } catch (err) {
-                showToast(err.message, true);
-                return;
-            }
-        }
-        
-        if (method === 'copy') {
-            copyToClipboard(content);
-        } else if (method === 'qr') {
-            openQrModal(content);
+        try {
+            const response = await fetch(`${WORKER_URL}/create-personal-sub`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ configs, uuid: userUuid }),
+            });
+            if (!response.ok) throw new Error('خطا در ایجاد لینک اشتراک.');
+            const result = await response.json();
+            userUuid = result.uuid;
+            localStorage.setItem('v2v_user_uuid', userUuid);
+
+            let url = '';
+            if (client === 'clash') url = result.clashSubscriptionUrl;
+            else if (client === 'singbox') url = result.singboxSubscriptionUrl;
+            else url = result.subscriptionUrl;
+
+            if (method === 'copy') copyToClipboard(url);
+            else if (method === 'qr') openQrModal(url);
+        } catch (err) {
+            showToast(err.message, true);
         }
     };
+    
+    window.generateClashFile = async (coreName, type) => {
+        const configs = (type === 'all')
+            ? allLiveConfigsData.xray // Assuming Clash is primary for all, this should be the full list
+            : Array.from(document.querySelectorAll(`#${coreName}-section .config-item input.config-checkbox:checked`)).map(el => el.closest('.config-item').dataset.url);
+
+        if (configs.length === 0) {
+            showToast('لطفاً حداقل یک کانفیگ را انتخاب کنید.', true);
+            return;
+        }
+
+        const url = `${WORKER_URL}/create-personal-sub`;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ configs }),
+            });
+            if (!response.ok) throw new Error('خطا در ایجاد فایل.');
+            
+            const result = await response.json();
+            const downloadUrl = result.clashSubscriptionUrl;
+            
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = 'v2v-clash.yaml';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast('فایل با موفقیت دانلود شد.');
+        } catch (err) {
+            showToast(err.message, true);
+        }
+    };
+
 
     fetchAndRender();
     qrModal.addEventListener('click', () => (qrModal.style.display = 'none'));
