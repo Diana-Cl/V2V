@@ -9,8 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
         'https://winter-hill-0307.mbrgh87.workers.dev',
     ];
     
-    const FALLBACK_STATIC_URLS = ['/output/all_live_configs.json'];
-
+    // Use relative path for static files to ensure mirror independence
+    const STATIC_CONFIG_URL = './output/all_live_configs.json';
+    const STATIC_CACHE_VERSION_URL = './output/cache_version.txt';
     const PING_TIMEOUT = 5000;
     
     // --- DOM Elements ---
@@ -45,47 +46,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Core Logic ---
-    const fetchWithFailover = async (urls) => {
-        for (const url of urls) {
-            try {
-                const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
-                if (!response.ok) throw new Error(`Status ${response.status}`);
-                console.log(`Successfully fetched from: ${url}`);
-                return response;
-            } catch (error) {
-                console.warn(`Failed to fetch from ${url}:`, error.message);
-            }
-        }
-        throw new Error('تمام منابع دریافت کانفیگ از دسترس خارج هستند.');
-    };
-    
     let allLiveConfigsData = null;
 
     const fetchAndRender = async () => {
-        statusBar.textContent = 'در حال دریافت کانفیگ‌ها...';
+        statusBar.textContent = 'درحال دریافت کانفیگ‌ها...';
         try {
-            let configResponse = null;
-            let finalUrl = '';
-
-            // First, try to fetch from workers
-            try {
-                const workerUrls = WORKER_URLS.map(u => `${u}/output/all_live_configs.json`);
-                configResponse = await fetchWithFailover(workerUrls);
-                finalUrl = configResponse.url;
-            } catch (error) {
-                console.warn("Workers are unreachable. Falling back to static URLs.");
-                // If workers fail, fall back to the static URLs
-                configResponse = await fetchWithFailover(FALLBACK_STATIC_URLS);
-                finalUrl = configResponse.url;
-            }
-            
+            const configResponse = await fetch(STATIC_CONFIG_URL, { signal: AbortSignal.timeout(8000) });
+            if (!configResponse.ok) throw new Error(`Status ${configResponse.status}`);
             allLiveConfigsData = await configResponse.json();
             
             let cacheVersion = 'نامشخص';
-            // Get cache version from the same source that was successful
             try {
-                const versionUrl = finalUrl.replace('all_live_configs.json', 'cache_version.txt');
-                const versionResponse = await fetch(versionUrl, { signal: AbortSignal.timeout(3000) });
+                const versionResponse = await fetch(STATIC_CACHE_VERSION_URL, { signal: AbortSignal.timeout(3000) });
                 if (versionResponse.ok) cacheVersion = await versionResponse.text();
             } catch (error) {}
 
