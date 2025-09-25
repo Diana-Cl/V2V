@@ -1,5 +1,3 @@
-# scraper.py
-
 import json
 import base64
 import time
@@ -15,7 +13,7 @@ import yaml
 
 # --- configuration ---
 SOURCES_FILE = 'sources.json'
-OUTPUT_DIR = 'output'
+OUTPUT_DIR = '.'  # Changed to root directory
 OUTPUT_JSON_FILE = 'all_live_configs.json'
 CACHE_VERSION_FILE = 'cache_version.txt'
 XRAY_RAW_FALLBACK_FILE = 'xray_raw_configs.txt'
@@ -37,7 +35,7 @@ SINGBOX_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hy2', 'hy
 COMMON_PROTOCOLS = XRAY_PROTOCOLS.intersection(SINGBOX_PROTOCOLS)
 VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_PROTOCOLS)
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# os.makedirs(OUTPUT_DIR, exist_ok=True) # This line is no longer needed
 
 # --- helpers ---
 def fetch_url_content(url: str, headers: dict = None) -> str | None:
@@ -262,18 +260,17 @@ def main():
     output_data = {"xray": group_by_protocol(zip(xray_final, [t[1] for t in live_configs if t[0] in xray_final])), "singbox": group_by_protocol(zip(singbox_final, [t[1] for t in live_configs if t[0] in singbox_final]))}
 
     print("\n--- 4. Writing output files ---")
-    with open(os.path.join(OUTPUT_DIR, OUTPUT_JSON_FILE), 'w', encoding='utf-8') as f:
+    with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
-    with open(os.path.join(OUTPUT_DIR, XRAY_RAW_FALLBACK_FILE), 'w', encoding='utf-8') as f:
+    with open(XRAY_RAW_FALLBACK_FILE, 'w', encoding='utf-8') as f:
         f.write("\n".join(xray_final))
-    with open(os.path.join(OUTPUT_DIR, SINGBOX_RAW_FALLBACK_FILE), 'w', encoding='utf-8') as f:
+    with open(SINGBOX_RAW_FALLBACK_FILE, 'w', encoding='utf-8') as f:
         f.write("\n".join(singbox_final))
-    with open(os.path.join(OUTPUT_DIR, CLASH_ALL_YAML_FILE), 'w', encoding='utf-8') as f:
+    with open(CLASH_ALL_YAML_FILE, 'w', encoding='utf-8') as f:
         f.write(generate_clash_yaml(live_configs))
-    with open(os.path.join(OUTPUT_DIR, CACHE_VERSION_FILE), 'w', encoding='utf-8') as f:
+    with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f:
         f.write(str(int(time.time())))
     print("✅ All output files written successfully.")
 
 if __name__ == "__main__":
     main()
-
