@@ -36,7 +36,7 @@
         .action-group-title { color: #ccc; font-size: 0.9em; font-weight: bold; text-align: right; margin: 25px 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid var(--border-color); }
         .action-box { display: flex; justify-content: space-between; align-items: center; background-color: var(--action-gray); padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; }
         .action-box-label { font-size: 0.9em; font-weight: 500; }
-        .action-box-buttons { display: flex; gap: 8px; }
+        .action-box-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         .action-btn-small { background-color: #444; border: 1px solid #555; color: var(--text-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8em; transition: background-color 0.2s; white-space: nowrap;}
         .action-btn-small:hover { background-color: #555; }
         .protocol-group { border-top: 1px solid var(--border-color); }
@@ -44,7 +44,7 @@
         .toggle-icon { transition: transform 0.3s; }
         .protocol-group.open .toggle-icon { transform: rotate(180deg); }
         .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; transition: max-height 0.4s ease-in-out; overflow: hidden; }
-        .protocol-group.open .config-list { max-height: 2000px; } /* Adjust as needed */
+        .protocol-group.open .config-list { max-height: 2000px; }
         .config-item { padding: 10px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
         .config-checkbox { flex-shrink: 0; transform: scale(1.2); accent-color: var(--ping-good); }
         .config-details { flex-grow: 1; text-align: right; overflow: hidden; }
@@ -82,9 +82,9 @@
             </section>
         </div>
         <footer class="bottom-links">
-             <a href="https://v2v-vercel.vercel.app/" target="_blank" rel="noopener noreferrer">Vercel</a>
-             <a href="https://smbcryp.github.io/V2V/" target="_blank" rel="noopener noreferrer">GitHub Pages</a>
-             <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/" target="_blank" rel="noopener noreferrer">ArvanCloud</a>
+             <a href="https://v2v-vercel.vercel.app/" target="_blank" rel="noopener noreferrer">ورسل</a>
+             <a href="https://smbcryp.github.io/V2V/" target="_blank" rel="noopener noreferrer">گیتهاب</a>
+             <a href="https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/" target="_blank" rel="noopener noreferrer">ابرآروان</a>
         </footer>
     </div>
     <div id="qr-modal"><div class="qr-content" id="qr-code-container"></div></div>
