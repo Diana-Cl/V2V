@@ -39,40 +39,177 @@ function yamlResponse(text, status = 200, filename = null, corsHeaders) {
     return new Response(text, { status, headers });
 }
 
-function generateClashYaml(configs, uuid) {
-    // This function needs to be completed with your actual logic
-    // Placeholder implementation to show the structure
-    const proxies = configs.map(url => ({
-        name: `v2v-${url.split('://')[0]}-${Math.random().toString(36).substring(2, 7)}`,
-        type: url.split('://')[0],
-        server: "example.com",
-        port: 443,
-        uuid: "your-uuid-here"
-    }));
+function parseConfigUrl(url) {
+    try {
+        const urlObj = new URL(url);
+        const protocol = urlObj.protocol.replace(':', '');
+        const params = new URLSearchParams(urlObj.search);
+        let config = {
+            protocol,
+            server: urlObj.hostname,
+            port: parseInt(urlObj.port),
+            name: decodeURIComponent(urlObj.hash.substring(1) || urlObj.hostname)
+        };
+        
+        if (protocol === 'vmess') {
+            const decodedData = JSON.parse(atob(urlObj.hostname + urlObj.pathname.replace(/^\/+/, '')));
+            config.server = decodedData.add;
+            config.port = parseInt(decodedData.port);
+            config.uuid = decodedData.id;
+            config.alterId = decodedData.aid;
+            config.cipher = 'auto';
+            config.network = decodedData.net;
+            if (decodedData.net === 'ws') {
+                config.wsPath = decodedData.path;
+                config.wsHeaders = { Host: decodedData.host || decodedData.add };
+            }
+            if (decodedData.tls === 'tls') {
+                config.tls = true;
+                config.sni = decodedData.sni || decodedData.host;
+            }
+        } else if (protocol === 'vless') {
+            config.uuid = urlObj.username;
+            config.encryption = params.get('encryption') || 'none';
+            config.flow = params.get('flow');
+            config.network = params.get('type') || 'tcp';
+            if (config.network === 'ws') {
+                config.wsPath = params.get('path');
+                config.wsHeaders = { Host: params.get('host') || urlObj.hostname };
+            }
+            if (params.get('security') === 'tls') {
+                config.tls = true;
+                config.sni = params.get('sni') || urlObj.hostname;
+            }
+        } else if (protocol === 'trojan') {
+            config.password = urlObj.username;
+            config.tls = true;
+            config.sni = params.get('sni') || urlObj.hostname;
+        } else if (protocol === 'ss' || protocol === 'shadowsocks') {
+            const [method, password] = atob(urlObj.username).split(':');
+            config.protocol = 'ss';
+            config.cipher = method;
+            config.password = password;
+        } else if (protocol === 'hy2' || protocol === 'hysteria2') {
+            config.protocol = 'hysteria2';
+            config.password = urlObj.username;
+            config.tls = true;
+            config.sni = params.get('sni') || urlObj.hostname;
+        } else if (protocol === 'tuic') {
+            config.protocol = 'tuic';
+            config.password = urlObj.username;
+            config.tls = true;
+            config.sni = params.get('sni') || urlObj.hostname;
+        }
+        return config;
+    } catch (e) {
+        console.error("Error parsing config URL:", e);
+        return null;
+    }
+}
+
+function generateClashYaml(configs) {
+    const proxies = [];
+    for (const url of configs) {
+        const config = parseConfigUrl(url);
+        if (!config) continue;
+        
+        let proxy = {
+            name: config.name,
+            server: config.server,
+            port: config.port,
+        };
+        
+        if (config.protocol === 'vmess') {
+            Object.assign(proxy, {
+                type: 'vmess', uuid: config.uuid, alterId: config.alterId, cipher: config.cipher
+            });
+            if (config.network === 'ws') Object.assign(proxy, { network: 'ws', 'ws-path': config.wsPath, 'ws-headers': config.wsHeaders });
+            if (config.tls) Object.assign(proxy, { tls: true, sni: config.sni, 'skip-cert-verify': true });
+        } else if (config.protocol === 'vless') {
+            Object.assign(proxy, {
+                type: 'vless', uuid: config.uuid, encryption: config.encryption || 'none', flow: config.flow || ''
+            });
+            if (config.network === 'ws') Object.assign(proxy, { network: 'ws', 'ws-path': config.wsPath, 'ws-headers': config.wsHeaders });
+            if (config.tls) Object.assign(proxy, { tls: true, sni: config.sni, 'skip-cert-verify': true });
+        } else if (config.protocol === 'trojan') {
+            Object.assign(proxy, {
+                type: 'trojan', password: config.password, tls: true, sni: config.sni, 'skip-cert-verify': true
+            });
+        } else if (config.protocol === 'ss') {
+            Object.assign(proxy, {
+                type: 'ss', cipher: config.cipher, password: config.password
+            });
+        }
+        
+        proxies.push(proxy);
+    }
+    
+    if (proxies.length === 0) return null;
+    
+    const proxyNames = proxies.map(p => p.name);
+    const proxyGroups = [{
+        name: 'v2v-auto-select',
+        type: 'url-test',
+        url: 'http://www.gstatic.com/generate_204',
+        interval: 300,
+        proxies: proxyNames
+    }];
+    
     const payload = {
-        proxies: proxies,
-        "proxy-groups": [{
-            name: "v2v-auto",
-            type: "url-test",
-            url: "http://www.gstatic.com/generate_204",
-            interval: 300,
-            proxies: proxies.map(p => p.name)
-        }],
-        rules: ["MATCH,v2v-auto"]
+        proxies,
+        'proxy-groups': proxyGroups,
+        rules: ["MATCH,v2v-auto-select"]
     };
     return YAML.dump(payload);
 }
 
-function generateSingboxJson(configs, uuid) {
-    // This function needs to be completed with your actual logic
-    // Placeholder implementation
-    const outbounds = configs.map(url => ({
-        tag: `v2v-${url.split('://')[0]}-${Math.random().toString(36).substring(2, 7)}`,
-        type: url.split('://')[0],
-        server: "example.com",
-        port: 443
-    }));
-    return JSON.stringify({ outbounds: outbounds, router: { rules: [] } }, null, 2);
+function generateSingboxJson(configs) {
+    const outbounds = [];
+    for (const url of configs) {
+        const config = parseConfigUrl(url);
+        if (!config) continue;
+        
+        let outbound = {
+            tag: config.name,
+            type: config.protocol,
+            server: config.server,
+            server_port: config.port
+        };
+        
+        if (config.protocol === 'vmess') {
+            Object.assign(outbound, {
+                uuid: config.uuid, alterId: config.alterId, security: config.cipher, network: config.network
+            });
+        } else if (config.protocol === 'vless') {
+            Object.assign(outbound, {
+                uuid: config.uuid, flow: config.flow, network: config.network
+            });
+        } else if (config.protocol === 'trojan') {
+            Object.assign(outbound, { password: config.password });
+        } else if (config.protocol === 'ss') {
+            Object.assign(outbound, { method: config.cipher, password: config.password });
+        } else if (config.protocol === 'hysteria2') {
+            Object.assign(outbound, { password: config.password });
+        } else if (config.protocol === 'tuic') {
+            Object.assign(outbound, { password: config.password });
+        }
+        
+        outbounds.push(outbound);
+    }
+    
+    if (outbounds.length === 0) return null;
+    
+    const payload = {
+        log: { disabled: true },
+        dns: {
+            "servers": [{"address": "8.8.8.8", "strategy": "prefer_ipv4"}],
+            "rules": []
+        },
+        inbounds: [],
+        outbounds: outbounds,
+        route: { rules: [] }
+    };
+    return JSON.stringify(payload, null, 2);
 }
 
 export default {
@@ -117,6 +254,7 @@ export default {
                 const storedData = await env.v2v_kv.get(`sub:${uuid}`, { type: 'json' });
                 if (!storedData) return textResponse('Subscription not found or expired.', 404, null, corsHeaders);
                 await env.v2v_kv.put(`sub:${uuid}`, JSON.stringify(storedData), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
+                
                 if (format === 'raw') return textResponse(btoa(storedData.join('\n')), 200, `v2v-${uuid}.txt`, corsHeaders);
                 if (format === 'clash') {
                     const content = generateClashYaml(storedData, uuid);
@@ -134,4 +272,3 @@ export default {
         }
     },
 };
-
