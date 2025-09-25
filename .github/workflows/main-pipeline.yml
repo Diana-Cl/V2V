@@ -1,5 +1,3 @@
-# .github/workflows/main-pipeline.yml
-
 name: V2V - Full CI/CD Pipeline
 
 on:
@@ -59,7 +57,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(data): Update configs and frontend files for static mirrors"
-          file_pattern: "output/ index.html index.js manifest.json logo.png"
+          file_pattern: "*.json *.txt *.yaml index.html index.js manifest.json logo.png"
 
   deploy_services:
     needs: build_and_commit
@@ -77,10 +75,6 @@ jobs:
       - run: |
           npm install
           npm install -g wrangler@3
-      
-      - name: Create vercel.json for static site deployment
-        run: |
-          echo '{"trailingSlash": false, "rewrites": [{"source": "/output/(.*)", "destination": "/output/$1"}]}' > vercel.json
       
       - name: Deploy to Vercel
         timeout-minutes: 5
