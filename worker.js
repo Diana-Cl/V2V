@@ -39,16 +39,40 @@ function yamlResponse(text, status = 200, filename = null, corsHeaders) {
     return new Response(text, { status, headers });
 }
 
-function generateClashYaml(configs) {
-    // Implementation from your provided code
-    // ... (This function remains as you provided it, assuming it's correct for your needs)
-    return "proxies:\n- name: Example\n  type: vmess\n  server: example.com\n  port: 443\n  uuid: ..."; // Placeholder
+function generateClashYaml(configs, uuid) {
+    // This function needs to be completed with your actual logic
+    // Placeholder implementation to show the structure
+    const proxies = configs.map(url => ({
+        name: `v2v-${url.split('://')[0]}-${Math.random().toString(36).substring(2, 7)}`,
+        type: url.split('://')[0],
+        server: "example.com",
+        port: 443,
+        uuid: "your-uuid-here"
+    }));
+    const payload = {
+        proxies: proxies,
+        "proxy-groups": [{
+            name: "v2v-auto",
+            type: "url-test",
+            url: "http://www.gstatic.com/generate_204",
+            interval: 300,
+            proxies: proxies.map(p => p.name)
+        }],
+        rules: ["MATCH,v2v-auto"]
+    };
+    return YAML.dump(payload);
 }
 
-function generateSingboxJson(configs) {
-    // Implementation from your provided code
-    // ... (This function remains as you provided it, assuming it's correct for your needs)
-    return JSON.stringify({ outbounds: [{ tag: "example", type: "vmess", server: "example.com" }] }, null, 2); // Placeholder
+function generateSingboxJson(configs, uuid) {
+    // This function needs to be completed with your actual logic
+    // Placeholder implementation
+    const outbounds = configs.map(url => ({
+        tag: `v2v-${url.split('://')[0]}-${Math.random().toString(36).substring(2, 7)}`,
+        type: url.split('://')[0],
+        server: "example.com",
+        port: 443
+    }));
+    return JSON.stringify({ outbounds: outbounds, router: { rules: [] } }, null, 2);
 }
 
 export default {
@@ -95,11 +119,11 @@ export default {
                 await env.v2v_kv.put(`sub:${uuid}`, JSON.stringify(storedData), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
                 if (format === 'raw') return textResponse(btoa(storedData.join('\n')), 200, `v2v-${uuid}.txt`, corsHeaders);
                 if (format === 'clash') {
-                    const content = generateClashYaml(storedData);
+                    const content = generateClashYaml(storedData, uuid);
                     return content ? yamlResponse(content, 200, `v2v-clash-${uuid}.yaml`, corsHeaders) : textResponse('Failed to generate Clash config.', 500, null, corsHeaders);
                 }
                 if (format === 'singbox') {
-                    const content = generateSingboxJson(storedData);
+                    const content = generateSingboxJson(storedData, uuid);
                     return content ? jsonResponse(JSON.parse(content), 200, corsHeaders) : textResponse('Failed to generate Sing-box config.', 500, null, corsHeaders);
                 }
             }
@@ -110,3 +134,4 @@ export default {
         }
     },
 };
+
