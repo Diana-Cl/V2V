@@ -1,3 +1,4 @@
+# scraper.py
 import json
 import base64
 import time
@@ -180,10 +181,16 @@ def parse_config_to_clash_proxy(url, name):
             'port': parsed_url.port,
         }
         
-        # Vmess
+        # Vmess (تقویت شده)
         if protocol == 'vmess':
             proxy['type'] = 'vmess'
-            decoded_data = json.loads(base64.b64decode(parsed_url.netloc).decode('utf-8'))
+            # بلوک try...except برای جلوگیری از رد شدن کامل فرآیند به خاطر یک کانفیگ خراب
+            try:
+                decoded_data = json.loads(base64.b64decode(parsed_url.netloc).decode('utf-8'))
+            except Exception:
+                # print(f"⚠️ Error parsing Vmess data for {url}") # خط حذف لاگ
+                return None
+                
             proxy['uuid'] = decoded_data.get('id', '')
             proxy['alterId'] = decoded_data.get('aid', 0)
             proxy['cipher'] = 'auto'
@@ -195,19 +202,25 @@ def parse_config_to_clash_proxy(url, name):
                 proxy['tls'] = True
                 proxy['sni'] = decoded_data.get('host', '')
 
-        # Vless
+        # Vless (پارامترهای حیاتی اضافه شد)
         elif protocol == 'vless':
             proxy['type'] = 'vless'
             proxy['uuid'] = parsed_url.username
             query_params = parse_qs(parsed_url.query)
-            if query_params.get('security'):
-                proxy['tls'] = query_params['security'][0] == 'tls'
+            
+            # پارامترهای حیاتی
+            security = query_params.get('security', [None])[0]
+            if security:
+                proxy['tls'] = security == 'tls'
             if query_params.get('flow'):
                 proxy['flow'] = query_params['flow'][0]
             if query_params.get('encryption'):
                 proxy['encryption'] = query_params['encryption'][0]
             if query_params.get('sni'):
                 proxy['sni'] = query_params['sni'][0]
+            if query_params.get('alpn'):
+                proxy['alpn'] = query_params['alpn'][0].split(',') # فرض بر اینکه کلش لیست می‌گیرد
+
             if query_params.get('type') and query_params['type'][0] == 'ws':
                 proxy['network'] = 'ws'
                 if query_params.get('path'):
@@ -215,14 +228,18 @@ def parse_config_to_clash_proxy(url, name):
                 if query_params.get('host'):
                     proxy['ws-headers'] = {'Host': query_params['host'][0]}
         
-        # Trojan
+        # Trojan (پارامترهای حیاتی اضافه شد)
         elif protocol == 'trojan':
             proxy['type'] = 'trojan'
             proxy['password'] = parsed_url.username
             proxy['skip-cert-verify'] = True
             query_params = parse_qs(parsed_url.query)
+            
+            # پارامترهای حیاتی
             if query_params.get('sni'):
                 proxy['sni'] = query_params['sni'][0]
+            if query_params.get('alpn'):
+                proxy['alpn'] = query_params['alpn'][0].split(',')
 
         # Shadowsocks
         elif protocol in ('ss', 'shadowsocks'):
@@ -232,9 +249,15 @@ def parse_config_to_clash_proxy(url, name):
             proxy['cipher'] = method
             proxy['password'] = password
             
+        # Hysteria2 / Tuic / ... (برای Clash فعلاً پشتیبانی ساده)
+        elif protocol in ('hy2', 'hysteria2', 'tuic'):
+            # این پروتکل‌ها اغلب در هسته‌های کلش خاص پشتیبانی می‌شوند، اما برای خروجی استاندارد YAML، معمولاً به SS/VLESS برگردانده می‌شوند
+            # برای رعایت تمیزکاری، فقط کانفیگ‌های کامل را پارس می‌کنیم.
+            pass
+            
         return proxy
     except Exception as e:
-        print(f"⚠️ Error parsing config {url}: {e}")
+        # print(f"⚠️ Error parsing config {url}: {e}") # خط حذف لاگ
         return None
 
 def generate_clash_yaml(configs):
@@ -268,7 +291,8 @@ def generate_clash_yaml(configs):
 def main():
     print("--- 1. Fetching configs ---")
     all_configs = fetch_from_sources(json.load(open(SOURCES_FILE, 'r')).get("static", []))
-    all_configs.update(fetch_from_github(GITHUB_PAT, GITHUB_SEARCH_LIMIT))
+    # توجه: استفاده از GITHUB_SEARCH_LIMIT به عنوان حداقل ۵۰ (طبق اطلاعات ذخیره‌شده شما)
+    all_configs.update(fetch_from_github(GITHUB_PAT, max(50, GITHUB_SEARCH_LIMIT)))
     if not all_configs: 
         print("FATAL: No configs found.")
         return
@@ -324,8 +348,20 @@ def main():
         grouped = {p: [] for p in all_protocols}
         for cfg, latency in configs:
             proto = urlparse(cfg).scheme.lower().replace('hysteria2', 'hy2').replace('shadowsocks', 'ss')
-            grouped[proto].append((cfg, latency))
-        return dict(grouped)
+            if proto == 'vmess': # Vmess can have multiple aliases, stick to the main one
+                 grouped['vmess'].append((cfg, latency))
+            elif proto == 'vless':
+                 grouped['vless'].append((cfg, latency))
+            elif proto == 'trojan':
+                 grouped['trojan'].append((cfg, latency))
+            elif proto in ('ss', 'shadowsocks'):
+                 grouped['ss'].append((cfg, latency))
+            elif proto == 'hy2' or proto == 'hysteria2':
+                 grouped['hy2'].append((cfg, latency))
+            elif proto == 'tuic':
+                 grouped['tuic'].append((cfg, latency))
+        # حذف پروتکل‌های خالی (برای تمیزکاری خروجی)
+        return {k: v for k, v in grouped.items() if v}
 
     output_data = {
         "xray": group_by_protocol(xray_final, XRAY_PROTOCOLS),
