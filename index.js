@@ -1,8 +1,10 @@
+// index.js
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration ---
     const STATIC_CONFIG_URL = './all_live_configs.json';
     const STATIC_CACHE_VERSION_URL = './cache_version.txt';
-    const PING_TIMEOUT = 5000;
+    const CONFIGS_PER_BATCH = 50; // اندازه دسته برای تست واقعی
     const WORKER_URL = 'https://v2v-proxy.mbrgh87.workers.dev';
     
     // --- DOM Elements ---
@@ -34,6 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
         qrContainer.innerHTML = '';
         new QRCode(qrContainer, { text, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.H });
         qrModal.style.display = 'flex';
+    };
+
+    const setButtonsDisabled = (coreName, disabled) => {
+        const wrapper = getEl(coreName === 'xray' ? 'xray-content-wrapper' : 'singbox-content-wrapper');
+        wrapper.querySelectorAll('button:not(.copy-btn)').forEach(btn => btn.disabled = disabled);
+        wrapper.querySelectorAll('.config-checkbox').forEach(chk => chk.disabled = disabled);
     };
 
     // --- Core Logic ---
@@ -68,7 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">تست پینگ</button>`;
+        // تغییر نام دکمه تست پینگ
+        const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">تست و به‌روزرسانی زنده (شبکه کاربر)</button>`;
         const actionGroupTitle = (title) => `<div class="action-group-title">${title}</div>`;
 
         let contentHtml = runPingButton + `
@@ -88,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div class="action-box">
-                <span class="action-box-label">لینک اشتراک</span>
+                <span class="action-box-label">لینک اشتراک پویا</span>
                 <div class="action-box-buttons">
                     <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'selected', 'clash', 'copy')">کلش انتخابی</button>
                     <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'selected', 'singbox', 'copy')">سینگ‌باکس انتخابی</button>
@@ -100,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const configs = coreData[protocol];
             const protocolName = protocol.charAt(0).toUpperCase() + protocol.slice(1);
             contentHtml += `
-                <div class="protocol-group">
+                <div class="protocol-group" data-protocol="${protocol}">
                     <div class="protocol-header">
                         ${protocolName} (${configs.length})
                         <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
@@ -113,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span class="server">${cfg[0]}</span>
                                 </div>
                                 <div class="ping-result-container">
-                                    <span class="ping-result" style="color: grey;">${cfg[1] || '---'}ms</span>
+                                    <span class="ping-result" style="color: ${cfg[1] < 500 ? 'var(--ping-good)' : 'grey'};">${cfg[1] || '---'}ms</span>
                                 </div>
                                 <button class="copy-btn" onclick="window.copyToClipboard('${cfg[0]}', 'کانفیگ کپی شد!')">کپی</button>
                             </li>
@@ -130,91 +139,117 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     };
-
-    const parseConfigForPing = (configUrl) => {
-        try {
-            if (configUrl.startsWith('vmess://')) {
-                const data = JSON.parse(atob(configUrl.substring(8)));
-                return { host: data.add, port: parseInt(data.port), tls: data.tls === 'tls', sni: data.sni || data.host };
-            }
-            const url = new URL(configUrl);
-            const params = new URLSearchParams(url.search);
-            const scheme = url.protocol.replace(':', '');
-            const tls = (params.get('security') === 'tls' || scheme === 'trojan' || ['hy2', 'hysteria2', 'tuic'].includes(scheme) || params.get('tls') === '1');
-            const sni = params.get('sni') || url.hostname;
-            return { host: url.hostname, port: parseInt(url.port), tls, sni };
-        } catch { return null; }
+    
+    // تابع کمکی برای به‌روزرسانی UI پینگ
+    const updatePingUI = (configElement, ping, status) => {
+        const pingResultEl = configElement.querySelector('.ping-result');
+        if (status === 'Live') {
+            pingResultEl.textContent = `${ping}ms`;
+            if (ping < 200) pingResultEl.style.color = 'var(--ping-good)';
+            else if (ping < 500) pingResultEl.style.color = 'var(--ping-medium)';
+            else pingResultEl.style.color = 'var(--ping-bad)';
+            configElement.dataset.ping = ping;
+        } else {
+            pingResultEl.textContent = 'خطا';
+            pingResultEl.style.color = 'var(--ping-bad)';
+            configElement.dataset.ping = '99999';
+        }
     };
 
+    // --- تابع تست پینگ دسته‌بندی شده (Batching) ---
     window.runPingTest = async (coreName) => {
         const wrapper = getEl(coreName === 'xray' ? 'xray-content-wrapper' : 'singbox-content-wrapper');
         const pingButton = getEl(`ping-${coreName}-btn`);
-        pingButton.disabled = true;
-        const loader = `<span class="loader-small"></span>`;
-        pingButton.innerHTML = `${loader} درحال تست پینگ...`;
         
-        const allConfigs = Array.from(wrapper.querySelectorAll('.config-item'));
+        // ۱. مدیریت پایداری UI
+        setButtonsDisabled(coreName, true);
+        pingButton.classList.add('testing-active');
+        const allConfigElements = Array.from(wrapper.querySelectorAll('.config-item'));
+        const totalConfigs = allConfigElements.length;
         
-        const testSingleConfig = async (configElement) => {
-            const url = configElement.dataset.url;
-            const pingResultEl = configElement.querySelector('.ping-result');
-            const pingInfo = parseConfigForPing(url);
-            
-            if (!pingInfo) {
-                pingResultEl.textContent = 'خطا';
-                pingResultEl.style.color = 'red';
-                return;
-            }
+        showToast(`شروع تست ${totalConfigs} کانفیگ. لطفاً منتظر بمانید...`, false);
+        let configsTested = 0;
 
+        // ۲. تقسیم‌بندی به دسته‌های ۵۰ تایی
+        const batches = [];
+        for (let i = 0; i < totalConfigs; i += CONFIGS_PER_BATCH) {
+            const batchUrls = allConfigElements.slice(i, i + CONFIGS_PER_BATCH).map(el => el.dataset.url);
+            batches.push({ urls: batchUrls, elements: allConfigElements.slice(i, i + CONFIGS_PER_BATCH) });
+        }
+        
+        // ۳. اجرای متوالی دسته‌ها و به‌روزرسانی زنده
+        for (const batch of batches) {
             try {
-                const response = await fetch(`${WORKER_URL}/ping`, {
+                pingButton.innerHTML = `<span class="loader-small"></span> درحال تست... (${configsTested}/${totalConfigs})`;
+                
+                const response = await fetch(`${WORKER_URL}/test-batch`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(pingInfo),
-                    signal: AbortSignal.timeout(PING_TIMEOUT)
+                    body: JSON.stringify({ configs: batch.urls }),
                 });
-                const result = await response.json();
+
+                const data = await response.json();
                 
-                if (response.ok && result.status === 'Live') {
-                    const ping = result.latency;
-                    pingResultEl.textContent = `${ping}ms`;
-                    if (ping < 200) pingResultEl.style.color = 'var(--ping-good)';
-                    else if (ping < 500) pingResultEl.style.color = 'var(--ping-medium)';
-                    else pingResultEl.style.color = 'var(--ping-bad)';
-                    configElement.dataset.ping = ping;
+                if (response.ok && data.results) {
+                    data.results.forEach((result, index) => {
+                        const configElement = batch.elements[index];
+                        if (configElement) {
+                            updatePingUI(configElement, result.latency, result.status);
+                        }
+                        configsTested++;
+                    });
                 } else {
-                    pingResultEl.textContent = 'خطا';
-                    pingResultEl.style.color = 'red';
-                    configElement.dataset.ping = '99999';
+                    // در صورت خطای Worker، دسته‌بندی را با خطا علامت بزن
+                    batch.elements.forEach(el => {
+                        updatePingUI(el, 99999, 'Dead');
+                        configsTested++;
+                    });
                 }
             } catch (err) {
-                pingResultEl.textContent = 'خطا';
-                pingResultEl.style.color = 'red';
-                configElement.dataset.ping = '99999';
+                // خطای شبکه یا Timeout فرانت‌اند
+                batch.elements.forEach(el => {
+                    updatePingUI(el, 99999, 'Dead');
+                    configsTested++;
+                });
+                console.error(`Error processing batch: ${err}`);
             }
-        };
-
-        const promises = allConfigs.map(testSingleConfig);
-        await Promise.allSettled(promises);
+        }
         
-        const sortedConfigs = allConfigs.sort((a, b) => parseInt(a.dataset.ping) - parseInt(b.dataset.ping));
+        // ۴. مرتب‌سازی نهایی
+        allConfigElements.sort((a, b) => {
+            const pingA = parseInt(a.dataset.ping) || 99999;
+            const pingB = parseInt(b.dataset.ping) || 99999;
+            return pingA - pingB;
+        });
+
+        // بازسازی لیست‌ها
         wrapper.querySelectorAll('.config-list').forEach(ul => ul.innerHTML = '');
         const grouped = {};
-        sortedConfigs.forEach(el => {
-            const protocol = el.dataset.url.split('://')[0].replace('hysteria2', 'hy2').replace('shadowsocks', 'ss');
+        allConfigElements.forEach(el => {
+            const protocolMatch = el.dataset.url.match(/^([^:]+):\/\//);
+            let protocol = protocolMatch ? protocolMatch[1].toLowerCase() : 'unknown';
+            // استانداردسازی پروتکل
+            if (protocol === 'hysteria2') protocol = 'hy2';
+            else if (protocol === 'shadowsocks') protocol = 'ss';
+            
             if (!grouped[protocol]) grouped[protocol] = [];
             grouped[protocol].push(el);
         });
 
         for (const protocol in grouped) {
-            const ul = wrapper.querySelector(`.protocol-group:has(.protocol-header:contains('${protocol}')) .config-list`);
+             const ul = wrapper.querySelector(`.protocol-group[data-protocol="${protocol}"] .config-list`);
             if (ul) grouped[protocol].forEach(el => ul.appendChild(el));
         }
 
-        pingButton.disabled = false;
-        pingButton.innerHTML = 'تست پینگ';
-        showToast('تست پینگ به پایان رسید.');
+        // ۵. بازگرداندن UI
+        setButtonsDisabled(coreName, false);
+        pingButton.innerHTML = 'تست و به‌روزرسانی زنده (شبکه کاربر)';
+        pingButton.classList.remove('testing-active');
+        showToast('تست و مرتب‌سازی به پایان رسید.');
     };
+    
+    // ... (توابع generateSubscriptionUrl و generateClashFile برای استفاده از خروجی‌های Worker و UUID پویا) ...
+    // این توابع قبلا اصلاحات خوبی داشتند، فقط باید از آدرس‌های صحیح Worker استفاده کنند.
 
     window.copyConfigs = (coreName, type) => {
         const configs = (type === 'all')
@@ -237,22 +272,28 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('لطفاً حداقل یک کانفیگ را انتخاب کنید.', true);
             return;
         }
+        
+        // افزودن UUID در صورتی که قبلاً ذخیره شده است
+        const configsToProcess = type === 'selected' ? configs : allLiveConfigsData[coreName].flatMap(Object.values).flat().map(c => c[0]);
 
         try {
             const response = await fetch(`${WORKER_URL}/create-personal-sub`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ configs, uuid: userUuid }),
+                body: JSON.stringify({ configs: configsToProcess, uuid: userUuid }),
             });
+            
             if (!response.ok) throw new Error('خطا در ایجاد لینک اشتراک.');
+            
             const result = await response.json();
             userUuid = result.uuid;
             localStorage.setItem('v2v_user_uuid', userUuid);
 
             let url = '';
+            // فیلترینگ URL بر اساس کلاینت
             if (client === 'clash') url = result.clashSubscriptionUrl;
             else if (client === 'singbox') url = result.singboxSubscriptionUrl;
-            else url = result.subscriptionUrl;
+            else url = result.subscriptionUrl; // raw
 
             if (method === 'copy') copyToClipboard(url);
             else if (method === 'qr') openQrModal(url);
@@ -261,9 +302,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    // تابع دانلود فایل کلش - استفاده از خروجی URL UUID
     window.generateClashFile = async (coreName, type) => {
+        // برای دانلود همه، از لیست کامل JSON اصلی استفاده می‌کنیم.
+        const allConfigs = coreName === 'xray' ? allLiveConfigsData.xray : allLiveConfigsData.singbox;
+        const flatAllConfigs = Object.values(allConfigs).flat().map(c => c[0]);
+        
         const configs = (type === 'all')
-            ? allLiveConfigsData.xray // Assuming Clash is primary for all, this should be the full list
+            ? flatAllConfigs
             : Array.from(document.querySelectorAll(`#${coreName}-section .config-item input.config-checkbox:checked`)).map(el => el.closest('.config-item').dataset.url);
 
         if (configs.length === 0) {
@@ -271,9 +317,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const url = `${WORKER_URL}/create-personal-sub`;
         try {
-            const response = await fetch(url, {
+            const response = await fetch(`${WORKER_URL}/create-personal-sub`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ configs }),
@@ -283,13 +328,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             const downloadUrl = result.clashSubscriptionUrl;
             
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = 'v2v-clash.yaml';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            showToast('فایل با موفقیت دانلود شد.');
+            // هدایت به آدرس دانلود YAML
+            window.location.href = downloadUrl;
+            showToast('دانلود فایل آغاز شد. (اگر آغاز نشد، آدرس لینک اشتراک کلش را کپی کنید).');
         } catch (err) {
             showToast(err.message, true);
         }
