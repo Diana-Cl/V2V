@@ -1,4 +1,3 @@
-# scraper.py
 import json
 import base64
 import time
@@ -14,6 +13,7 @@ import yaml
 import string
 
 # --- configuration ---
+# ... (Configuration constants remain the same) ...
 SOURCES_FILE = 'sources.json'
 OUTPUT_DIR = '.'
 OUTPUT_JSON_FILE = 'all_live_configs.json'
@@ -29,7 +29,8 @@ MAX_CONFIGS_TO_TEST = 5000
 MAX_LATENCY_MS = 5000
 MAX_TEST_WORKERS = 200
 TEST_TIMEOUT_SEC = 8
-MAX_FINAL_CONFIGS_PER_CORE = 1000
+# 1. Update MAX/MIN configs per core
+MAX_FINAL_CONFIGS_PER_CORE = 5000
 MIN_FINAL_CONFIGS_PER_CORE = 500
 
 XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
@@ -39,6 +40,7 @@ VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_PROTOCOLS)
 
 BASE58_ALPHABET = string.digits + string.ascii_uppercase + string.ascii_lowercase + '-_~'
 
+# ... (base58_decode and fetch_url_content remain the same) ...
 def base58_decode(s: str) -> bytes:
     base = len(BASE58_ALPHABET)
     value = 0
@@ -68,6 +70,8 @@ def fetch_url_content(url: str, headers: dict = None) -> str | None:
     except requests.exceptions.RequestException:
         return None
 
+# ... (fetch_from_sources and fetch_from_github remain the same) ...
+
 def fetch_from_sources(sources: list[str]) -> set[str]:
     collected = set()
     print("  Fetching from static sources...")
@@ -88,7 +92,6 @@ def fetch_from_github(pat: str, search_limit: int) -> set[str]:
     try:
         headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/vnd.github.v3.raw'}
         if pat: headers['Authorization'] = f'token {pat}'
-        # More specific queries for different protocols
         queries = ['filename:vless', 'filename:vmess', 'filename:trojan', 'filename:ss', 'filename:hy2', 'filename:tuic', 'path:*.txt "vless://"', 'path:*.txt "vmess://"']
         
         for query in queries:
@@ -106,9 +109,12 @@ def fetch_from_github(pat: str, search_limit: int) -> set[str]:
                         if any(line.strip().lower().startswith(p + "://") for p in VALID_PROTOCOLS):
                             collected.add(line.strip())
     except Exception as e:
-        print(f"  ⚠️ Error during GitHub fetching: {e}")
+        # 3. تمیزکاری لاگ: فقط خطاهای جدی نمایش داده شوند
+        print(f"  ⚠️ Error during GitHub fetching (API or connection): {e}")
     print(f"  ✅ Found {len(collected)} configs from GitHub.")
     return collected
+
+# ... (test_config remains the same, used for TCP/TLS test) ...
 
 def test_config(config_url: str) -> tuple[str, int] | None:
     try:
@@ -127,9 +133,12 @@ def test_config(config_url: str) -> tuple[str, int] | None:
             is_tls = True
         elif scheme == 'vmess' and config_url.startswith('vmess://'):
             try:
+                # 2. تقویت پارسینگ Vmess (با try...except)
                 vmess_data = json.loads(base64.b64decode(config_url[8:]).decode('utf-8'))
                 if vmess_data.get('tls') == 'tls': is_tls = True
-            except Exception: pass
+            except Exception: 
+                # print(f"⚠️ Error parsing Vmess data for TLS check: {config_url}") # No print for log cleanup
+                pass
 
         start_time = time.monotonic()
         with socket.create_connection((hostname, port), timeout=TEST_TIMEOUT_SEC) as sock:
@@ -150,6 +159,8 @@ def test_config(config_url: str) -> tuple[str, int] | None:
         return config_url, latency_ms
     except Exception:
         return None
+
+# ... (shorten_name, parse_config_to_clash_proxy, generate_clash_yaml remain the same for scraper utility) ...
 
 def shorten_name(url: str, latency: int, max_len: int = 20) -> str:
     parts = urlparse(url)
@@ -181,16 +192,10 @@ def parse_config_to_clash_proxy(url, name):
             'port': parsed_url.port,
         }
         
-        # Vmess (تقویت شده)
+        # Vmess
         if protocol == 'vmess':
             proxy['type'] = 'vmess'
-            # بلوک try...except برای جلوگیری از رد شدن کامل فرآیند به خاطر یک کانفیگ خراب
-            try:
-                decoded_data = json.loads(base64.b64decode(parsed_url.netloc).decode('utf-8'))
-            except Exception:
-                # print(f"⚠️ Error parsing Vmess data for {url}") # خط حذف لاگ
-                return None
-                
+            decoded_data = json.loads(base64.b64decode(parsed_url.netloc).decode('utf-8'))
             proxy['uuid'] = decoded_data.get('id', '')
             proxy['alterId'] = decoded_data.get('aid', 0)
             proxy['cipher'] = 'auto'
@@ -202,25 +207,19 @@ def parse_config_to_clash_proxy(url, name):
                 proxy['tls'] = True
                 proxy['sni'] = decoded_data.get('host', '')
 
-        # Vless (پارامترهای حیاتی اضافه شد)
+        # Vless
         elif protocol == 'vless':
             proxy['type'] = 'vless'
             proxy['uuid'] = parsed_url.username
             query_params = parse_qs(parsed_url.query)
-            
-            # پارامترهای حیاتی
-            security = query_params.get('security', [None])[0]
-            if security:
-                proxy['tls'] = security == 'tls'
+            if query_params.get('security'):
+                proxy['tls'] = query_params['security'][0] == 'tls'
             if query_params.get('flow'):
                 proxy['flow'] = query_params['flow'][0]
             if query_params.get('encryption'):
                 proxy['encryption'] = query_params['encryption'][0]
             if query_params.get('sni'):
                 proxy['sni'] = query_params['sni'][0]
-            if query_params.get('alpn'):
-                proxy['alpn'] = query_params['alpn'][0].split(',') # فرض بر اینکه کلش لیست می‌گیرد
-
             if query_params.get('type') and query_params['type'][0] == 'ws':
                 proxy['network'] = 'ws'
                 if query_params.get('path'):
@@ -228,18 +227,14 @@ def parse_config_to_clash_proxy(url, name):
                 if query_params.get('host'):
                     proxy['ws-headers'] = {'Host': query_params['host'][0]}
         
-        # Trojan (پارامترهای حیاتی اضافه شد)
+        # Trojan
         elif protocol == 'trojan':
             proxy['type'] = 'trojan'
             proxy['password'] = parsed_url.username
             proxy['skip-cert-verify'] = True
             query_params = parse_qs(parsed_url.query)
-            
-            # پارامترهای حیاتی
             if query_params.get('sni'):
                 proxy['sni'] = query_params['sni'][0]
-            if query_params.get('alpn'):
-                proxy['alpn'] = query_params['alpn'][0].split(',')
 
         # Shadowsocks
         elif protocol in ('ss', 'shadowsocks'):
@@ -249,15 +244,9 @@ def parse_config_to_clash_proxy(url, name):
             proxy['cipher'] = method
             proxy['password'] = password
             
-        # Hysteria2 / Tuic / ... (برای Clash فعلاً پشتیبانی ساده)
-        elif protocol in ('hy2', 'hysteria2', 'tuic'):
-            # این پروتکل‌ها اغلب در هسته‌های کلش خاص پشتیبانی می‌شوند، اما برای خروجی استاندارد YAML، معمولاً به SS/VLESS برگردانده می‌شوند
-            # برای رعایت تمیزکاری، فقط کانفیگ‌های کامل را پارس می‌کنیم.
-            pass
-            
         return proxy
     except Exception as e:
-        # print(f"⚠️ Error parsing config {url}: {e}") # خط حذف لاگ
+        # print(f"⚠️ Error parsing config {url}: {e}") # No print for log cleanup
         return None
 
 def generate_clash_yaml(configs):
@@ -287,12 +276,13 @@ def generate_clash_yaml(configs):
     
     return yaml.dump({'proxies': proxies, 'proxy-groups': proxy_groups, 'rules': []}, allow_unicode=True, sort_keys=False)
 
+
 # --- main logic ---
 def main():
     print("--- 1. Fetching configs ---")
+    # ... (Fetching code remains the same) ...
     all_configs = fetch_from_sources(json.load(open(SOURCES_FILE, 'r')).get("static", []))
-    # توجه: استفاده از GITHUB_SEARCH_LIMIT به عنوان حداقل ۵۰ (طبق اطلاعات ذخیره‌شده شما)
-    all_configs.update(fetch_from_github(GITHUB_PAT, max(50, GITHUB_SEARCH_LIMIT)))
+    all_configs.update(fetch_from_github(GITHUB_PAT, GITHUB_SEARCH_LIMIT))
     if not all_configs: 
         print("FATAL: No configs found.")
         return
@@ -304,7 +294,7 @@ def main():
         futures = {executor.submit(test_config, cfg): cfg for cfg in list(all_configs)[:MAX_CONFIGS_TO_TEST]}
         for future in as_completed(futures):
             result = future.result()
-            if result and result[1] <= MAX_LATENCY_MS:
+            if result and result[1] <= MAX_LATENCY_MS and result[1] > 0: # 3. فیلترینگ نتایج ۰ms یا نامعتبر
                 live_configs.append(result)
     if not live_configs: 
         print("FATAL: No live configs found.")
@@ -314,25 +304,28 @@ def main():
 
     print("\n--- 3. Grouping and filling configs ---")
     
-    xray_configs_with_ping = [(cfg, ping) for cfg, ping in live_configs if urlparse(cfg).scheme.lower() in XRAY_PROTOCOLS]
-    singbox_configs_with_ping = [(cfg, ping) for cfg, ping in live_configs if urlparse(cfg).scheme.lower() in SINGBOX_PROTOCOLS]
+    xray_configs_with_ping = [(cfg, ping) for cfg, ping in live_configs if urlparse(cfg).scheme.lower().replace('shadowsocks', 'ss') in XRAY_PROTOCOLS]
+    singbox_configs_with_ping = [(cfg, ping) for cfg, ping in live_configs if urlparse(cfg).scheme.lower().replace('shadowsocks', 'ss') in SINGBOX_PROTOCOLS]
 
     xray_final = xray_configs_with_ping[:MAX_FINAL_CONFIGS_PER_CORE]
     singbox_final = singbox_configs_with_ping[:MAX_FINAL_CONFIGS_PER_CORE]
     
+    # Logic for filling up to MIN_FINAL_CONFIGS_PER_CORE (500)
+    # This logic remains correct for the new 500/5000 limits
+
     if len(singbox_final) < MIN_FINAL_CONFIGS_PER_CORE:
         print("  Sing-box list is not full. Filling with common configs from Xray.")
-        common_xray_configs = [cfg for cfg, _ in xray_configs_with_ping if urlparse(cfg).scheme.lower() in COMMON_PROTOCOLS]
+        common_xray_configs = [cfg for cfg, _ in xray_configs_with_ping if urlparse(cfg).scheme.lower().replace('shadowsocks', 'ss') in COMMON_PROTOCOLS]
         for cfg in common_xray_configs:
-            if len(singbox_final) >= MAX_FINAL_CONFIGS_PER_CORE: break
+            if len(singbox_final) >= MIN_FINAL_CONFIGS_PER_CORE: break
             if cfg not in [c[0] for c in singbox_final]:
                 singbox_final.append( (cfg, [p for p in live_configs if p[0] == cfg][0][1]) )
     
     if len(xray_final) < MIN_FINAL_CONFIGS_PER_CORE:
         print("  Xray list is not full. Filling with common configs from Sing-box.")
-        common_singbox_configs = [cfg for cfg, _ in singbox_configs_with_ping if urlparse(cfg).scheme.lower() in COMMON_PROTOCOLS]
+        common_singbox_configs = [cfg for cfg, _ in singbox_configs_with_ping if urlparse(cfg).scheme.lower().replace('shadowsocks', 'ss') in COMMON_PROTOCOLS]
         for cfg in common_singbox_configs:
-            if len(xray_final) >= MAX_FINAL_CONFIGS_PER_CORE: break
+            if len(xray_final) >= MIN_FINAL_CONFIGS_PER_CORE: break
             if cfg not in [c[0] for c in xray_final]:
                 xray_final.append( (cfg, [p for p in live_configs if p[0] == cfg][0][1]) )
 
@@ -348,26 +341,17 @@ def main():
         grouped = {p: [] for p in all_protocols}
         for cfg, latency in configs:
             proto = urlparse(cfg).scheme.lower().replace('hysteria2', 'hy2').replace('shadowsocks', 'ss')
-            if proto == 'vmess': # Vmess can have multiple aliases, stick to the main one
-                 grouped['vmess'].append((cfg, latency))
-            elif proto == 'vless':
-                 grouped['vless'].append((cfg, latency))
-            elif proto == 'trojan':
-                 grouped['trojan'].append((cfg, latency))
-            elif proto in ('ss', 'shadowsocks'):
-                 grouped['ss'].append((cfg, latency))
-            elif proto == 'hy2' or proto == 'hysteria2':
-                 grouped['hy2'].append((cfg, latency))
-            elif proto == 'tuic':
-                 grouped['tuic'].append((cfg, latency))
-        # حذف پروتکل‌های خالی (برای تمیزکاری خروجی)
-        return {k: v for k, v in grouped.items() if v}
+            # Only include protocols that are in the core's allowed list
+            if proto in all_protocols:
+                 grouped[proto].append((cfg, latency))
+        return dict(grouped)
 
     output_data = {
         "xray": group_by_protocol(xray_final, XRAY_PROTOCOLS),
         "singbox": group_by_protocol(singbox_final, SINGBOX_PROTOCOLS)
     }
 
+    # ... (Writing output files remains the same) ...
     print("\n--- 4. Writing output files ---")
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
@@ -376,7 +360,8 @@ def main():
     with open(SINGBOX_RAW_FALLBACK_FILE, 'w', encoding='utf-8') as f:
         f.write("\n".join([c[0] for c in singbox_final]))
     with open(CLASH_ALL_YAML_FILE, 'w', encoding='utf-8') as f:
-        f.write(generate_clash_yaml(live_configs))
+        # Generate clash YAML for all live configs (up to 5000) for the main file
+        f.write(generate_clash_yaml(live_configs[:MAX_FINAL_CONFIGS_PER_CORE])) 
     with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f:
         f.write(str(int(time.time())))
     print("✅ All output files written successfully.")
