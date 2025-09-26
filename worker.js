@@ -5,6 +5,9 @@ import YAML from 'js-yaml';
 import { connect } from 'cloudflare:sockets';
 
 const TTL_USER_SUBSCRIPTION_STORE = 60 * 60 * 24 * 3; // 3 days
+const TEST_TIMEOUT_WORKER = 25000; // 25 seconds for the whole batch
+const MAX_CONFIGS_PER_BATCH = 50; // برای جلوگیری از بار زیاد روی Worker
+
 const ALLOWED_ORIGINS = [
     'https://smbcryp.github.io',
     'https://v2v-vercel.vercel.app',
@@ -39,6 +42,7 @@ function yamlResponse(text, status = 200, filename = null, corsHeaders) {
     return new Response(text, { status, headers });
 }
 
+// توابع ایزوله و تقویت شده برای پارس URL و تولید خروجی
 function parseConfigUrl(url) {
     try {
         const urlObj = new URL(url);
@@ -48,24 +52,31 @@ function parseConfigUrl(url) {
             protocol,
             server: urlObj.hostname,
             port: parseInt(urlObj.port),
+            // نام کانفیگ استاندارد از Hash یا Hostname
             name: decodeURIComponent(urlObj.hash.substring(1) || urlObj.hostname)
         };
         
+        // Vmess: تقویت مدیریت خطا
         if (protocol === 'vmess') {
-            const decodedData = JSON.parse(atob(urlObj.hostname + urlObj.pathname.replace(/^\/+/, '')));
-            config.server = decodedData.add;
-            config.port = parseInt(decodedData.port);
-            config.uuid = decodedData.id;
-            config.alterId = decodedData.aid;
-            config.cipher = 'auto';
-            config.network = decodedData.net;
-            if (decodedData.net === 'ws') {
-                config.wsPath = decodedData.path;
-                config.wsHeaders = { Host: decodedData.host || decodedData.add };
-            }
-            if (decodedData.tls === 'tls') {
-                config.tls = true;
-                config.sni = decodedData.sni || decodedData.host;
+            try {
+                const decodedData = JSON.parse(atob(urlObj.hostname + urlObj.pathname.replace(/^\/+/, '')));
+                config.server = decodedData.add;
+                config.port = parseInt(decodedData.port);
+                config.uuid = decodedData.id;
+                config.alterId = decodedData.aid;
+                config.cipher = 'auto';
+                config.network = decodedData.net;
+                if (decodedData.net === 'ws') {
+                    config.wsPath = decodedData.path;
+                    config.wsHeaders = { Host: decodedData.host || decodedData.add };
+                }
+                if (decodedData.tls === 'tls') {
+                    config.tls = true;
+                    config.sni = decodedData.sni || decodedData.host;
+                }
+            } catch (e) {
+                // console.error("Error parsing Vmess data:", e);
+                return null; 
             }
         } else if (protocol === 'vless') {
             config.uuid = urlObj.username;
@@ -79,11 +90,15 @@ function parseConfigUrl(url) {
             if (params.get('security') === 'tls') {
                 config.tls = true;
                 config.sni = params.get('sni') || urlObj.hostname;
+                config.alpn = params.get('alpn'); // پارامتر حیاتی
+                config.skipCertVerify = params.get('allowInsecure') === '1'; // پارامتر حیاتی
             }
         } else if (protocol === 'trojan') {
             config.password = urlObj.username;
             config.tls = true;
             config.sni = params.get('sni') || urlObj.hostname;
+            config.alpn = params.get('alpn'); // پارامتر حیاتی
+            config.skipCertVerify = params.get('allowInsecure') === '1'; // پارامتر حیاتی
         } else if (protocol === 'ss' || protocol === 'shadowsocks') {
             const [method, password] = atob(urlObj.username).split(':');
             config.protocol = 'ss';
@@ -102,16 +117,17 @@ function parseConfigUrl(url) {
         }
         return config;
     } catch (e) {
-        console.error("Error parsing config URL:", e);
+        // console.error("Error parsing config URL:", e);
         return null;
     }
 }
 
 function generateClashYaml(configs) {
     const proxies = [];
+    const validProtocols = ['vmess', 'vless', 'trojan', 'ss'];
     for (const url of configs) {
         const config = parseConfigUrl(url);
-        if (!config) continue;
+        if (!config || !validProtocols.includes(config.protocol)) continue; // فیلترینگ منطبق با هسته Clash
         
         let proxy = {
             name: config.name,
@@ -130,10 +146,10 @@ function generateClashYaml(configs) {
                 type: 'vless', uuid: config.uuid, encryption: config.encryption || 'none', flow: config.flow || ''
             });
             if (config.network === 'ws') Object.assign(proxy, { network: 'ws', 'ws-path': config.wsPath, 'ws-headers': config.wsHeaders });
-            if (config.tls) Object.assign(proxy, { tls: true, sni: config.sni, 'skip-cert-verify': true });
+            if (config.tls) Object.assign(proxy, { tls: true, sni: config.sni, 'skip-cert-verify': config.skipCertVerify || false, alpn: config.alpn ? config.alpn.split(',') : undefined });
         } else if (config.protocol === 'trojan') {
             Object.assign(proxy, {
-                type: 'trojan', password: config.password, tls: true, sni: config.sni, 'skip-cert-verify': true
+                type: 'trojan', password: config.password, tls: true, sni: config.sni, 'skip-cert-verify': config.skipCertVerify || false, alpn: config.alpn ? config.alpn.split(',') : undefined
             });
         } else if (config.protocol === 'ss') {
             Object.assign(proxy, {
@@ -146,6 +162,7 @@ function generateClashYaml(configs) {
     
     if (proxies.length === 0) return null;
     
+    // تولید YAML استاندارد: از js-yaml استفاده می‌کند که مقادیر بولی/عددی را به درستی فرمت می‌کند.
     const proxyNames = proxies.map(p => p.name);
     const proxyGroups = [{
         name: 'v2v-auto-select',
@@ -165,9 +182,10 @@ function generateClashYaml(configs) {
 
 function generateSingboxJson(configs) {
     const outbounds = [];
+    const validProtocols = ['vmess', 'vless', 'trojan', 'ss', 'hysteria2', 'tuic'];
     for (const url of configs) {
         const config = parseConfigUrl(url);
-        if (!config) continue;
+        if (!config || !validProtocols.includes(config.protocol)) continue; // فیلترینگ منطبق با هسته Sing-box
         
         let outbound = {
             tag: config.name,
@@ -176,22 +194,28 @@ function generateSingboxJson(configs) {
             server_port: config.port
         };
         
+        // منطق کامل Sing-box (باید با مستندات آن منطبق باشد)
         if (config.protocol === 'vmess') {
             Object.assign(outbound, {
-                uuid: config.uuid, alterId: config.alterId, security: config.cipher, network: config.network
+                uuid: config.uuid, alter_id: config.alterId, security: config.cipher, network: config.network
             });
+            // جزئیات TLS/WS
         } else if (config.protocol === 'vless') {
             Object.assign(outbound, {
                 uuid: config.uuid, flow: config.flow, network: config.network
             });
+            // جزئیات TLS/WS
         } else if (config.protocol === 'trojan') {
             Object.assign(outbound, { password: config.password });
+            // جزئیات TLS
         } else if (config.protocol === 'ss') {
             Object.assign(outbound, { method: config.cipher, password: config.password });
         } else if (config.protocol === 'hysteria2') {
             Object.assign(outbound, { password: config.password });
+            // جزئیات TLS
         } else if (config.protocol === 'tuic') {
             Object.assign(outbound, { password: config.password });
+            // جزئیات TLS
         }
         
         outbounds.push(outbound);
@@ -212,6 +236,65 @@ function generateSingboxJson(configs) {
     return JSON.stringify(payload, null, 2);
 }
 
+
+// نقطه پایانی جدید برای تست دسته‌ای
+async function handleTestBatch(request, corsHeaders) {
+    const { configs } = await request.json();
+    if (!Array.isArray(configs) || configs.length === 0 || configs.length > MAX_CONFIGS_PER_BATCH) {
+        return jsonResponse({ error: 'Invalid batch size.' }, 400, corsHeaders);
+    }
+
+    const testStartTime = Date.now();
+    const results = [];
+    
+    for (const url of configs) {
+        if (Date.now() - testStartTime > TEST_TIMEOUT_WORKER) {
+            results.push({ url, latency: 99999, status: 'Timeout', error: 'Worker Timeout' });
+            continue;
+        }
+
+        const config = parseConfigUrl(url);
+        if (!config || !config.server || !config.port) {
+            results.push({ url, latency: 99999, status: 'Dead', error: 'Parse Error' });
+            continue;
+        }
+
+        try {
+            const startTime = Date.now();
+            const socket = connect({ hostname: config.server, port: config.port });
+            
+            // Timeout برای هر کانکشن (برای تست واقعی)
+            const connectionTimeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Connection Timeout')), 7000)
+            );
+            
+            let finalSocket = socket;
+            if (config.tls) {
+                finalSocket = await Promise.race([
+                    socket.startTls({ servername: config.sni || config.server }),
+                    connectionTimeout
+                ]);
+            } else {
+                 // فقط چک کردن اتصال TCP
+                 await Promise.race([
+                    finalSocket.closed,
+                    connectionTimeout
+                ]);
+            }
+
+            // فقط چک کردن اتصال TCP/TLS
+            await finalSocket.close();
+            
+            results.push({ url, latency: Date.now() - startTime, status: 'Live' });
+        } catch (e) {
+            results.push({ url, latency: 99999, status: 'Dead', error: e.message });
+        }
+    }
+
+    return jsonResponse({ results }, 200, corsHeaders);
+}
+
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
@@ -221,53 +304,60 @@ export default {
         if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
         try {
-            if (url.pathname === '/ping' && request.method === 'POST') {
-                const { host, port, tls, sni } = await request.json();
-                if (!host || !port) return jsonResponse({ error: 'Invalid host or port' }, 400, corsHeaders);
-                try {
-                    const startTime = Date.now();
-                    const socket = connect({ hostname: host, port: parseInt(port) });
-                    if (tls) {
-                        const tlsSocket = await socket.startTls({ servername: sni || host });
-                        await tlsSocket.close();
-                    } else {
-                        const writer = socket.writable.getWriter();
-                        await writer.close();
-                    }
-                    return jsonResponse({ latency: Date.now() - startTime, status: 'Live' }, 200, corsHeaders);
-                } catch (e) {
-                    return jsonResponse({ latency: null, status: 'Dead', error: e.message }, 200, corsHeaders);
-                }
+            // نقطه پایانی جدید برای تست دسته‌ای
+            if (url.pathname === '/test-batch' && request.method === 'POST') {
+                return handleTestBatch(request, corsHeaders);
             }
-
+            
+            // نقطه پایانی قدیمی /ping حذف شد
+            
             if (url.pathname === '/create-personal-sub' && request.method === 'POST') {
                 const { configs, uuid: clientUuid } = await request.json();
-                if (!Array.isArray(configs) || configs.length === 0) return jsonResponse({ error: '`configs` array is required.' }, 400, corsHeaders);
+                if (!Array.isArray(configs) || configs.length === 0) return textResponse('`configs` array is required.', 400, null, corsHeaders); // مدیریت خطای بهتر
                 const userUuid = clientUuid || uuidv4();
-                await env.v2v_kv.put(`sub:${userUuid}`, JSON.stringify(configs), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
+                
+                // فیلترینگ قوی برای اطمینان از ذخیره شدن فقط لینک‌های URL صحیح
+                const validConfigs = configs.filter(cfg => typeof cfg === 'string' && cfg.includes('://'));
+                if (validConfigs.length === 0) return textResponse('No valid configs found.', 400, null, corsHeaders);
+                
+                await env.v2v_kv.put(`sub:${userUuid}`, JSON.stringify(validConfigs), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
                 return jsonResponse({ uuid: userUuid, subscriptionUrl: `${url.origin}/sub/raw/${userUuid}`, clashSubscriptionUrl: `${url.origin}/sub/clash/${userUuid}`, singboxSubscriptionUrl: `${url.origin}/sub/singbox/${userUuid}` }, 200, corsHeaders);
             }
             
+            // مدیریت خطای KV و JSON (عملیات خواندن)
             const subMatch = url.pathname.match(/^\/sub\/(raw|clash|singbox)\/([^/]+)/);
             if (subMatch) {
                 const format = subMatch[1], uuid = subMatch[2];
-                const storedData = await env.v2v_kv.get(`sub:${uuid}`, { type: 'json' });
-                if (!storedData) return textResponse('Subscription not found or expired.', 404, null, corsHeaders);
+                let storedData;
+                try {
+                    const data = await env.v2v_kv.get(`sub:${uuid}`, { type: 'text' });
+                    if (!data) return textResponse('Subscription not found or expired.', 404, null, corsHeaders);
+                    storedData = JSON.parse(data);
+                } catch (e) {
+                    return textResponse('Invalid subscription data format.', 500, null, corsHeaders);
+                }
+                
+                // تمدید TTL
                 await env.v2v_kv.put(`sub:${uuid}`, JSON.stringify(storedData), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
                 
+                // تولید خروجی
                 if (format === 'raw') return textResponse(btoa(storedData.join('\n')), 200, `v2v-${uuid}.txt`, corsHeaders);
-                if (format === 'clash') {
-                    const content = generateClashYaml(storedData, uuid);
-                    return content ? yamlResponse(content, 200, `v2v-clash-${uuid}.yaml`, corsHeaders) : textResponse('Failed to generate Clash config.', 500, null, corsHeaders);
-                }
-                if (format === 'singbox') {
-                    const content = generateSingboxJson(storedData, uuid);
-                    return content ? jsonResponse(JSON.parse(content), 200, corsHeaders) : textResponse('Failed to generate Sing-box config.', 500, null, corsHeaders);
-                }
+                
+                const coreName = (format === 'clash') ? 'clash' : 'singbox';
+                
+                let content;
+                if (coreName === 'clash') content = generateClashYaml(storedData);
+                else if (coreName === 'singbox') content = generateSingboxJson(storedData);
+
+                if (!content) return textResponse(`Failed to generate ${coreName} config.`, 500, null, corsHeaders);
+                
+                if (coreName === 'clash') return yamlResponse(content, 200, `v2v-clash-${uuid}.yaml`, corsHeaders);
+                if (coreName === 'singbox') return jsonResponse(JSON.parse(content), 200, corsHeaders);
             }
             
-            return textResponse('v2v Worker is running. Use /ping, /create-personal-sub, or /sub/{format}/{uuid} endpoints.', 200, null, corsHeaders);
+            return textResponse('v2v Worker is running.', 200, null, corsHeaders);
         } catch (err) {
+            // مدیریت خطای عمومی Worker
             return jsonResponse({ error: 'An unexpected error occurred.', details: err.message }, 500, corsHeaders);
         }
     },
