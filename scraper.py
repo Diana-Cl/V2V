@@ -10,13 +10,12 @@ import ssl
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
-# ✅ اصلاح: استفاده از Token به جای Auth
-from github import Github, Auth, BadCredentialsException, RateLimitExceededException, UnknownObjectException 
+from github import Github, BadCredentialsException, RateLimitExceededException, UnknownObjectException 
 from typing import Optional, Set, List, Dict, Tuple
 from collections import defaultdict
 import yaml 
 
-print("INFO: V2V Scraper v44.1 (KV Upload Logic REMOVED)") 
+print("INFO: V2V Scraper v44.2 (KV Upload Logic REMOVED)") 
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,7 +34,7 @@ HEADERS = {'User-Agent': 'V2V-Scraper/1.0'}
 # Environment variables for sensitive data
 GITHUB_PAT = os.environ.get('GH_PAT') 
 
-# --- PERFORMANCE & FILTERING PARAMETERS (Managed in scraper.py) ---
+# --- PERFORMANCE & FILTERING PARAMETERS ---
 MAX_CONFIGS_TO_TEST = 15000
 MIN_TARGET_CONFIGS_PER_CORE = 1000 
 MAX_FINAL_CONFIGS_PER_CORE = 5000  
@@ -43,7 +42,8 @@ MAX_TEST_WORKERS = 200
 TCP_TIMEOUT = 2.5
 MAX_LATENCY_MS = 2500
 MAX_NAME_LENGTH = 40
-GITHUB_SEARCH_LIMIT = 150 
+# ✅ هماهنگی با حداقل محدودیت 50
+GITHUB_SEARCH_LIMIT = max(50, int(os.environ.get('GITHUB_SEARCH_LIMIT', 150))) 
 UPDATE_INTERVAL_HOURS = 3 
 
 # --- HELPER FUNCTIONS (Robust Parsing & Validation) ---
@@ -59,8 +59,7 @@ def decode_base64_content(content: str) -> str:
         if missing_padding:
             content += '=' * (4 - missing_padding)
         return base64.b64decode(content).decode('utf-8', 'ignore')
-    except Exception as e:
-        # print(f"DEBUG: Base64 decode failed for content snippet: '{content[:50]}...'. Error: {e}")
+    except Exception:
         return ""
 
 def is_valid_config(config: str) -> bool:
@@ -97,15 +96,12 @@ def fetch_from_static_sources(sources: List[str]) -> Set[str]:
 
     def fetch_url(url):
         try:
-            # Add a small random delay to avoid hitting server limits too aggressively
             time.sleep(random.uniform(0.5, 1.5)) 
             response = requests.get(url, headers=HEADERS, timeout=10)
             response.raise_for_status()
             content = response.text 
             
             potential_configs = set()
-            
-            # First, try to decode the *entire* response content as a single Base64 string
             decoded_full_content = decode_base64_content(content) 
             
             for current_content in [content, decoded_full_content]:
@@ -129,17 +125,17 @@ def fetch_from_static_sources(sources: List[str]) -> Set[str]:
             return potential_configs
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429:
-                print(f"    Rate limit hit for {url} (HTTP 429). Waiting 60s and retrying...")
+                # print(f"    Rate limit hit for {url} (HTTP 429). Waiting 60s and retrying...") # ❌ حذف لاگ اضافی
                 time.sleep(60)
                 return fetch_url(url)
-            elif e.response.status_code != 404: 
-                print(f"    HTTP Error {e.response.status_code} for {url}. Skipping.")
+            # elif e.response.status_code != 404: 
+                # print(f"    HTTP Error {e.response.status_code} for {url}. Skipping.") # ❌ حذف لاگ اضافی
             return set()
-        except requests.RequestException as e:
-            print(f"    Network/Request Error for {url}: {e}. Skipping.")
+        except requests.RequestException:
+            # print(f"    Network/Request Error for {url}: {e}. Skipping.") # ❌ حذف لاگ اضافی
             return set()
-        except Exception as e:
-            print(f"    General Error fetching/processing {url}: {type(e).__name__}: {e}. Skipping.")
+        except Exception:
+            # print(f"    General Error fetching/processing {url}: {type(e).__name__}: {e}. Skipping.") # ❌ حذف لاگ اضافی
             return set()
 
     with ThreadPoolExecutor(max_workers=10) as executor: 
@@ -161,26 +157,21 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
     total_files_processed = 0
 
     try:
-        # ✅ اصلاح: استفاده مستقیم از توکن (روش پیشنهادی شما در تصویر)
         g = Github(login_or_token=pat, timeout=30) 
-        
         query = " OR ".join(VALID_PROTOCOLS) + " extension:txt extension:md extension:yml extension:yaml extension:json extension:html -user:mahdibland"
         
-        print(f"  Starting GitHub search with query: '{query}' (limit: {limit})...")
+        # print(f"  Starting GitHub search with query: '{query}' (limit: {limit})...") # ❌ حذف لاگ اضافی
         
-        # نتایج جستجو
         results = g.search_code(query, order='desc', sort='indexed', per_page=100)
 
         for content_file in results:
             if total_files_processed >= limit:
-                print(f"  Reached GitHub file limit of {limit}, stopping further search.")
+                # print(f"  Reached GitHub file limit of {limit}, stopping further search.") # ❌ حذف لاگ اضافی
                 break
 
             try:
-                # Add a small random delay
                 time.sleep(random.uniform(0.1, 0.3)) 
 
-                # دریافت محتوا و دیکد کردن دستی
                 file_content_bytes = content_file.content 
                 decoded_content_str = file_content_bytes.decode('utf-8', 'ignore').replace('`', '')
                 
@@ -207,11 +198,11 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
             except UnknownObjectException:
                 continue 
             except RateLimitExceededException:
-                print(f"    GitHub API rate limit hit while fetching content for {content_file.path}. Waiting 180s...")
+                # print(f"    GitHub API rate limit hit while fetching content for {content_file.path}. Waiting 180s...") # ❌ حذف لاگ اضافی
                 time.sleep(180)
                 continue
-            except Exception as e:
-                print(f"    Error processing GitHub file {content_file.path}: {type(e).__name__}: {e}. Skipping.")
+            except Exception:
+                # print(f"    Error processing GitHub file {content_file.path}: {type(e).__name__}: {e}. Skipping.") # ❌ حذف لاگ اضافی
                 continue
         
         print(f"  Finished GitHub search. Found {len(all_configs)} configs from {total_files_processed} unique GitHub files.")
@@ -221,11 +212,10 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
         print("ERROR: GitHub PAT is invalid or lacks necessary scopes. Please check GH_PAT.")
         return set()
     except RateLimitExceededException:
-        print("WARNING: GitHub API rate limit hit during query. Waiting 300s and trying again for the query itself...")
-        time.sleep(300)
-        return fetch_from_github(pat, limit) 
+        print("WARNING: GitHub API rate limit hit during query. Skipping further search.")
+        return set()
     except Exception as e: 
-        print(f"ERROR: General GitHub operation failed. Reason: {type(e).__name__}: {e}. Skipping GitHub search.")
+        print(f"ERROR: General GitHub operation failed. Skipping GitHub search.")
         return set()
 
 def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
@@ -254,7 +244,6 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
 
         start_time = time.monotonic()
         
-        # Special handling for UDP-based protocols (Sing-box only)
         if protocol in SINGBOX_ONLY_PROTOCOLS:
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
                 sock.settimeout(TCP_TIMEOUT)
@@ -279,8 +268,7 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
         return config, latency
     except (socket.timeout, ConnectionRefusedError, ssl.SSLError, OSError): 
         return None 
-    except Exception as e:
-        # print(f"DEBUG: Handshake test failed for {config}. Error: {type(e).__name__}: {e}")
+    except Exception:
         return None 
 
 def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: int, max_target: int) -> List[str]:
@@ -300,7 +288,7 @@ def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: 
     final_selected_configs = []
     current_final_set = set()
 
-    # 1. Prioritize a small number of each protocol type (e.g., top 10 per protocol)
+    # 1. Prioritize a small number of each protocol type 
     for proto in sorted(grouped.keys()): 
         take_count = min(10, len(grouped[proto]))
         for cfg in grouped[proto][:take_count]:
@@ -335,6 +323,7 @@ def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: 
 
 def generate_clash_yaml(configs: List[str]) -> Optional[str]:
     """Generates a Clash Meta compatible YAML string from a list of configs."""
+    # ... (No change needed here as the logic is sound for generating the local file) ...
     proxies = []
     unique_check = set()
     
@@ -349,11 +338,8 @@ def generate_clash_yaml(configs: List[str]) -> Optional[str]:
         except Exception:
             continue
             
-    if not proxies:
-        return None
-
+    if not proxies: return None
     proxy_names = [p['name'] for p in proxies]
-    
     clash_config = {
         'proxies': proxies,
         'proxy-groups': [
@@ -362,17 +348,14 @@ def generate_clash_yaml(configs: List[str]) -> Optional[str]:
         ],
         'rules': ['MATCH,V2V-Select']
     }
-    
     class NoAliasDumper(yaml.Dumper):
-        def ignore_aliases(self, data):
-            return True
-
+        def ignore_aliases(self, data): return True
     return yaml.dump(clash_config, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False, indent=2)
 
 def parse_proxy_for_clash(config: str) -> Optional[Dict]:
     """Parses a single config URI into a Clash proxy dictionary."""
+    # ... (No change needed here as the logic is sound for generating the local file) ...
     try:
-        # Generate a unique and clean name
         name_raw = urlparse(config).fragment or f"V2V-{int(time.time() * 1000) % 10000}"
         name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251\W_]+', '', name_raw).strip()
         name = name[:MAX_NAME_LENGTH] 
@@ -428,8 +411,7 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
                 **base, 'type': 'ss', 'server': parsed_url.hostname, 'port': parsed_url.port, 
                 'cipher': cipher, 'password': password
             }
-    except Exception as e:
-        # print(f"DEBUG: Error parsing config for Clash: {config}. Error: {type(e).__name__}: {e}")
+    except Exception:
         return None
         
     return None
