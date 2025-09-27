@@ -1,129 +1,99 @@
-name: V2V - Full CI/CD Pipeline
+name: 'V2V Publisher - استخراج و انتشار چند-آینه‌ای'
 
 on:
   schedule:
-    - cron: "0 */4 * * *" # Runs every 4 hours
-  workflow_dispatch: # Allows manual trigger
-  push:
-    branches:
-      - main
-    paths:
-      - 'worker.js'
-      - 'scraper.py'
-      - 'index.html'
-      - 'index.js'
-      - 'sources.json'
-      - 'wrangler-*.toml'
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    - cron: '0 */3 * * *' 
+  workflow_dispatch:
 
 jobs:
-  build_and_commit:
+  scrape_and_commit:
     runs-on: ubuntu-latest
-    name: 1. Scrape Data, Generate Files, & Commit
-    timeout-minutes: 30
+    environment: Production 
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+    - name: Setup Python environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests pygithub pyyaml cloudflare
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests PyGithub PyYAML
 
-      - name: Run scraper to generate data files (Uploads to KV)
-        timeout-minutes: 25
-        env:
-          # ✅ هماهنگ سازی با scraper.py (GITHUB_TOKEN)
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }} 
-          # ✅ افزودن متغیرهای Cloudflare KV برای آپلود داده
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
-        run: |
-          timeout 24m python scraper.py || {
-            echo "Scraper timed out or failed. Check scraper.py logs."
-            exit 1
-          }
+    - name: Execute Scraper script
+      run: python scraper.py
+      env:
+        GH_PAT: ${{ secrets.GH_PAT }}
 
-      - name: Commit and push updated files
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore(data): Update configs and frontend files for static mirrors"
-          # ✅ فایل YAML تولید شده توسط اسکریپر نیز Commit می‌شود
-          file_pattern: "*.json *.txt *.yaml index.html index.js manifest.json logo.png"
-
-  deploy_services:
-    needs: build_and_commit
+    - name: Configure Git for commit
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+    - name: Commit and Push new files (GitHub Mirror)
+      run: |
+        git add all_live_configs.json clash_subscription.yml cache_version.txt
+        if git diff --cached --exit-code; then
+          echo "No files to commit. Skipping."
+        else
+          git commit -m "🤖 V2V Scraper: Update configs and cache version [skip ci]"
+          git push
+        fi
+        
+  multi_mirror_deploy:
     runs-on: ubuntu-latest
-    name: 2. Deploy Cloudflare Workers & Static Mirrors
-    timeout-minutes: 20
+    needs: scrape_and_commit
+    
     steps:
-      - name: Checkout repository with latest data
-        uses: actions/checkout@v4
+    - name: Checkout code (Fetch committed files)
+      uses: actions/checkout@v4
 
-      - name: Setup Node.js 20 & install Wrangler
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: |
-          npm install
-          npm install -g wrangler@3
+    # Deploy to Vercel Mirror (https://v2v-vercel.vercel.app/)
+    - name: Deploy to Vercel Mirror
+      id: vercel_deploy
+      uses: amondnet/vercel-action@v25 
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+      continue-on-error: true 
+
+    # Deploy to Arvan Cloud Object Storage (https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/)
+    - name: Deploy to Arvan Cloud Object Storage (S3 Sync)
+      id: arvan_deploy
+      uses: jakejarvis/s3-sync-action@master
+      with:
+        args: --acl public-read --delete 
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }} 
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+        AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.ir' 
+        AWS_S3_BUCKET: ${{ secrets.ARVAN_BUCKET_NAME }} 
+        SOURCE_DIR: '.'
+      continue-on-error: true 
       
-      - name: Deploy to Vercel
-        timeout-minutes: 5
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
+    # Final Deploy Status Report
+    - name: Final Deploy Status Report
+      if: always() 
+      run: |
+        vercel_status="${{ steps.vercel_deploy.outcome }}"
+        arvan_status="${{ steps.arvan_deploy.outcome }}"
 
-      - name: Deploy to Cloudflare Workers
-        timeout-minutes: 5
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          # ✅ لیست 4 Worker نهایی مطابق با جمع بندی معماری
-          worker_names=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
-          for name in "${worker_names[@]}"; do
-            echo "--- Deploying worker: $name ---"
-            wrangler deploy "worker.js" --config "wrangler-${name}.toml" --name "$name"
-          done
+        echo "Deployment Status:"
+        echo "- GitHub Pages: Success (Committed)"
+        echo "- Vercel: $vercel_status (Consumer: Worker)"
+        echo "- Arvan: $arvan_status (Consumer: Worker)"
 
-      - name: Deploy to ArvanCloud S3
-        timeout-minutes: 5
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-          AWS_REGION: "us-east-1"
-          ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
-          ARVAN_S3_BUCKET: s3://v2v-data
-        run: |
-          # نصب و آپلود به ArvanCloud S3
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install --update
-          aws s3 sync . ${{ env.ARVAN_S3_BUCKET }} --endpoint-url ${{ env.ARVAN_S3_ENDPOINT }} --acl public-read --delete --cache-control max-age=300
-
-      - name: Create artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        if [ "$vercel_status" == "failure" ] || [ "$arvan_status" == "failure" ]; then
+            echo "⚠️ Warning: One or more mirrors failed. Pipeline continued."
+            echo "🔥 Consumers (Workers) will use active mirrors."
+        else
+            echo "✅ Success: All mirrors updated successfully."
+        fi
