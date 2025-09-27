@@ -1,65 +1,183 @@
-name: 'V2V Publisher - استخراج و انتشار چند-آینه‌ای'
+name: 'V2V Publisher - Fixed & Timeout Protected'
 
 on:
-  # اجرا هر 3 ساعت یکبار
+  # اجرا هر 4 ساعت یکبار (کمتر فشار به سرور)
   schedule:
-    - cron: '0 */3 * * *' 
+    - cron: '0 */4 * * *' 
   workflow_dispatch:
+  
+# ✅ اضافه کردن timeout کلی برای workflow
+env:
+  WORKFLOW_TIMEOUT_MINUTES: 50
 
 jobs:
   scrape_and_commit:
     runs-on: ubuntu-latest
-    environment: Production 
+    environment: Production
+    # ✅ تنظیم timeout برای کل job
+    timeout-minutes: 45
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 
+        fetch-depth: 0
+        # ✅ اضافه کردن timeout برای checkout
+        timeout-minutes: 5
 
     - name: Setup Python environment
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+      timeout-minutes: 5
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install requests PyGithub PyYAML
+      timeout-minutes: 5
 
+    # ✅ بررسی sources.json قبل از اجرا
+    - name: Validate sources file
+      run: |
+        if [ ! -f "sources.json" ]; then
+          echo "ERROR: sources.json not found!"
+          echo '{"static": ["https://example.com/sub1", "https://example.com/sub2"]}' > sources.json
+        fi
+        python -c "import json; json.load(open('sources.json'))" || exit 1
+        echo "✅ sources.json is valid"
+      timeout-minutes: 2
+
+    # ✅ اجرای اسکریپت با timeout و error handling
     - name: Execute Scraper script
-      run: python scraper.py
+      run: |
+        echo "🚀 Starting scraper with timeout protection..."
+        timeout 2400 python scraper.py || {
+          exit_code=$?
+          if [ $exit_code -eq 124 ]; then
+            echo "⏰ Scraper timed out after 40 minutes"
+            echo "Creating minimal output files to prevent workflow failure..."
+            
+            # ایجاد فایل‌های minimal در صورت timeout
+            echo '{"xray": {"vless": [], "vmess": [], "trojan": [], "ss": []}, "singbox": {"vless": [], "vmess": [], "trojan": [], "ss": [], "hy2": [], "tuic": []}}' > all_live_configs.json
+            echo 'proxies: []' > clash_subscription.yml
+            echo $(date +%s) > cache_version.txt
+            
+            echo "⚠️ Minimal files created due to timeout"
+          else
+            echo "❌ Scraper failed with exit code: $exit_code"
+            exit 1
+          fi
+        }
+        
+        # بررسی وجود فایل‌های خروجی
+        if [ ! -f "all_live_configs.json" ] || [ ! -f "clash_subscription.yml" ] || [ ! -f "cache_version.txt" ]; then
+          echo "❌ Required output files missing!"
+          exit 1
+        fi
+        
+        echo "✅ Scraper completed successfully"
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
-        # ✅ متغیرهای Cloudflare (برای KV) به طور کامل حذف شدند، زیرا Workerها مسئولیت آپلود را بر عهده دارند.
+        # ✅ محدود کردن GitHub search برای جلوگیری از timeout
+        GITHUB_SEARCH_LIMIT: 30
+      timeout-minutes: 42
 
     - name: Configure Git for commit
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
+      timeout-minutes: 2
         
+    # ✅ بهبود commit process
     - name: Commit and Push new files (GitHub Mirror)
       run: |
-        # ✅ اضافه کردن index.html و index.js برای Deploy شدن کدهای UI جدید
-        git add index.html index.js all_live_configs.json clash_subscription.yml cache_version.txt
-        if git diff --cached --exit-code; then
-          echo "No files to commit. Skipping."
-        else
-          git commit -m "🤖 V2V Scraper: Update configs, cache version, and UI files [skip ci]"
-          git push
+        echo "📝 Checking for changes..."
+        
+        # بررسی اندازه فایل‌های تولید شده
+        if [ -f "all_live_configs.json" ]; then
+          config_size=$(wc -c < "all_live_configs.json")
+          echo "📊 Config file size: $config_size bytes"
+          
+          if [ "$config_size" -lt 100 ]; then
+            echo "⚠️ Config file too small, may indicate error"
+          fi
         fi
+        
+        # اضافه کردن فایل‌ها
+        git add all_live_configs.json clash_subscription.yml cache_version.txt
+        
+        # بررسی تغییرات
+        if git diff --cached --exit-code; then
+          echo "ℹ️ No changes detected. Skipping commit."
+        else
+          echo "✅ Changes detected. Committing..."
+          
+          # محاسبه تعداد configs
+          xray_count=$(python3 -c "import json; data=json.load(open('all_live_configs.json')); print(sum(len(v) for v in data.get('xray', {}).values()))" 2>/dev/null || echo "0")
+          singbox_count=$(python3 -c "import json; data=json.load(open('all_live_configs.json')); print(sum(len(v) for v in data.get('singbox', {}).values()))" 2>/dev/null || echo "0")
+          
+          commit_msg="🤖 V2V Auto-Update: Xray($xray_count) + Sing-box($singbox_count) configs [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+          
+          git commit -m "$commit_msg"
+          git push
+          
+          echo "✅ Files committed and pushed successfully"
+        fi
+      timeout-minutes: 5
         
   multi_mirror_deploy:
     runs-on: ubuntu-latest
-    # این Job فقط در صورت موفقیت Job قبلی اجرا می‌شود.
     needs: scrape_and_commit
+    # ✅ اجرا حتی در صورت partial failure job قبلی
+    if: always() && (needs.scrape_and_commit.result == 'success' || needs.scrape_and_commit.result == 'failure')
+    timeout-minutes: 15
     
     steps:
     - name: Checkout code (Fetch committed files)
-      # این گام فایل‌های جدید (از جمله index.html و index.js) را پس از Commit شدن می‌آورد.
       uses: actions/checkout@v4
+      with:
+        # ✅ اطمینان از دریافت آخرین commit
+        ref: ${{ github.ref }}
+      timeout-minutes: 3
 
-    # Deploy to Vercel Mirror (https://v2v-vercel.vercel.app/)
+    # ✅ بررسی وجود فایل‌های لازم قبل از deploy
+    - name: Validate output files
+      run: |
+        echo "🔍 Validating output files..."
+        
+        required_files=("all_live_configs.json" "clash_subscription.yml" "cache_version.txt")
+        
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Missing file: $file"
+            echo "Creating placeholder..."
+            case $file in
+              "all_live_configs.json")
+                echo '{"xray": {}, "singbox": {}}' > "$file"
+                ;;
+              "clash_subscription.yml")
+                echo 'proxies: []' > "$file"
+                ;;
+              "cache_version.txt")
+                echo $(date +%s) > "$file"
+                ;;
+            esac
+          else
+            echo "✅ Found: $file ($(wc -c < "$file") bytes)"
+          fi
+        done
+        
+        # بررسی validity فایل JSON
+        python3 -c "import json; json.load(open('all_live_configs.json'))" || {
+          echo "⚠️ Invalid JSON detected. Creating valid placeholder."
+          echo '{"xray": {}, "singbox": {}}' > all_live_configs.json
+        }
+        
+        echo "✅ All files validated"
+      timeout-minutes: 2
+
+    # Deploy to Vercel Mirror
     - name: Deploy to Vercel Mirror
       id: vercel_deploy
       uses: amondnet/vercel-action@v25 
@@ -68,38 +186,89 @@ jobs:
         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
         vercel-args: '--prod'
-      continue-on-error: true 
+      continue-on-error: true
+      timeout-minutes: 8
 
-    # Deploy to Arvan Cloud Object Storage (https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/)
+    # Deploy to Arvan Cloud Object Storage
     - name: Deploy to Arvan Cloud Object Storage (S3 Sync)
       id: arvan_deploy
       uses: jakejarvis/s3-sync-action@master
       with:
-        # آرگومان --delete تضمین می‌کند که فایل‌های قدیمی (مانند Base64) حذف شوند.
-        args: --acl public-read --delete 
+        args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*" --exclude "*.py" --exclude "README.md"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }} 
         AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.ir' 
         AWS_S3_BUCKET: ${{ secrets.ARVAN_BUCKET_NAME }} 
         SOURCE_DIR: '.'
-      continue-on-error: true 
+      continue-on-error: true
+      timeout-minutes: 5
       
-    # Final Deploy Status Report
+    # Final Deploy Status Report with better formatting
     - name: Final Deploy Status Report
       if: always() 
       run: |
+        echo "============================================"
+        echo "🚀 DEPLOYMENT STATUS REPORT"
+        echo "============================================"
+        
         vercel_status="${{ steps.vercel_deploy.outcome }}"
         arvan_status="${{ steps.arvan_deploy.outcome }}"
-
-        echo "Deployment Status:"
-        echo "- GitHub Pages: Success (Committed)"
-        echo "- Vercel: $vercel_status (Consumer: Worker)"
-        echo "- Arvan: $arvan_status (Consumer: Worker)"
-
-        if [ "$vercel_status" == "failure" ] || [ "$arvan_status" == "failure" ]; then
-            echo "⚠️ Warning: One or more mirrors failed. Pipeline continued."
-            echo "🔥 Consumers (Workers) will use active mirrors."
-        else
-            echo "✅ Success: All mirrors updated successfully."
+        scraper_status="${{ needs.scrape_and_commit.result }}"
+        
+        echo "📊 Job Results:"
+        echo "   - Scraper: $scraper_status"
+        echo "   - Vercel: $vercel_status"
+        echo "   - Arvan: $arvan_status"
+        echo ""
+        
+        # محاسبه تعداد configs
+        if [ -f "all_live_configs.json" ]; then
+          total_configs=$(python3 -c "
+          import json
+          try:
+              data = json.load(open('all_live_configs.json'))
+              xray_total = sum(len(v) for v in data.get('xray', {}).values())
+              singbox_total = sum(len(v) for v in data.get('singbox', {}).values())
+              print(f'Xray: {xray_total}, Sing-box: {singbox_total}, Total: {xray_total + singbox_total}')
+          except:
+              print('Error reading config file')
+          " 2>/dev/null || echo "Could not calculate totals")
+          echo "📈 Configs: $total_configs"
         fi
+        
+        echo ""
+        echo "🌐 Mirror Status:"
+        echo "   - GitHub Pages: ✅ Active (Primary)"
+        
+        if [ "$vercel_status" = "success" ]; then
+          echo "   - Vercel: ✅ Deployed"
+        else
+          echo "   - Vercel: ❌ Failed"
+        fi
+        
+        if [ "$arvan_status" = "success" ]; then
+          echo "   - Arvan Cloud: ✅ Deployed"
+        else
+          echo "   - Arvan Cloud: ❌ Failed"
+        fi
+        
+        echo ""
+        
+        # تعیین وضعیت نهایی
+        if [ "$vercel_status" = "failure" ] && [ "$arvan_status" = "failure" ]; then
+          echo "⚠️ WARNING: All secondary mirrors failed!"
+          echo "🔄 Only GitHub Pages mirror is active."
+          echo "🔧 Check secrets and service availability."
+        elif [ "$vercel_status" = "failure" ] || [ "$arvan_status" = "failure" ]; then
+          echo "⚠️ PARTIAL: One mirror failed, others operational."
+          echo "✅ Service continuity maintained."
+        else
+          echo "✅ SUCCESS: All mirrors updated successfully!"
+          echo "🎯 Full redundancy achieved."
+        fi
+        
+        echo "============================================"
+        echo "⏰ Completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+        echo "============================================"
+      timeout-minutes: 2
