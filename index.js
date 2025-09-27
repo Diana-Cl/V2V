@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const STATIC_CACHE_VERSION_URL = './cache_version.txt';
     const PING_TIMEOUT = 8000; // Increased to 8 seconds as per scraper.py config
     // 1. Load Balancing: Array of 4 Active-Active Worker Endpoints (v2v project)
+    // ✅ لیست 4 Worker نهایی (مطابق با جمع‌بندی معماری)
     const WORKER_URLS = [
         'https://v2v-proxy.mbrgh87.workers.dev',
         'https://v2v.mbrgh87.workers.dev',
@@ -18,7 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // Batching Configuration
-    const PING_BATCH_SIZE = 50; // As per saved GITHUB_SEARCH_LIMIT guidance
+    // ✅ اندازه 50 برای Batch پینگ (مطابق با تضمین QA/GITHUB_SEARCH_LIMIT)
+    const PING_BATCH_SIZE = 50; 
     
     // --- DOM Elements ---
     const getEl = (id) => document.getElementById(id);
@@ -87,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const actionGroupTitle = (title) => `<div class="action-group-title">${title}</div>`;
         const coreClient = coreName === 'xray' ? 'xray' : 'singbox';
         
-        // 4. نهایی‌سازی ۸ حالت لینک اشتراک
+        // 4. نهایی‌سازی ۸ حالت لینک اشتراک (YAML/JSON + Raw x All/Selected)
         let contentHtml = runPingButton + `
             ${actionGroupTitle('لینک اشتراک Base64 (خام)')}
             <div class="action-box">
@@ -120,7 +122,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Skip protocols with no configs after scraper grouping
             if (configs.length === 0) continue; 
             
-            const protocolName = protocol.charAt(0).toUpperCase() + protocol.slice(1).replace('ss', 'Shadowsocks').replace('hy2', 'Hysteria2');
+            // ✅ افزودن پروتکل‌های SSR و Naive به نام‌های نمایشی
+            const protocolName = protocol.charAt(0).toUpperCase() + protocol.slice(1)
+                .replace('ss', 'Shadowsocks')
+                .replace('hy2', 'Hysteria2')
+                .replace('ssr', 'ShadowsocksR')
+                .replace('naive', 'NaiveProxy');
             
             // 2. افزودن دکمه "کپی همه" برای هر پروتکل
             contentHtml += `
@@ -252,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ping = result.latency;
                 pingResultEl.textContent = `${ping}ms`;
                 if (ping < 200) pingResultEl.style.color = 'var(--ping-good)';
-                else if (ping < 500) pingResultEl.style.color = 'var(--ping-medium)';
+                else if (ping < 500) pingResultRl.style.color = 'var(--ping-medium)';
                 else pingResultEl.style.color = 'var(--ping-bad)';
                 configElement.dataset.ping = ping;
             } else {
