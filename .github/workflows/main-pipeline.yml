@@ -1,6 +1,7 @@
 name: 'V2V Publisher - استخراج و انتشار چند-آینه‌ای'
 
 on:
+  # اجرا هر 3 ساعت یکبار
   schedule:
     - cron: '0 */3 * * *' 
   workflow_dispatch:
@@ -30,6 +31,7 @@ jobs:
       run: python scraper.py
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
+        # ✅ متغیرهای Cloudflare (برای KV) به طور کامل حذف شدند، زیرا Workerها مسئولیت آپلود را بر عهده دارند.
 
     - name: Configure Git for commit
       run: |
@@ -38,20 +40,23 @@ jobs:
         
     - name: Commit and Push new files (GitHub Mirror)
       run: |
-        git add all_live_configs.json clash_subscription.yml cache_version.txt
+        # ✅ اضافه کردن index.html و index.js برای Deploy شدن کدهای UI جدید
+        git add index.html index.js all_live_configs.json clash_subscription.yml cache_version.txt
         if git diff --cached --exit-code; then
           echo "No files to commit. Skipping."
         else
-          git commit -m "🤖 V2V Scraper: Update configs and cache version [skip ci]"
+          git commit -m "🤖 V2V Scraper: Update configs, cache version, and UI files [skip ci]"
           git push
         fi
         
   multi_mirror_deploy:
     runs-on: ubuntu-latest
+    # این Job فقط در صورت موفقیت Job قبلی اجرا می‌شود.
     needs: scrape_and_commit
     
     steps:
     - name: Checkout code (Fetch committed files)
+      # این گام فایل‌های جدید (از جمله index.html و index.js) را پس از Commit شدن می‌آورد.
       uses: actions/checkout@v4
 
     # Deploy to Vercel Mirror (https://v2v-vercel.vercel.app/)
@@ -70,6 +75,7 @@ jobs:
       id: arvan_deploy
       uses: jakejarvis/s3-sync-action@master
       with:
+        # آرگومان --delete تضمین می‌کند که فایل‌های قدیمی (مانند Base64) حذف شوند.
         args: --acl public-read --delete 
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }} 
