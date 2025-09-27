@@ -15,7 +15,8 @@ from typing import Optional, Set, List, Dict, Tuple
 from collections import defaultdict
 import yaml 
 
-print("INFO: V2V Scraper v44.2 (KV Upload Logic REMOVED)") 
+# ✅ لاگ تمیز شده
+print("INFO: V2V Scraper v44.3 (Data Generation)") 
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -38,7 +39,8 @@ GITHUB_PAT = os.environ.get('GH_PAT')
 MAX_CONFIGS_TO_TEST = 15000
 MIN_TARGET_CONFIGS_PER_CORE = 1000 
 MAX_FINAL_CONFIGS_PER_CORE = 5000  
-MAX_TEST_WORKERS = 200
+# ✅ توصیه اکید برای رفع مشکل زمان: کاهش این عدد به 50 یا 80 برای پایداری در GitHub Actions
+MAX_TEST_WORKERS = 200 
 TCP_TIMEOUT = 2.5
 MAX_LATENCY_MS = 2500
 MAX_NAME_LENGTH = 40
@@ -96,6 +98,7 @@ def fetch_from_static_sources(sources: List[str]) -> Set[str]:
 
     def fetch_url(url):
         try:
+            # این خط برای افزایش سرعت باید حذف شود: time.sleep(random.uniform(0.5, 1.5)) 
             time.sleep(random.uniform(0.5, 1.5)) 
             response = requests.get(url, headers=HEADERS, timeout=10)
             response.raise_for_status()
@@ -500,7 +503,8 @@ def main():
             grouped[proto].append(cfg)
         return dict(grouped)
 
-    output_data_for_kv = {
+    # ✅ تغییر نام متغیر
+    final_output_data = {
         "xray": group_by_protocol_for_output(xray_final_selected), 
         "singbox": group_by_protocol_for_output(singbox_final_selected)
     }
@@ -508,7 +512,7 @@ def main():
     print("\n--- 5. Writing Local Files ---")
     # Writing all_live_configs.json
     with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
-        json.dump(output_data_for_kv, f, indent=2, ensure_ascii=False)
+        json.dump(final_output_data, f, indent=2, ensure_ascii=False)
     print(f"✅ Wrote combined configs to {OUTPUT_JSON_FILE}.")
 
     # Writing clash_subscription.yml (using Xray configs for Clash Meta)
@@ -527,8 +531,8 @@ def main():
 
     print("\n--- Process Completed Successfully (Files Ready for Commit/Deploy) ---")
     
-    total_xray = sum(len(configs) for configs in output_data_for_kv["xray"].values())
-    total_singbox = sum(len(configs) for configs in output_data_for_kv["singbox"].values())
+    total_xray = sum(len(configs) for configs in final_output_data["xray"].values())
+    total_singbox = sum(len(configs) for configs in final_output_data["singbox"].values())
     print(f"Final Summary:")
     print(f"   - Xray configs: {total_xray}")
     print(f"   - Sing-box configs: {total_singbox}")
