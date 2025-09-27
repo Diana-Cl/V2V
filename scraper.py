@@ -10,13 +10,14 @@ import ssl
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
-from github import Github, BadCredentialsException, RateLimitExceededException, UnknownObjectException 
+# ✅ تغییر: اضافه کردن Auth برای رفع DeprecationWarning
+from github import Github, Auth, BadCredentialsException, RateLimitExceededException, UnknownObjectException 
 from typing import Optional, Set, List, Dict, Tuple
 from collections import defaultdict
 import yaml 
 
 # ✅ لاگ تمیز شده
-print("INFO: V2V Scraper v44.4 (Optimized for GitHub Actions)") 
+print("INFO: V2V Scraper v44.5 (Optimized & Deprecation Fixed)") 
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -36,15 +37,13 @@ HEADERS = {'User-Agent': 'V2V-Scraper/1.0'}
 GITHUB_PAT = os.environ.get('GH_PAT') 
 
 # --- PERFORMANCE & FILTERING PARAMETERS ---
-MAX_CONFIGS_TO_TEST = 10000 # ✅ Changed from 15000
+MAX_CONFIGS_TO_TEST = 10000 
 MIN_TARGET_CONFIGS_PER_CORE = 1000 
-MAX_FINAL_CONFIGS_PER_CORE = 3000  
-# ✅ کاهش تعداد Workerها برای پایداری بیشتر در محیط GitHub Actions
-MAX_TEST_WORKERS = 100 # ✅ Changed from 200
-TCP_TIMEOUT = 8.0 # ✅ Changed from 2.5
-MAX_LATENCY_MS = 4500 # ✅ Changed from 2500
+MAX_FINAL_CONFIGS_PER_CORE = 5000  
+MAX_TEST_WORKERS = 100 
+TCP_TIMEOUT = 8.0 
+MAX_LATENCY_MS = 4500 
 MAX_NAME_LENGTH = 40
-# ✅ هماهنگی با حداقل محدودیت 50
 GITHUB_SEARCH_LIMIT = max(50, int(os.environ.get('GITHUB_SEARCH_LIMIT', 150))) 
 UPDATE_INTERVAL_HOURS = 3 
 
@@ -154,7 +153,8 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
     total_files_processed = 0
 
     try:
-        g = Github(login_or_token=pat, timeout=30) 
+        # ✅ تغییر: استفاده از Auth.Token برای احراز هویت جدید
+        g = Github(auth=Auth.Token(pat), timeout=30) 
         query = " OR ".join(VALID_PROTOCOLS) + " extension:txt extension:md extension:yml extension:yaml extension:json extension:html -user:mahdibland"
         
         results = g.search_code(query, order='desc', sort='indexed', per_page=100)
