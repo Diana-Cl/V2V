@@ -16,7 +16,7 @@ from collections import defaultdict
 import yaml 
 
 # ✅ لاگ تمیز شده
-print("INFO: V2V Scraper v44.3 (Data Generation)") 
+print("INFO: V2V Scraper v44.4 (Optimized for GitHub Actions)") 
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -36,13 +36,13 @@ HEADERS = {'User-Agent': 'V2V-Scraper/1.0'}
 GITHUB_PAT = os.environ.get('GH_PAT') 
 
 # --- PERFORMANCE & FILTERING PARAMETERS ---
-MAX_CONFIGS_TO_TEST = 15000
+MAX_CONFIGS_TO_TEST = 10000 # ✅ Changed from 15000
 MIN_TARGET_CONFIGS_PER_CORE = 1000 
-MAX_FINAL_CONFIGS_PER_CORE = 5000  
-# ✅ توصیه اکید برای رفع مشکل زمان: کاهش این عدد به 50 یا 80 برای پایداری در GitHub Actions
-MAX_TEST_WORKERS = 200 
-TCP_TIMEOUT = 2.5
-MAX_LATENCY_MS = 2500
+MAX_FINAL_CONFIGS_PER_CORE = 3000  
+# ✅ کاهش تعداد Workerها برای پایداری بیشتر در محیط GitHub Actions
+MAX_TEST_WORKERS = 100 # ✅ Changed from 200
+TCP_TIMEOUT = 8.0 # ✅ Changed from 2.5
+MAX_LATENCY_MS = 4500 # ✅ Changed from 2500
 MAX_NAME_LENGTH = 40
 # ✅ هماهنگی با حداقل محدودیت 50
 GITHUB_SEARCH_LIMIT = max(50, int(os.environ.get('GITHUB_SEARCH_LIMIT', 150))) 
@@ -98,7 +98,6 @@ def fetch_from_static_sources(sources: List[str]) -> Set[str]:
 
     def fetch_url(url):
         try:
-            # این خط برای افزایش سرعت باید حذف شود: time.sleep(random.uniform(0.5, 1.5)) 
             time.sleep(random.uniform(0.5, 1.5)) 
             response = requests.get(url, headers=HEADERS, timeout=10)
             response.raise_for_status()
@@ -128,17 +127,12 @@ def fetch_from_static_sources(sources: List[str]) -> Set[str]:
             return potential_configs
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429:
-                # print(f"    Rate limit hit for {url} (HTTP 429). Waiting 60s and retrying...") # ❌ حذف لاگ اضافی
                 time.sleep(60)
                 return fetch_url(url)
-            # elif e.response.status_code != 404: 
-                # print(f"    HTTP Error {e.response.status_code} for {url}. Skipping.") # ❌ حذف لاگ اضافی
             return set()
         except requests.RequestException:
-            # print(f"    Network/Request Error for {url}: {e}. Skipping.") # ❌ حذف لاگ اضافی
             return set()
         except Exception:
-            # print(f"    General Error fetching/processing {url}: {type(e).__name__}: {e}. Skipping.") # ❌ حذف لاگ اضافی
             return set()
 
     with ThreadPoolExecutor(max_workers=10) as executor: 
@@ -163,13 +157,10 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
         g = Github(login_or_token=pat, timeout=30) 
         query = " OR ".join(VALID_PROTOCOLS) + " extension:txt extension:md extension:yml extension:yaml extension:json extension:html -user:mahdibland"
         
-        # print(f"  Starting GitHub search with query: '{query}' (limit: {limit})...") # ❌ حذف لاگ اضافی
-        
         results = g.search_code(query, order='desc', sort='indexed', per_page=100)
 
         for content_file in results:
             if total_files_processed >= limit:
-                # print(f"  Reached GitHub file limit of {limit}, stopping further search.") # ❌ حذف لاگ اضافی
                 break
 
             try:
@@ -201,11 +192,9 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
             except UnknownObjectException:
                 continue 
             except RateLimitExceededException:
-                # print(f"    GitHub API rate limit hit while fetching content for {content_file.path}. Waiting 180s...") # ❌ حذف لاگ اضافی
                 time.sleep(180)
                 continue
             except Exception:
-                # print(f"    Error processing GitHub file {content_file.path}: {type(e).__name__}: {e}. Skipping.") # ❌ حذف لاگ اضافی
                 continue
         
         print(f"  Finished GitHub search. Found {len(all_configs)} configs from {total_files_processed} unique GitHub files.")
@@ -249,6 +238,7 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
         
         if protocol in SINGBOX_ONLY_PROTOCOLS:
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                # استفاده از TCP_TIMEOUT جدید
                 sock.settimeout(TCP_TIMEOUT)
                 try:
                     sock.sendto(b'\x00\x00', (hostname, port)) 
@@ -326,7 +316,6 @@ def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: 
 
 def generate_clash_yaml(configs: List[str]) -> Optional[str]:
     """Generates a Clash Meta compatible YAML string from a list of configs."""
-    # ... (No change needed here as the logic is sound for generating the local file) ...
     proxies = []
     unique_check = set()
     
@@ -357,7 +346,6 @@ def generate_clash_yaml(configs: List[str]) -> Optional[str]:
 
 def parse_proxy_for_clash(config: str) -> Optional[Dict]:
     """Parses a single config URI into a Clash proxy dictionary."""
-    # ... (No change needed here as the logic is sound for generating the local file) ...
     try:
         name_raw = urlparse(config).fragment or f"V2V-{int(time.time() * 1000) % 10000}"
         name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251\W_]+', '', name_raw).strip()
@@ -503,7 +491,6 @@ def main():
             grouped[proto].append(cfg)
         return dict(grouped)
 
-    # ✅ تغییر نام متغیر
     final_output_data = {
         "xray": group_by_protocol_for_output(xray_final_selected), 
         "singbox": group_by_protocol_for_output(singbox_final_selected)
