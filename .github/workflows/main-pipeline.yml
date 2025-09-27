@@ -41,12 +41,17 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests pygithub pyyaml
+          pip install requests pygithub pyyaml cloudflare
 
-      - name: Run scraper to generate data files
+      - name: Run scraper to generate data files (Uploads to KV)
         timeout-minutes: 25
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          # ✅ هماهنگ سازی با scraper.py (GITHUB_TOKEN)
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }} 
+          # ✅ افزودن متغیرهای Cloudflare KV برای آپلود داده
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
         run: |
           timeout 24m python scraper.py || {
             echo "Scraper timed out or failed. Check scraper.py logs."
@@ -57,6 +62,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(data): Update configs and frontend files for static mirrors"
+          # ✅ فایل YAML تولید شده توسط اسکریپر نیز Commit می‌شود
           file_pattern: "*.json *.txt *.yaml index.html index.js manifest.json logo.png"
 
   deploy_services:
@@ -91,6 +97,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
+          # ✅ لیست 4 Worker نهایی مطابق با جمع بندی معماری
           worker_names=("rapid-scene-1da6" "winter-hill-0307" "v2v" "v2v-proxy")
           for name in "${worker_names[@]}"; do
             echo "--- Deploying worker: $name ---"
@@ -106,6 +113,7 @@ jobs:
           ARVAN_S3_ENDPOINT: https://s3.ir-thr-at1.arvanstorage.com
           ARVAN_S3_BUCKET: s3://v2v-data
         run: |
+          # نصب و آپلود به ArvanCloud S3
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install --update
