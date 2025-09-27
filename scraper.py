@@ -13,12 +13,10 @@ from urllib.parse import urlparse
 from github import Github, Auth, BadCredentialsException, RateLimitExceededException, UnknownObjectException
 from typing import Optional, Set, List, Dict, Tuple
 from collections import defaultdict
-import yaml # ✅ اضافه شدن PyYAML
+import yaml 
+# Cloudflare Library Import REMOVED
 
-# cloudflare library is required: pip install cloudflare
-from cloudflare import Cloudflare, APIError
-
-print("INFO: V2V Scraper v44.0 (Hybrid Fast-Fetch + Advanced Features)") # ✅ نسخه جدید
+print("INFO: V2V Scraper v44.1 (KV Upload Logic REMOVED)") 
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,25 +33,21 @@ VALID_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_ONLY_PROTOCOLS)
 HEADERS = {'User-Agent': 'V2V-Scraper/1.0'}
 
 # Environment variables for sensitive data
-GITHUB_PAT = os.environ.get('GH_PAT') # ✅ استانداردسازی به حروف بزرگ
-CLOUDFLARE_API_TOKEN = os.environ.get('CLOUDFLARE_API_TOKEN') # ✅ استانداردسازی به حروف بزرگ
-CLOUDFLARE_ACCOUNT_ID = os.environ.get('CLOUDFLARE_ACCOUNT_ID') # ✅ استانداردسازی به حروف بزرگ
-CLOUDFLARE_KV_NAMESPACE_ID = os.environ.get('CLOUDFLARE_KV_NAMESPACE_ID') # ✅ استانداردسازی به حروف بزرگ
+GITHUB_PAT = os.environ.get('GH_PAT') 
+# Cloudflare Environment variables REMOVED
 
 # --- PERFORMANCE & FILTERING PARAMETERS (Managed in scraper.py) ---
 MAX_CONFIGS_TO_TEST = 15000
-MIN_TARGET_CONFIGS_PER_CORE = 500
-MAX_FINAL_CONFIGS_PER_CORE = 1000
+MIN_TARGET_CONFIGS_PER_CORE = 1000 # ✅ اصلاح شد: حداقل 1000
+MAX_FINAL_CONFIGS_PER_CORE = 5000  # ✅ اصلاح شد: سقف 5000
 MAX_TEST_WORKERS = 200
 TCP_TIMEOUT = 2.5
 MAX_LATENCY_MS = 2500
 MAX_NAME_LENGTH = 40
-GITHUB_SEARCH_LIMIT = 150 # ✅ مقدار پیش‌فرض GitHub search limit (از sources.json حذف شد)
-UPDATE_INTERVAL_HOURS = 3 # ✅ مقدار پیش‌فرض update interval (از sources.json حذف شد)
+GITHUB_SEARCH_LIMIT = 150 # ✅ مقدار بالای 50 حفظ شد
+UPDATE_INTERVAL_HOURS = 3 
 
-# Cloudflare KV keys
-KV_LIVE_CONFIGS_KEY = 'all_live_configs.json'
-KV_CACHE_VERSION_KEY = 'cache_version.txt'
+# Cloudflare KV keys REMOVED
 
 # --- HELPER FUNCTIONS (Robust Parsing & Validation) ---
 
@@ -464,64 +458,9 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
         
     return None
 
-def upload_to_cloudflare_kv(key: str, value: str):
-    """
-    Uploads a string value to a Cloudflare KV namespace.
-    The value is expected to be a string and will be encoded to UTF-8 bytes before upload.
-    """
-    if not all([CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_KV_NAMESPACE_ID]):
-        print("FATAL: Cloudflare KV credentials not fully set. Skipping KV upload.")
-        raise ValueError("Cloudflare API Token, Account ID, or KV Namespace ID is missing from environment variables.")
-    
-    if not isinstance(value, str):
-        print(f"CRITICAL ERROR: Attempted to upload non-string value for KV key '{key}'. Type: {type(value).__name__}.")
-        raise TypeError(f"KV value for '{key}' must be a string, but received type {type(value).__name__}.")
+# upload_to_cloudflare_kv function REMOVED
 
-    try:
-        cf_client = Cloudflare(api_token=CLOUDFLARE_API_TOKEN, timeout=60)
-        
-        cf_client.kv.namespaces.values.update(
-            account_id=CLOUDFLARE_ACCOUNT_ID,
-            namespace_id=CLOUDFLARE_KV_NAMESPACE_ID,
-            key_name=key,
-            value=value.encode('utf-8'), # Encoded to bytes for KV storage
-            metadata={}
-        )
-        print(f"✅ Successfully uploaded '{key}' to Cloudflare KV.")
-    except APIError as e:
-        print(f"❌ ERROR: Cloudflare API error uploading '{key}': Code {e.code} - {e.message}")
-        if e.code == 10000:
-            print("  HINT: Ensure the CLOUDFLARE_API_TOKEN has 'Worker KV Storage Write' permission.")
-        if e.code == 10014:
-            print("  HINT: Double-check that CLOUDFLARE_KV_NAMESPACE_ID is correct.")
-        raise
-    except Exception as e:
-        print(f"❌ ERROR: Failed to upload key '{key}' to Cloudflare KV: {type(e).__name__}: {e}")
-        raise
-
-def clean_for_json(obj):
-    """
-    Recursively cleans a Python object to ensure all components are JSON-serializable.
-    Specifically converts bytes to strings and ensures dictionary keys are strings.
-    """
-    if isinstance(obj, bytes):
-        return obj.decode('utf-8', 'ignore')
-    elif isinstance(obj, dict):
-        cleaned_dict = {}
-        for k, v in obj.items():
-            # Ensure key is a string after recursive cleaning
-            cleaned_key = clean_for_json(k)
-            if not isinstance(cleaned_key, str):
-                cleaned_key = str(cleaned_key) 
-            cleaned_dict[cleaned_key] = clean_for_json(v)
-        return cleaned_dict
-    elif isinstance(obj, (list, tuple, set)):
-        return [clean_for_json(item) for item in obj]
-    elif isinstance(obj, (int, float, str, bool)) or obj is None:
-        return obj
-    else:
-        print(f"WARNING: Found unexpected type '{type(obj).__name__}' during JSON cleaning. Converting to string.")
-        return str(obj)
+# clean_for_json function REMOVED (No longer needed)
 
 # --- MAIN LOGIC ---
 def main():
@@ -531,8 +470,6 @@ def main():
             sources_config = json.load(f)
         
         static_sources = sources_config.get("static", [])
-        # github_search_limit و update_interval_hours اکنون از متغیرهای ثابت بالا استفاده می‌کنند.
-        # نیازی به خواندن آنها از sources_config نیست.
 
         print(f"✅ Loaded {len(static_sources)} static sources. GitHub search limit set to: {GITHUB_SEARCH_LIMIT}.")
     except Exception as e:
@@ -541,7 +478,7 @@ def main():
 
     print("\n--- 2. Fetching Configs ---")
     all_collected_configs = set()
-    with ThreadPoolExecutor(max_workers=2) as executor: # Use fewer workers for overall fetching coordination
+    with ThreadPoolExecutor(max_workers=2) as executor: 
         static_future = executor.submit(fetch_from_static_sources, static_sources)
         dynamic_future = executor.submit(fetch_from_github, GITHUB_PAT, GITHUB_SEARCH_LIMIT)
         
@@ -555,17 +492,16 @@ def main():
 
     print(f"\n--- 3. Performing Deep Protocol Handshake Test ---")
     fast_configs_with_latency = []
-    # Limit the number of configs to test to prevent excessively long runs
     configs_to_test_list = list(all_collected_configs)[:MAX_CONFIGS_TO_TEST] 
     print(f"  Testing {len(configs_to_test_list)} configs with {MAX_TEST_WORKERS} workers...")
     
     with ThreadPoolExecutor(max_workers=MAX_TEST_WORKERS) as executor:
         futures = {executor.submit(test_full_protocol_handshake, cfg): cfg for cfg in configs_to_test_list}
         for i, future in enumerate(as_completed(futures)):
-            if (i + 1) % 500 == 0: # Progress update every 500 tests
+            if (i + 1) % 500 == 0: 
                 print(f"  Tested {i+1}/{len(futures)} configs...")
             result = future.result()
-            if result and result[1] <= MAX_LATENCY_MS: # Filter by max latency
+            if result and result[1] <= MAX_LATENCY_MS: 
                 fast_configs_with_latency.append(result)
 
     if not fast_configs_with_latency: 
@@ -574,31 +510,32 @@ def main():
     print(f"🏆 Found {len(fast_configs_with_latency)} fast configs.")
 
     print("\n--- 4. Grouping and Finalizing Configs (Non-Overlapping) ---")
-    # Sort all fast configs by latency once (fastest first)
+    
+    # 1. Sort all fast configs by latency once (fastest first)
     all_fastest_configs_sorted = sorted(fast_configs_with_latency, key=lambda item: item[1])
     
-    # 1. Select the Sing-box list (supports all VALID_PROTOCOLS) from the top of the overall fastest list.
-    # The input pool to fluid quota needs to be (config, latency) tuples, but only containing VALID_PROTOCOLS.
+    # 2. Select the Sing-box list (supports all VALID_PROTOCOLS) - Prioritize this core
     singbox_eligible_pool = [(c, l) for c, l in all_fastest_configs_sorted if urlparse(c).scheme.lower() in VALID_PROTOCOLS]
-    singbox_final_selected = select_configs_with_fluid_quota(singbox_eligible_pool, MIN_TARGET_CONFIGS_PER_CORE, MAX_FINAL_CONFIGS_PER_CORE)
+    singbox_final_selected = select_configs_with_fluid_quota(
+        singbox_eligible_pool, MIN_TARGET_CONFIGS_PER_CORE, MAX_FINAL_CONFIGS_PER_CORE
+    )
     
-    # 2. Filter the pool for Xray by removing selected Sing-box configs (ensuring non-overlap).
+    # 3. Filter the pool for Xray by excluding selected Sing-box configs (ensuring non-overlap).
     singbox_selected_set = set(singbox_final_selected)
     
-    # The Xray pool must contain only XRAY_PROTOCOLS AND must exclude already selected Sing-box configs.
-    # It must also maintain the sorted order to ensure the fastest *remaining* configs are considered first.
     xray_eligible_pool_non_overlapping = [
         (c, l) for c, l in all_fastest_configs_sorted
         if c not in singbox_selected_set and urlparse(c).scheme.lower() in XRAY_PROTOCOLS
     ]
     
-    # Now select the Xray list from the non-overlapping remaining pool
-    xray_final_selected = select_configs_with_fluid_quota(xray_eligible_pool_non_overlapping, MIN_TARGET_CONFIGS_PER_CORE, MAX_FINAL_CONFIGS_PER_CORE)
-    
-    # End of Modification
+    # 4. Now select the Xray list from the non-overlapping remaining pool
+    xray_final_selected = select_configs_with_fluid_quota(
+        xray_eligible_pool_non_overlapping, MIN_TARGET_CONFIGS_PER_CORE, MAX_FINAL_CONFIGS_PER_CORE
+    )
     
     print(f"✅ Selected {len(xray_final_selected)} unique configs for Xray core.")
     print(f"✅ Selected {len(singbox_final_selected)} unique configs for Sing-box core.")
+
 
     # Helper to group by protocol for JSON output structure
     def group_by_protocol_for_output(configs: List[str]) -> Dict[str, List[str]]:
@@ -634,44 +571,15 @@ def main():
         f.write(str(int(time.time())))
     print(f"✅ Cache version updated in {CACHE_VERSION_FILE}.")
 
-    print("\n--- 6. Uploading to Cloudflare KV ---")
-    try:
-        print("  Cleaning data structure for JSON serialization...")
-        cleaned_output_data = clean_for_json(output_data_for_kv)
-        
-        print("  Testing JSON serialization...")
-        json_string_to_upload = json.dumps(cleaned_output_data, indent=2, ensure_ascii=False)
-        print(f"  JSON serialization successful. Data size: {len(json_string_to_upload)} characters")
-        
-        print("  Uploading live configs to Cloudflare KV...")
-        upload_to_cloudflare_kv(KV_LIVE_CONFIGS_KEY, json_string_to_upload)
-        
-        print("  Uploading cache version to Cloudflare KV...")
-        upload_to_cloudflare_kv(KV_CACHE_VERSION_KEY, str(int(time.time())))
-        
-        print("\n--- Process Completed Successfully ---")
-        
-        total_xray = sum(len(configs) for configs in output_data_for_kv["xray"].values())
-        total_singbox = sum(len(configs) for configs in output_data_for_kv["singbox"].values())
-        print(f"Final Summary:")
-        print(f"   - Xray configs: {total_xray}")
-        print(f"   - Sing-box configs: {total_singbox}")
-        
-    except ValueError as e:
-        print(f"❌ FATAL: Cloudflare KV upload skipped due to missing credentials: {e}")
-        raise
-    except Exception as e:
-        print(f"❌ FATAL: Could not complete Cloudflare KV upload: {type(e).__name__}: {e}")
-        # Add debug info for KV upload failure
-        print("\nDEBUG INFO (KV upload failure):")
-        print(f"  Output data type: {type(output_data_for_kv)}")
-        if isinstance(output_data_for_kv, dict):
-            for key, value in output_data_for_kv.items():
-                print(f"  - Key '{key}': Type {type(value)}")
-                if isinstance(value, dict):
-                    for subkey, subvalue in value.items():
-                        print(f"    - SubKey '{subkey}': Type {type(subvalue)} (length: {len(subvalue) if hasattr(subvalue, '__len__') else 'n/a'})")
-        raise
+    # --- 6. Uploading to Cloudflare KV --- REMOVED
+
+    print("\n--- Process Completed Successfully (Files Ready for Commit/Deploy) ---")
+    
+    total_xray = sum(len(configs) for configs in output_data_for_kv["xray"].values())
+    total_singbox = sum(len(configs) for configs in output_data_for_kv["singbox"].values())
+    print(f"Final Summary:")
+    print(f"   - Xray configs: {total_xray}")
+    print(f"   - Sing-box configs: {total_singbox}")
 
 if __name__ == "__main__":
     main()
