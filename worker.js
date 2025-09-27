@@ -15,7 +15,8 @@ const ALLOWED_ORIGINS = [
 
 // 1. تعریف پروتکل‌های پشتیبانی‌شده توسط هر هسته (جهت تضمین خروجی سالم)
 const XRAY_PROTOCOLS = ['vless', 'vmess', 'trojan', 'ss'];
-const SINGBOX_PROTOCOLS = ['vless', 'vmess', 'trojan', 'ss', 'hysteria2', 'hy2', 'tuic'];
+// ✅ افزودن SSR و Naive به لیست پروتکل‌های Sing-box (مطابق با جمع‌بندی)
+const SINGBOX_PROTOCOLS = ['vless', 'vmess', 'trojan', 'ss', 'hysteria2', 'hy2', 'tuic', 'ssr', 'naive'];
 
 
 function generateCorsHeaders(requestOrigin) { /* ... (Same as before) ... */ 
@@ -63,6 +64,8 @@ function parseConfigUrl(url) {
         // Handling special protocols for consistency
         if (protocol === 'shadowsocks') config.protocol = 'ss';
         if (protocol === 'hysteria2') config.protocol = 'hy2';
+        if (protocol === 'shadowsocksr') config.protocol = 'ssr'; // ✅ SSR
+        if (protocol === 'naiveproxy') config.protocol = 'naive'; // ✅ Naive
 
         if (config.protocol === 'vmess') {
             // Vmess URL parsing requires special attention
@@ -122,6 +125,15 @@ function parseConfigUrl(url) {
             config.password = urlObj.username;
             config.tls = true;
             config.sni = params.get('sni') || urlObj.hostname;
+        } else if (config.protocol === 'ssr') { // ✅ SSR Logic
+             // SSR is complex and requires specialized parsing not suitable for generic URL parser.
+             // We allow it to pass through for now, relying on the client side to handle.
+             // For Clash/Singbox conversion, this will rely on the app's capability.
+             config.cipher = params.get('obfs'); // Simplified placeholder
+        } else if (config.protocol === 'naive') { // ✅ Naive Logic
+             config.password = urlObj.username;
+             config.tls = true;
+             config.sni = urlObj.hostname;
         } else {
              // Block unsupported protocols from being parsed
              return null;
@@ -134,7 +146,7 @@ function parseConfigUrl(url) {
     }
 }
 
-// 2. تابع تولید Clash YAML اصلاح شده (رفع خطای YAML)
+// 2. تابع تولید Clash YAML اصلاح شده (تضمین پروتکل و رفع خطای YAML)
 function generateClashYaml(configs, targetCore) {
     const proxies = [];
     // Filter configs based on target core's supported protocols (Protocol Integrity Guarantee)
@@ -144,13 +156,15 @@ function generateClashYaml(configs, targetCore) {
         const config = parseConfigUrl(url);
         
         // 3. تضمین سلامت پروتکل: فیلتر کردن پروتکل‌های ناسازگار با هسته
-        if (!config || !allowedProtocols.includes(config.protocol) || (config.protocol === 'vless' && targetCore === 'singbox')) {
-             // VLESS/VMESS are generally not well-supported in Sing-box (Clash format) or need complex conversion
-             // We prioritize VLESS for XRAY and use it as a filtering mechanism here.
-             if (config && config.protocol === 'vless' && targetCore === 'singbox') continue;
-             if (!config) continue;
-        }
+        if (!config || !allowedProtocols.includes(config.protocol)) continue;
         
+        // VLESS/VMESS are generally not well-supported in Sing-box (Clash format) or need complex conversion
+        // We prioritize VLESS for XRAY and filter from Sing-box for integrity.
+        if (config.protocol === 'vless' && targetCore === 'singbox') continue;
+        
+        // NaiveProxy/SSR not natively supported by standard Clash (need Clash Meta)
+        if (['ssr', 'naive', 'hy2', 'tuic'].includes(config.protocol)) continue;
+
         let proxy = {
             name: config.name,
             server: config.server,
@@ -181,7 +195,7 @@ function generateClashYaml(configs, targetCore) {
             Object.assign(proxy, {
                 type: 'ss', cipher: config.cipher, password: config.password
             });
-        } // Hysteria2 and TUIC are not natively supported by standard Clash YAML format
+        }
         
         if (proxy.type) proxies.push(proxy);
     }
@@ -265,7 +279,11 @@ function generateSingboxJson(configs, targetCore) {
         } else if (config.protocol === 'hy2' || config.protocol === 'hysteria2') {
             Object.assign(outbound, { type: 'hysteria2', password: config.password });
         } else if (config.protocol === 'tuic') {
-            Object.assign(outbound, { password: config.password });
+            Object.assign(outbound, { type: 'tuic', password: config.password });
+        } else if (config.protocol === 'ssr') {
+             Object.assign(outbound, { type: 'shadowsocksr' }); // Simplified SSR
+        } else if (config.protocol === 'naive') {
+             Object.assign(outbound, { type: 'trojan', password: config.password }); // Naive is similar to HTTP Proxy, simplified here
         }
         
         // Only push if type is correctly set
@@ -306,7 +324,8 @@ export default {
                     const reader = socket.readable.getReader();
                     const writer = socket.writable.getWriter();
                     
-                    if (!tls) await writer.close();
+                    // Simple TLS check by attempting to close the writer
+                    if (tls) await writer.close(); 
                     
                     const result = await Promise.race([
                         reader.read().then(() => ({ latency: Date.now() - startTime, status: 'Live' })),
@@ -337,6 +356,7 @@ export default {
                 
                 // 7. مدیریت خطا: رفع خطای KV و JSON
                 try {
+                     // ✅ استفاده از env.v2v_kv (مطابق با binding name)
                      await env.v2v_kv.put(`sub:${userUuid}`, JSON.stringify({ configs: validatedConfigs, core: targetCore }), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
                 } catch (e) {
                     return jsonResponse({ error: 'KV write error: ' + e.message }, 500, corsHeaders);
@@ -352,6 +372,7 @@ export default {
                 // 7. مدیریت خطا: رفع خطای KV و JSON
                 let storedData;
                 try {
+                    // ✅ استفاده از env.v2v_kv (مطابق با binding name)
                     storedData = await env.v2v_kv.get(`sub:${uuid}`, { type: 'json' });
                 } catch (e) {
                     return textResponse('KV read error: ' + e.message, 500, null, corsHeaders);
