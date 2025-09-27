@@ -10,11 +10,11 @@ import ssl
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
-from github import Github, Auth, BadCredentialsException, RateLimitExceededException, UnknownObjectException
+# ✅ اصلاح: استفاده از Token به جای Auth
+from github import Github, Auth, BadCredentialsException, RateLimitExceededException, UnknownObjectException 
 from typing import Optional, Set, List, Dict, Tuple
 from collections import defaultdict
 import yaml 
-# Cloudflare Library Import REMOVED
 
 print("INFO: V2V Scraper v44.1 (KV Upload Logic REMOVED)") 
 
@@ -34,20 +34,17 @@ HEADERS = {'User-Agent': 'V2V-Scraper/1.0'}
 
 # Environment variables for sensitive data
 GITHUB_PAT = os.environ.get('GH_PAT') 
-# Cloudflare Environment variables REMOVED
 
 # --- PERFORMANCE & FILTERING PARAMETERS (Managed in scraper.py) ---
 MAX_CONFIGS_TO_TEST = 15000
-MIN_TARGET_CONFIGS_PER_CORE = 1000 # ✅ اصلاح شد: حداقل 1000
-MAX_FINAL_CONFIGS_PER_CORE = 5000  # ✅ اصلاح شد: سقف 5000
+MIN_TARGET_CONFIGS_PER_CORE = 1000 
+MAX_FINAL_CONFIGS_PER_CORE = 5000  
 MAX_TEST_WORKERS = 200
 TCP_TIMEOUT = 2.5
 MAX_LATENCY_MS = 2500
 MAX_NAME_LENGTH = 40
-GITHUB_SEARCH_LIMIT = 150 # ✅ مقدار بالای 50 حفظ شد
+GITHUB_SEARCH_LIMIT = 150 
 UPDATE_INTERVAL_HOURS = 3 
-
-# Cloudflare KV keys REMOVED
 
 # --- HELPER FUNCTIONS (Robust Parsing & Validation) ---
 
@@ -94,7 +91,6 @@ def is_valid_config(config: str) -> bool:
 def fetch_from_static_sources(sources: List[str]) -> Set[str]:
     """
     Fetches configs from a list of static subscription links.
-    Uses v25.0's approach of decoding entire content as base64 first.
     """
     all_configs = set()
     print(f"  Fetching from {len(sources)} static URLs...")
@@ -105,25 +101,22 @@ def fetch_from_static_sources(sources: List[str]) -> Set[str]:
             time.sleep(random.uniform(0.5, 1.5)) 
             response = requests.get(url, headers=HEADERS, timeout=10)
             response.raise_for_status()
-            content = response.text # Already a string
+            content = response.text 
             
             potential_configs = set()
             
-            # First, try to decode the *entire* response content as a single Base64 string (v25.0 approach)
+            # First, try to decode the *entire* response content as a single Base64 string
             decoded_full_content = decode_base64_content(content) 
             
-            # Check both raw content and decoded full content for configs
             for current_content in [content, decoded_full_content]:
-                if not current_content: continue # Skip if content is empty
+                if not current_content: continue 
                 
-                # Limit lines to prevent excessive processing for very large files
                 for line_num, line in enumerate(current_content.splitlines()):
-                    if line_num >= 5000: break # Process max 5000 lines per static file
+                    if line_num >= 5000: break
                     
                     cleaned_line = line.strip()
                     if is_valid_config(cleaned_line):
                         potential_configs.add(cleaned_line)
-                    # Also check if a line itself might be a Base64 encoded sub-list
                     elif 20 < len(cleaned_line) < 2000 and re.match(r'^[a-zA-Z0-9+/=\s]+$', cleaned_line):
                         try:
                             decoded_sub_content = decode_base64_content(cleaned_line)
@@ -131,15 +124,15 @@ def fetch_from_static_sources(sources: List[str]) -> Set[str]:
                                 if is_valid_config(sub_line.strip()):
                                     potential_configs.add(sub_line.strip())
                         except Exception:
-                            pass # Not a valid base64 line
+                            pass
             
             return potential_configs
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429:
                 print(f"    Rate limit hit for {url} (HTTP 429). Waiting 60s and retrying...")
                 time.sleep(60)
-                return fetch_url(url) # Recursive retry
-            elif e.response.status_code != 404: # Ignore 404s, but log other HTTP errors
+                return fetch_url(url)
+            elif e.response.status_code != 404: 
                 print(f"    HTTP Error {e.response.status_code} for {url}. Skipping.")
             return set()
         except requests.RequestException as e:
@@ -149,7 +142,7 @@ def fetch_from_static_sources(sources: List[str]) -> Set[str]:
             print(f"    General Error fetching/processing {url}: {type(e).__name__}: {e}. Skipping.")
             return set()
 
-    with ThreadPoolExecutor(max_workers=10) as executor: # Keep max_workers low for static sources
+    with ThreadPoolExecutor(max_workers=10) as executor: 
         futures = {executor.submit(fetch_url, url) for url in sources}
         for future in as_completed(futures):
             all_configs.update(future.result())
@@ -158,8 +151,7 @@ def fetch_from_static_sources(sources: List[str]) -> Set[str]:
 
 def fetch_from_github(pat: str, limit: int) -> Set[str]:
     """
-    Fetches configs by searching public GitHub repositories.
-    Uses v25.0's simpler query and direct content decoding.
+    Fetches configs by searching public GitHub repositories using the provided PAT.
     """
     if not pat:
         print("WARNING: GitHub PAT not found. Skipping dynamic search.")
@@ -169,16 +161,15 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
     total_files_processed = 0
 
     try:
-        auth_obj = Auth.Token(pat)
-        g = Github(auth=auth_obj, timeout=30)
+        # ✅ اصلاح: استفاده مستقیم از توکن (روش پیشنهادی شما در تصویر)
+        g = Github(login_or_token=pat, timeout=30) 
         
-        # Simpler query from v25.0, focusing on common extensions
         query = " OR ".join(VALID_PROTOCOLS) + " extension:txt extension:md extension:yml extension:yaml extension:json extension:html -user:mahdibland"
         
         print(f"  Starting GitHub search with query: '{query}' (limit: {limit})...")
         
-        # Results iterator, no explicit page_num loop as in v25.0, rely on 'limit'
-        results = g.search_code(query, order='desc', sort='indexed', per_page=100) # per_page for efficient fetching
+        # نتایج جستجو
+        results = g.search_code(query, order='desc', sort='indexed', per_page=100)
 
         for content_file in results:
             if total_files_processed >= limit:
@@ -189,19 +180,17 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
                 # Add a small random delay
                 time.sleep(random.uniform(0.1, 0.3)) 
 
-                # Use content_file.content (bytes) and decode manually (v25.0 approach)
+                # دریافت محتوا و دیکد کردن دستی
                 file_content_bytes = content_file.content 
                 decoded_content_str = file_content_bytes.decode('utf-8', 'ignore').replace('`', '')
                 
                 potential_configs = set()
-                # Limit lines to prevent excessive processing for very large files
                 for line_num, line in enumerate(decoded_content_str.splitlines()):
-                    if line_num >= 2000: break # Process max 2000 lines per GitHub file
+                    if line_num >= 2000: break 
                     
                     cleaned_line = line.strip()
                     if is_valid_config(cleaned_line):
                         potential_configs.add(cleaned_line)
-                    # Also check if a line itself might be a Base64 encoded sub-list
                     elif 20 < len(cleaned_line) < 2000 and re.match(r'^[a-zA-Z0-9+/=\s]+$', cleaned_line):
                         try:
                             decoded_sub_content = decode_base64_content(cleaned_line)
@@ -209,19 +198,18 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
                                 if is_valid_config(sub_line.strip()):
                                     potential_configs.add(sub_line.strip())
                         except Exception:
-                            pass # Not a valid base64 line
+                            pass
                 
                 if potential_configs:
                     all_configs.update(potential_configs)
                     total_files_processed += 1
                                     
             except UnknownObjectException:
-                # File might have been deleted between search and fetch
                 continue 
             except RateLimitExceededException:
                 print(f"    GitHub API rate limit hit while fetching content for {content_file.path}. Waiting 180s...")
                 time.sleep(180)
-                continue # Try next file after waiting
+                continue
             except Exception as e:
                 print(f"    Error processing GitHub file {content_file.path}: {type(e).__name__}: {e}. Skipping.")
                 continue
@@ -235,7 +223,7 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
     except RateLimitExceededException:
         print("WARNING: GitHub API rate limit hit during query. Waiting 300s and trying again for the query itself...")
         time.sleep(300)
-        return fetch_from_github(pat, limit) # Retry the entire search
+        return fetch_from_github(pat, limit) 
     except Exception as e: 
         print(f"ERROR: General GitHub operation failed. Reason: {type(e).__name__}: {e}. Skipping GitHub search.")
         return set()
@@ -243,7 +231,6 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
 def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
     """
     Performs a TCP/TLS handshake test for the given configuration.
-    Expects config to be a string.
     """
     try:
         parsed_url = urlparse(config)
@@ -267,20 +254,17 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
 
         start_time = time.monotonic()
         
-        # Special handling for UDP-based protocols like Hysteria2/TUIC (Sing-box only)
+        # Special handling for UDP-based protocols (Sing-box only)
         if protocol in SINGBOX_ONLY_PROTOCOLS:
-            # We can't do a full handshake, just check if port is open for UDP
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
                 sock.settimeout(TCP_TIMEOUT)
                 try:
-                    # Send a dummy packet to check if port is reachable
                     sock.sendto(b'\x00\x00', (hostname, port)) 
-                    # Try to receive, but don't fail if no response (UDP is connectionless)
                     sock.recvfrom(1024) 
                 except socket.timeout:
-                    pass # Timeout is okay for UDP, means no immediate response
+                    pass 
                 except Exception:
-                    return None # Other errors mean it's not working
+                    return None 
 
         else: # TCP-based protocols
             with socket.create_connection((hostname, port), timeout=TCP_TIMEOUT) as sock:
@@ -302,48 +286,44 @@ def test_full_protocol_handshake(config: str) -> Optional[Tuple[str, int]]:
 def select_configs_with_fluid_quota(configs: List[Tuple[str, int]], min_target: int, max_target: int) -> List[str]:
     """
     Selects a fluid quota of configs based on protocol and latency.
-    Prioritizes specific protocols and then fills up with remaining fast configs.
     """
     if not configs: return []
     
-    # Sort all configs by latency first (ascending)
     sorted_configs_with_latency = sorted(configs, key=lambda item: item[1])
     
-    # Group configs by protocol
     grouped = defaultdict(list)
     for cfg, lat in sorted_configs_with_latency:
         proto = urlparse(cfg).scheme.lower()
-        if proto == 'hysteria2': proto = 'hy2' # Normalize hysteria2
+        if proto == 'hysteria2': proto = 'hy2'
         grouped[proto].append(cfg)
     
     final_selected_configs = []
-    current_final_set = set() # To ensure uniqueness
+    current_final_set = set()
 
     # 1. Prioritize a small number of each protocol type (e.g., top 10 per protocol)
-    for proto in sorted(grouped.keys()): # Iterate consistently
+    for proto in sorted(grouped.keys()): 
         take_count = min(10, len(grouped[proto]))
         for cfg in grouped[proto][:take_count]:
             if cfg not in current_final_set:
                 final_selected_configs.append(cfg)
                 current_final_set.add(cfg)
-        # Remove selected configs from their groups
         grouped[proto] = [cfg for cfg in grouped[proto] if cfg not in current_final_set]
 
     # 2. Fill up to min_target by cycling through remaining configs from all protocols
     iters = {p: iter(c) for p, c in grouped.items()}
-    protos_in_play = list(iters.keys()) # Copy for safe modification
+    protos_in_play = list(iters.keys())
 
     while len(final_selected_configs) < min_target and protos_in_play:
-        for proto in protos_in_play[:]: # Iterate over a copy to allow modification
+        for proto in protos_in_play[:]: 
             try:
                 cfg = next(iters[proto])
                 if cfg not in current_final_set:
                     final_selected_configs.append(cfg)
                     current_final_set.add(cfg)
             except StopIteration:
-                protos_in_play.remove(proto) # No more configs for this protocol
+                protos_in_play.remove(proto)
             
-            if len(final_selected_configs) >= min_target: break # Stop if min_target reached
+            if len(final_selected_configs) >= min_target: break
 
     # 3. Fill up to max_target with any remaining fastest configs
     all_remaining_from_original_sorted = [cfg for cfg, _ in sorted_configs_with_latency if cfg not in current_final_set]
@@ -362,20 +342,18 @@ def generate_clash_yaml(configs: List[str]) -> Optional[str]:
         try:
             parsed_proxy = parse_proxy_for_clash(config)
             if parsed_proxy:
-                # Use a combination of server, port, and name to ensure uniqueness
                 key = f"{parsed_proxy['server']}:{parsed_proxy['port']}:{parsed_proxy['name']}"
                 if key not in unique_check:
                     proxies.append(parsed_proxy)
                     unique_check.add(key)
         except Exception:
-            continue # Skip malformed configs
+            continue
             
     if not proxies:
         return None
 
     proxy_names = [p['name'] for p in proxies]
     
-    # Ensure URL is correct and interval is reasonable
     clash_config = {
         'proxies': proxies,
         'proxy-groups': [
@@ -396,9 +374,8 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
     try:
         # Generate a unique and clean name
         name_raw = urlparse(config).fragment or f"V2V-{int(time.time() * 1000) % 10000}"
-        # Remove emojis and special characters, limit length
         name = re.sub(r'[\U0001F600-\U0001FAFF\U00002702-\U000027B0\U000024C2-\U0001F251\W_]+', '', name_raw).strip()
-        name = name[:MAX_NAME_LENGTH] # Truncate name if too long
+        name = name[:MAX_NAME_LENGTH] 
         if not name: name = f"V2V-Unnamed-{int(time.time() * 1000) % 10000}"
 
         base = {'name': name, 'skip-cert-verify': True}
@@ -414,7 +391,7 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
             }
             if decoded.get('net') == 'ws':
                 vmess_proxy['ws-opts'] = {'path': decoded.get('path', '/'), 'headers': {'Host': decoded.get('host', decoded.get('add'))}}
-            elif decoded.get('net') == 'h2': # HTTP/2
+            elif decoded.get('net') == 'h2': 
                 vmess_proxy['h2-opts'] = {'host': [decoded.get('host', decoded.get('add'))]}
             return vmess_proxy
         
@@ -430,21 +407,20 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
             }
             if params.get('type') == 'ws':
                 vless_proxy['ws-opts'] = {'path': params.get('path', '/'), 'headers': {'Host': params.get('host', parsed_url.hostname)}}
-            elif params.get('type') == 'h2': # HTTP/2
+            elif params.get('type') == 'h2': 
                 vless_proxy['h2-opts'] = {'host': [params.get('host', parsed_url.hostname)]}
-            elif params.get('type') == 'grpc': # gRPC
+            elif params.get('type') == 'grpc': 
                 vless_proxy['grpc-opts'] = {'service-name': params.get('serviceName', '')}
             return vless_proxy
             
         if protocol == 'trojan':
-            if not parsed_url.username: return None # Trojan requires password
+            if not parsed_url.username: return None
             return {
                 **base, 'type': 'trojan', 'server': parsed_url.hostname, 'port': parsed_url.port, 
                 'password': parsed_url.username, 'sni': params.get('sni') or parsed_url.hostname
             }
             
         if protocol == 'ss':
-            # Shadowsocks userinfo is base64(cipher:password)
             decoded_user = decode_base64_content(parsed_url.username)
             if not decoded_user or ':' not in decoded_user: return None
             cipher, password = decoded_user.split(':', 1)
@@ -458,9 +434,6 @@ def parse_proxy_for_clash(config: str) -> Optional[Dict]:
         
     return None
 
-# upload_to_cloudflare_kv function REMOVED
-
-# clean_for_json function REMOVED (No longer needed)
 
 # --- MAIN LOGIC ---
 def main():
@@ -511,10 +484,9 @@ def main():
 
     print("\n--- 4. Grouping and Finalizing Configs (Non-Overlapping) ---")
     
-    # 1. Sort all fast configs by latency once (fastest first)
     all_fastest_configs_sorted = sorted(fast_configs_with_latency, key=lambda item: item[1])
     
-    # 2. Select the Sing-box list (supports all VALID_PROTOCOLS) - Prioritize this core
+    # 2. Select the Sing-box list (supports all VALID_PROTOCOLS)
     singbox_eligible_pool = [(c, l) for c, l in all_fastest_configs_sorted if urlparse(c).scheme.lower() in VALID_PROTOCOLS]
     singbox_final_selected = select_configs_with_fluid_quota(
         singbox_eligible_pool, MIN_TARGET_CONFIGS_PER_CORE, MAX_FINAL_CONFIGS_PER_CORE
@@ -570,8 +542,6 @@ def main():
     with open(CACHE_VERSION_FILE, 'w', encoding='utf-8') as f:
         f.write(str(int(time.time())))
     print(f"✅ Cache version updated in {CACHE_VERSION_FILE}.")
-
-    # --- 6. Uploading to Cloudflare KV --- REMOVED
 
     print("\n--- Process Completed Successfully (Files Ready for Commit/Deploy) ---")
     
