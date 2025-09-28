@@ -45,13 +45,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip wheel setuptools
         pip install requests PyGithub PyYAML urllib3 certifi
-        pip install --upgrade requests urllib3  # Ensure latest versions
+        pip install --upgrade requests urllib3
         echo "✅ Dependencies installed successfully"
       timeout-minutes: 5
 
     - name: 🔧 Validate and Enhance Sources
       run: |
-        # sources.json موجود است، فقط اعتبارسنجی کنیم
         if [ -f "sources.json" ]; then
           echo "✅ Found existing sources.json"
           python -c "import json; json.load(open('sources.json'))" || {
@@ -62,58 +61,36 @@ jobs:
           echo "❌ sources.json not found!"
           exit 1
         fi
-        
         echo "✅ sources.json validated successfully"
       timeout-minutes: 2
 
     - name: 🔧 Execute Enhanced Scraper
       run: |
         echo "🚀 Starting enhanced V2V scraper..."
-        
-        # Set enhanced environment variables
         export GITHUB_SEARCH_LIMIT=150
         export MAX_CONFIGS_TO_TEST=8000
         export MAX_TEST_WORKERS=80
-        
-        # Run scraper with comprehensive timeout and error handling
+
         timeout 2700 python scraper.py 2>&1 | tee scraper.log || {
           exit_code=$?
           echo "Scraper exit code: $exit_code"
-          
           if [ $exit_code -eq 124 ]; then
             echo "⏰ Scraper timeout - creating fallback files..."
-            
-            # Create comprehensive fallback structure
             cat > all_live_configs.json << 'EOF'
-        {
-          "xray": {
-            "vless": [],
-            "vmess": [], 
-            "trojan": [],
-            "ss": []
-          },
-          "singbox": {
-            "vless": [],
-            "vmess": [],
-            "trojan": [],
-            "ss": [],
-            "hysteria2": [],
-            "hy2": [],
-            "tuic": []
-          }
-        }
-        EOF
-            
+{
+  "xray": { "vless": [], "vmess": [], "trojan": [], "ss": [] },
+  "singbox": { "vless": [], "vmess": [], "trojan": [], "ss": [], "hysteria2": [], "hy2": [], "tuic": [] }
+}
+EOF
             cat > clash_subscription.yml << 'EOF'
-        proxies: []
-        proxy-groups:
-          - name: V2V-Auto
-            type: select
-            proxies: []
-        rules:
-          - MATCH,DIRECT
-        EOF
-            
+proxies: []
+proxy-groups:
+  - name: V2V-Auto
+    type: select
+    proxies: []
+rules:
+  - MATCH,DIRECT
+EOF
             echo $(date +%s) > cache_version.txt
             echo "⚠️ Fallback files created due to timeout"
           else
@@ -122,8 +99,7 @@ jobs:
             exit 1
           fi
         }
-        
-        # Validate output files
+
         for file in "all_live_configs.json" "clash_subscription.yml" "cache_version.txt"; do
           if [ ! -f "$file" ]; then
             echo "❌ Missing output file: $file"
@@ -131,20 +107,19 @@ jobs:
           fi
           echo "✅ Found $file ($(wc -c < "$file") bytes)"
         done
-        
-        # Validate JSON structure
+
         python3 -c "
-        import json
-        try:
-            data = json.load(open('all_live_configs.json'))
-            if not isinstance(data.get('xray'), dict) or not isinstance(data.get('singbox'), dict):
-                raise ValueError('Invalid structure')
-            print('✅ JSON structure validated')
-        except Exception as e:
-            print(f'❌ JSON validation failed: {e}')
-            exit(1)
-        " || exit 1
-        
+import json
+try:
+    data = json.load(open('all_live_configs.json'))
+    if not isinstance(data.get('xray'), dict) or not isinstance(data.get('singbox'), dict):
+        raise ValueError('Invalid structure')
+    print('✅ JSON structure validated')
+except Exception as e:
+    print(f'❌ JSON validation failed: {e}')
+    exit(1)
+" || exit 1
+
         echo "✅ Enhanced scraper completed successfully"
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
@@ -154,29 +129,10 @@ jobs:
     - name: 📊 Calculate Statistics
       id: stats
       run: |
-        xray_count=$(python3 -c "
-        import json
-        try:
-            data = json.load(open('all_live_configs.json'))
-            count = sum(len(v) for v in data.get('xray', {}).values())
-            print(count)
-        except:
-            print('0')
-        " 2>/dev/null)
-        
-        singbox_count=$(python3 -c "
-        import json
-        try:
-            data = json.load(open('all_live_configs.json'))
-            count = sum(len(v) for v in data.get('singbox', {}).values())
-            print(count)
-        except:
-            print('0')
-        " 2>/dev/null)
-        
+        xray_count=$(python3 -c "import json; data=json.load(open('all_live_configs.json')); print(sum(len(v) for v in data.get('xray', {}).values()))" 2>/dev/null || echo 0)
+        singbox_count=$(python3 -c "import json; data=json.load(open('all_live_configs.json')); print(sum(len(v) for v in data.get('singbox', {}).values()))" 2>/dev/null || echo 0)
         echo "xray_count=$xray_count" >> $GITHUB_OUTPUT
         echo "singbox_count=$singbox_count" >> $GITHUB_OUTPUT
-        
         echo "📊 Statistics: Xray=$xray_count, Sing-box=$singbox_count"
       timeout-minutes: 2
 
@@ -184,7 +140,6 @@ jobs:
       id: check_changes
       run: |
         git add all_live_configs.json clash_subscription.yml cache_version.txt
-        
         if git diff --cached --exit-code > /dev/null 2>&1; then
           echo "configs_updated=false" >> $GITHUB_OUTPUT
           echo "ℹ️ No changes detected"
@@ -195,7 +150,7 @@ jobs:
       timeout-minutes: 2
 
     - name: 🔧 Configure Git
-      if: steps.check_changes.outputs.configs_updated == 'true'
+      if: ${{ steps.check_changes.outputs.configs_updated == 'true' }}
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
@@ -204,15 +159,12 @@ jobs:
       timeout-minutes: 1
 
     - name: 💾 Commit and Push Changes
-      if: steps.check_changes.outputs.configs_updated == 'true'
+      if: ${{ steps.check_changes.outputs.configs_updated == 'true' }}
       run: |
-        # Create detailed commit message
         commit_msg="🤖 Enhanced V2V Update: Xray(${{ steps.stats.outputs.xray_count }}) + Sing-box(${{ steps.stats.outputs.singbox_count }}) configs [$(date -u '+%Y-%m-%d %H:%M UTC')]"
-        
         git add all_live_configs.json clash_subscription.yml cache_version.txt
         git commit -m "$commit_msg"
-        
-        # Push with retry mechanism
+
         for i in {1..3}; do
           if git push origin HEAD:${GITHUB_REF#refs/heads/}; then
             echo "✅ Changes pushed successfully (attempt $i)"
@@ -222,20 +174,18 @@ jobs:
             sleep 10
             git pull --rebase origin ${GITHUB_REF#refs/heads/} || true
           fi
-          
           if [ $i -eq 3 ]; then
             echo "❌ Failed to push after 3 attempts"
             exit 1
           fi
         done
-        
         echo "✅ Repository updated successfully"
       timeout-minutes: 5
 
   deploy_to_mirrors:
     needs: enhanced_scraping
     runs-on: ubuntu-latest
-    if: always() && needs.enhanced_scraping.outputs.configs_updated == 'true'
+    if: ${{ always() && needs.enhanced_scraping.outputs.configs_updated == 'true' }}
     timeout-minutes: 20
     
     strategy:
@@ -258,44 +208,25 @@ jobs:
     - name: 🔍 Validate Files Pre-Deploy
       run: |
         echo "🔍 Validating files for ${{ matrix.name }} deployment..."
-        
         required_files=("all_live_configs.json" "clash_subscription.yml" "cache_version.txt")
-        
         for file in "${required_files[@]}"; do
           if [ ! -f "$file" ]; then
             echo "❌ Missing file: $file - creating placeholder"
             case $file in
-              "all_live_configs.json")
-                echo '{"xray": {"vless": [], "vmess": [], "trojan": [], "ss": []}, "singbox": {"vless": [], "vmess": [], "trojan": [], "ss": [], "hy2": [], "tuic": []}}' > "$file"
-                ;;
-              "clash_subscription.yml")
-                echo 'proxies: []\nproxy-groups: []\nrules: ["MATCH,DIRECT"]' > "$file"
-                ;;
-              "cache_version.txt")
-                echo $(date +%s) > "$file"
-                ;;
+              "all_live_configs.json") echo '{"xray": {}, "singbox": {}}' > "$file" ;;
+              "clash_subscription.yml") echo 'proxies: []\nproxy-groups: []\nrules: ["MATCH,DIRECT"]' > "$file" ;;
+              "cache_version.txt") echo $(date +%s) > "$file" ;;
             esac
           else
-            file_size=$(wc -c < "$file")
-            echo "✅ $file: ${file_size} bytes"
-            
-            if [ "$file" = "all_live_configs.json" ] && [ "$file_size" -lt 50 ]; then
-              echo "⚠️ JSON file suspiciously small"
-            fi
+            echo "✅ $file ($(wc -c < "$file") bytes)"
           fi
         done
-        
-        # Validate JSON one more time
-        python3 -c "import json; json.load(open('all_live_configs.json'))" || {
-          echo "❌ Invalid JSON detected - creating valid structure"
-          echo '{"xray": {}, "singbox": {}}' > all_live_configs.json
-        }
-        
+        python3 -c "import json; json.load(open('all_live_configs.json'))" || echo '{"xray": {}, "singbox": {}}' > all_live_configs.json
         echo "✅ All files validated for ${{ matrix.name }}"
       timeout-minutes: 2
 
     - name: 🚀 Deploy to Vercel
-      if: matrix.id == 'vercel'
+      if: ${{ matrix.id == 'vercel' }}
       id: vercel_deploy
       uses: amondnet/vercel-action@v25
       with:
@@ -308,9 +239,8 @@ jobs:
       continue-on-error: true
       timeout-minutes: 10
 
-    # Deploy to Arvan Cloud S3  
-    - name: 🚀 Deploy to Arvan Cloud S3
-      if: matrix.id == 'arvan' && secrets.ARVAN_BUCKET_NAME != ''
+    - name: 🚀 Deploy to Arvan Cloud S3  
+      if: ${{ matrix.id == 'arvan' && secrets.ARVAN_BUCKET_NAME != '' }}
       id: arvan_deploy
       uses: jakejarvis/s3-sync-action@master
       with:
@@ -324,40 +254,25 @@ jobs:
       continue-on-error: true
       timeout-minutes: 8
 
-    # Handle missing Arvan bucket name
     - name: ⚠️ Arvan Bucket Missing
-      if: matrix.id == 'arvan' && secrets.ARVAN_BUCKET_NAME == ''
+      if: ${{ matrix.id == 'arvan' && secrets.ARVAN_BUCKET_NAME == '' }}
       run: |
-        echo "WARNING: ARVAN_BUCKET_NAME secret is not set!"
-        echo "Please add the following secret to your repository:"
-        echo "Name: ARVAN_BUCKET_NAME"
-        echo "Value: v2v-data (or your bucket name)"
         echo "::warning::Arvan deployment skipped - missing ARVAN_BUCKET_NAME secret"
-        echo "::set-output name=outcome::skipped"
       id: arvan_deploy
 
     - name: 📊 Deployment Status
       run: |
         if [ "${{ matrix.id }}" = "vercel" ]; then
-          if [ "${{ steps.vercel_deploy.outcome }}" = "success" ]; then
-            echo "✅ Vercel deployment successful"
-            echo "🌐 URL: ${{ steps.vercel_deploy.outputs.preview-url }}"
-          else
-            echo "❌ Vercel deployment failed"
-          fi
+          echo "✅ Vercel deployment finished"
         elif [ "${{ matrix.id }}" = "arvan" ]; then
-          if [ "${{ steps.arvan_deploy.outcome }}" = "success" ]; then
-            echo "✅ Arvan Cloud deployment successful"
-          else
-            echo "❌ Arvan Cloud deployment failed"
-          fi
+          echo "✅ Arvan Cloud deployment finished"
         fi
       timeout-minutes: 1
 
   github_pages_deploy:
     needs: [enhanced_scraping, deploy_to_mirrors]
     runs-on: ubuntu-latest
-    if: always() && needs.enhanced_scraping.outputs.configs_updated == 'true'
+    if: ${{ always() && needs.enhanced_scraping.outputs.configs_updated == 'true' }}
     timeout-minutes: 10
     
     permissions:
@@ -367,7 +282,6 @@ jobs:
     
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
     - name: 🚀 Checkout Latest Changes
@@ -376,35 +290,27 @@ jobs:
         ref: ${{ github.ref }}
         fetch-depth: 1
 
-    # حذف بخش ایجاد index.html جدید - استفاده از فایل موجود کاربر
     - name: ✅ Verify Existing Files
       run: |
-        echo "🔍 Verifying existing project files..."
-        
         if [ -f "index.html" ]; then
-          echo "✅ Found existing index.html ($(wc -c < index.html) bytes)"
+          echo "✅ Found index.html"
         else
           echo "❌ index.html not found!"
           exit 1
         fi
-        
         if [ -f "index.js" ]; then
-          echo "✅ Found existing index.js ($(wc -c < index.js) bytes)"
+          echo "✅ Found index.js"
         else
           echo "❌ index.js not found!"
           exit 1
         fi
-        
-        # Verify config files exist
         for file in "all_live_configs.json" "clash_subscription.yml" "cache_version.txt"; do
           if [ -f "$file" ]; then
-            echo "✅ Found $file ($(wc -c < "$file") bytes)"
+            echo "✅ Found $file"
           else
             echo "⚠️ Warning: $file not found"
           fi
         done
-        
-        echo "✅ File verification completed - using existing user files"
       timeout-minutes: 1
 
     - name: 🛠️ Setup Pages
@@ -423,7 +329,7 @@ jobs:
   final_status_report:
     needs: [enhanced_scraping, deploy_to_mirrors, github_pages_deploy]
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ always() }}
     timeout-minutes: 5
     
     steps:
@@ -434,68 +340,17 @@ jobs:
         echo "=================================================="
         echo "⏰ Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
         echo ""
-        
-        # Job statuses
-        scraper_status="${{ needs.enhanced_scraping.result }}"
-        mirrors_status="${{ needs.deploy_to_mirrors.result }}"
-        pages_status="${{ needs.github_pages_deploy.result }}"
-        
         echo "📋 Job Results:"
-        echo "  🔧 Enhanced Scraper: $scraper_status"
-        echo "  🌐 Mirror Deployment: $mirrors_status"
-        echo "  📄 GitHub Pages: $pages_status"
+        echo "  🔧 Enhanced Scraper: ${{ needs.enhanced_scraping.result }}"
+        echo "  🌐 Mirror Deployment: ${{ needs.deploy_to_mirrors.result }}"
+        echo "  📄 GitHub Pages: ${{ needs.github_pages_deploy.result }}"
         echo ""
-        
-        # Configuration statistics
-        if [ "${{ needs.enhanced_scraping.outputs.configs_updated }}" = "true" ]; then
-          xray_count="${{ needs.enhanced_scraping.outputs.xray_count }}"
-          singbox_count="${{ needs.enhanced_scraping.outputs.singbox_count }}"
-          total_count=$((xray_count + singbox_count))
-          
-          echo "📊 Configuration Statistics:"
-          echo "  🎯 Xray Configs: $xray_count"
-          echo "  📦 Sing-box Configs: $singbox_count"
-          echo "  📈 Total Configs: $total_count"
-          echo "  ✅ Configs Updated: Yes"
-        else
-          echo "📊 Configuration Statistics:"
-          echo "  ℹ️ No configuration changes detected"
-        fi
+        echo "📊 Configs Updated: ${{ needs.enhanced_scraping.outputs.configs_updated }}"
+        echo "  Xray: ${{ needs.enhanced_scraping.outputs.xray_count }}"
+        echo "  Sing-box: ${{ needs.enhanced_scraping.outputs.singbox_count }}"
         echo ""
-        
-        # Mirror status summary
         echo "🌐 Deployment Status Summary:"
         echo "  📄 GitHub Pages: https://smbcryp.github.io/V2V/"
-        
-        if [ "$mirrors_status" = "success" ]; then
-          echo "  ✅ Mirror Deployments: Successful"
-        elif [ "$mirrors_status" = "failure" ]; then
-          echo "  ❌ Mirror Deployments: Some Failed"
-        else
-          echo "  ⚠️ Mirror Deployments: Skipped/Partial"
-        fi
-        echo ""
-        
-        # Overall assessment
-        if [ "$scraper_status" = "success" ] && [ "$pages_status" = "success" ]; then
-          echo "🎉 OVERALL STATUS: SUCCESS"
-          echo "✅ Core functionality operational"
-          echo "🔄 Service continuity maintained"
-        elif [ "$scraper_status" = "success" ]; then
-          echo "⚠️ OVERALL STATUS: PARTIAL SUCCESS"
-          echo "✅ Scraping successful, deployment issues detected"
-          echo "🔧 Manual intervention may be required"
-        else
-          echo "❌ OVERALL STATUS: FAILURE"
-          echo "🚨 Core scraping failed"
-          echo "🔧 Investigation required"
-        fi
-        
-        echo ""
-        echo "📋 Quick Access URLs:"
-        echo "  📄 Main Config: https://smbcryp.github.io/V2V/all_live_configs.json"
-        echo "  ⚔️ Clash Config: https://smbcryp.github.io/V2V/clash_subscription.yml"
-        echo "  🕒 Cache Version: https://smbcryp.github.io/V2V/cache_version.txt"
         echo ""
         echo "=================================================="
         echo "🔄 Next scheduled run: $(date -u -d '+3 hours' '+%Y-%m-%d %H:%M UTC')"
