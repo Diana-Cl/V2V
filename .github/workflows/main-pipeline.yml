@@ -1,274 +1,572 @@
-name: 'V2V Publisher - Fixed & Timeout Protected'
+name: 'V2V Enhanced Publisher - Complete Protocol Coverage'
 
 on:
-  # اجرا هر 4 ساعت یکبار (کمتر فشار به سرور)
   schedule:
-    - cron: '0 */4 * * *' 
+    - cron: '0 */3 * * *'  # Every 3 hours for optimal freshness
   workflow_dispatch:
-  
-# ✅ اضافه کردن timeout کلی برای workflow
+  push:
+    branches: [ main, master ]
+    paths: 
+      - 'scraper.py'
+      - 'sources.json'
+      - '.github/workflows/**'
+
 env:
-  WORKFLOW_TIMEOUT_MINUTES: 50
+  WORKFLOW_TIMEOUT_MINUTES: 58
+  PYTHON_VERSION: '3.11'
 
 jobs:
-  scrape_and_commit:
+  enhanced_scraping:
     runs-on: ubuntu-latest
     environment: Production
-    # ✅ تنظیم timeout برای کل job
-    timeout-minutes: 45
+    timeout-minutes: 50
+    
+    outputs:
+      configs_updated: ${{ steps.check_changes.outputs.configs_updated }}
+      xray_count: ${{ steps.stats.outputs.xray_count }}
+      singbox_count: ${{ steps.stats.outputs.singbox_count }}
     
     steps:
-    - name: Checkout code
+    - name: 🚀 Checkout Repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        # ✅ اضافه کردن timeout برای checkout
-        timeout-minutes: 5
+        token: ${{ secrets.GITHUB_TOKEN }}
+      timeout-minutes: 3
 
-    - name: Setup Python environment
+    - name: 🐍 Setup Enhanced Python Environment
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
       timeout-minutes: 5
 
-    - name: Install dependencies
+    - name: 📦 Install Enhanced Dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install requests PyGithub PyYAML
+        python -m pip install --upgrade pip wheel setuptools
+        pip install requests PyGithub PyYAML urllib3 certifi
+        pip install --upgrade requests urllib3  # Ensure latest versions
+        echo "✅ Dependencies installed successfully"
       timeout-minutes: 5
 
-    # ✅ بررسی sources.json قبل از اجرا
-    - name: Validate sources file
+    - name: 🔍 Validate and Enhance Sources
       run: |
         if [ ! -f "sources.json" ]; then
-          echo "ERROR: sources.json not found!"
-          echo '{"static": ["https://example.com/sub1", "https://example.com/sub2"]}' > sources.json
+          echo "Creating enhanced sources.json..."
+          cat > sources.json << 'EOF'
+        {
+          "static": [
+            "https://raw.githubusercontent.com/peasoft/NoMoreWalls/master/list_raw.txt",
+            "https://raw.githubusercontent.com/ripaojiedian/freenode/main/sub",
+            "https://raw.githubusercontent.com/Bardiafa/Free-V2ray-Config/main/Sub.txt",
+            "https://raw.githubusercontent.com/mfuu/v2ray/master/v2ray",
+            "https://raw.githubusercontent.com/w1770946466/Auto_proxy/main/Long_term_subscription_num.txt",
+            "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt",
+            "https://raw.githubusercontent.com/tbbatbb/Proxy/master/dist/v2ray.config.txt",
+            "https://raw.githubusercontent.com/oslook/clash-freenode/main/clash.yaml",
+            "https://raw.githubusercontent.com/Jsnzkpg/Jsnzkpg/Jsnzkpg/Jsnzkpg",
+            "https://raw.githubusercontent.com/wrfree/free/main/v2",
+            "https://raw.githubusercontent.com/iwxf/free-v2ray/master/index.html",
+            "https://raw.githubusercontent.com/learnhard-cn/free_proxy_ss/main/clash/clash.provider.yaml",
+            "https://raw.githubusercontent.com/Kwinshadow/TelegramV2rayCollector/main/sub/mix",
+            "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/vmess",
+            "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/vless",
+            "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/trojan",
+            "https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/shadowsocks",
+            "https://raw.githubusercontent.com/LonUp/NodeList/main/V2RAY/Latest.txt",
+            "https://raw.githubusercontent.com/free18/v2ray/main/v2ray.txt",
+            "https://raw.githubusercontent.com/lagzian/SS-Collector/main/ss.txt"
+          ]
+        }
+        EOF
         fi
-        python -c "import json; json.load(open('sources.json'))" || exit 1
-        echo "✅ sources.json is valid"
+        
+        # Validate JSON
+        python -c "import json; json.load(open('sources.json'))" || {
+          echo "❌ Invalid sources.json!"
+          exit 1
+        }
+        
+        echo "✅ Sources validated and enhanced"
       timeout-minutes: 2
 
-    # ✅ اجرای اسکریپت با timeout و error handling
-    - name: Execute Scraper script
+    - name: 🔧 Execute Enhanced Scraper
       run: |
-        echo "🚀 Starting scraper with timeout protection..."
-        timeout 2400 python scraper.py || {
+        echo "🚀 Starting enhanced V2V scraper..."
+        
+        # Set enhanced environment variables
+        export GITHUB_SEARCH_LIMIT=150
+        export MAX_CONFIGS_TO_TEST=8000
+        export MAX_TEST_WORKERS=80
+        
+        # Run scraper with comprehensive timeout and error handling
+        timeout 2700 python scraper.py 2>&1 | tee scraper.log || {
           exit_code=$?
+          echo "Scraper exit code: $exit_code"
+          
           if [ $exit_code -eq 124 ]; then
-            echo "⏰ Scraper timed out after 40 minutes"
-            echo "Creating minimal output files to prevent workflow failure..."
+            echo "⏰ Scraper timeout - creating fallback files..."
             
-            # ایجاد فایل‌های minimal در صورت timeout
-            echo '{"xray": {"vless": [], "vmess": [], "trojan": [], "ss": []}, "singbox": {"vless": [], "vmess": [], "trojan": [], "ss": [], "hy2": [], "tuic": []}}' > all_live_configs.json
-            echo 'proxies: []' > clash_subscription.yml
+            # Create comprehensive fallback structure
+            cat > all_live_configs.json << 'EOF'
+        {
+          "xray": {
+            "vless": [],
+            "vmess": [], 
+            "trojan": [],
+            "ss": []
+          },
+          "singbox": {
+            "vless": [],
+            "vmess": [],
+            "trojan": [],
+            "ss": [],
+            "hysteria2": [],
+            "hy2": [],
+            "tuic": []
+          }
+        }
+        EOF
+            
+            cat > clash_subscription.yml << 'EOF'
+        proxies: []
+        proxy-groups:
+          - name: V2V-Auto
+            type: select
+            proxies: []
+        rules:
+          - MATCH,DIRECT
+        EOF
+            
             echo $(date +%s) > cache_version.txt
-            
-            echo "⚠️ Minimal files created due to timeout"
+            echo "⚠️ Fallback files created due to timeout"
           else
             echo "❌ Scraper failed with exit code: $exit_code"
+            cat scraper.log | tail -50
             exit 1
           fi
         }
         
-        # بررسی وجود فایل‌های خروجی
-        if [ ! -f "all_live_configs.json" ] || [ ! -f "clash_subscription.yml" ] || [ ! -f "cache_version.txt" ]; then
-          echo "❌ Required output files missing!"
-          exit 1
-        fi
+        # Validate output files
+        for file in "all_live_configs.json" "clash_subscription.yml" "cache_version.txt"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Missing output file: $file"
+            exit 1
+          fi
+          echo "✅ Found $file ($(wc -c < "$file") bytes)"
+        done
         
-        echo "✅ Scraper completed successfully"
+        # Validate JSON structure
+        python3 -c "
+        import json
+        try:
+            data = json.load(open('all_live_configs.json'))
+            if not isinstance(data.get('xray'), dict) or not isinstance(data.get('singbox'), dict):
+                raise ValueError('Invalid structure')
+            print('✅ JSON structure validated')
+        except Exception as e:
+            print(f'❌ JSON validation failed: {e}')
+            exit(1)
+        " || exit 1
+        
+        echo "✅ Enhanced scraper completed successfully"
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
-        # ✅ محدود کردن GitHub search برای جلوگیری از timeout
-        GITHUB_SEARCH_LIMIT: 30
-      timeout-minutes: 42
+        GITHUB_SEARCH_LIMIT: 150
+      timeout-minutes: 47
 
-    - name: Configure Git for commit
+    - name: 📊 Calculate Statistics
+      id: stats
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+        xray_count=$(python3 -c "
+        import json
+        try:
+            data = json.load(open('all_live_configs.json'))
+            count = sum(len(v) for v in data.get('xray', {}).values())
+            print(count)
+        except:
+            print('0')
+        " 2>/dev/null)
+        
+        singbox_count=$(python3 -c "
+        import json
+        try:
+            data = json.load(open('all_live_configs.json'))
+            count = sum(len(v) for v in data.get('singbox', {}).values())
+            print(count)
+        except:
+            print('0')
+        " 2>/dev/null)
+        
+        echo "xray_count=$xray_count" >> $GITHUB_OUTPUT
+        echo "singbox_count=$singbox_count" >> $GITHUB_OUTPUT
+        
+        echo "📊 Statistics: Xray=$xray_count, Sing-box=$singbox_count"
       timeout-minutes: 2
-        
-    # ✅ بهبود commit process
-    - name: Commit and Push new files (GitHub Mirror)
+
+    - name: 🔍 Check for Changes
+      id: check_changes
       run: |
-        echo "📝 Checking for changes..."
-        
-        # بررسی اندازه فایل‌های تولید شده
-        if [ -f "all_live_configs.json" ]; then
-          config_size=$(wc -c < "all_live_configs.json")
-          echo "📊 Config file size: $config_size bytes"
-          
-          if [ "$config_size" -lt 100 ]; then
-            echo "⚠️ Config file too small, may indicate error"
-          fi
-        fi
-        
-        # اضافه کردن فایل‌ها
         git add all_live_configs.json clash_subscription.yml cache_version.txt
         
-        # بررسی تغییرات
-        if git diff --cached --exit-code; then
-          echo "ℹ️ No changes detected. Skipping commit."
+        if git diff --cached --exit-code > /dev/null 2>&1; then
+          echo "configs_updated=false" >> $GITHUB_OUTPUT
+          echo "ℹ️ No changes detected"
         else
-          echo "✅ Changes detected. Committing..."
-          
-          # محاسبه تعداد configs
-          xray_count=$(python3 -c "import json; data=json.load(open('all_live_configs.json')); print(sum(len(v) for v in data.get('xray', {}).values()))" 2>/dev/null || echo "0")
-          singbox_count=$(python3 -c "import json; data=json.load(open('all_live_configs.json')); print(sum(len(v) for v in data.get('singbox', {}).values()))" 2>/dev/null || echo "0")
-          
-          commit_msg="🤖 V2V Auto-Update: Xray($xray_count) + Sing-box($singbox_count) configs [$(date -u '+%Y-%m-%d %H:%M UTC')]"
-          
-          git commit -m "$commit_msg"
-          git push
-          
-          echo "✅ Files committed and pushed successfully"
+          echo "configs_updated=true" >> $GITHUB_OUTPUT
+          echo "✅ Changes detected"
         fi
-      timeout-minutes: 5
+      timeout-minutes: 2
+
+    - name: 🔧 Configure Git
+      if: steps.check_changes.outputs.configs_updated == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git config --local core.autocrlf false
+        git config --local core.filemode false
+      timeout-minutes: 1
+
+    - name: 💾 Commit and Push Changes
+      if: steps.check_changes.outputs.configs_updated == 'true'
+      run: |
+        # Create detailed commit message
+        commit_msg="🤖 Enhanced V2V Update: Xray(${{ steps.stats.outputs.xray_count }}) + Sing-box(${{ steps.stats.outputs.singbox_count }}) configs [$(date -u '+%Y-%m-%d %H:%M UTC')]"
         
-  multi_mirror_deploy:
+        git add all_live_configs.json clash_subscription.yml cache_version.txt
+        git commit -m "$commit_msg"
+        
+        # Push with retry mechanism
+        for i in {1..3}; do
+          if git push origin HEAD:${GITHUB_REF#refs/heads/}; then
+            echo "✅ Changes pushed successfully (attempt $i)"
+            break
+          else
+            echo "⚠️ Push failed, retrying in 10s... (attempt $i/3)"
+            sleep 10
+            git pull --rebase origin ${GITHUB_REF#refs/heads/} || true
+          fi
+          
+          if [ $i -eq 3 ]; then
+            echo "❌ Failed to push after 3 attempts"
+            exit 1
+          fi
+        done
+        
+        echo "✅ Repository updated successfully"
+      timeout-minutes: 5
+
+  deploy_to_mirrors:
+    needs: enhanced_scraping
     runs-on: ubuntu-latest
-    needs: scrape_and_commit
-    # ✅ اجرا حتی در صورت partial failure job قبلی
-    if: always() && (needs.scrape_and_commit.result == 'success' || needs.scrape_and_commit.result == 'failure')
-    timeout-minutes: 15
+    if: always() && needs.enhanced_scraping.outputs.configs_updated == 'true'
+    timeout-minutes: 20
+    
+    strategy:
+      matrix:
+        include:
+          - name: "Vercel"
+            id: "vercel"
+          - name: "Arvan Cloud" 
+            id: "arvan"
+      fail-fast: false
     
     steps:
-    - name: Checkout code (Fetch committed files)
+    - name: 🚀 Checkout Latest Changes
       uses: actions/checkout@v4
       with:
-        # ✅ اطمینان از دریافت آخرین commit
         ref: ${{ github.ref }}
+        fetch-depth: 1
       timeout-minutes: 3
 
-    # ✅ بررسی وجود فایل‌های لازم قبل از deploy
-    - name: Validate output files
+    - name: 🔍 Validate Files Pre-Deploy
       run: |
-        echo "🔍 Validating output files..."
+        echo "🔍 Validating files for ${{ matrix.name }} deployment..."
         
         required_files=("all_live_configs.json" "clash_subscription.yml" "cache_version.txt")
         
         for file in "${required_files[@]}"; do
           if [ ! -f "$file" ]; then
-            echo "❌ Missing file: $file"
-            echo "Creating placeholder..."
+            echo "❌ Missing file: $file - creating placeholder"
             case $file in
               "all_live_configs.json")
-                echo '{"xray": {}, "singbox": {}}' > "$file"
+                echo '{"xray": {"vless": [], "vmess": [], "trojan": [], "ss": []}, "singbox": {"vless": [], "vmess": [], "trojan": [], "ss": [], "hy2": [], "tuic": []}}' > "$file"
                 ;;
               "clash_subscription.yml")
-                echo 'proxies: []' > "$file"
+                echo 'proxies: []\nproxy-groups: []\nrules: ["MATCH,DIRECT"]' > "$file"
                 ;;
               "cache_version.txt")
                 echo $(date +%s) > "$file"
                 ;;
             esac
           else
-            echo "✅ Found: $file ($(wc -c < "$file") bytes)"
+            file_size=$(wc -c < "$file")
+            echo "✅ $file: ${file_size} bytes"
+            
+            if [ "$file" = "all_live_configs.json" ] && [ "$file_size" -lt 50 ]; then
+              echo "⚠️ JSON file suspiciously small"
+            fi
           fi
         done
         
-        # بررسی validity فایل JSON
+        # Validate JSON one more time
         python3 -c "import json; json.load(open('all_live_configs.json'))" || {
-          echo "⚠️ Invalid JSON detected. Creating valid placeholder."
+          echo "❌ Invalid JSON detected - creating valid structure"
           echo '{"xray": {}, "singbox": {}}' > all_live_configs.json
         }
         
-        echo "✅ All files validated"
+        echo "✅ All files validated for ${{ matrix.name }}"
       timeout-minutes: 2
 
-    # Deploy to Vercel Mirror
-    - name: Deploy to Vercel Mirror
+    - name: 🚀 Deploy to Vercel
+      if: matrix.id == 'vercel'
       id: vercel_deploy
-      uses: amondnet/vercel-action@v25 
+      uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        vercel-args: '--prod'
+        vercel-args: '--prod --force'
+        github-comment: false
+        github-deployment: false
       continue-on-error: true
-      timeout-minutes: 8
+      timeout-minutes: 10
 
-    # Deploy to Arvan Cloud Object Storage
-    - name: Deploy to Arvan Cloud Object Storage (S3 Sync)
+    - name: 🚀 Deploy to Arvan Cloud S3
+      if: matrix.id == 'arvan'
       id: arvan_deploy
       uses: jakejarvis/s3-sync-action@master
       with:
-        args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*" --exclude "*.py" --exclude "README.md"
+        args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*" --exclude "*.py" --exclude "README.md" --exclude "scraper.log" --exclude "*.md"
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }} 
+        AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-        AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.ir' 
-        AWS_S3_BUCKET: ${{ secrets.ARVAN_BUCKET_NAME }} 
+        AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.ir'
+        AWS_S3_BUCKET: ${{ secrets.ARVAN_BUCKET_NAME }}
         SOURCE_DIR: '.'
       continue-on-error: true
-      timeout-minutes: 5
-      
-    # Final Deploy Status Report with better formatting
-    - name: Final Deploy Status Report
-      if: always() 
+      timeout-minutes: 8
+
+    - name: 📊 Deployment Status
       run: |
-        echo "============================================"
-        echo "🚀 DEPLOYMENT STATUS REPORT"
-        echo "============================================"
-        
-        vercel_status="${{ steps.vercel_deploy.outcome }}"
-        arvan_status="${{ steps.arvan_deploy.outcome }}"
-        scraper_status="${{ needs.scrape_and_commit.result }}"
-        
-        echo "📊 Job Results:"
-        echo "   - Scraper: $scraper_status"
-        echo "   - Vercel: $vercel_status"
-        echo "   - Arvan: $arvan_status"
+        if [ "${{ matrix.id }}" = "vercel" ]; then
+          if [ "${{ steps.vercel_deploy.outcome }}" = "success" ]; then
+            echo "✅ Vercel deployment successful"
+            echo "🌐 URL: ${{ steps.vercel_deploy.outputs.preview-url }}"
+          else
+            echo "❌ Vercel deployment failed"
+          fi
+        elif [ "${{ matrix.id }}" = "arvan" ]; then
+          if [ "${{ steps.arvan_deploy.outcome }}" = "success" ]; then
+            echo "✅ Arvan Cloud deployment successful"
+          else
+            echo "❌ Arvan Cloud deployment failed"
+          fi
+        fi
+      timeout-minutes: 1
+
+  github_pages_deploy:
+    needs: [enhanced_scraping, deploy_to_mirrors]
+    runs-on: ubuntu-latest
+    if: always() && needs.enhanced_scraping.outputs.configs_updated == 'true'
+    timeout-minutes: 10
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+    - name: 🚀 Checkout Latest Changes
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.ref }}
+        fetch-depth: 1
+
+    - name: 📄 Create Index HTML
+      run: |
+        cat > index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>V2V Config Repository</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+                .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                h1 { color: #333; text-align: center; }
+                .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+                .stat-box { background: #e8f4fd; padding: 20px; border-radius: 8px; text-align: center; }
+                .stat-number { font-size: 2em; font-weight: bold; color: #2563eb; }
+                .links { margin: 30px 0; }
+                .link-button { display: inline-block; padding: 12px 24px; margin: 5px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; transition: background 0.3s; }
+                .link-button:hover { background: #1d4ed8; }
+                .info { background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+                .footer { text-align: center; margin-top: 30px; color: #666; font-size: 0.9em; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚀 V2V Configuration Repository</h1>
+                <div class="info">
+                    <p><strong>Last Updated:</strong> <span id="lastUpdate">Loading...</span></p>
+                    <p><strong>Update Frequency:</strong> Every 3 hours</p>
+                </div>
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-number" id="xrayCount">Loading...</div>
+                        <div>Xray Configs</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="singboxCount">Loading...</div>
+                        <div>Sing-box Configs</div>
+                    </div>
+                </div>
+                <div class="links">
+                    <h3>📥 Download Links:</h3>
+                    <a href="all_live_configs.json" class="link-button">📄 JSON Configs</a>
+                    <a href="clash_subscription.yml" class="link-button">⚔️ Clash Subscription</a>
+                    <a href="cache_version.txt" class="link-button">🕒 Cache Version</a>
+                </div>
+                <div class="info">
+                    <h3>🔧 Usage Instructions:</h3>
+                    <ul>
+                        <li><strong>JSON Configs:</strong> Contains all configurations organized by protocol and client type</li>
+                        <li><strong>Clash Subscription:</strong> Ready-to-use Clash Meta configuration</li>
+                        <li><strong>Cache Version:</strong> Timestamp for cache busting</li>
+                    </ul>
+                </div>
+                <div class="footer">
+                    <p>🤖 Automatically updated by GitHub Actions</p>
+                    <p>⭐ Star this repository if you find it helpful!</p>
+                </div>
+            </div>
+            
+            <script>
+                fetch('all_live_configs.json')
+                    .then(response => response.json())
+                    .then(data => {
+                        const xrayCount = Object.values(data.xray || {}).reduce((sum, arr) => sum + arr.length, 0);
+                        const singboxCount = Object.values(data.singbox || {}).reduce((sum, arr) => sum + arr.length, 0);
+                        document.getElementById('xrayCount').textContent = xrayCount;
+                        document.getElementById('singboxCount').textContent = singboxCount;
+                    })
+                    .catch(() => {
+                        document.getElementById('xrayCount').textContent = 'Error';
+                        document.getElementById('singboxCount').textContent = 'Error';
+                    });
+                
+                fetch('cache_version.txt')
+                    .then(response => response.text())
+                    .then(timestamp => {
+                        const date = new Date(parseInt(timestamp) * 1000);
+                        document.getElementById('lastUpdate').textContent = date.toLocaleString();
+                    })
+                    .catch(() => {
+                        document.getElementById('lastUpdate').textContent = 'Unknown';
+                    });
+            </script>
+        </body>
+        </html>
+        EOF
+      timeout-minutes: 1
+
+    - name: 🛠️ Setup Pages
+      uses: actions/configure-pages@v4
+
+    - name: 📤 Upload to Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: '.'
+
+    - name: 🚀 Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+      timeout-minutes: 5
+
+  final_status_report:
+    needs: [enhanced_scraping, deploy_to_mirrors, github_pages_deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 5
+    
+    steps:
+    - name: 📊 Generate Comprehensive Status Report
+      run: |
+        echo "=================================================="
+        echo "🚀 ENHANCED V2V DEPLOYMENT STATUS REPORT"
+        echo "=================================================="
+        echo "⏰ Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
         echo ""
         
-        # محاسبه تعداد configs
-        if [ -f "all_live_configs.json" ]; then
-          total_configs=$(python3 -c "
-          import json
-          try:
-              data = json.load(open('all_live_configs.json'))
-              xray_total = sum(len(v) for v in data.get('xray', {}).values())
-              singbox_total = sum(len(v) for v in data.get('singbox', {}).values())
-              print(f'Xray: {xray_total}, Sing-box: {singbox_total}, Total: {xray_total + singbox_total}')
-          except:
-              print('Error reading config file')
-          " 2>/dev/null || echo "Could not calculate totals")
-          echo "📈 Configs: $total_configs"
+        # Job statuses
+        scraper_status="${{ needs.enhanced_scraping.result }}"
+        mirrors_status="${{ needs.deploy_to_mirrors.result }}"
+        pages_status="${{ needs.github_pages_deploy.result }}"
+        
+        echo "📋 Job Results:"
+        echo "  🔧 Enhanced Scraper: $scraper_status"
+        echo "  🌐 Mirror Deployment: $mirrors_status"
+        echo "  📄 GitHub Pages: $pages_status"
+        echo ""
+        
+        # Configuration statistics
+        if [ "${{ needs.enhanced_scraping.outputs.configs_updated }}" = "true" ]; then
+          xray_count="${{ needs.enhanced_scraping.outputs.xray_count }}"
+          singbox_count="${{ needs.enhanced_scraping.outputs.singbox_count }}"
+          total_count=$((xray_count + singbox_count))
+          
+          echo "📊 Configuration Statistics:"
+          echo "  🎯 Xray Configs: $xray_count"
+          echo "  📦 Sing-box Configs: $singbox_count"
+          echo "  📈 Total Configs: $total_count"
+          echo "  ✅ Configs Updated: Yes"
+        else
+          echo "📊 Configuration Statistics:"
+          echo "  ℹ️ No configuration changes detected"
+        fi
+        echo ""
+        
+        # Mirror status summary
+        echo "🌐 Deployment Status Summary:"
+        echo "  📄 GitHub Pages: https://smbcryp.github.io/V2V/"
+        
+        if [ "$mirrors_status" = "success" ]; then
+          echo "  ✅ Mirror Deployments: Successful"
+        elif [ "$mirrors_status" = "failure" ]; then
+          echo "  ❌ Mirror Deployments: Some Failed"
+        else
+          echo "  ⚠️ Mirror Deployments: Skipped/Partial"
+        fi
+        echo ""
+        
+        # Overall assessment
+        if [ "$scraper_status" = "success" ] && [ "$pages_status" = "success" ]; then
+          echo "🎉 OVERALL STATUS: SUCCESS"
+          echo "✅ Core functionality operational"
+          echo "🔄 Service continuity maintained"
+        elif [ "$scraper_status" = "success" ]; then
+          echo "⚠️ OVERALL STATUS: PARTIAL SUCCESS"
+          echo "✅ Scraping successful, deployment issues detected"
+          echo "🔧 Manual intervention may be required"
+        else
+          echo "❌ OVERALL STATUS: FAILURE"
+          echo "🚨 Core scraping failed"
+          echo "🔧 Investigation required"
         fi
         
         echo ""
-        echo "🌐 Mirror Status:"
-        echo "   - GitHub Pages: ✅ Active (Primary)"
-        
-        if [ "$vercel_status" = "success" ]; then
-          echo "   - Vercel: ✅ Deployed"
-        else
-          echo "   - Vercel: ❌ Failed"
-        fi
-        
-        if [ "$arvan_status" = "success" ]; then
-          echo "   - Arvan Cloud: ✅ Deployed"
-        else
-          echo "   - Arvan Cloud: ❌ Failed"
-        fi
-        
+        echo "📋 Quick Access URLs:"
+        echo "  📄 Main Config: https://smbcryp.github.io/V2V/all_live_configs.json"
+        echo "  ⚔️ Clash Config: https://smbcryp.github.io/V2V/clash_subscription.yml"
+        echo "  🕒 Cache Version: https://smbcryp.github.io/V2V/cache_version.txt"
         echo ""
-        
-        # تعیین وضعیت نهایی
-        if [ "$vercel_status" = "failure" ] && [ "$arvan_status" = "failure" ]; then
-          echo "⚠️ WARNING: All secondary mirrors failed!"
-          echo "🔄 Only GitHub Pages mirror is active."
-          echo "🔧 Check secrets and service availability."
-        elif [ "$vercel_status" = "failure" ] || [ "$arvan_status" = "failure" ]; then
-          echo "⚠️ PARTIAL: One mirror failed, others operational."
-          echo "✅ Service continuity maintained."
-        else
-          echo "✅ SUCCESS: All mirrors updated successfully!"
-          echo "🎯 Full redundancy achieved."
-        fi
-        
-        echo "============================================"
-        echo "⏰ Completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-        echo "============================================"
+        echo "=================================================="
+        echo "🔄 Next scheduled run: $(date -u -d '+3 hours' '+%Y-%m-%d %H:%M UTC')"
+        echo "=================================================="
       timeout-minutes: 2
