@@ -46,13 +46,13 @@ GITHUB_PAT = os.environ.get('GH_PAT')
 
 # --- PERFORMANCE & FILTERING PARAMETERS (محدودتر شده) ---
 MAX_CONFIGS_TO_TEST = 5000  # ✅ کاهش یافت
-MIN_TARGET_CONFIGS_PER_CORE = 500  # ✅ کاهش یافت
-MAX_FINAL_CONFIGS_PER_CORE = 2000  # ✅ کاهش یافت
+MIN_TARGET_CONFIGS_PER_CORE = 1000  # ✅ کاهش یافت
+MAX_FINAL_CONFIGS_PER_CORE = 3000  # ✅ کاهش یافت
 MAX_TEST_WORKERS = 50  # ✅ کاهش یافت
 TCP_TIMEOUT = 5.0  # ✅ کاهش یافت
-MAX_LATENCY_MS = 3000  # ✅ کاهش یافت
+MAX_LATENCY_MS = 4000  # ✅ کاهش یافت
 MAX_NAME_LENGTH = 40
-GITHUB_SEARCH_LIMIT = max(30, int(os.environ.get('GITHUB_SEARCH_LIMIT', 50)))  # ✅ کاهش یافت
+GITHUB_SEARCH_LIMIT = max(150, int(os.environ.get('GITHUB_SEARCH_LIMIT', 50)))  # ✅ کاهش یافت
 UPDATE_INTERVAL_HOURS = 3 
 
 # ✅ حداکثر تعداد retry برای جلوگیری از حلقه بی‌نهایت
