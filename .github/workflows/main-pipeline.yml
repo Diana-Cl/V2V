@@ -1,8 +1,8 @@
-name: 'V2V Enhanced Publisher - Complete Protocol Coverage'
+Name: 'V2V Enhanced Publisher - Complete Protocol Coverage'
 
 on:
   schedule:
-    - cron: '0 */3 * * *'  # Every 3 hours for optimal freshness
+    - cron: '0 */3 * * *'  # Every 3 hours for optimal freshness (UTC)
   workflow_dispatch:
   push:
     branches: [ main, master ]
@@ -15,6 +15,11 @@ env:
   WORKFLOW_TIMEOUT_MINUTES: 58
   PYTHON_VERSION: '3.11'
 
+permissions:
+  contents: write 
+  pages: write    
+  id-token: write 
+  
 jobs:
   enhanced_scraping:
     runs-on: ubuntu-latest
@@ -45,7 +50,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip wheel setuptools
         pip install requests PyGithub PyYAML urllib3 certifi
-        pip install --upgrade requests urllib3  # Ensure latest versions
+        pip install --upgrade requests urllib3
         echo "✅ Dependencies installed successfully"
       timeout-minutes: 5
 
@@ -69,11 +74,6 @@ jobs:
     - name: 🔧 Execute Enhanced Scraper
       run: |
         echo "🚀 Starting enhanced V2V scraper..."
-        
-        # Set enhanced environment variables
-        export GITHUB_SEARCH_LIMIT=150
-        export MAX_CONFIGS_TO_TEST=8000
-        export MAX_TEST_WORKERS=80
         
         # Run scraper with comprehensive timeout and error handling
         timeout 2700 python scraper.py 2>&1 | tee scraper.log || {
@@ -114,7 +114,7 @@ jobs:
           - MATCH,DIRECT
         EOF
             
-            echo $(date +%s) > cache_version.txt
+            date +%s > cache_version.txt
             echo "⚠️ Fallback files created due to timeout"
           else
             echo "❌ Scraper failed with exit code: $exit_code"
@@ -149,6 +149,9 @@ jobs:
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         GITHUB_SEARCH_LIMIT: 150
+        MAX_CONFIGS_TO_TEST: 8000
+        MAX_TEST_WORKERS: 80
+        V2V_LOG_LEVEL: INFO # 💡 خط اضافه/اصلاح شده برای کاهش لاگ‌های جزئی
       timeout-minutes: 47
 
     - name: 📊 Calculate Statistics
@@ -220,7 +223,7 @@ jobs:
           else
             echo "⚠️ Push failed, retrying in 10s... (attempt $i/3)"
             sleep 10
-            git pull --rebase origin ${GITHUB_REF#refs/heads/} || true
+            git pull origin ${GITHUB_REF#refs/heads/} --rebase || true 
           fi
           
           if [ $i -eq 3 ]; then
@@ -235,7 +238,7 @@ jobs:
   deploy_to_mirrors:
     needs: enhanced_scraping
     runs-on: ubuntu-latest
-    if: always() && needs.enhanced_scraping.outputs.configs_updated == 'true'
+    if: success() && needs.enhanced_scraping.outputs.configs_updated == 'true'
     timeout-minutes: 20
     
     strategy:
@@ -272,7 +275,7 @@ jobs:
                 echo 'proxies: []\nproxy-groups: []\nrules: ["MATCH,DIRECT"]' > "$file"
                 ;;
               "cache_version.txt")
-                echo $(date +%s) > "$file"
+                date +%s > "$file"
                 ;;
             esac
           else
@@ -329,9 +332,6 @@ jobs:
       if: matrix.id == 'arvan' && secrets.ARVAN_BUCKET_NAME == ''
       run: |
         echo "WARNING: ARVAN_BUCKET_NAME secret is not set!"
-        echo "Please add the following secret to your repository:"
-        echo "Name: ARVAN_BUCKET_NAME"
-        echo "Value: v2v-data (or your bucket name)"
         echo "::warning::Arvan deployment skipped - missing ARVAN_BUCKET_NAME secret"
         echo "::set-output name=outcome::skipped"
       id: arvan_deploy
@@ -357,7 +357,7 @@ jobs:
   github_pages_deploy:
     needs: [enhanced_scraping, deploy_to_mirrors]
     runs-on: ubuntu-latest
-    if: always() && needs.enhanced_scraping.outputs.configs_updated == 'true'
+    if: success() && needs.enhanced_scraping.outputs.configs_updated == 'true'
     timeout-minutes: 10
     
     permissions:
@@ -376,31 +376,24 @@ jobs:
         ref: ${{ github.ref }}
         fetch-depth: 1
 
-    # حذف بخش ایجاد index.html جدید - استفاده از فایل موجود کاربر
     - name: ✅ Verify Existing Files
       run: |
         echo "🔍 Verifying existing project files..."
         
-        if [ -f "index.html" ]; then
-          echo "✅ Found existing index.html ($(wc -c < index.html) bytes)"
-        else
-          echo "❌ index.html not found!"
-          exit 1
-        fi
+        for file in "index.html" "index.js"; do
+          if [ -f "$file" ]; then
+            echo "✅ Found existing $file ($(wc -c < "$file") bytes)"
+          else
+            echo "❌ $file not found! Cannot deploy Pages."
+            exit 1
+          fi
+        done
         
-        if [ -f "index.js" ]; then
-          echo "✅ Found existing index.js ($(wc -c < index.js) bytes)"
-        else
-          echo "❌ index.js not found!"
-          exit 1
-        fi
-        
-        # Verify config files exist
         for file in "all_live_configs.json" "clash_subscription.yml" "cache_version.txt"; do
           if [ -f "$file" ]; then
             echo "✅ Found $file ($(wc -c < "$file") bytes)"
           else
-            echo "⚠️ Warning: $file not found"
+            echo "⚠️ Warning: $file not found - Deployment will be based on what's available."
           fi
         done
         
@@ -423,7 +416,7 @@ jobs:
   final_status_report:
     needs: [enhanced_scraping, deploy_to_mirrors, github_pages_deploy]
     runs-on: ubuntu-latest
-    if: always()
+    if: always() 
     timeout-minutes: 5
     
     steps:
@@ -447,7 +440,7 @@ jobs:
         echo ""
         
         # Configuration statistics
-        if [ "${{ needs.enhanced_scraping.outputs.configs_updated }}" = "true" ]; then
+        if [ "$scraper_status" = "success" ] && [ "${{ needs.enhanced_scraping.outputs.configs_updated }}" = "true" ]; then
           xray_count="${{ needs.enhanced_scraping.outputs.xray_count }}"
           singbox_count="${{ needs.enhanced_scraping.outputs.singbox_count }}"
           total_count=$((xray_count + singbox_count))
@@ -457,9 +450,12 @@ jobs:
           echo "  📦 Sing-box Configs: $singbox_count"
           echo "  📈 Total Configs: $total_count"
           echo "  ✅ Configs Updated: Yes"
+        elif [ "$scraper_status" = "success" ]; then
+           echo "📊 Configuration Statistics:"
+           echo "  ℹ️ No new configuration changes detected"
         else
-          echo "📊 Configuration Statistics:"
-          echo "  ℹ️ No configuration changes detected"
+           echo "📊 Configuration Statistics:"
+           echo "  ❌ Scraping failed - no data available"
         fi
         echo ""
         
@@ -470,25 +466,24 @@ jobs:
         if [ "$mirrors_status" = "success" ]; then
           echo "  ✅ Mirror Deployments: Successful"
         elif [ "$mirrors_status" = "failure" ]; then
-          echo "  ❌ Mirror Deployments: Some Failed"
+          echo "  ❌ Mirror Deployments: Failed (check logs)"
+        elif [ "$mirrors_status" = "skipped" ]; then
+          echo "  ℹ️ Mirror Deployments: Skipped (no changes or Scraper failed)"
         else
-          echo "  ⚠️ Mirror Deployments: Skipped/Partial"
+          echo "  ⚠️ Mirror Deployments: Status Unknown/Pending"
         fi
         echo ""
         
         # Overall assessment
         if [ "$scraper_status" = "success" ] && [ "$pages_status" = "success" ]; then
           echo "🎉 OVERALL STATUS: SUCCESS"
-          echo "✅ Core functionality operational"
-          echo "🔄 Service continuity maintained"
+          echo "✅ Core functionality and main deployment operational"
         elif [ "$scraper_status" = "success" ]; then
           echo "⚠️ OVERALL STATUS: PARTIAL SUCCESS"
-          echo "✅ Scraping successful, deployment issues detected"
-          echo "🔧 Manual intervention may be required"
+          echo "✅ Scraping successful, deployment issues detected (Mirrors/Pages)"
         else
           echo "❌ OVERALL STATUS: FAILURE"
-          echo "🚨 Core scraping failed"
-          echo "🔧 Investigation required"
+          echo "🚨 Core scraping failed - Investigation required"
         fi
         
         echo ""
@@ -501,7 +496,3 @@ jobs:
         echo "🔄 Next scheduled run: $(date -u -d '+3 hours' '+%Y-%m-%d %H:%M UTC')"
         echo "=================================================="
       timeout-minutes: 2
-
-الان این درسته؟؟؟
-همرو باید از ریشه بخونه
-ما output نداریم دیگه
