@@ -9,10 +9,9 @@ const ALLOWED_ORIGINS = [
     'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir',
 ];
 
-// 1. تعریف پروتکل‌های پشتیبانی‌شده توسط هر هسته (جهت تضمین خروجی سالم)
-const XRAY_PROTOCOLS = ['vless', 'vmess', 'trojan', 'ss'];
-const SINGBOX_PROTOCOLS = ['vless', 'vmess', 'trojan', 'ss', 'hysteria2', 'hy2', 'tuic', 'ssr', 'naive'];
-
+// تعریف پروتکل‌های پشتیبانی‌شده توسط هر هسته
+const XRAY_PROTOCOLS = ['vless', 'vmess', 'trojan', 'ss', 'shadowsocks'];
+const SINGBOX_PROTOCOLS = ['vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hysteria2', 'hy2', 'tuic'];
 
 function generateCorsHeaders(requestOrigin) { 
     if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
@@ -27,7 +26,13 @@ function generateCorsHeaders(requestOrigin) {
 }
 
 function jsonResponse(data, status = 200, corsHeaders) { 
-    return new Response(JSON.stringify(data, null, 2), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', ...corsHeaders } });
+    return new Response(JSON.stringify(data, null, 2), { 
+        status, 
+        headers: { 
+            'Content-Type': 'application/json; charset=utf-8', 
+            ...corsHeaders 
+        } 
+    });
 }
 
 function textResponse(text, status = 200, filename = null, corsHeaders) { 
@@ -38,13 +43,11 @@ function textResponse(text, status = 200, filename = null, corsHeaders) {
 
 function yamlResponse(text, status = 200, filename = null, corsHeaders) { 
     const headers = { 'Content-Type': 'application/x-yaml; charset=utf-8', ...corsHeaders };
-    // ✅ افزودن Content-Disposition برای دانلود فایل YAML (مشکل ۵)
     if (filename) headers['Content-Disposition'] = `attachment; filename="${filename}"`; 
     return new Response(text, { status, headers });
 }
 
 function parseConfigUrl(url) {
-    // ... (logic remains the same to parse config URL details)
     try {
         const urlObj = new URL(url);
         let protocol = urlObj.protocol.replace(':', '');
@@ -54,43 +57,44 @@ function parseConfigUrl(url) {
             protocol,
             server: urlObj.hostname,
             port: parseInt(urlObj.port),
-            name: decodeURIComponent(urlObj.hash.substring(1) || urlObj.hostname)
+            name: decodeURIComponent(urlObj.hash.substring(1) || `${protocol}-${urlObj.hostname}`)
         };
         
+        // تطبیق پروتکل‌ها
         if (protocol === 'shadowsocks') config.protocol = 'ss';
         if (protocol === 'hysteria2') config.protocol = 'hy2';
-        if (protocol === 'shadowsocksr') config.protocol = 'ssr'; 
-        if (protocol === 'naiveproxy') config.protocol = 'naive'; 
 
         if (config.protocol === 'vmess') {
-            const path = urlObj.pathname.replace(/^\/+/, '');
-            const netloc = urlObj.hostname;
-            const full_base64 = netloc + path;
-
             try {
-                const decodedData = JSON.parse(atob(full_base64));
+                const vmessData = url.replace('vmess://', '');
+                const decodedData = JSON.parse(atob(vmessData));
                 config.server = decodedData.add;
                 config.port = parseInt(decodedData.port);
                 config.uuid = decodedData.id;
-                config.alterId = decodedData.aid;
+                config.alterId = parseInt(decodedData.aid) || 0;
                 config.cipher = decodedData.scy || 'auto'; 
-                config.network = decodedData.net;
+                config.network = decodedData.net || 'tcp';
+                config.name = decodedData.ps || config.name;
+                
                 if (decodedData.net === 'ws') {
-                    config.wsPath = decodedData.path;
+                    config.wsPath = decodedData.path || '/';
                     config.wsHeaders = { Host: decodedData.host || decodedData.add };
                 }
                 if (decodedData.tls === 'tls') {
                     config.tls = true;
                     config.sni = decodedData.sni || decodedData.host || decodedData.add;
                 }
-            } catch (e) { return null; }
+            } catch (e) { 
+                return null; 
+            }
         } else if (config.protocol === 'vless') {
             config.uuid = urlObj.username;
             config.encryption = params.get('encryption') || 'none';
-            config.flow = params.get('flow');
+            config.flow = params.get('flow') || '';
             config.network = params.get('type') || 'tcp';
+            
             if (config.network === 'ws') {
-                config.wsPath = params.get('path');
+                config.wsPath = params.get('path') || '/';
                 config.wsHeaders = { Host: params.get('host') || urlObj.hostname };
             }
             if (params.get('security') === 'tls') {
@@ -103,26 +107,28 @@ function parseConfigUrl(url) {
             config.sni = params.get('sni') || urlObj.hostname;
         } else if (config.protocol === 'ss') {
             try {
-                const [method, password] = atob(urlObj.username).split(':');
-                config.cipher = method;
-                config.password = password;
-            } catch (e) { return null; }
+                const decoded = atob(urlObj.username);
+                if (decoded.includes(':')) {
+                    const [method, password] = decoded.split(':', 2);
+                    config.cipher = method;
+                    config.password = password;
+                } else {
+                    return null;
+                }
+            } catch (e) { 
+                return null; 
+            }
         } else if (config.protocol === 'hy2') {
             config.password = urlObj.username;
             config.tls = true;
             config.sni = params.get('sni') || urlObj.hostname;
         } else if (config.protocol === 'tuic') {
-            config.password = urlObj.username;
+            config.uuid = urlObj.username;
+            config.password = params.get('password') || '';
             config.tls = true;
             config.sni = params.get('sni') || urlObj.hostname;
-        } else if (config.protocol === 'ssr') { 
-             config.cipher = params.get('obfs');
-        } else if (config.protocol === 'naive') { 
-             config.password = urlObj.username;
-             config.tls = true;
-             config.sni = urlObj.hostname;
         } else {
-             return null;
+            return null;
         }
 
         return config;
@@ -131,36 +137,75 @@ function parseConfigUrl(url) {
     }
 }
 
-// 2. تابع تولید Clash YAML اصلاح شده
 function generateClashYaml(configs, targetCore) {
     const proxies = [];
-    // ✅ تضمین پروتکل: فیلتر بر اساس هسته
-    const allowedProtocols = targetCore === 'singbox' ? SINGBOX_PROTOCOLS : XRAY_PROTOCOLS;
+    const allowedProtocols = targetCore === 'xray' ? XRAY_PROTOCOLS : SINGBOX_PROTOCOLS;
 
     for (const url of configs) {
         const config = parseConfigUrl(url);
         
         if (!config || !allowedProtocols.includes(config.protocol)) continue;
-        // VLESS/SSR/Naive/Hy2/Tuic are generally not supported by standard Clash (Clash Meta only)
-        if (['vless', 'ssr', 'naive', 'hy2', 'tuic'].includes(config.protocol)) continue;
+        
+        // Clash فقط از پروتکل‌های محدود پشتیبانی می‌کند
+        if (['hy2', 'tuic'].includes(config.protocol)) continue;
 
         let proxy = {
-            name: config.name, server: config.server, port: config.port,
+            name: config.name,
+            server: config.server, 
+            port: config.port,
+            'skip-cert-verify': true
         };
         
         if (config.protocol === 'vmess') {
             Object.assign(proxy, {
-                type: 'vmess', uuid: config.uuid, alterId: config.alterId || 0, cipher: config.cipher || 'auto'
+                type: 'vmess',
+                uuid: config.uuid,
+                alterId: config.alterId,
+                cipher: config.cipher,
+                network: config.network
             });
-            if (config.network === 'ws') Object.assign(proxy, { network: 'ws', 'ws-path': config.wsPath || '/', 'ws-headers': config.wsHeaders || {} });
-            if (config.tls) Object.assign(proxy, { tls: true, sni: config.sni, 'skip-cert-verify': true });
+            
+            if (config.network === 'ws') {
+                proxy['ws-opts'] = {
+                    path: config.wsPath,
+                    headers: config.wsHeaders
+                };
+            }
+            
+            if (config.tls) {
+                proxy.tls = true;
+                proxy.servername = config.sni;
+            }
+        } else if (config.protocol === 'vless') {
+            Object.assign(proxy, {
+                type: 'vless',
+                uuid: config.uuid,
+                flow: config.flow,
+                network: config.network
+            });
+            
+            if (config.network === 'ws') {
+                proxy['ws-opts'] = {
+                    path: config.wsPath,
+                    headers: config.wsHeaders
+                };
+            }
+            
+            if (config.tls) {
+                proxy.tls = true;
+                proxy.servername = config.sni;
+            }
         } else if (config.protocol === 'trojan') {
             Object.assign(proxy, {
-                type: 'trojan', password: config.password, tls: true, sni: config.sni, 'skip-cert-verify': true
+                type: 'trojan',
+                password: config.password,
+                sni: config.sni
             });
         } else if (config.protocol === 'ss') {
             Object.assign(proxy, {
-                type: 'ss', cipher: config.cipher, password: config.password
+                type: 'ss',
+                cipher: config.cipher,
+                password: config.password
             });
         }
         
@@ -170,29 +215,44 @@ function generateClashYaml(configs, targetCore) {
     if (proxies.length === 0) return null;
     
     const proxyNames = proxies.map(p => p.name);
-    const proxyGroups = [{
-        name: 'v2v-auto-select', type: 'url-test', url: 'http://www.gstatic.com/generate_204', interval: 300, proxies: proxyNames
-    }];
-    
-    proxyGroups.push({
-        name: 'v2v-select', type: 'select', proxies: ['v2v-auto-select', ...proxyNames]
-    });
+    const proxyGroups = [
+        {
+            name: 'V2V-Auto',
+            type: 'url-test',
+            url: 'http://www.gstatic.com/generate_204',
+            interval: 300,
+            tolerance: 50,
+            proxies: proxyNames
+        },
+        {
+            name: 'V2V-Select',
+            type: 'select',
+            proxies: ['V2V-Auto', ...proxyNames]
+        }
+    ];
 
     const payload = {
         proxies,
         'proxy-groups': proxyGroups,
-        rules: ["MATCH,v2v-select"]
+        rules: [
+            'DOMAIN-SUFFIX,local,DIRECT',
+            'IP-CIDR,127.0.0.0/8,DIRECT',
+            'IP-CIDR,172.16.0.0/12,DIRECT',
+            'IP-CIDR,192.168.0.0/16,DIRECT',
+            'IP-CIDR,10.0.0.0/8,DIRECT',
+            'GEOIP,IR,DIRECT',
+            'MATCH,V2V-Select'
+        ]
     };
 
     try {
-        return YAML.safeDump(payload, { skipInvalid: true, flowLevel: -1 }); 
+        return YAML.dump(payload, { skipInvalid: true, flowLevel: -1 }); 
     } catch (e) {
-        console.error("YAML Dump Error:", e.message);
+        console.error("YAML generation error:", e.message);
         return null;
     }
 }
 
-// 4. تابع تولید Sing-box JSON اصلاح شده
 function generateSingboxJson(configs, targetCore) {
     const outbounds = [];
     const allowedProtocols = targetCore === 'xray' ? XRAY_PROTOCOLS : SINGBOX_PROTOCOLS;
@@ -201,50 +261,129 @@ function generateSingboxJson(configs, targetCore) {
         const config = parseConfigUrl(url);
         
         if (!config || !allowedProtocols.includes(config.protocol)) continue;
-        // ✅ فیلتر VLESS برای هسته Sing-box برای تضمین خروجی بومی (مشکل ۴)
-        if (config.protocol === 'vless' && targetCore === 'singbox') continue;
 
         let outbound = {
-            tag: config.name, type: config.protocol, server: config.server, server_port: config.port
+            tag: config.name,
+            type: config.protocol === 'hy2' ? 'hysteria2' : config.protocol,
+            server: config.server,
+            server_port: config.port
         };
         
         if (config.tls) {
-            outbound.tls = { enabled: true, server_name: config.sni || config.server, insecure: true };
+            outbound.tls = {
+                enabled: true,
+                server_name: config.sni || config.server,
+                insecure: true
+            };
         }
 
         if (config.protocol === 'vmess') {
             Object.assign(outbound, {
-                uuid: config.uuid, alter_id: config.alterId || 0, security: config.cipher || 'auto', network: config.network
+                uuid: config.uuid,
+                alter_id: config.alterId,
+                security: config.cipher
             });
+            
+            if (config.network === 'ws') {
+                outbound.transport = {
+                    type: 'ws',
+                    path: config.wsPath,
+                    headers: config.wsHeaders
+                };
+            }
         } else if (config.protocol === 'vless') {
-            Object.assign(outbound, { uuid: config.uuid, flow: config.flow, network: config.network });
+            Object.assign(outbound, {
+                uuid: config.uuid,
+                flow: config.flow,
+                packet_encoding: 'xudp'
+            });
+            
+            if (config.network === 'ws') {
+                outbound.transport = {
+                    type: 'ws',
+                    path: config.wsPath,
+                    headers: config.wsHeaders
+                };
+            }
         } else if (config.protocol === 'trojan') {
-            Object.assign(outbound, { password: config.password });
+            Object.assign(outbound, {
+                password: config.password
+            });
         } else if (config.protocol === 'ss') {
-            Object.assign(outbound, { method: config.cipher, password: config.password });
-        } else if (config.protocol === 'hy2' || config.protocol === 'hysteria2') {
-            Object.assign(outbound, { type: 'hysteria2', password: config.password });
+            Object.assign(outbound, {
+                method: config.cipher,
+                password: config.password
+            });
+        } else if (config.protocol === 'hy2') {
+            Object.assign(outbound, {
+                type: 'hysteria2',
+                password: config.password,
+                up_mbps: 100,
+                down_mbps: 100
+            });
         } else if (config.protocol === 'tuic') {
-            Object.assign(outbound, { type: 'tuic', password: config.password });
-        } else if (config.protocol === 'ssr') {
-             Object.assign(outbound, { type: 'shadowsocksr' }); 
-        } else if (config.protocol === 'naive') {
-             Object.assign(outbound, { type: 'trojan', password: config.password }); 
+            Object.assign(outbound, {
+                uuid: config.uuid,
+                password: config.password,
+                congestion_control: 'cubic',
+                udp_relay_mode: 'native'
+            });
         }
         
-        if (outbound.type) outbounds.push(outbound);
+        outbounds.push(outbound);
     }
     
     if (outbounds.length === 0) return null;
     
-    // Minimal Sing-box config structure
     const payload = {
-        log: { disabled: true },
-        dns: { "servers": [{"address": "8.8.8.8", "strategy": "prefer_ipv4"}], "rules": [] },
-        inbounds: [],
-        outbounds: [{ tag: 'select', type: 'urltest', outbounds: outbounds.map(o => o.tag) }, ...outbounds],
-        route: { rules: [{ outbound: 'select', rule_set: [] }] }
+        log: {
+            disabled: false,
+            level: "info"
+        },
+        dns: {
+            servers: [
+                {
+                    address: "8.8.8.8",
+                    strategy: "prefer_ipv4"
+                }
+            ]
+        },
+        inbounds: [
+            {
+                type: "mixed",
+                listen: "127.0.0.1",
+                listen_port: 7890
+            }
+        ],
+        outbounds: [
+            {
+                tag: "V2V-Select",
+                type: "urltest",
+                outbounds: outbounds.map(o => o.tag),
+                url: "http://www.gstatic.com/generate_204",
+                interval: "5m"
+            },
+            ...outbounds,
+            {
+                tag: "direct",
+                type: "direct"
+            }
+        ],
+        route: {
+            rules: [
+                {
+                    geoip: "ir",
+                    outbound: "direct"
+                },
+                {
+                    geoip: "private",
+                    outbound: "direct"
+                }
+            ],
+            auto_detect_interface: true
+        }
     };
+    
     return JSON.stringify(payload, null, 2);
 }
 
@@ -254,100 +393,154 @@ export default {
         const origin = request.headers.get('Origin');
         const corsHeaders = generateCorsHeaders(origin);
 
-        if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+        if (request.method === 'OPTIONS') {
+            return new Response(null, { headers: corsHeaders });
+        }
 
         try {
+            // تست پینگ واقعی با اتصال TCP
             if (url.pathname === '/ping' && request.method === 'POST') {
-                // ... (ping logic remains the same)
                 const { host, port, tls, sni } = await request.json();
-                if (!host || !port) return jsonResponse({ error: 'Invalid host or port' }, 400, corsHeaders);
+                
+                if (!host || !port) {
+                    return jsonResponse({ error: 'Invalid host or port' }, 400, corsHeaders);
+                }
+
                 try {
                     const startTime = Date.now();
-                    const socket = connect({ hostname: host, port: parseInt(port) }, { secureTransport: tls ? 'on' : 'off', name: tls ? (sni || host) : undefined });
+                    const timeoutMs = 8000;
                     
-                    const reader = socket.readable.getReader();
-                    const writer = socket.writable.getWriter();
+                    const socketOptions = { 
+                        hostname: host, 
+                        port: parseInt(port) 
+                    };
                     
-                    if (tls) await writer.close(); 
+                    if (tls) {
+                        socketOptions.secureTransport = 'on';
+                        socketOptions.servername = sni || host;
+                    }
                     
-                    const result = await Promise.race([
-                        reader.read().then(() => ({ latency: Date.now() - startTime, status: 'Live' })),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 7000))
+                    const socket = connect(socketOptions);
+                    
+                    // منتظر باز شدن کانکشن
+                    await Promise.race([
+                        socket.opened,
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Connection timeout')), timeoutMs)
+                        )
                     ]);
                     
+                    const latency = Date.now() - startTime;
                     await socket.close();
                     
-                    if (result.latency > 0 && result.latency < 99999) {
-                        return jsonResponse(result, 200, corsHeaders);
+                    if (latency > 0 && latency < timeoutMs) {
+                        return jsonResponse({ 
+                            latency: latency, 
+                            status: 'Live' 
+                        }, 200, corsHeaders);
                     } else {
-                        return jsonResponse({ latency: null, status: 'Dead', error: "Invalid latency result." }, 200, corsHeaders);
+                        return jsonResponse({ 
+                            latency: null, 
+                            status: 'Dead', 
+                            error: 'Invalid latency' 
+                        }, 200, corsHeaders);
                     }
-                } catch (e) {
-                    return jsonResponse({ latency: null, status: 'Dead', error: e.message }, 200, corsHeaders);
+                    
+                } catch (error) {
+                    return jsonResponse({ 
+                        latency: null, 
+                        status: 'Dead', 
+                        error: error.message 
+                    }, 200, corsHeaders);
                 }
             }
 
+            // ایجاد subscription شخصی
             if (url.pathname === '/create-personal-sub' && request.method === 'POST') {
                 const { configs, uuid: clientUuid, core: targetCore } = await request.json(); 
-                if (!Array.isArray(configs) || configs.length === 0) return jsonResponse({ error: '`configs` array is required.' }, 400, corsHeaders);
+                
+                if (!Array.isArray(configs) || configs.length === 0) {
+                    return jsonResponse({ error: 'configs array is required and must not be empty' }, 400, corsHeaders);
+                }
                 
                 const validatedConfigs = configs.filter(c => parseConfigUrl(c) !== null);
+                
+                if (validatedConfigs.length === 0) {
+                    return jsonResponse({ error: 'No valid configs found' }, 400, corsHeaders);
+                }
 
                 const userUuid = clientUuid || uuidv4();
                 
-                // ✅ استفاده از env.v2v_kv (مطابق با binding name)
                 try {
-                     await env.v2v_kv.put(`sub:${userUuid}`, JSON.stringify({ configs: validatedConfigs, core: targetCore }), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
+                    await env.v2v_kv.put(
+                        `sub:${userUuid}`, 
+                        JSON.stringify({ 
+                            configs: validatedConfigs, 
+                            core: targetCore || 'xray',
+                            created: Date.now()
+                        }), 
+                        { expirationTtl: TTL_USER_SUBSCRIPTION_STORE }
+                    );
                 } catch (e) {
-                    return jsonResponse({ error: 'KV write error: ' + e.message }, 500, corsHeaders);
+                    return jsonResponse({ error: 'Storage error: ' + e.message }, 500, corsHeaders);
                 }
                 
-                // ✅ خروجی URLهای کوتاه با امضای v2v (مشکل ۴)
+                // URL های کوتاه با امضای v2v
                 return jsonResponse({ 
                     uuid: userUuid, 
-                    rawSubscriptionUrl: `${url.origin}/sub/raw/${userUuid}`, 
                     clashSubscriptionUrl: `${url.origin}/sub/clash/${userUuid}`, 
                     singboxSubscriptionUrl: `${url.origin}/sub/singbox/${userUuid}` 
                 }, 200, corsHeaders);
             }
             
-            const subMatch = url.pathname.match(/^\/sub\/(raw|clash|singbox)\/([^/]+)/);
+            // سرویس subscription URLs
+            const subMatch = url.pathname.match(/^\/sub\/(clash|singbox)\/([^/]+)/);
             if (subMatch) {
-                const format = subMatch[1], uuid = subMatch[2];
+                const format = subMatch[1];
+                const uuid = subMatch[2];
                 
                 let storedData;
-                // ✅ استفاده از env.v2v_kv و رفع خطای JSON (مشکل ۷)
                 try {
                     storedData = await env.v2v_kv.get(`sub:${uuid}`, { type: 'json' });
                 } catch (e) {
-                    return textResponse('KV read error: ' + e.message, 500, null, corsHeaders);
+                    return textResponse('Storage read error: ' + e.message, 500, null, corsHeaders);
                 }
 
-                if (!storedData || !Array.isArray(storedData.configs)) return textResponse('Subscription not found or expired.', 404, null, corsHeaders);
+                if (!storedData || !Array.isArray(storedData.configs)) {
+                    return textResponse('Subscription not found or expired', 404, null, corsHeaders);
+                }
                 
-                // Re-up TTL
-                await env.v2v_kv.put(`sub:${uuid}`, JSON.stringify(storedData), { expirationTtl: TTL_USER_SUBSCRIPTION_STORE });
+                // تمدید TTL
+                await env.v2v_kv.put(`sub:${uuid}`, JSON.stringify(storedData), { 
+                    expirationTtl: TTL_USER_SUBSCRIPTION_STORE 
+                });
                 
                 const configs = storedData.configs;
-                const targetCore = storedData.core;
+                const targetCore = storedData.core || 'xray';
                 
-                if (format === 'raw') return textResponse(btoa(configs.join('\n')), 200, `v2v-raw-${uuid}.txt`, corsHeaders);
                 if (format === 'clash') {
                     const content = generateClashYaml(configs, targetCore);
-                    // ✅ تنظیم filename برای دانلود (مشکل ۵)
-                    return content ? yamlResponse(content, 200, `v2v-clash-${uuid}.yaml`, corsHeaders) : textResponse('Failed to generate Clash config (YAML Error).', 500, null, corsHeaders);
+                    return content ? 
+                        yamlResponse(content, 200, `v2v-clash-${uuid}.yaml`, corsHeaders) : 
+                        textResponse('Failed to generate Clash config', 500, null, corsHeaders);
                 }
+                
                 if (format === 'singbox') {
                     const content = generateSingboxJson(configs, targetCore);
-                    // ✅ تنظیم filename برای دانلود (مشکل ۵)
-                    return content ? jsonResponse(JSON.parse(content), 200, `v2v-singbox-${uuid}.json`, corsHeaders) : textResponse('Failed to generate Sing-box config (JSON Error).', 500, null, corsHeaders);
+                    return content ? 
+                        jsonResponse(JSON.parse(content), 200, corsHeaders) : 
+                        textResponse('Failed to generate Sing-box config', 500, null, corsHeaders);
                 }
             }
             
-            return textResponse('v2v Worker is running.', 200, null, corsHeaders);
+            return textResponse('V2V Worker is running successfully', 200, null, corsHeaders);
+            
         } catch (err) {
-            console.error(err.message);
-            return jsonResponse({ error: 'An unexpected error occurred.', details: err.message }, 500, corsHeaders);
+            console.error('Worker error:', err);
+            return jsonResponse({ 
+                error: 'Internal server error', 
+                details: err.message 
+            }, 500, corsHeaders);
         }
     },
 };
