@@ -1,358 +1,93 @@
-name: 'V2V Enhanced Publisher - Complete Protocol Coverage'
+name: Deploy to CDN
 
 on:
-  schedule:
-    - cron: '0 */3 * * *'  # Every 3 hours for optimal freshness
-  workflow_dispatch:
   push:
-    branches: [ main, master ]
-    paths: 
-      - 'scraper.py'
-      - 'sources.json'
-      - '.github/workflows/**'
-
-env:
-  WORKFLOW_TIMEOUT_MINUTES: 58
-  PYTHON_VERSION: '3.11'
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  enhanced_scraping:
+  check:
     runs-on: ubuntu-latest
-    environment: Production
-    timeout-minutes: 50
-    
     outputs:
       configs_updated: ${{ steps.check_changes.outputs.configs_updated }}
-      xray_count: ${{ steps.stats.outputs.xray_count }}
-      singbox_count: ${{ steps.stats.outputs.singbox_count }}
-    
     steps:
-    - name: 🚀 Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
-      timeout-minutes: 3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: 🐍 Setup Enhanced Python Environment
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
-      timeout-minutes: 5
-
-    - name: 📦 Install Enhanced Dependencies
-      run: |
-        python -m pip install --upgrade pip wheel setuptools
-        pip install requests PyGithub PyYAML urllib3 certifi
-        pip install --upgrade requests urllib3
-        echo "✅ Dependencies installed successfully"
-      timeout-minutes: 5
-
-    - name: 🔧 Validate and Enhance Sources
-      run: |
-        if [ -f "sources.json" ]; then
-          echo "✅ Found existing sources.json"
-          python -c "import json; json.load(open('sources.json'))" || {
-            echo "❌ Invalid sources.json format!"
-            exit 1
-          }
-        else
-          echo "❌ sources.json not found!"
-          exit 1
-        fi
-        echo "✅ sources.json validated successfully"
-      timeout-minutes: 2
-
-    - name: 🔧 Execute Enhanced Scraper
-      run: |
-        echo "🚀 Starting enhanced V2V scraper..."
-        export GITHUB_SEARCH_LIMIT=150
-        export MAX_CONFIGS_TO_TEST=8000
-        export MAX_TEST_WORKERS=80
-
-        timeout 2700 python scraper.py 2>&1 | tee scraper.log || {
-          exit_code=$?
-          echo "Scraper exit code: $exit_code"
-          if [ $exit_code -eq 124 ]; then
-            echo "⏰ Scraper timeout - creating fallback files..."
-            cat > all_live_configs.json << 'EOF'
-{
-  "xray": { "vless": [], "vmess": [], "trojan": [], "ss": [] },
-  "singbox": { "vless": [], "vmess": [], "trojan": [], "ss": [], "hysteria2": [], "hy2": [], "tuic": [] }
-}
-EOF
-            cat > clash_subscription.yml << 'EOF'
-proxies: []
-proxy-groups:
-  - name: V2V-Auto
-    type: select
-    proxies: []
-rules:
-  - MATCH,DIRECT
-EOF
-            echo $(date +%s) > cache_version.txt
-            echo "⚠️ Fallback files created due to timeout"
+      - name: Check if configs are updated
+        id: check_changes
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q "configs/"; then
+            echo "configs_updated=true" >> $GITHUB_OUTPUT
           else
-            echo "❌ Scraper failed with exit code: $exit_code"
-            cat scraper.log | tail -50
-            exit 1
+            echo "configs_updated=false" >> $GITHUB_OUTPUT
           fi
-        }
 
-        for file in "all_live_configs.json" "clash_subscription.yml" "cache_version.txt"; do
-          if [ ! -f "$file" ]; then
-            echo "❌ Missing output file: $file"
-            exit 1
-          fi
-          echo "✅ Found $file ($(wc -c < "$file") bytes)"
-        done
-
-        python3 -c "
-import json
-try:
-    data = json.load(open('all_live_configs.json'))
-    if not isinstance(data.get('xray'), dict) or not isinstance(data.get('singbox'), dict):
-        raise ValueError('Invalid structure')
-    print('✅ JSON structure validated')
-except Exception as e:
-    print(f'❌ JSON validation failed: {e}')
-    exit(1)
-" || exit 1
-
-        echo "✅ Enhanced scraper completed successfully"
-      env:
-        GH_PAT: ${{ secrets.GH_PAT }}
-        GITHUB_SEARCH_LIMIT: 150
-      timeout-minutes: 47
-
-    - name: 📊 Calculate Statistics
-      id: stats
-      run: |
-        xray_count=$(python3 -c "import json; data=json.load(open('all_live_configs.json')); print(sum(len(v) for v in data.get('xray', {}).values()))" 2>/dev/null || echo 0)
-        singbox_count=$(python3 -c "import json; data=json.load(open('all_live_configs.json')); print(sum(len(v) for v in data.get('singbox', {}).values()))" 2>/dev/null || echo 0)
-        echo "xray_count=$xray_count" >> $GITHUB_OUTPUT
-        echo "singbox_count=$singbox_count" >> $GITHUB_OUTPUT
-        echo "📊 Statistics: Xray=$xray_count, Sing-box=$singbox_count"
-      timeout-minutes: 2
-
-    - name: 🔍 Check for Changes
-      id: check_changes
-      run: |
-        git add all_live_configs.json clash_subscription.yml cache_version.txt
-        if git diff --cached --exit-code > /dev/null 2>&1; then
-          echo "configs_updated=false" >> $GITHUB_OUTPUT
-          echo "ℹ️ No changes detected"
-        else
-          echo "configs_updated=true" >> $GITHUB_OUTPUT
-          echo "✅ Changes detected"
-        fi
-      timeout-minutes: 2
-
-    - name: 🔧 Configure Git
-      if: ${{ steps.check_changes.outputs.configs_updated == 'true' }}
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git config --local core.autocrlf false
-        git config --local core.filemode false
-      timeout-minutes: 1
-
-    - name: 💾 Commit and Push Changes
-      if: ${{ steps.check_changes.outputs.configs_updated == 'true' }}
-      run: |
-        commit_msg="🤖 Enhanced V2V Update: Xray(${{ steps.stats.outputs.xray_count }}) + Sing-box(${{ steps.stats.outputs.singbox_count }}) configs [$(date -u '+%Y-%m-%d %H:%M UTC')]"
-        git add all_live_configs.json clash_subscription.yml cache_version.txt
-        git commit -m "$commit_msg"
-
-        for i in {1..3}; do
-          if git push origin HEAD:${GITHUB_REF#refs/heads/}; then
-            echo "✅ Changes pushed successfully (attempt $i)"
-            break
-          else
-            echo "⚠️ Push failed, retrying in 10s... (attempt $i/3)"
-            sleep 10
-            git pull --rebase origin ${GITHUB_REF#refs/heads/} || true
-          fi
-          if [ $i -eq 3 ]; then
-            echo "❌ Failed to push after 3 attempts"
-            exit 1
-          fi
-        done
-        echo "✅ Repository updated successfully"
-      timeout-minutes: 5
-
-  deploy_to_mirrors:
-    needs: enhanced_scraping
+  deploy:
+    needs: check
+    if: ${{ needs.check.outputs.configs_updated == 'true' }}
     runs-on: ubuntu-latest
-    if: ${{ always() && needs.enhanced_scraping.outputs.configs_updated == 'true' }}
-    timeout-minutes: 20
-    
     strategy:
       matrix:
         include:
-          - name: "Vercel"
-            id: "vercel"
-          - name: "Arvan Cloud" 
-            id: "arvan"
-      fail-fast: false
-    
+          - id: arvan
+            name: ArvanCloud
+            bucket: ${{ secrets.ARVAN_BUCKET_NAME }}
+            key: ${{ secrets.ARVAN_ACCESS_KEY }}
+            secret: ${{ secrets.ARVAN_SECRET_KEY }}
+            endpoint: ${{ secrets.ARVAN_ENDPOINT }}
+          - id: cloudflare
+            name: Cloudflare R2
+            bucket: ${{ secrets.CLOUDFLARE_BUCKET_NAME }}
+            key: ${{ secrets.CLOUDFLARE_ACCESS_KEY }}
+            secret: ${{ secrets.CLOUDFLARE_SECRET_KEY }}
+            endpoint: ${{ secrets.CLOUDFLARE_ENDPOINT }}
+          - id: github
+            name: GitHub Pages
     steps:
-    - name: 🚀 Checkout Latest Changes
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.ref }}
-        fetch-depth: 1
-      timeout-minutes: 3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: 🔍 Validate Files Pre-Deploy
-      run: |
-        echo "🔍 Validating files for ${{ matrix.name }} deployment..."
-        required_files=("all_live_configs.json" "clash_subscription.yml" "cache_version.txt")
-        for file in "${required_files[@]}"; do
-          if [ ! -f "$file" ]; then
-            echo "❌ Missing file: $file - creating placeholder"
-            case $file in
-              "all_live_configs.json") echo '{"xray": {}, "singbox": {}}' > "$file" ;;
-              "clash_subscription.yml") echo 'proxies: []\nproxy-groups: []\nrules: ["MATCH,DIRECT"]' > "$file" ;;
-              "cache_version.txt") echo $(date +%s) > "$file" ;;
-            esac
-          else
-            echo "✅ $file ($(wc -c < "$file") bytes)"
-          fi
-        done
-        python3 -c "import json; json.load(open('all_live_configs.json'))" || echo '{"xray": {}, "singbox": {}}' > all_live_configs.json
-        echo "✅ All files validated for ${{ matrix.name }}"
-      timeout-minutes: 2
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-    - name: 🚀 Deploy to Vercel
-      if: ${{ matrix.id == 'vercel' }}
-      id: vercel_deploy
-      uses: amondnet/vercel-action@v25
-      with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        vercel-args: '--prod --force'
-        github-comment: false
-        github-deployment: false
-      continue-on-error: true
-      timeout-minutes: 10
+      - name: Install dependencies
+        run: npm install
 
-    - name: 🚀 Deploy to Arvan Cloud S3  
-      if: ${{ matrix.id == 'arvan' && secrets.ARVAN_BUCKET_NAME != '' }}
-      id: arvan_deploy
-      uses: jakejarvis/s3-sync-action@master
-      with:
-        args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*" --exclude "*.py" --exclude "README.md" --exclude "scraper.log" --exclude "*.md"
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-        AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.ir'
-        AWS_S3_BUCKET: ${{ secrets.ARVAN_BUCKET_NAME }}
-        SOURCE_DIR: '.'
-      continue-on-error: true
-      timeout-minutes: 8
+      - name: Build project
+        run: npm run build
 
-    - name: ⚠️ Arvan Bucket Missing
-      if: ${{ matrix.id == 'arvan' && secrets.ARVAN_BUCKET_NAME == '' }}
-      run: |
-        echo "::warning::Arvan deployment skipped - missing ARVAN_BUCKET_NAME secret"
-      id: arvan_deploy
+      - name: Deploy to ArvanCloud
+        if: ${{ matrix.id == 'arvan' && secrets.ARVAN_BUCKET_NAME != '' }}
+        run: |
+          npm install -g rclone
+          rclone config create arvan s3 \
+            provider Minio \
+            access_key_id "${{ matrix.key }}" \
+            secret_access_key "${{ matrix.secret }}" \
+            endpoint "${{ matrix.endpoint }}"
+          rclone sync ./dist arvan:${{ matrix.bucket }}
 
-    - name: 📊 Deployment Status
-      run: |
-        if [ "${{ matrix.id }}" = "vercel" ]; then
-          echo "✅ Vercel deployment finished"
-        elif [ "${{ matrix.id }}" = "arvan" ]; then
-          echo "✅ Arvan Cloud deployment finished"
-        fi
-      timeout-minutes: 1
+      - name: Deploy to Cloudflare R2
+        if: ${{ matrix.id == 'cloudflare' && secrets.CLOUDFLARE_BUCKET_NAME != '' }}
+        run: |
+          npm install -g rclone
+          rclone config create cloudflare s3 \
+            provider Cloudflare \
+            access_key_id "${{ matrix.key }}" \
+            secret_access_key "${{ matrix.secret }}" \
+            endpoint "${{ matrix.endpoint }}"
+          rclone sync ./dist cloudflare:${{ matrix.bucket }}
 
-  github_pages_deploy:
-    needs: [enhanced_scraping, deploy_to_mirrors]
-    runs-on: ubuntu-latest
-    if: ${{ always() && needs.enhanced_scraping.outputs.configs_updated == 'true' }}
-    timeout-minutes: 10
-    
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    
-    environment:
-      name: github-pages
-    
-    steps:
-    - name: 🚀 Checkout Latest Changes
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.ref }}
-        fetch-depth: 1
-
-    - name: ✅ Verify Existing Files
-      run: |
-        if [ -f "index.html" ]; then
-          echo "✅ Found index.html"
-        else
-          echo "❌ index.html not found!"
-          exit 1
-        fi
-        if [ -f "index.js" ]; then
-          echo "✅ Found index.js"
-        else
-          echo "❌ index.js not found!"
-          exit 1
-        fi
-        for file in "all_live_configs.json" "clash_subscription.yml" "cache_version.txt"; do
-          if [ -f "$file" ]; then
-            echo "✅ Found $file"
-          else
-            echo "⚠️ Warning: $file not found"
-          fi
-        done
-      timeout-minutes: 1
-
-    - name: 🛠️ Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: 📤 Upload to Pages
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: '.'
-
-    - name: 🚀 Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
-      timeout-minutes: 5
-
-  final_status_report:
-    needs: [enhanced_scraping, deploy_to_mirrors, github_pages_deploy]
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    timeout-minutes: 5
-    
-    steps:
-    - name: 📊 Generate Comprehensive Status Report
-      run: |
-        echo "=================================================="
-        echo "🚀 ENHANCED V2V DEPLOYMENT STATUS REPORT"
-        echo "=================================================="
-        echo "⏰ Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-        echo ""
-        echo "📋 Job Results:"
-        echo "  🔧 Enhanced Scraper: ${{ needs.enhanced_scraping.result }}"
-        echo "  🌐 Mirror Deployment: ${{ needs.deploy_to_mirrors.result }}"
-        echo "  📄 GitHub Pages: ${{ needs.github_pages_deploy.result }}"
-        echo ""
-        echo "📊 Configs Updated: ${{ needs.enhanced_scraping.outputs.configs_updated }}"
-        echo "  Xray: ${{ needs.enhanced_scraping.outputs.xray_count }}"
-        echo "  Sing-box: ${{ needs.enhanced_scraping.outputs.singbox_count }}"
-        echo ""
-        echo "🌐 Deployment Status Summary:"
-        echo "  📄 GitHub Pages: https://smbcryp.github.io/V2V/"
-        echo ""
-        echo "=================================================="
-        echo "🔄 Next scheduled run: $(date -u -d '+3 hours' '+%Y-%m-%d %H:%M UTC')"
-        echo "=================================================="
-      timeout-minutes: 2
+      - name: Deploy to GitHub Pages
+        if: ${{ matrix.id == 'github' }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+        environment:
+          name: github-pages
+          url: ${{ steps.deployment.outputs.page_url }}
