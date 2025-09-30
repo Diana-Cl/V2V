@@ -1,4 +1,4 @@
-Name: 'V2V Unified Deployment Pipeline'
+Name: 'V2V Minimal Publisher'
 
 on:
   schedule:
@@ -11,13 +11,11 @@ on:
       - 'sources.json'
       - 'requirements.txt'
       - 'worker.js'
-      - 'package.json'
       - 'index.html'
-      - 'index.js'
       - '.github/workflows/**'
 
 permissions:
-  # 💡 مهم‌ترین اصلاح: مجوزها باید در سطح Workflow تعریف شوند تا Jobها بتوانند ادامه دهند.
+  # مجوزهای کامل برای Push, Pages و Id-token (برای Worker)
   contents: write 
   pages: write    
   id-token: write 
@@ -27,43 +25,33 @@ env:
   SCRAPER_TIMEOUT_SECONDS: 2700 # 45 minutes
 
 jobs:
-  scrape_and_commit:
+  unified_pipeline:
     runs-on: ubuntu-latest
     environment: Production
-    timeout-minutes: 50
+    timeout-minutes: 60
     
-    outputs:
-      configs_updated: ${{ steps.commit_check.outputs.configs_updated }}
-      
     steps:
-    - name: Checkout Repository
+    - name: 1. Checkout Repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Setup Python Environment
+    - name: 2. Setup Python & Install Dependencies
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
-
-    - name: Install Dependencies
-      run: |
+    - run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install awscli
-
-    - name: Execute Scraper with Fallback
-      id: scraper_run
-      timeout-minutes: 45
-      run: |
-        if [ ! -f "sources.json" ]; then exit 1; fi
-        python -c "import json; json.load(open('sources.json'))" || exit 1
+        pip install awscli # برای Arvan S3
         
+    - name: 3. Execute Scraper with Fallback
+      id: scraper_run
+      run: |
         timeout ${{ env.SCRAPER_TIMEOUT_SECONDS }} python scraper.py || {
           exit_code=$?
           if [ $exit_code -eq 124 ]; then
-            # Fallback files
             echo '{"xray": {}, "singbox": {}}' > all_live_configs.json
             echo 'proxies: []' > clash_subscription.yml
             date +%s > cache_version.txt
@@ -71,44 +59,27 @@ jobs:
             exit 1
           fi
         }
-        
-    - name: Check, Commit, and Push Changes
+
+    - name: 4. Check & Commit Changes
       id: commit_check
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        
-        # 💡 اضافه کردن تمام فایل‌های تولید شده و فرانت‌اند برای Commit
         git add .
         
         if git diff --cached --exit-code > /dev/null 2>&1; then
           echo "configs_updated=false" >> $GITHUB_OUTPUT
         else
           echo "configs_updated=true" >> $GITHUB_OUTPUT
-          xray_count=$(python3 -c "import json; data=json.load(open('all_live_configs.json')); print(sum(len(v) for v in data.get('xray', {}).values()))" 2>/dev/null || echo "0")
-          singbox_count=$(python3 -c "import json; data=json.load(open('all_live_configs.json')); print(sum(len(v) for v in data.get('singbox', {}).values()))" 2>/dev/null || echo "0")
-          
-          commit_msg="🤖 V2V Update: Xray(${xray_count}) + Sing-box(${singbox_count}) configs"
-          git commit -m "$commit_msg"
-          
-          # 💡 استفاده از GITHUB_TOKEN برای Push که به Jobهای بعدی اجازه اجرا می‌دهد.
+          git commit -m "🤖 V2V Auto-Update: Deploying new configs"
           git push
         fi
-
-  deploy_mirrors:
-    needs: scrape_and_commit
-    runs-on: ubuntu-latest
-    # 💡 Job اجرا می‌شود اگر Job قبلی موفق باشد و تغییراتی Commit شده باشد.
-    if: success() && needs.scrape_and_commit.outputs.configs_updated == 'true'
-    timeout-minutes: 15
+      
+    # --- Deployment Section ---
     
-    steps:
-    - name: Checkout Latest Committed Files
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.ref }}
-
-    - name: Deploy to Vercel Mirror
+    # Deployment شرطی: اگر تغییری Commit شد یا خطا داد (برای اطمینان از deploy در صورت fallback)
+    - name: 5. Deploy to Vercel Mirror
+      if: always() 
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -117,10 +88,10 @@ jobs:
         vercel-args: '--prod'
       continue-on-error: true
 
-    - name: Deploy to Arvan Cloud Object Storage (S3)
+    - name: 6. Deploy to Arvan Cloud S3
+      if: always()
       uses: jakejarvis/s3-sync-action@master
       with:
-        # 💡 این اطمینان می‌دهد که فایل‌های HTML/JS هم آپلود شوند.
         args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }} 
@@ -130,21 +101,8 @@ jobs:
         SOURCE_DIR: '.'
       continue-on-error: true
 
-  deploy_pages_and_worker:
-    needs: [scrape_and_commit, deploy_mirrors]
-    runs-on: ubuntu-latest
-    # 💡 Job اجرا می‌شود اگر Job Scraper موفق بوده و تغییراتی وجود داشته باشد.
-    if: success('scrape_and_commit') && needs.scrape_and_commit.outputs.configs_updated == 'true'
-    timeout-minutes: 10
-    
-    steps:
-    - name: Checkout Code for Deployment
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0 
-        
-    - name: Deploy Cloudflare Worker (v2v)
-      if: secrets.CLOUDFLARE_API_TOKEN != ''
+    - name: 7. Deploy Cloudflare Worker (v2v)
+      if: always() && secrets.CLOUDFLARE_API_TOKEN != ''
       uses: cloudflare/wrangler-action@v3
       with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -152,22 +110,10 @@ jobs:
           command: deploy
       continue-on-error: true
 
-    - name: Deploy to GitHub Pages (Reliable Peaceiris Method)
+    - name: 8. Deploy to GitHub Pages (Final & Reliable)
+      if: always()
       uses: peaceiris/actions-gh-pages@v3
       with:
-        # 💡 استفاده از توکن پیش‌فرض برای مجوز Push
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        # 💡 آپلود ریشه مخزن (محل index.html)
         publish_dir: . 
         publish_branch: gh-pages 
-      
-    - name: Final Status Summary
-      if: always()
-      run: |
-        echo "=========================================="
-        echo "✅ V2V Pipeline Completed"
-        echo "=========================================="
-        echo "Configs Updated: ${{ needs.scrape_and_commit.outputs.configs_updated }}"
-        echo "GitHub Pages: Deployed (Check 'gh-pages' branch)"
-        echo "Cloudflare Worker: Attempted"
-        echo "=========================================="
