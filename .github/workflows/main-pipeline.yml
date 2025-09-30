@@ -17,6 +17,7 @@ on:
       - '.github/workflows/**'
 
 permissions:
+  # 💡 مهم‌ترین اصلاح: مجوزها باید در سطح Workflow تعریف شوند تا Jobها بتوانند ادامه دهند.
   contents: write 
   pages: write    
   id-token: write 
@@ -50,7 +51,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install awscli # برای Arvan S3
+        pip install awscli
 
     - name: Execute Scraper with Fallback
       id: scraper_run
@@ -77,6 +78,7 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         
+        # 💡 اضافه کردن تمام فایل‌های تولید شده و فرانت‌اند برای Commit
         git add .
         
         if git diff --cached --exit-code > /dev/null 2>&1; then
@@ -88,13 +90,16 @@ jobs:
           
           commit_msg="🤖 V2V Update: Xray(${xray_count}) + Sing-box(${singbox_count}) configs"
           git commit -m "$commit_msg"
+          
+          # 💡 استفاده از GITHUB_TOKEN برای Push که به Jobهای بعدی اجازه اجرا می‌دهد.
           git push
         fi
 
   deploy_mirrors:
     needs: scrape_and_commit
     runs-on: ubuntu-latest
-    if: always()
+    # 💡 Job اجرا می‌شود اگر Job قبلی موفق باشد و تغییراتی Commit شده باشد.
+    if: success() && needs.scrape_and_commit.outputs.configs_updated == 'true'
     timeout-minutes: 15
     
     steps:
@@ -115,7 +120,7 @@ jobs:
     - name: Deploy to Arvan Cloud Object Storage (S3)
       uses: jakejarvis/s3-sync-action@master
       with:
-        # 💡 مطمئن می‌شویم که تمام فایل‌های ریشه (index.html و...) آپلود شوند.
+        # 💡 این اطمینان می‌دهد که فایل‌های HTML/JS هم آپلود شوند.
         args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }} 
@@ -128,31 +133,32 @@ jobs:
   deploy_pages_and_worker:
     needs: [scrape_and_commit, deploy_mirrors]
     runs-on: ubuntu-latest
-    if: always()
+    # 💡 Job اجرا می‌شود اگر Job Scraper موفق بوده و تغییراتی وجود داشته باشد.
+    if: success('scrape_and_commit') && needs.scrape_and_commit.outputs.configs_updated == 'true'
     timeout-minutes: 10
     
     steps:
     - name: Checkout Code for Deployment
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # برای peaceiris لازم است
+        fetch-depth: 0 
         
     - name: Deploy Cloudflare Worker (v2v)
       if: secrets.CLOUDFLARE_API_TOKEN != ''
       uses: cloudflare/wrangler-action@v3
       with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          secrets: V2V_KV # متغیر محیطی KV را وصل می‌کند
-          command: deploy # از wrangler.toml برای تنظیمات استفاده می‌کند
+          secrets: V2V_KV
+          command: deploy
       continue-on-error: true
 
     - name: Deploy to GitHub Pages (Reliable Peaceiris Method)
       uses: peaceiris/actions-gh-pages@v3
       with:
+        # 💡 استفاده از توکن پیش‌فرض برای مجوز Push
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        # 💡 این خط تضمین می‌کند که index.html در ریشه شاخه gh-pages قرار گیرد.
+        # 💡 آپلود ریشه مخزن (محل index.html)
         publish_dir: . 
-        # شاخه gh-pages را هدف قرار می‌دهد
         publish_branch: gh-pages 
       
     - name: Final Status Summary
