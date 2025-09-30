@@ -14,7 +14,6 @@ on:
       - 'package.json'
       - 'index.html'
       - 'index.js'
-      - 'manifest.json'
       - '.github/workflows/**'
 
 permissions:
@@ -51,7 +50,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install awscli
+        pip install awscli # برای Arvan S3
 
     - name: Execute Scraper with Fallback
       id: scraper_run
@@ -63,6 +62,7 @@ jobs:
         timeout ${{ env.SCRAPER_TIMEOUT_SECONDS }} python scraper.py || {
           exit_code=$?
           if [ $exit_code -eq 124 ]; then
+            # Fallback files
             echo '{"xray": {}, "singbox": {}}' > all_live_configs.json
             echo 'proxies: []' > clash_subscription.yml
             date +%s > cache_version.txt
@@ -115,8 +115,8 @@ jobs:
     - name: Deploy to Arvan Cloud Object Storage (S3)
       uses: jakejarvis/s3-sync-action@master
       with:
-        # ⚠️ این پارامتر را حذف کردیم تا مطمئن شویم فایل‌های HTML/JS/manifest آپلود می‌شوند.
-        args: --acl public-read --delete
+        # 💡 مطمئن می‌شویم که تمام فایل‌های ریشه (index.html و...) آپلود شوند.
+        args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }} 
         AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
@@ -134,29 +134,27 @@ jobs:
     steps:
     - name: Checkout Code for Deployment
       uses: actions/checkout@v4
-      
+      with:
+        fetch-depth: 0 # برای peaceiris لازم است
+        
     - name: Deploy Cloudflare Worker (v2v)
-      if: secrets.CLOUDFLARE_API_TOKEN != '' # Check for token existence
+      if: secrets.CLOUDFLARE_API_TOKEN != ''
       uses: cloudflare/wrangler-action@v3
       with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          # 💡 استفاده از wrangle.toml برای تنظیمات، به جای secrets.V2V_KV
-          command: deploy
+          secrets: V2V_KV # متغیر محیطی KV را وصل می‌کند
+          command: deploy # از wrangler.toml برای تنظیمات استفاده می‌کند
       continue-on-error: true
 
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: Upload Artifacts for Pages
-      uses: actions/upload-pages-artifact@v3
+    - name: Deploy to GitHub Pages (Reliable Peaceiris Method)
+      uses: peaceiris/actions-gh-pages@v3
       with:
-        # 💡 مطمئن می‌شویم که ریشه مخزن آپلود می‌شود
-        path: '.'
-
-    - name: Final Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
-
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        # 💡 این خط تضمین می‌کند که index.html در ریشه شاخه gh-pages قرار گیرد.
+        publish_dir: . 
+        # شاخه gh-pages را هدف قرار می‌دهد
+        publish_branch: gh-pages 
+      
     - name: Final Status Summary
       if: always()
       run: |
@@ -164,6 +162,6 @@ jobs:
         echo "✅ V2V Pipeline Completed"
         echo "=========================================="
         echo "Configs Updated: ${{ needs.scrape_and_commit.outputs.configs_updated }}"
-        echo "Pages URL: ${{ steps.deployment.outputs.page_url }}"
-        echo "Cloudflare Worker: Deployed"
+        echo "GitHub Pages: Deployed (Check 'gh-pages' branch)"
+        echo "Cloudflare Worker: Attempted"
         echo "=========================================="
