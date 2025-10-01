@@ -1,4 +1,4 @@
-Name: 'V2V Minimal Publisher'
+Name: 'V2V Minimal & Robust Publisher'
 
 on:
   schedule:
@@ -12,10 +12,10 @@ on:
       - 'requirements.txt'
       - 'worker.js'
       - 'index.html'
+      - 'index.js'
       - '.github/workflows/**'
 
 permissions:
-  # مجوزهای کامل برای Push, Pages و Id-token (برای Worker)
   contents: write 
   pages: write    
   id-token: write 
@@ -44,14 +44,15 @@ jobs:
     - run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install awscli # برای Arvan S3
+        pip install awscli
         
-    - name: 3. Execute Scraper with Fallback
-      id: scraper_run
+    - name: 3. Execute Scraper (with Timeout & Fallback)
       run: |
+        # اجرای اسکرپر با زمان‌بندی محافظ
         timeout ${{ env.SCRAPER_TIMEOUT_SECONDS }} python scraper.py || {
           exit_code=$?
           if [ $exit_code -eq 124 ]; then
+            # در صورت Timeout، فایل‌های جایگزین (Fallback) بساز
             echo '{"xray": {}, "singbox": {}}' > all_live_configs.json
             echo 'proxies: []' > clash_subscription.yml
             date +%s > cache_version.txt
@@ -60,24 +61,24 @@ jobs:
           fi
         }
 
-    - name: 4. Check & Commit Changes
+    - name: 4. Check, Commit, and Push Changes
       id: commit_check
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add .
+        git add . # اضافه کردن همه فایل‌ها (از جمله index.html/js)
         
         if git diff --cached --exit-code > /dev/null 2>&1; then
           echo "configs_updated=false" >> $GITHUB_OUTPUT
         else
           echo "configs_updated=true" >> $GITHUB_OUTPUT
-          git commit -m "🤖 V2V Auto-Update: Deploying new configs"
+          git commit -m "🤖 V2V Auto-Update: Deploying changes"
           git push
         fi
       
     # --- Deployment Section ---
     
-    # Deployment شرطی: اگر تغییری Commit شد یا خطا داد (برای اطمینان از deploy در صورت fallback)
+    # 5. Deploy to Vercel Mirror
     - name: 5. Deploy to Vercel Mirror
       if: always() 
       uses: amondnet/vercel-action@v25
@@ -88,6 +89,7 @@ jobs:
         vercel-args: '--prod'
       continue-on-error: true
 
+    # 6. Deploy to Arvan Cloud S3
     - name: 6. Deploy to Arvan Cloud S3
       if: always()
       uses: jakejarvis/s3-sync-action@master
@@ -101,7 +103,8 @@ jobs:
         SOURCE_DIR: '.'
       continue-on-error: true
 
-    - name: 7. Deploy Cloudflare Worker (v2v)
+    # 7. Deploy Cloudflare Worker (Worker.js)
+    - name: 7. Deploy Cloudflare Worker
       if: always() && secrets.CLOUDFLARE_API_TOKEN != ''
       uses: cloudflare/wrangler-action@v3
       with:
@@ -110,10 +113,12 @@ jobs:
           command: deploy
       continue-on-error: true
 
-    - name: 8. Deploy to GitHub Pages (Final & Reliable)
+    # 8. Deploy to GitHub Pages (FIX for index.html)
+    - name: 8. Deploy to GitHub Pages (Reliable FIX)
       if: always()
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
+        # 💡 این خط تضمین می‌کند که index.html در ریشه Deploy شود
         publish_dir: . 
-        publish_branch: gh-pages 
+        publish_branch: gh-pages # شاخه هدف
