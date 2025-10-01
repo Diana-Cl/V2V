@@ -16,6 +16,7 @@ on:
       - '.github/workflows/**'
 
 permissions:
+  # مجوزهای کامل برای Push, Pages و Id-token (مورد نیاز اکشن‌های Deploy Pages)
   contents: write 
   pages: write    
   id-token: write 
@@ -35,6 +36,8 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        # ⭐️ اصلاح شد: استفاده از GH_PAT برای Checkout ⭐️
+        token: ${{ secrets.GH_PAT }}
 
     - name: 2. Setup Python & Install Dependencies
       uses: actions/setup-python@v5
@@ -48,11 +51,9 @@ jobs:
         
     - name: 3. Execute Scraper (with Timeout & Fallback)
       run: |
-        # اجرای اسکرپر با زمان‌بندی محافظ
         timeout ${{ env.SCRAPER_TIMEOUT_SECONDS }} python scraper.py || {
           exit_code=$?
           if [ $exit_code -eq 124 ]; then
-            # در صورت Timeout، فایل‌های جایگزین (Fallback) بساز
             echo '{"xray": {}, "singbox": {}}' > all_live_configs.json
             echo 'proxies: []' > clash_subscription.yml
             date +%s > cache_version.txt
@@ -66,21 +67,21 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add . # اضافه کردن همه فایل‌ها (از جمله index.html/js)
+        git add .
         
         if git diff --cached --exit-code > /dev/null 2>&1; then
           echo "configs_updated=false" >> $GITHUB_OUTPUT
         else
           echo "configs_updated=true" >> $GITHUB_OUTPUT
           git commit -m "🤖 V2V Auto-Update: Deploying changes"
+          # از GITHUB_TOKEN پیش‌فرض برای Push کردن کامیت ربات استفاده می‌شود
           git push
         fi
       
     # --- Deployment Section ---
     
-    # 5. Deploy to Vercel Mirror
     - name: 5. Deploy to Vercel Mirror
-      if: always() 
+      if: always() && secrets.VERCEL_TOKEN != ''
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -89,9 +90,8 @@ jobs:
         vercel-args: '--prod'
       continue-on-error: true
 
-    # 6. Deploy to Arvan Cloud S3
     - name: 6. Deploy to Arvan Cloud S3
-      if: always()
+      if: always() && secrets.ARVAN_ACCESS_KEY != ''
       uses: jakejarvis/s3-sync-action@master
       with:
         args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*"
@@ -103,22 +103,38 @@ jobs:
         SOURCE_DIR: '.'
       continue-on-error: true
 
-    # 7. Deploy Cloudflare Worker (Worker.js)
-    - name: 7. Deploy Cloudflare Worker
+    - name: 7. Deploy Cloudflare Worker (Worker.js)
       if: always() && secrets.CLOUDFLARE_API_TOKEN != ''
       uses: cloudflare/wrangler-action@v3
       with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          secrets: V2V_KV
+          secrets: WORKER_KV 
           command: deploy
       continue-on-error: true
+      
+    # --- GitHub Pages Deployment (Official Method for 'main' branch) ---
 
-    # 8. Deploy to GitHub Pages (FIX for index.html)
-    - name: 8. Deploy to GitHub Pages (Reliable FIX)
+    - name: 8. Setup Pages Configuration
       if: always()
-      uses: peaceiris/actions-gh-pages@v3
+      uses: actions/configure-pages@v4
+      
+    - name: 9. Upload Pages Artifact (Includes index.html/js)
+      if: always()
+      uses: actions/upload-pages-artifact@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        # 💡 این خط تضمین می‌کند که index.html در ریشه Deploy شود
-        publish_dir: . 
-        publish_branch: gh-pages # شاخه هدف
+        # تضمین می‌کند که کل ریشه (محل index.html/js) آپلود شود.
+        path: '.'
+
+    - name: 10. Deploy to GitHub Pages
+      if: always()
+      id: deployment
+      uses: actions/deploy-pages@v4
+      
+    - name: 11. Final Status Summary
+      if: always()
+      run: |
+        echo "=========================================="
+        echo "✅ V2V Pipeline Completed"
+        echo "=========================================="
+        echo "GitHub Pages Deploy Status: ${{ steps.deployment.outcome }}"
+        echo "=========================================="
