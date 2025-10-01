@@ -36,7 +36,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        # ⭐️ اصلاح شد: استفاده از GH_PAT برای Checkout ⭐️
+        # ✅ اصلاح نهایی: استفاده از GH_PAT برای Checkout
         token: ${{ secrets.GH_PAT }}
 
     - name: 2. Setup Python & Install Dependencies
