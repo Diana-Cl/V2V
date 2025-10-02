@@ -2,14 +2,13 @@ import { v4 as uuidv4 } from 'uuid';
 import YAML from 'js-yaml'; 
 import { connect } from 'cloudflare:sockets';
 
-const TTL_USER_SUBSCRIPTION_STORE = 60 * 60 * 24 * 3; // 3 days
+const TTL_USER_SUBSCRIPTION_STORE = 60 * 60 * 24 * 3;
 const ALLOWED_ORIGINS = [
     'https://smbcryp.github.io',
     'https://v2v-vercel.vercel.app',
     'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir',
 ];
 
-// تعریف پروتکل‌های پشتیبانی‌شده توسط هر هسته
 const XRAY_PROTOCOLS = ['vless', 'vmess', 'trojan', 'ss', 'shadowsocks'];
 const SINGBOX_PROTOCOLS = ['vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hysteria2', 'hy2', 'tuic'];
 
@@ -47,91 +46,90 @@ function yamlResponse(text, status = 200, filename = null, corsHeaders) {
     return new Response(text, { status, headers });
 }
 
-function parseConfigUrl(url) {
+function parseConfigUrl(config) {
     try {
-        const urlObj = new URL(url);
+        const urlObj = new URL(config);
         let protocol = urlObj.protocol.replace(':', '');
         const params = new URLSearchParams(urlObj.search);
         
-        let config = {
+        let cfg = {
             protocol,
             server: urlObj.hostname,
             port: parseInt(urlObj.port),
-            name: decodeURIComponent(urlObj.hash.substring(1) || `${protocol}-${urlObj.hostname}`)
+            name: decodeURIComponent(urlObj.hash.substring(1) || `v2v-${protocol}-${urlObj.hostname}`)
         };
         
-        // تطبیق پروتکل‌ها
-        if (protocol === 'shadowsocks') config.protocol = 'ss';
-        if (protocol === 'hysteria2') config.protocol = 'hy2';
+        if (protocol === 'shadowsocks') cfg.protocol = 'ss';
+        if (protocol === 'hysteria2') cfg.protocol = 'hy2';
 
-        if (config.protocol === 'vmess') {
+        if (cfg.protocol === 'vmess') {
             try {
-                const vmessData = url.replace('vmess://', '');
+                const vmessData = config.replace('vmess://', '');
                 const decodedData = JSON.parse(atob(vmessData));
-                config.server = decodedData.add;
-                config.port = parseInt(decodedData.port);
-                config.uuid = decodedData.id;
-                config.alterId = parseInt(decodedData.aid) || 0;
-                config.cipher = decodedData.scy || 'auto'; 
-                config.network = decodedData.net || 'tcp';
-                config.name = decodedData.ps || config.name;
+                cfg.server = decodedData.add;
+                cfg.port = parseInt(decodedData.port);
+                cfg.uuid = decodedData.id;
+                cfg.alterId = parseInt(decodedData.aid) || 0;
+                cfg.cipher = decodedData.scy || 'auto'; 
+                cfg.network = decodedData.net || 'tcp';
+                cfg.name = decodedData.ps || `v2v-vmess-${cfg.server}`;
                 
                 if (decodedData.net === 'ws') {
-                    config.wsPath = decodedData.path || '/';
-                    config.wsHeaders = { Host: decodedData.host || decodedData.add };
+                    cfg.wsPath = decodedData.path || '/';
+                    cfg.wsHeaders = { Host: decodedData.host || decodedData.add };
                 }
                 if (decodedData.tls === 'tls') {
-                    config.tls = true;
-                    config.sni = decodedData.sni || decodedData.host || decodedData.add;
+                    cfg.tls = true;
+                    cfg.sni = decodedData.sni || decodedData.host || decodedData.add;
                 }
             } catch (e) { 
                 return null; 
             }
-        } else if (config.protocol === 'vless') {
-            config.uuid = urlObj.username;
-            config.encryption = params.get('encryption') || 'none';
-            config.flow = params.get('flow') || '';
-            config.network = params.get('type') || 'tcp';
+        } else if (cfg.protocol === 'vless') {
+            cfg.uuid = urlObj.username;
+            cfg.encryption = params.get('encryption') || 'none';
+            cfg.flow = params.get('flow') || '';
+            cfg.network = params.get('type') || 'tcp';
             
-            if (config.network === 'ws') {
-                config.wsPath = params.get('path') || '/';
-                config.wsHeaders = { Host: params.get('host') || urlObj.hostname };
+            if (cfg.network === 'ws') {
+                cfg.wsPath = params.get('path') || '/';
+                cfg.wsHeaders = { Host: params.get('host') || urlObj.hostname };
             }
             if (params.get('security') === 'tls') {
-                config.tls = true;
-                config.sni = params.get('sni') || urlObj.hostname;
+                cfg.tls = true;
+                cfg.sni = params.get('sni') || urlObj.hostname;
             }
-        } else if (config.protocol === 'trojan') {
-            config.password = urlObj.username;
-            config.tls = true;
-            config.sni = params.get('sni') || urlObj.hostname;
-        } else if (config.protocol === 'ss') {
+        } else if (cfg.protocol === 'trojan') {
+            cfg.password = urlObj.username;
+            cfg.tls = true;
+            cfg.sni = params.get('sni') || urlObj.hostname;
+        } else if (cfg.protocol === 'ss') {
             try {
                 const decoded = atob(urlObj.username);
                 if (decoded.includes(':')) {
                     const [method, password] = decoded.split(':', 2);
-                    config.cipher = method;
-                    config.password = password;
+                    cfg.cipher = method;
+                    cfg.password = password;
                 } else {
                     return null;
                 }
             } catch (e) { 
                 return null; 
             }
-        } else if (config.protocol === 'hy2') {
-            config.password = urlObj.username;
-            config.tls = true;
-            config.sni = params.get('sni') || urlObj.hostname;
-        } else if (config.protocol === 'tuic') {
-            config.uuid = urlObj.username;
-            config.password = params.get('password') || '';
-            config.tls = true;
-            config.sni = params.get('sni') || urlObj.hostname;
+        } else if (cfg.protocol === 'hy2') {
+            cfg.password = urlObj.username;
+            cfg.tls = true;
+            cfg.sni = params.get('sni') || urlObj.hostname;
+        } else if (cfg.protocol === 'tuic') {
+            cfg.uuid = urlObj.username;
+            cfg.password = params.get('password') || '';
+            cfg.tls = true;
+            cfg.sni = params.get('sni') || urlObj.hostname;
         } else {
             return null;
         }
 
-        return config;
+        return cfg;
     } catch (e) {
         return null;
     }
@@ -145,8 +143,6 @@ function generateClashYaml(configs, targetCore) {
         const config = parseConfigUrl(url);
         
         if (!config || !allowedProtocols.includes(config.protocol)) continue;
-        
-        // Clash فقط از پروتکل‌های محدود پشتیبانی می‌کند
         if (['hy2', 'tuic'].includes(config.protocol)) continue;
 
         let proxy = {
@@ -248,7 +244,6 @@ function generateClashYaml(configs, targetCore) {
     try {
         return YAML.dump(payload, { skipInvalid: true, flowLevel: -1 }); 
     } catch (e) {
-        console.error("YAML generation error:", e.message);
         return null;
     }
 }
@@ -387,6 +382,78 @@ function generateSingboxJson(configs, targetCore) {
     return JSON.stringify(payload, null, 2);
 }
 
+async function deepPingTest(host, port, tls, sni) {
+    const maxAttempts = 3;
+    const latencies = [];
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            const startTime = Date.now();
+            const timeoutMs = 7000;
+            
+            const socketOptions = { 
+                hostname: host, 
+                port: parseInt(port) 
+            };
+            
+            if (tls) {
+                socketOptions.secureTransport = 'on';
+                socketOptions.servername = sni || host;
+                socketOptions.allowHalfOpen = false;
+            }
+            
+            const socket = connect(socketOptions);
+            
+            await Promise.race([
+                (async () => {
+                    await socket.opened;
+                    
+                    const writer = socket.writable.getWriter();
+                    const testData = new Uint8Array([0x00, 0x01, 0x02]);
+                    await writer.write(testData);
+                    writer.releaseLock();
+                    
+                    const reader = socket.readable.getReader();
+                    const readPromise = reader.read();
+                    await Promise.race([
+                        readPromise,
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Read timeout')), 2000)
+                        )
+                    ]);
+                    reader.releaseLock();
+                })(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Connection timeout')), timeoutMs)
+                )
+            ]);
+            
+            const latency = Date.now() - startTime;
+            await socket.close();
+            
+            if (latency > 0 && latency < timeoutMs) {
+                latencies.push(latency);
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+        } catch (error) {
+            continue;
+        }
+    }
+    
+    if (latencies.length === 0) {
+        return { latency: null, status: 'Dead', error: 'All attempts failed' };
+    }
+    
+    const avgLatency = Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length);
+    
+    return { 
+        latency: avgLatency,
+        status: 'Live'
+    };
+}
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
@@ -398,7 +465,6 @@ export default {
         }
 
         try {
-            // تست پینگ واقعی با اتصال TCP
             if (url.pathname === '/ping' && request.method === 'POST') {
                 const { host, port, tls, sni } = await request.json();
                 
@@ -406,67 +472,21 @@ export default {
                     return jsonResponse({ error: 'Invalid host or port' }, 400, corsHeaders);
                 }
 
-                try {
-                    const startTime = Date.now();
-                    const timeoutMs = 8000;
-                    
-                    const socketOptions = { 
-                        hostname: host, 
-                        port: parseInt(port) 
-                    };
-                    
-                    if (tls) {
-                        socketOptions.secureTransport = 'on';
-                        socketOptions.servername = sni || host;
-                    }
-                    
-                    const socket = connect(socketOptions);
-                    
-                    // منتظر باز شدن کانکشن
-                    await Promise.race([
-                        socket.opened,
-                        new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('Connection timeout')), timeoutMs)
-                        )
-                    ]);
-                    
-                    const latency = Date.now() - startTime;
-                    await socket.close();
-                    
-                    if (latency > 0 && latency < timeoutMs) {
-                        return jsonResponse({ 
-                            latency: latency, 
-                            status: 'Live' 
-                        }, 200, corsHeaders);
-                    } else {
-                        return jsonResponse({ 
-                            latency: null, 
-                            status: 'Dead', 
-                            error: 'Invalid latency' 
-                        }, 200, corsHeaders);
-                    }
-                    
-                } catch (error) {
-                    return jsonResponse({ 
-                        latency: null, 
-                        status: 'Dead', 
-                        error: error.message 
-                    }, 200, corsHeaders);
-                }
+                const result = await deepPingTest(host, port, tls, sni);
+                return jsonResponse(result, 200, corsHeaders);
             }
 
-            // ایجاد subscription شخصی
             if (url.pathname === '/create-personal-sub' && request.method === 'POST') {
                 const { configs, uuid: clientUuid, core: targetCore } = await request.json(); 
                 
                 if (!Array.isArray(configs) || configs.length === 0) {
-                    return jsonResponse({ error: 'configs array is required and must not be empty' }, 400, corsHeaders);
+                    return jsonResponse({ error: 'configs array is required' }, 400, corsHeaders);
                 }
                 
                 const validatedConfigs = configs.filter(c => parseConfigUrl(c) !== null);
                 
                 if (validatedConfigs.length === 0) {
-                    return jsonResponse({ error: 'No valid configs found' }, 400, corsHeaders);
+                    return jsonResponse({ error: 'No valid configs' }, 400, corsHeaders);
                 }
 
                 const userUuid = clientUuid || uuidv4();
@@ -482,10 +502,9 @@ export default {
                         { expirationTtl: TTL_USER_SUBSCRIPTION_STORE }
                     );
                 } catch (e) {
-                    return jsonResponse({ error: 'Storage error: ' + e.message }, 500, corsHeaders);
+                    return jsonResponse({ error: 'Storage error' }, 500, corsHeaders);
                 }
                 
-                // URL های کوتاه با امضای v2v
                 return jsonResponse({ 
                     uuid: userUuid, 
                     clashSubscriptionUrl: `${url.origin}/sub/clash/${userUuid}`, 
@@ -493,7 +512,6 @@ export default {
                 }, 200, corsHeaders);
             }
             
-            // سرویس subscription URLs
             const subMatch = url.pathname.match(/^\/sub\/(clash|singbox)\/([^/]+)/);
             if (subMatch) {
                 const format = subMatch[1];
@@ -503,14 +521,13 @@ export default {
                 try {
                     storedData = await env.v2v_kv.get(`sub:${uuid}`, { type: 'json' });
                 } catch (e) {
-                    return textResponse('Storage read error: ' + e.message, 500, null, corsHeaders);
+                    return textResponse('Storage error', 500, null, corsHeaders);
                 }
 
                 if (!storedData || !Array.isArray(storedData.configs)) {
-                    return textResponse('Subscription not found or expired', 404, null, corsHeaders);
+                    return textResponse('Subscription not found', 404, null, corsHeaders);
                 }
                 
-                // تمدید TTL
                 await env.v2v_kv.put(`sub:${uuid}`, JSON.stringify(storedData), { 
                     expirationTtl: TTL_USER_SUBSCRIPTION_STORE 
                 });
@@ -533,12 +550,12 @@ export default {
                 }
             }
             
-            return textResponse('V2V Worker is running successfully', 200, null, corsHeaders);
+            return textResponse('V2V Worker Active', 200, null, corsHeaders);
             
         } catch (err) {
             console.error('Worker error:', err);
             return jsonResponse({ 
-                error: 'Internal server error', 
+                error: 'Internal error', 
                 details: err.message 
             }, 500, corsHeaders);
         }
