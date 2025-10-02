@@ -1,8 +1,8 @@
-Name: 'V2V Config Updater'
+name: 'V2V Config Updater'
 
 on:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 */3 * * *'
   workflow_dispatch:
   push:
     branches: [ main ]
@@ -22,7 +22,7 @@ jobs:
         fetch-depth: 0
 
     - name: Setup Python
-      uses: actions:setup-python@v5
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -42,9 +42,7 @@ jobs:
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
         git add all_live_configs.json clash_subscription.yml cache_version.txt
-        # اصلاح نحوی/منطقی 1: حذف ترکیب && و || در خط git commit برای جلوگیری از خطای YML
-        # این کد مطمئن‌تر است و اگر تغییری نباشد، Commit نمی‌کند.
-        git diff --quiet --cached || git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M')"
+        git diff --quiet && git diff --staged --quiet || git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M')"
         git push
 
   deploy_vercel:
@@ -84,8 +82,6 @@ jobs:
         AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.ir'
         AWS_S3_BUCKET: ${{ secrets.ARVAN_BUCKET_NAME }}
         SOURCE_DIR: '.'
-        # اصلاح حیاتی 2: اضافه کردن AWS_REGION برای رفع خطای "AWS_ACCESS_KEY_ID is not set"
-        AWS_REGION: 'us-east-1' 
       continue-on-error: true
 
   deploy_pages:
