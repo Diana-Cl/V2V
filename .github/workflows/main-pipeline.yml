@@ -1,4 +1,4 @@
-name: 'V2V Config Updater'
+Name: 'V2V Config Updater'
 
 on:
   schedule:
@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 50
     
     steps:
-    - name: Checkout
+    - name: Checkout Repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
@@ -30,24 +30,33 @@ jobs:
       run: |
         pip install requests PyGithub PyYAML
 
-    - name: Run Scraper
+    - name: Run Scraper (Timeout 45 min)
+      # لاگ‌ها (1000022211.png) نشان داد که این مرحله با موفقیت اجرا می‌شود.
       run: |
         timeout 2700 python scraper.py || echo "Scraper completed with errors"
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         GITHUB_SEARCH_LIMIT: 150
 
-    - name: Commit Changes
+    - name: Commit Changes and Push
+      # اگر Commit نشود، Deployments محتوای قدیمی را خواهند داشت.
+      # Commit فقط در صورتی که تغییراتی وجود داشته باشد، انجام می‌شود.
       run: |
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
+        # اضافه کردن همه فایل‌های خروجی
         git add all_live_configs.json clash_subscription.yml cache_version.txt
-        git diff --quiet && git diff --staged --quiet || git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M')"
+        # اگر تغییری وجود داشت، Commit و Push کن.
+        git diff --quiet --staged || git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M')"
         git push
+      # اگر Push با خطا مواجه شد، Job باید Fail شود تا Deployments اجرا نشوند (محتوای قدیمی).
+      # ما if: always() را در Job های بعدی حفظ می‌کنیم.
 
   deploy_vercel:
     needs: update_configs
     runs-on: ubuntu-latest
+    # با توجه به اینکه Vercel Deploy موفق بوده اما محتوا بارگذاری نشده،
+    # احتمالاً مشکل از کش Vercel یا محتوای Frontend است.
     if: always()
     
     steps:
@@ -66,6 +75,8 @@ jobs:
   deploy_arvan:
     needs: update_configs
     runs-on: ubuntu-latest
+    # ارور: AWS_ACCESS_KEY_ID is not set. (1000022222.png)
+    # با تغییر نحوه تعریف متغیرهای محیطی، خطا را رفع می‌کنیم.
     if: always()
     
     steps:
@@ -77,16 +88,20 @@ jobs:
       with:
         args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*" --exclude "*.py"
       env:
+        # نام Secretها را صریحاً طبق نیاز اکشن s3-sync تغییر می‌دهیم.
         AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.ir'
         AWS_S3_BUCKET: ${{ secrets.ARVAN_BUCKET_NAME }}
+        # اضافه کردن Region برای سازگاری کامل با AWS CLI (توسط اکشن استفاده می‌شود)
+        AWS_REGION: 'us-east-1' 
         SOURCE_DIR: '.'
       continue-on-error: true
 
   deploy_pages:
     needs: update_configs
     runs-on: ubuntu-latest
+    # این Deploy موفق بوده است. (1000022223.png)
     if: always()
     
     permissions:
