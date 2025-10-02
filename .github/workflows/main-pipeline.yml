@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 50
     
     steps:
-    - name: Checkout Repository
+    - name: Checkout
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
@@ -37,15 +37,13 @@ jobs:
         GH_PAT: ${{ secrets.GH_PAT }}
         GITHUB_SEARCH_LIMIT: 150
 
-    - name: Commit Changes and Push
-      # اصلاح منطقی: اگر فایل‌ها تغییر نکنند، Commit و Push انجام نمی‌شود.
+    - name: Commit Changes
       run: |
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
         git add all_live_configs.json clash_subscription.yml cache_version.txt
-        # شرط Commit فقط در صورت وجود تغییرات
+        # شرط Commit حفظ شده است.
         git diff --quiet --staged || git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M')"
-        # Push بعد از Commit
         git push
 
   deploy_vercel:
@@ -64,30 +62,31 @@ jobs:
         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
         vercel-args: '--prod'
-      continue-on-error: true # برای جلوگیری از شکست کل WorkFlow در صورت خطای Vercel
+      continue-on-error: true
 
   deploy_arvan:
     needs: update_configs
     runs-on: ubuntu-latest
-    # رفع خطای 'AWS_ACCESS_KEY_ID is not set' با افزودن AWS_REGION
     if: always()
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Deploy to Arvan Storage (S3-Compatible)
+    - name: Deploy to Arvan
       uses: jakejarvis/s3-sync-action@master
       with:
         args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*" --exclude "*.py"
       env:
+        # اصلاح حیاتی: برای رفع خطای "AWS_ACCESS_KEY_ID is not set" در اکشن S3،
+        # و همچنین برای افزایش سازگاری، AWS_REGION اضافه می‌شود.
         AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.ir'
         AWS_S3_BUCKET: ${{ secrets.ARVAN_BUCKET_NAME }}
-        AWS_REGION: 'us-east-1' # اضافه شدن برای سازگاری کامل اکشن S3
+        AWS_REGION: 'us-east-1' # اضافه شدن برای رفع مشکل اکشن
         SOURCE_DIR: '.'
-      continue-on-error: true # برای جلوگیری از شکست کل WorkFlow در صورت خطای Arvan
+      continue-on-error: true
 
   deploy_pages:
     needs: update_configs
@@ -110,11 +109,11 @@ jobs:
     - name: Setup Pages
       uses: actions/configure-pages@v4
 
-    - name: Upload Artifact
+    - name: Upload
       uses: actions/upload-pages-artifact@v3
       with:
         path: '.'
 
-    - name: Deploy to GitHub Pages
+    - name: Deploy
       id: deployment
       uses: actions/deploy-pages@v4
