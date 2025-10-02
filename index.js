@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const STATIC_CONFIG_URL = './all_live_configs.json';
     const STATIC_CACHE_VERSION_URL = './cache_version.txt';
-    const PING_TIMEOUT = 8000; 
+    const PING_TIMEOUT = 8000;
     
     const WORKER_URLS = [
         'https://v2v-proxy.mbrgh87.workers.dev',
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return url;
     };
     
-    const PING_BATCH_SIZE = 50;
+    const PING_BATCH_SIZE = 30;
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
@@ -33,19 +33,14 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toastEl.classList.remove('show'), 3000);
     };
 
-    window.copyToClipboardAndShowQr = async (text, successMessage = 'کپی شد!', openQr = false) => {
+    window.copyToClipboard = async (text, successMessage = 'کپی شد!') => {
         try {
             await navigator.clipboard.writeText(text);
             showToast(successMessage);
-            if (openQr) {
-                window.openQrModal(text);
-            }
         } catch (err) { 
             showToast('خطا در کپی کردن!', true); 
         }
     };
-
-    window.copyToClipboard = window.copyToClipboardAndShowQr;
 
     window.openQrModal = (text) => {
         if (!window.QRCode) { 
@@ -70,6 +65,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let allLiveConfigsData = null;
 
+    const removeDuplicates = (configs) => {
+        const seen = new Set();
+        return configs.filter(config => {
+            const normalized = config.toLowerCase().trim();
+            if (seen.has(normalized)) return false;
+            seen.add(normalized);
+            return true;
+        });
+    };
+
+    const shortenName = (name, protocol, server) => {
+        if (name.length > 30) {
+            return `v2v-${protocol}-${server.split('.')[0].slice(0, 10)}`;
+        }
+        return name;
+    };
+
     const fetchAndRender = async () => {
         statusBar.textContent = 'درحال دریافت کانفیگ‌ها...';
         try {
@@ -78,6 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!configResponse.ok) throw new Error(`HTTP ${configResponse.status}`);
             allLiveConfigsData = await configResponse.json();
+            
+            for (const core in allLiveConfigsData) {
+                for (const protocol in allLiveConfigsData[core]) {
+                    allLiveConfigsData[core][protocol] = removeDuplicates(allLiveConfigsData[core][protocol]);
+                }
+            }
             
             let cacheVersion = 'نامشخص';
             try {
@@ -120,27 +138,23 @@ document.addEventListener('DOMContentLoaded', () => {
         let contentHtml = runPingButton + `
             ${copySelectedButton} 
             
-            ${actionGroupTitle(`لینک اشتراک YAML (Clash) [${coreName}]`)}
+            ${actionGroupTitle(`لینک اشتراک [${coreName}]`)}
             <div class="action-box">
                 <span class="action-box-label">اشتراک YAML (کلش)</span>
                 <div class="action-box-buttons">
                     <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'selected', 'clash', 'copy')">انتخابی (کپی)</button>
                     <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'selected', 'clash', 'qr')">انتخابی (QR)</button>
-                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'selected', 'clash', 'download')">انتخابی (دانلود)</button>
-                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'all', 'clash', 'qr')">همه (QR)</button> 
-                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'all', 'clash', 'download')">همه (دانلود)</button>
+                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'all', 'clash', 'copy')">همه (کپی)</button>
+                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'all', 'clash', 'qr')">همه (QR)</button>
                 </div>
             </div>
-
-            ${actionGroupTitle(`لینک اشتراک JSON (Sing-box) [${coreName}]`)}
             <div class="action-box">
                 <span class="action-box-label">اشتراک JSON (سینگ‌باکس)</span>
                 <div class="action-box-buttons">
                     <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'selected', 'singbox', 'copy')">انتخابی (کپی)</button>
                     <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'selected', 'singbox', 'qr')">انتخابی (QR)</button>
-                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'selected', 'singbox', 'download')">انتخابی (دانلود)</button>
-                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'all', 'singbox', 'qr')">همه (QR)</button> 
-                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'all', 'singbox', 'download')">همه (دانلود)</button>
+                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'all', 'singbox', 'copy')">همه (کپی)</button>
+                    <button class="action-btn-small" onclick="window.generateSubscriptionUrl('${coreName}', 'all', 'singbox', 'qr')">همه (QR)</button>
                 </div>
             </div>
         `;
@@ -155,36 +169,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 .replace('tuic', 'TUIC');
             
             contentHtml += `
-                <div class="protocol-group open" data-protocol="${protocol}">
+                <div class="protocol-group" data-protocol="${protocol}">
                     <div class="protocol-header">
                         <span>${protocolName} (${configs.length})</span>
-                        <div class="action-box-buttons">
-                             <button class="action-btn-small copy-all-btn" onclick="window.copyProtocolConfigs('${coreName}', '${protocol}')">کپی همه</button>
-                             <button class="action-btn-small qr-all-btn" onclick="window.showProtocolConfigsQr('${coreName}', '${protocol}')">QR همه</button>
-                             <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                 <polyline points="6 9 12 15 18 9"></polyline>
-                             </svg>
-                        </div>
+                        <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </div>
                     <ul class="config-list">`;
             
             configs.forEach((config, idx) => {
-                const urlObj = new URL(config);
-                const server = urlObj.hostname;
-                const port = urlObj.port;
-                const name = decodeURIComponent(urlObj.hash.substring(1) || `${protocol}-${server}`);
-                
-                contentHtml += `
-                    <li class="config-item">
-                        <input type="checkbox" class="config-checkbox" data-core="${coreName}" data-protocol="${protocol}" data-config="${encodeURIComponent(config)}" id="${coreName}-${protocol}-${idx}">
-                        <div class="config-details">
-                            <label for="${coreName}-${protocol}-${idx}" style="cursor:pointer; font-weight: 500;">${name}</label>
-                            <span class="server">${server}:${port}</span>
-                        </div>
-                        <div class="ping-result-container" id="ping-${coreName}-${protocol}-${idx}"></div>
-                        <button class="copy-qr-btn" onclick="window.copyToClipboardAndShowQr(decodeURIComponent('${encodeURIComponent(config)}'), 'کپی شد!', true)">کپی+QR</button>
-                    </li>
-                `;
+                try {
+                    const urlObj = new URL(config);
+                    const server = urlObj.hostname;
+                    const port = urlObj.port;
+                    const rawName = decodeURIComponent(urlObj.hash.substring(1) || `${protocol}-${server}`);
+                    const name = shortenName(rawName, protocol, server);
+                    
+                    contentHtml += `
+                        <li class="config-item">
+                            <input type="checkbox" class="config-checkbox" data-core="${coreName}" data-protocol="${protocol}" data-config="${encodeURIComponent(config)}" id="${coreName}-${protocol}-${idx}">
+                            <div class="config-details">
+                                <label for="${coreName}-${protocol}-${idx}" style="cursor:pointer; font-weight: 500;">${name}</label>
+                                <span class="server">${server}:${port}</span>
+                            </div>
+                            <div class="ping-result-container" id="ping-${coreName}-${protocol}-${idx}"></div>
+                            <button class="action-btn-small" onclick="window.copyToClipboard(decodeURIComponent('${encodeURIComponent(config)}'), 'کپی شد!')">کپی</button>
+                            <button class="action-btn-small" onclick="window.openQrModal(decodeURIComponent('${encodeURIComponent(config)}'))">QR</button>
+                        </li>
+                    `;
+                } catch (e) {
+                    console.error('Config parse error:', e);
+                }
             });
             
             contentHtml += `</ul></div>`;
@@ -193,8 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.innerHTML = contentHtml;
 
         wrapper.querySelectorAll('.protocol-header').forEach(header => {
-            header.addEventListener('click', (e) => {
-                if (e.target.closest('.action-btn-small, .copy-all-btn, .qr-all-btn')) return;
+            header.addEventListener('click', () => {
                 const group = header.closest('.protocol-group');
                 group.classList.toggle('open');
             });
@@ -210,26 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const configs = Array.from(checkboxes).map(cb => decodeURIComponent(cb.dataset.config));
         const text = configs.join('\n');
         window.copyToClipboard(text, `${configs.length} کانفیگ کپی شد!`);
-    };
-
-    window.copyProtocolConfigs = (coreName, protocol) => {
-        const configs = allLiveConfigsData[coreName][protocol] || [];
-        if (configs.length === 0) {
-            showToast('کانفیگی وجود ندارد!', true);
-            return;
-        }
-        const text = configs.join('\n');
-        window.copyToClipboard(text, `${configs.length} کانفیگ کپی شد!`);
-    };
-
-    window.showProtocolConfigsQr = (coreName, protocol) => {
-        const configs = allLiveConfigsData[coreName][protocol] || [];
-        if (configs.length === 0) {
-            showToast('کانفیگی وجود ندارد!', true);
-            return;
-        }
-        const text = configs.join('\n');
-        window.openQrModal(text);
     };
 
     window.generateSubscriptionUrl = async (coreName, scope, format, action) => {
@@ -273,17 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const subUrl = format === 'clash' ? data.clashSubscriptionUrl : data.singboxSubscriptionUrl;
 
             if (action === 'copy') {
-                await window.copyToClipboard(subUrl, 'لینک اشتراک کپی شد!');
+                await window.copyToClipboard(subUrl, 'لینک اشتراک V2V کپی شد!');
             } else if (action === 'qr') {
                 window.openQrModal(subUrl);
-            } else if (action === 'download') {
-                const filename = `v2v_${coreName}_${format}_${Date.now()}.${format === 'clash' ? 'yaml' : 'json'}`;
-                const downloadUrl = `${subUrl}?download=1`;
-                const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = filename;
-                a.click();
-                showToast('دانلود شروع شد!');
             }
         } catch (error) {
             console.error('Subscription generation error:', error);
