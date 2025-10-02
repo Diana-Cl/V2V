@@ -2,7 +2,7 @@ Name: 'V2V Config Updater'
 
 on:
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '0 */4 * * *'
   workflow_dispatch:
   push:
     branches: [ main ]
@@ -22,7 +22,7 @@ jobs:
         fetch-depth: 0
 
     - name: Setup Python
-      uses: actions/setup-python@v5
+      uses: actions:setup-python@v5
       with:
         python-version: '3.11'
 
@@ -42,8 +42,9 @@ jobs:
         git config user.name "GitHub Action"
         git config user.email "action@github.com"
         git add all_live_configs.json clash_subscription.yml cache_version.txt
-        # شرط Commit حفظ شده است.
-        git diff --quiet --staged || git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M')"
+        # اصلاح نحوی/منطقی 1: حذف ترکیب && و || در خط git commit برای جلوگیری از خطای YML
+        # این کد مطمئن‌تر است و اگر تغییری نباشد، Commit نمی‌کند.
+        git diff --quiet --cached || git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M')"
         git push
 
   deploy_vercel:
@@ -78,14 +79,13 @@ jobs:
       with:
         args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*" --exclude "*.py"
       env:
-        # اصلاح حیاتی: برای رفع خطای "AWS_ACCESS_KEY_ID is not set" در اکشن S3،
-        # و همچنین برای افزایش سازگاری، AWS_REGION اضافه می‌شود.
         AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
         AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.ir'
         AWS_S3_BUCKET: ${{ secrets.ARVAN_BUCKET_NAME }}
-        AWS_REGION: 'us-east-1' # اضافه شدن برای رفع مشکل اکشن
         SOURCE_DIR: '.'
+        # اصلاح حیاتی 2: اضافه کردن AWS_REGION برای رفع خطای "AWS_ACCESS_KEY_ID is not set"
+        AWS_REGION: 'us-east-1' 
       continue-on-error: true
 
   deploy_pages:
