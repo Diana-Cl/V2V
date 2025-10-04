@@ -10,17 +10,16 @@
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="manifest" href="manifest.json">
     <style>
-        *, *::before, *::after { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
             --primary-bg: #121212; --secondary-bg: #1e1e1e; --text-color: #e0e0e0; --border-color: #2e2e2e;
             --action-gray: #333; --test-button-bg: #4a2a00; --test-button-hover-bg: #6e3f00;
             --ping-good: #4CAF50; --ping-medium: #FFC107; --ping-bad: #F44336;
             --toast-bg: linear-gradient(135deg, #34d399, #10b981);
             --toast-error-bg: linear-gradient(135deg, #f87171, #ef4444);
-            --copy-selected-bg: #28a745;
-            --copy-selected-hover-bg: #218838;
+            --copy-selected-bg: #28a745; --copy-selected-hover-bg: #218838;
         }
-        body { background-color: var(--primary-bg); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body { background-color: var(--primary-bg); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         .main-wrapper { width: 100%; max-width: 700px; padding: 15px; }
         .header { margin-bottom: 20px; }
         .header img { width: 100px; height: 100px; }
@@ -32,38 +31,46 @@
         .core-header { color: white; padding: 15px; border-radius: 10px; font-size: 1.3em; font-weight: bold; margin-bottom: 20px; }
         #xray-header { background: linear-gradient(135deg, #c31432, #240b36); }
         #singbox-header { background: linear-gradient(135deg, #159957, #155799); }
-        .test-button { background: var(--test-button-bg); border: 1px solid #7c5115; color: #ffab40; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; width: 100%; transition: all 0.3s ease; display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 15px; }
+        .test-button { background: var(--test-button-bg); border: none; color: #ffab40; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; width: 100%; transition: all 0.3s; display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 15px; }
         .test-button:hover { background-color: var(--test-button-hover-bg); }
-        .test-button:disabled { background-color: #555; cursor: not-allowed; transform: none; color: #aaa; border-color: #666; }
-        .action-btn-wide { background: var(--copy-selected-bg); border: 1px solid var(--copy-selected-hover-bg); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; width: 100%; transition: background-color 0.3s ease; margin-bottom: 15px; }
+        .test-button:disabled { background-color: #555; cursor: not-allowed; color: #aaa; }
+        .action-btn-wide { background: var(--copy-selected-bg); border: none; color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; width: 100%; transition: background-color 0.3s; margin-bottom: 15px; }
         .action-btn-wide:hover { background-color: var(--copy-selected-hover-bg); }
         .action-group-title { color: #ccc; font-size: 0.9em; font-weight: bold; text-align: right; margin: 25px 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid var(--border-color); }
-        .action-box { display: flex; justify-content: space-between; align-items: center; background-color: var(--action-gray); padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; }
+        .action-box { display: flex; justify-content: space-between; align-items: center; background-color: var(--action-gray); padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
         .action-box-label { font-size: 0.9em; font-weight: 500; }
-        .action-box-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-        .action-btn-small { background-color: #444; border: 1px solid #555; color: var(--text-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8em; transition: background-color 0.2s; white-space: nowrap;}
+        .action-box-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+        .action-btn-small { background-color: #444; border: none; color: var(--text-color); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8em; transition: background-color 0.2s; white-space: nowrap; }
         .action-btn-small:hover { background-color: #555; }
         .protocol-group { border-top: 1px solid var(--border-color); }
         .protocol-header { padding: 15px 5px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .toggle-icon { transition: transform 0.3s; }
         .protocol-group.open .toggle-icon { transform: rotate(180deg); }
-        .config-list { list-style: none; padding: 0; margin: 0; max-height: 0; overflow: hidden; transition: max-height 0.4s ease-in-out; }
-        .protocol-group.open .config-list { max-height: 10000px; overflow-y: auto; }
-        .config-item { padding: 10px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; }
+        .config-list { list-style: none; max-height: 0; overflow: hidden; transition: max-height 0.4s ease-in-out; }
+        .protocol-group.open .config-list { max-height: 50000px; overflow-y: auto; }
+        .config-item { padding: 10px 5px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .config-checkbox { flex-shrink: 0; transform: scale(1.2); accent-color: var(--ping-good); }
-        .config-details { flex-grow: 1; text-align: right; overflow: hidden; min-width: 0; }
-        .server { font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-        .ping-result-container { font-size: 0.85em; min-width: 55px; text-align: right; font-weight: bold; display: flex; align-items: center; justify-content: flex-end; }
-        .loader-small { width: 14px; height: 14px; border: 2px solid #ffab40; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; vertical-align: middle; }
+        .config-details { flex: 1; min-width: 150px; text-align: right; overflow: hidden; }
+        .config-details label { cursor: pointer; font-weight: 500; display: block; }
+        .server { font-size: 0.85em; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ping-result-container { font-size: 0.85em; min-width: 50px; text-align: center; font-weight: bold; }
+        .config-item-buttons { display: flex; gap: 5px; }
+        .loader-small { width: 14px; height: 14px; border: 2px solid #ffab40; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .bottom-links { margin-top: auto; padding: 20px 0 10px 0; width: 100%; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+        .bottom-links { margin-top: auto; padding: 20px 0 10px 0; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
         .bottom-links a { color: #aaa; text-decoration: none; font-size: 0.9em; }
         .alert { padding: 20px; color: var(--ping-bad); }
-        #qr-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; cursor: pointer; }
+        #qr-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center; cursor: pointer; }
         .qr-content { background-color: white; padding: 25px; border-radius: 12px; cursor: default; }
         .toast { visibility: hidden; min-width: 250px; background: var(--toast-bg); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 2000; left: 50%; transform: translateX(-50%); bottom: 30px; font-size: 17px; transition: all 0.5s; opacity: 0; }
         .toast.show { visibility: visible; opacity: 1; bottom: 50px; }
         .toast.error { background: var(--toast-error-bg); }
+        @media (max-width: 600px) {
+            .action-box { flex-direction: column; align-items: flex-start; }
+            .action-box-buttons { width: 100%; justify-content: flex-start; }
+            .config-item { flex-direction: column; align-items: flex-start; }
+            .config-details { width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -91,8 +98,8 @@
         </footer>
     </div>
     <div id="qr-modal"><div class="qr-content" id="qr-code-container"></div></div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="index.js"></script>
 </body>
 </html>
