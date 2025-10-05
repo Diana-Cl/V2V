@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const STATIC_CONFIG_URL = './all_live_configs.json';
     const STATIC_CACHE_VERSION_URL = './cache_version.txt';
-    const PING_TIMEOUT = 5000;
+    const PING_TIMEOUT = 3000;
     
     const WORKER_URLS = [
         'https://v2v-proxy.mbrgh87.workers.dev',
@@ -9,16 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
         'https://rapid-scene-1da6.mbrgh87.workers.dev',
         'https://winter-hill-0307.mbrgh87.workers.dev',
     ];
-    let workerIndex = 0;
     let workerAvailable = true;
     
-    const getNextWorkerUrl = () => {
-        const url = WORKER_URLS[workerIndex];
-        workerIndex = (workerIndex + 1) % WORKER_URLS.length;
-        return url;
-    };
-    
-    const PING_BATCH_SIZE = 40;
+    const PING_BATCH_SIZE = 20; // Per worker
+    const PING_ATTEMPTS = 3;
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
@@ -84,59 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return name;
     };
 
-    const parseVmessConfig = (config) => {
-        try {
-            const vmessData = config.replace('vmess://', '');
-            const decoded = JSON.parse(atob(vmessData));
-            return {
-                server: decoded.add, port: parseInt(decoded.port), uuid: decoded.id,
-                alterId: parseInt(decoded.aid) || 0, cipher: decoded.scy || 'auto',
-                network: decoded.net || 'tcp', tls: decoded.tls === 'tls',
-                sni: decoded.sni || decoded.host || decoded.add, path: decoded.path || '/',
-                host: decoded.host || decoded.add, name: decoded.ps || `vmess-${decoded.add.substring(0,8)}`
-            };
-        } catch { return null; }
-    };
-
-    const parseVlessConfig = (config) => {
-        try {
-            const urlObj = new URL(config);
-            const params = new URLSearchParams(urlObj.search);
-            return {
-                server: urlObj.hostname, port: parseInt(urlObj.port), uuid: urlObj.username,
-                network: params.get('type') || 'tcp', tls: params.get('security') === 'tls',
-                sni: params.get('sni') || urlObj.hostname, path: params.get('path') || '/',
-                host: params.get('host') || urlObj.hostname, flow: params.get('flow') || '',
-                name: decodeURIComponent(urlObj.hash.substring(1)) || `vless-${urlObj.hostname.substring(0,8)}`
-            };
-        } catch { return null; }
-    };
-
-    const parseTrojanConfig = (config) => {
-        try {
-            const urlObj = new URL(config);
-            const params = new URLSearchParams(urlObj.search);
-            return {
-                server: urlObj.hostname, port: parseInt(urlObj.port), password: urlObj.username,
-                sni: params.get('sni') || urlObj.hostname,
-                name: decodeURIComponent(urlObj.hash.substring(1)) || `trojan-${urlObj.hostname.substring(0,8)}`
-            };
-        } catch { return null; }
-    };
-
-    const parseSsConfig = (config) => {
-        try {
-            const urlObj = new URL(config);
-            const decoded = atob(urlObj.username);
-            if (!decoded.includes(':')) return null;
-            const [method, password] = decoded.split(':', 2);
-            return {
-                server: urlObj.hostname, port: parseInt(urlObj.port), method, password,
-                name: decodeURIComponent(urlObj.hash.substring(1)) || `ss-${urlObj.hostname.substring(0,8)}`
-            };
-        } catch { return null; }
-    };
-
     window.generateSubscription = async (coreName, scope, format, action) => {
         let configs = [];
         
@@ -148,17 +89,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             configs = Array.from(checkboxes).map(cb => decodeURIComponent(cb.dataset.config));
         } else if (scope === 'auto') {
-            const sortedConfigs = getSortedConfigsByPing(coreName);
-            configs = sortedConfigs.slice(0, Math.min(20, sortedConfigs.length));
+            const sortedConfigs = getTopConfigsFromBackend(coreName);
+            configs = sortedConfigs;
             
             if (configs.length === 0) {
-                showToast('ابتدا تست پینگ را اجرا کنید!', true);
+                showToast('کانفیگی یافت نشد!', true);
                 return;
-            }
-        } else {
-            const coreData = allLiveConfigsData[coreName];
-            for (const protocol in coreData) {
-                configs.push(...coreData[protocol]);
             }
         }
         
@@ -167,61 +103,66 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        showToast('در حال ساخت...', false);
+        if (!workerAvailable) {
+            showToast('Worker در دسترس نیست', true);
+            return;
+        }
         
-        if (workerAvailable) {
-            try {
-                const workerUrl = getNextWorkerUrl();
+        try {
+            const workerUrl = WORKER_URLS[Math.floor(Math.random() * WORKER_URLS.length)];
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            
+            const response = await fetch(`${workerUrl}/create-sub`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ configs, format }),
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                const data = await response.json();
+                const subUrl = `${workerUrl}/sub/${format}/${data.id}`;
                 
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-                
-                const response = await fetch(`${workerUrl}/create-sub`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ configs, core: coreName, format }),
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const subUrl = `${workerUrl}/sub/${format}/${data.id}`;
-                    
-                    if (action === 'copy') {
-                        await window.copyToClipboard(subUrl, 'لینک کپی شد!');
-                    } else if (action === 'qr') {
-                        window.openQrModal(subUrl);
-                    }
-                    return;
+                if (action === 'copy') {
+                    await window.copyToClipboard(subUrl, 'لینک کپی شد!');
+                } else if (action === 'qr') {
+                    window.openQrModal(subUrl);
                 }
-                
-                workerAvailable = false;
-                showToast('Worker در دسترس نیست', true);
-            } catch (error) {
-                workerAvailable = false;
-                showToast('Worker در دسترس نیست', true);
+                return;
             }
+            
+            throw new Error('Worker failed');
+        } catch (error) {
+            showToast('خطا در ساخت لینک!', true);
         }
     };
 
-    const getSortedConfigsByPing = (coreName) => {
+    const getTopConfigsFromBackend = (coreName) => {
         const coreData = allLiveConfigsData[coreName];
-        const configsWithPing = [];
+        const allConfigs = [];
         
         for (const protocol in coreData) {
             coreData[protocol].forEach((config, idx) => {
                 const key = `${coreName}-${protocol}-${idx}`;
                 const ping = pingResults[key];
-                if (ping && ping > 0) {
-                    configsWithPing.push({ config, ping });
+                if (ping && ping > 0 && ping < 500) {
+                    allConfigs.push({ config, ping });
                 }
             });
         }
         
-        configsWithPing.sort((a, b) => a.ping - b.ping);
-        return configsWithPing.map(item => item.config);
+        if (allConfigs.length === 0) {
+            for (const protocol in coreData) {
+                allConfigs.push(...coreData[protocol].slice(0, 5).map(config => ({ config, ping: 9999 })));
+            }
+        }
+        
+        allConfigs.sort((a, b) => a.ping - b.ping);
+        return allConfigs.slice(0, 30).map(item => item.config);
     };
 
     const fetchAndRender = async () => {
@@ -376,56 +317,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let completed = 0;
         const total = allConfigs.length;
-
-        for (let i = 0; i < allConfigs.length; i += PING_BATCH_SIZE) {
-            const batch = allConfigs.slice(i, i + PING_BATCH_SIZE);
+        
+        // تقسیم کانفیگ‌ها به دسته‌های بزرگ
+        for (let i = 0; i < allConfigs.length; i += (PING_BATCH_SIZE * WORKER_URLS.length)) {
+            const megaBatch = allConfigs.slice(i, i + (PING_BATCH_SIZE * WORKER_URLS.length));
             
-            await Promise.all(batch.map(async ({ config, protocol, idx }, batchIdx) => {
-                const resultEl = getEl(`ping-${coreName}-${protocol}-${idx}`);
-                if (!resultEl) return;
+            // توزیع بین 4 worker به صورت موازی
+            await Promise.all(WORKER_URLS.map(async (workerUrl, workerIdx) => {
+                const workerBatch = megaBatch.filter((_, idx) => idx % WORKER_URLS.length === workerIdx);
+                
+                await Promise.all(workerBatch.map(async ({ config, protocol, idx }) => {
+                    const resultEl = getEl(`ping-${coreName}-${protocol}-${idx}`);
+                    if (!resultEl) return;
 
-                resultEl.innerHTML = '<span class="loader-small"></span>';
+                    resultEl.innerHTML = '<span class="loader-small"></span>';
 
-                try {
-                    const urlObj = new URL(config);
-                    const host = urlObj.hostname;
-                    const port = urlObj.port;
+                    try {
+                        const urlObj = new URL(config);
+                        const host = urlObj.hostname;
+                        const port = urlObj.port;
 
-                    const workerUrl = WORKER_URLS[batchIdx % WORKER_URLS.length];
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), PING_TIMEOUT);
+                        const latencies = [];
+                        
+                        // 3 بار تست برای دقت بیشتر
+                        for (let attempt = 0; attempt < PING_ATTEMPTS; attempt++) {
+                            try {
+                                const controller = new AbortController();
+                                const timeoutId = setTimeout(() => controller.abort(), PING_TIMEOUT);
 
-                    const response = await fetch(`${workerUrl}/ping`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ host, port }),
-                        signal: controller.signal
-                    });
+                                const response = await fetch(`${workerUrl}/ping`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ host, port }),
+                                    signal: controller.signal
+                                });
 
-                    clearTimeout(timeoutId);
+                                clearTimeout(timeoutId);
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.latency && result.latency > 0) {
-                            const color = result.latency < 200 ? '#4CAF50' : result.latency < 500 ? '#FFC107' : '#F44336';
-                            resultEl.innerHTML = `<span style="color: ${color};">${result.latency}ms</span>`;
-                            pingResults[`${coreName}-${protocol}-${idx}`] = result.latency;
+                                if (response.ok) {
+                                    const result = await response.json();
+                                    if (result.latency && result.latency > 0) {
+                                        latencies.push(result.latency);
+                                    }
+                                }
+                            } catch (e) {
+                                // تلاش بعدی
+                            }
+                            
+                            // تاخیر کوچک بین تلاش‌ها
+                            if (attempt < PING_ATTEMPTS - 1) {
+                                await new Promise(resolve => setTimeout(resolve, 50));
+                            }
+                        }
+                        
+                        if (latencies.length > 0) {
+                            const avgLatency = Math.round(latencies.reduce((a, b) => a + b) / latencies.length);
+                            const color = avgLatency < 200 ? '#4CAF50' : avgLatency < 500 ? '#FFC107' : '#F44336';
+                            resultEl.innerHTML = `<span style="color: ${color};">${avgLatency}ms</span>`;
+                            pingResults[`${coreName}-${protocol}-${idx}`] = avgLatency;
                         } else {
                             resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
                         }
-                    } else {
+                    } catch (error) {
                         resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
                     }
-                } catch (error) {
-                    resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
-                }
 
-                completed++;
-                btn.textContent = `تست (${completed}/${total})`;
+                    completed++;
+                    btn.textContent = `تست (${completed}/${total})`;
+                }));
             }));
+            
+            // مرتب‌سازی بعد از هر mega batch
+            sortConfigsByPing(coreName);
         }
-        
-        sortConfigsByPing(coreName);
 
         btn.disabled = false;
         btn.textContent = `تست پینگ`;
