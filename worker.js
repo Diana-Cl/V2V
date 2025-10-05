@@ -32,7 +32,7 @@ function yamlResponse(text, corsHeaders) {
         status: 200,
         headers: { 
             'Content-Type': 'application/x-yaml; charset=utf-8',
-            'Content-Disposition': 'attachment; filename="v2v-clash.yaml"',
+            'Content-Disposition': 'attachment; filename="v2v.yaml"',
             ...corsHeaders 
         } 
     });
@@ -83,7 +83,7 @@ function parseVmessConfig(config) {
             sni: decoded.sni || decoded.host || decoded.add, 
             path: decoded.path || '/',
             host: decoded.host || decoded.add, 
-            name: decoded.ps || `v2v-vmess-${decoded.add.substring(0,10)}`
+            name: decoded.ps || `vmess-${decoded.add.substring(0,8)}`
         };
     } catch { return null; }
 }
@@ -103,7 +103,7 @@ function parseVlessConfig(config) {
             path: params.get('path') || '/',
             host: params.get('host') || urlObj.hostname, 
             flow: params.get('flow') || '',
-            name: decodeURIComponent(urlObj.hash.substring(1)) || `v2v-vless-${urlObj.hostname.substring(0,10)}`
+            name: decodeURIComponent(urlObj.hash.substring(1)) || `vless-${urlObj.hostname.substring(0,8)}`
         };
     } catch { return null; }
 }
@@ -118,7 +118,7 @@ function parseTrojanConfig(config) {
             port: parseInt(urlObj.port), 
             password: urlObj.username,
             sni: params.get('sni') || urlObj.hostname,
-            name: decodeURIComponent(urlObj.hash.substring(1)) || `v2v-trojan-${urlObj.hostname.substring(0,10)}`
+            name: decodeURIComponent(urlObj.hash.substring(1)) || `trojan-${urlObj.hostname.substring(0,8)}`
         };
     } catch { return null; }
 }
@@ -135,13 +135,14 @@ function parseSsConfig(config) {
             port: parseInt(urlObj.port), 
             method, 
             password,
-            name: decodeURIComponent(urlObj.hash.substring(1)) || `v2v-ss-${urlObj.hostname.substring(0,10)}`
+            name: decodeURIComponent(urlObj.hash.substring(1)) || `ss-${urlObj.hostname.substring(0,8)}`
         };
     } catch { return null; }
 }
 
 function generateClashYAML(configs, coreName) {
     const proxies = [];
+    const seen = new Set();
     
     for (const config of configs) {
         try {
@@ -150,6 +151,11 @@ function generateClashYAML(configs, coreName) {
             if (config.startsWith('vmess://')) {
                 const p = parseVmessConfig(config);
                 if (!p) continue;
+                
+                const key = `vmess-${p.server}-${p.port}-${p.uuid}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                
                 proxy = { 
                     name: p.name, 
                     type: 'vmess', 
@@ -161,6 +167,7 @@ function generateClashYAML(configs, coreName) {
                     udp: true, 
                     'skip-cert-verify': true 
                 };
+                
                 if (p.network === 'ws') { 
                     proxy.network = 'ws'; 
                     proxy['ws-opts'] = { path: p.path, headers: { Host: p.host } }; 
@@ -172,6 +179,11 @@ function generateClashYAML(configs, coreName) {
             } else if (config.startsWith('vless://')) {
                 const p = parseVlessConfig(config);
                 if (!p) continue;
+                
+                const key = `vless-${p.server}-${p.port}-${p.uuid}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                
                 proxy = { 
                     name: p.name, 
                     type: 'vless', 
@@ -181,6 +193,7 @@ function generateClashYAML(configs, coreName) {
                     udp: true, 
                     'skip-cert-verify': true 
                 };
+                
                 if (p.network === 'ws') { 
                     proxy.network = 'ws'; 
                     proxy['ws-opts'] = { path: p.path, headers: { Host: p.host } }; 
@@ -188,10 +201,16 @@ function generateClashYAML(configs, coreName) {
                 if (p.tls) { 
                     proxy.tls = true; 
                     proxy.servername = p.sni;
+                    if (p.flow) proxy.flow = p.flow;
                 }
             } else if (config.startsWith('trojan://')) {
                 const p = parseTrojanConfig(config);
                 if (!p) continue;
+                
+                const key = `trojan-${p.server}-${p.port}-${p.password}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                
                 proxy = { 
                     name: p.name, 
                     type: 'trojan', 
@@ -205,6 +224,11 @@ function generateClashYAML(configs, coreName) {
             } else if (config.startsWith('ss://')) {
                 const p = parseSsConfig(config);
                 if (!p) continue;
+                
+                const key = `ss-${p.server}-${p.port}-${p.password}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                
                 proxy = { 
                     name: p.name, 
                     type: 'ss', 
@@ -229,16 +253,16 @@ function generateClashYAML(configs, coreName) {
         proxies,
         'proxy-groups': [
             { 
-                name: `V2V-${coreName}-Auto`, 
+                name: 'Auto', 
                 type: 'url-test', 
                 proxies: names, 
                 url: 'http://www.gstatic.com/generate_204', 
                 interval: 300 
             },
             { 
-                name: `V2V-${coreName}-Select`, 
+                name: 'Select', 
                 type: 'select', 
-                proxies: [`V2V-${coreName}-Auto`, ...names] 
+                proxies: ['Auto', ...names] 
             }
         ],
         rules: [
@@ -248,7 +272,7 @@ function generateClashYAML(configs, coreName) {
             'IP-CIDR,172.16.0.0/12,DIRECT', 
             'IP-CIDR,192.168.0.0/16,DIRECT', 
             'GEOIP,IR,DIRECT', 
-            `MATCH,V2V-${coreName}-Select`
+            'MATCH,Select'
         ]
     };
     
@@ -257,6 +281,7 @@ function generateClashYAML(configs, coreName) {
 
 function generateSingboxJSON(configs, coreName) {
     const outbounds = [];
+    const seen = new Set();
     
     for (const config of configs) {
         try {
@@ -265,6 +290,11 @@ function generateSingboxJSON(configs, coreName) {
             if (config.startsWith('vmess://')) {
                 const p = parseVmessConfig(config);
                 if (!p) continue;
+                
+                const key = `vmess-${p.server}-${p.port}-${p.uuid}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                
                 outbound = { 
                     tag: p.name, 
                     type: 'vmess', 
@@ -274,6 +304,7 @@ function generateSingboxJSON(configs, coreName) {
                     alter_id: p.alterId, 
                     security: p.cipher 
                 };
+                
                 if (p.network === 'ws') {
                     outbound.transport = { type: 'ws', path: p.path, headers: { Host: p.host } };
                 }
@@ -283,6 +314,11 @@ function generateSingboxJSON(configs, coreName) {
             } else if (config.startsWith('vless://')) {
                 const p = parseVlessConfig(config);
                 if (!p) continue;
+                
+                const key = `vless-${p.server}-${p.port}-${p.uuid}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                
                 outbound = { 
                     tag: p.name, 
                     type: 'vless', 
@@ -290,6 +326,7 @@ function generateSingboxJSON(configs, coreName) {
                     server_port: p.port, 
                     uuid: p.uuid
                 };
+                
                 if (p.network === 'ws') {
                     outbound.transport = { type: 'ws', path: p.path, headers: { Host: p.host } };
                 }
@@ -300,6 +337,11 @@ function generateSingboxJSON(configs, coreName) {
             } else if (config.startsWith('trojan://')) {
                 const p = parseTrojanConfig(config);
                 if (!p) continue;
+                
+                const key = `trojan-${p.server}-${p.port}-${p.password}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                
                 outbound = { 
                     tag: p.name, 
                     type: 'trojan', 
@@ -311,6 +353,11 @@ function generateSingboxJSON(configs, coreName) {
             } else if (config.startsWith('ss://')) {
                 const p = parseSsConfig(config);
                 if (!p) continue;
+                
+                const key = `ss-${p.server}-${p.port}-${p.password}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                
                 outbound = { 
                     tag: p.name, 
                     type: 'shadowsocks', 
@@ -335,7 +382,7 @@ function generateSingboxJSON(configs, coreName) {
         inbounds: [{ type: "mixed", listen: "127.0.0.1", listen_port: 7890 }],
         outbounds: [
             { 
-                tag: `V2V-${coreName}-Select`, 
+                tag: "Auto", 
                 type: "urltest", 
                 outbounds: outbounds.map(o => o.tag), 
                 url: "http://www.gstatic.com/generate_204", 
@@ -354,77 +401,28 @@ function generateSingboxJSON(configs, coreName) {
     }, null, 2);
 }
 
-async function testConnection(host, port, tls, sni) {
-    const maxAttempts = 5;
-    const latencies = [];
-    
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        try {
-            const startTime = Date.now();
-            const socketOptions = { hostname: host, port: parseInt(port) };
-            if (tls) { 
-                socketOptions.secureTransport = 'on'; 
-                socketOptions.servername = sni || host;
-                socketOptions.allowHalfOpen = false;
-            }
-            
-            const socket = connect(socketOptions);
-            
-            await Promise.race([
-                (async () => {
-                    await socket.opened;
-                    
-                    const writer = socket.writable.getWriter();
-                    const testData = new Uint8Array([0x16, 0x03, 0x01]);
-                    await writer.write(testData);
-                    writer.releaseLock();
-                    
-                    const reader = socket.readable.getReader();
-                    await Promise.race([
-                        reader.read(),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Read timeout')), 3000))
-                    ]);
-                    reader.releaseLock();
-                })(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 8000))
-            ]);
-            
-            const latency = Date.now() - startTime;
-            
-            try { await socket.close(); } catch {}
-            
-            if (latency > 0 && latency < 8000) {
-                latencies.push(latency);
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, 150));
-            
-        } catch (error) {
-            continue;
-        }
-    }
-    
-    if (latencies.length === 0) {
+async function testConnection(host, port) {
+    try {
+        const startTime = Date.now();
+        const socket = connect({ hostname: host, port: parseInt(port) });
+        
+        await Promise.race([
+            socket.opened,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+        ]);
+        
+        const latency = Date.now() - startTime;
+        
+        try { await socket.close(); } catch {}
+        
+        return { latency: latency > 0 && latency < 5000 ? latency : null, status: 'Live' };
+    } catch (error) {
         return { latency: null, status: 'Dead' };
     }
-    
-    if (latencies.length < 3) {
-        return { latency: null, status: 'Dead' };
-    }
-    
-    const avgLatency = Math.round(latencies.reduce((a, b) => a + b) / latencies.length);
-    const minLatency = Math.min(...latencies);
-    const maxLatency = Math.max(...latencies);
-    const jitter = maxLatency - minLatency;
-    
-    if (jitter > 1000) {
-        return { latency: null, status: 'Dead' };
-    }
-    
-    return { 
-        latency: avgLatency,
-        status: 'Live'
-    };
+}
+
+function generateShortId() {
+    return Math.random().toString(36).substring(2, 10);
 }
 
 export default {
@@ -437,39 +435,41 @@ export default {
 
         try {
             if (url.pathname === '/ping' && request.method === 'POST') {
-                const { host, port, tls, sni } = await request.json();
+                const { host, port } = await request.json();
                 if (!host || !port) return jsonResponse({ error: 'Invalid parameters' }, 400, corsHeaders);
-                const result = await testConnection(host, port, tls, sni);
+                const result = await testConnection(host, port);
                 return jsonResponse(result, 200, corsHeaders);
             }
             
             if (url.pathname === '/create-sub' && request.method === 'POST') {
-                const { uuid, configs, core, format } = await request.json();
-                if (!uuid || !Array.isArray(configs) || configs.length === 0 || !core || !format) {
+                const { configs, core, format } = await request.json();
+                if (!Array.isArray(configs) || configs.length === 0 || !core || !format) {
                     return jsonResponse({ error: 'Invalid request' }, 400, corsHeaders);
                 }
                 
+                const shortId = generateShortId();
+                
                 await env.v2v_kv.put(
-                    `sub:${uuid}`, 
+                    `sub:${shortId}`, 
                     JSON.stringify({ configs, core, format, created: Date.now() }), 
                     { expirationTtl: TTL_SUBSCRIPTION }
                 );
                 
-                return jsonResponse({ success: true, uuid }, 200, corsHeaders);
+                return jsonResponse({ success: true, id: shortId }, 200, corsHeaders);
             }
             
-            const subMatch = url.pathname.match(/^\/sub\/(clash|singbox)\/([a-f0-9\-]{36})$/);
+            const subMatch = url.pathname.match(/^\/sub\/(clash|singbox)\/([a-z0-9]{8})$/);
             if (subMatch) {
                 const format = subMatch[1];
-                const uuid = subMatch[2];
+                const shortId = subMatch[2];
                 
-                const storedData = await env.v2v_kv.get(`sub:${uuid}`, { type: 'json' });
+                const storedData = await env.v2v_kv.get(`sub:${shortId}`, { type: 'json' });
                 if (!storedData || !storedData.configs) {
                     return new Response('Subscription not found or expired', { status: 404, headers: corsHeaders });
                 }
                 
                 await env.v2v_kv.put(
-                    `sub:${uuid}`, 
+                    `sub:${shortId}`, 
                     JSON.stringify(storedData), 
                     { expirationTtl: TTL_SUBSCRIPTION }
                 );
