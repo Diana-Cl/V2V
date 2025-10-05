@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const STATIC_CONFIG_URL = './all_live_configs.json';
     const STATIC_CACHE_VERSION_URL = './cache_version.txt';
-    const PING_TIMEOUT = 10000;
+    const PING_TIMEOUT = 5000;
     
     const WORKER_URLS = [
         'https://v2v-proxy.mbrgh87.workers.dev',
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return url;
     };
     
-    const PING_BATCH_SIZE = 15;
+    const PING_BATCH_SIZE = 40;
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let allLiveConfigsData = null;
+    let pingResults = {};
 
     const removeDuplicates = (configs) => {
         const seen = new Set();
@@ -78,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const shortenName = (name, protocol, server) => {
         if (!name || name.length > 30) {
-            return `v2v-${protocol}-${server.substring(0, 15)}`;
+            return `${protocol}-${server.substring(0, 15)}`;
         }
         return name;
     };
@@ -92,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alterId: parseInt(decoded.aid) || 0, cipher: decoded.scy || 'auto',
                 network: decoded.net || 'tcp', tls: decoded.tls === 'tls',
                 sni: decoded.sni || decoded.host || decoded.add, path: decoded.path || '/',
-                host: decoded.host || decoded.add, name: decoded.ps || `v2v-vmess-${decoded.add.substring(0,10)}`
+                host: decoded.host || decoded.add, name: decoded.ps || `vmess-${decoded.add.substring(0,8)}`
             };
         } catch { return null; }
     };
@@ -106,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 network: params.get('type') || 'tcp', tls: params.get('security') === 'tls',
                 sni: params.get('sni') || urlObj.hostname, path: params.get('path') || '/',
                 host: params.get('host') || urlObj.hostname, flow: params.get('flow') || '',
-                name: decodeURIComponent(urlObj.hash.substring(1)) || `v2v-vless-${urlObj.hostname.substring(0,10)}`
+                name: decodeURIComponent(urlObj.hash.substring(1)) || `vless-${urlObj.hostname.substring(0,8)}`
             };
         } catch { return null; }
     };
@@ -118,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return {
                 server: urlObj.hostname, port: parseInt(urlObj.port), password: urlObj.username,
                 sni: params.get('sni') || urlObj.hostname,
-                name: decodeURIComponent(urlObj.hash.substring(1)) || `v2v-trojan-${urlObj.hostname.substring(0,10)}`
+                name: decodeURIComponent(urlObj.hash.substring(1)) || `trojan-${urlObj.hostname.substring(0,8)}`
             };
         } catch { return null; }
     };
@@ -131,112 +132,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const [method, password] = decoded.split(':', 2);
             return {
                 server: urlObj.hostname, port: parseInt(urlObj.port), method, password,
-                name: decodeURIComponent(urlObj.hash.substring(1)) || `v2v-ss-${urlObj.hostname.substring(0,10)}`
+                name: decodeURIComponent(urlObj.hash.substring(1)) || `ss-${urlObj.hostname.substring(0,8)}`
             };
         } catch { return null; }
-    };
-
-    const generateClashYAML = (configs, coreName) => {
-        const proxies = [];
-        
-        for (const config of configs) {
-            let proxy = null;
-            
-            if (config.startsWith('vmess://')) {
-                const p = parseVmessConfig(config);
-                if (!p) continue;
-                proxy = { name: p.name, type: 'vmess', server: p.server, port: p.port, uuid: p.uuid, alterId: p.alterId, cipher: p.cipher, udp: true, 'skip-cert-verify': true };
-                if (p.network === 'ws') { proxy.network = 'ws'; proxy['ws-opts'] = { path: p.path, headers: { Host: p.host } }; }
-                if (p.tls) { proxy.tls = true; proxy.servername = p.sni; }
-            } else if (config.startsWith('vless://')) {
-                const p = parseVlessConfig(config);
-                if (!p) continue;
-                proxy = { name: p.name, type: 'vless', server: p.server, port: p.port, uuid: p.uuid, udp: true, 'skip-cert-verify': true };
-                if (p.network === 'ws') { proxy.network = 'ws'; proxy['ws-opts'] = { path: p.path, headers: { Host: p.host } }; }
-                if (p.tls) { proxy.tls = true; proxy.servername = p.sni; }
-            } else if (config.startsWith('trojan://')) {
-                const p = parseTrojanConfig(config);
-                if (!p) continue;
-                proxy = { name: p.name, type: 'trojan', server: p.server, port: p.port, password: p.password, udp: true, sni: p.sni, 'skip-cert-verify': true };
-            } else if (config.startsWith('ss://')) {
-                const p = parseSsConfig(config);
-                if (!p) continue;
-                proxy = { name: p.name, type: 'ss', server: p.server, port: p.port, cipher: p.method, password: p.password, udp: true };
-            }
-            
-            if (proxy) proxies.push(proxy);
-        }
-        
-        if (proxies.length === 0) return null;
-        
-        const names = proxies.map(p => p.name);
-        const yaml = {
-            proxies,
-            'proxy-groups': [
-                { name: `V2V-${coreName}-Auto`, type: 'url-test', proxies: names, url: 'http://www.gstatic.com/generate_204', interval: 300 },
-                { name: `V2V-${coreName}-Select`, type: 'select', proxies: [`V2V-${coreName}-Auto`, ...names] }
-            ],
-            rules: ['DOMAIN-SUFFIX,local,DIRECT', 'IP-CIDR,127.0.0.0/8,DIRECT', 'IP-CIDR,10.0.0.0/8,DIRECT', 'IP-CIDR,172.16.0.0/12,DIRECT', 'IP-CIDR,192.168.0.0/16,DIRECT', 'GEOIP,IR,DIRECT', `MATCH,V2V-${coreName}-Select`]
-        };
-        
-        return jsyaml.dump(yaml, { flowLevel: -1, sortKeys: false });
-    };
-
-    const generateSingboxJSON = (configs, coreName) => {
-        const outbounds = [];
-        
-        for (const config of configs) {
-            let outbound = null;
-            
-            if (config.startsWith('vmess://')) {
-                const p = parseVmessConfig(config);
-                if (!p) continue;
-                outbound = { tag: p.name, type: 'vmess', server: p.server, server_port: p.port, uuid: p.uuid, alter_id: p.alterId, security: p.cipher };
-                if (p.network === 'ws') outbound.transport = { type: 'ws', path: p.path, headers: { Host: p.host } };
-                if (p.tls) outbound.tls = { enabled: true, server_name: p.sni, insecure: true };
-            } else if (config.startsWith('vless://')) {
-                const p = parseVlessConfig(config);
-                if (!p) continue;
-                outbound = { tag: p.name, type: 'vless', server: p.server, server_port: p.port, uuid: p.uuid };
-                if (p.network === 'ws') outbound.transport = { type: 'ws', path: p.path, headers: { Host: p.host } };
-                if (p.tls) { outbound.tls = { enabled: true, server_name: p.sni, insecure: true }; if (p.flow) outbound.flow = p.flow; }
-            } else if (config.startsWith('trojan://')) {
-                const p = parseTrojanConfig(config);
-                if (!p) continue;
-                outbound = { tag: p.name, type: 'trojan', server: p.server, server_port: p.port, password: p.password, tls: { enabled: true, server_name: p.sni, insecure: true } };
-            } else if (config.startsWith('ss://')) {
-                const p = parseSsConfig(config);
-                if (!p) continue;
-                outbound = { tag: p.name, type: 'shadowsocks', server: p.server, server_port: p.port, method: p.method, password: p.password };
-            }
-            
-            if (outbound) outbounds.push(outbound);
-        }
-        
-        if (outbounds.length === 0) return null;
-        
-        return JSON.stringify({
-            log: { disabled: false, level: "info" },
-            dns: { servers: [{ address: "8.8.8.8", strategy: "prefer_ipv4" }] },
-            inbounds: [{ type: "mixed", listen: "127.0.0.1", listen_port: 7890 }],
-            outbounds: [
-                { tag: `V2V-${coreName}-Select`, type: "urltest", outbounds: outbounds.map(o => o.tag), url: "http://www.gstatic.com/generate_204", interval: "5m" },
-                ...outbounds,
-                { tag: "direct", type: "direct" }
-            ],
-            route: { rules: [{ geoip: "ir", outbound: "direct" }, { geoip: "private", outbound: "direct" }], auto_detect_interface: true }
-        }, null, 2);
-    };
-
-    const downloadFile = (content, filename, mimeType) => {
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('فایل دانلود شد!');
     };
 
     window.generateSubscription = async (coreName, scope, format, action) => {
@@ -249,6 +147,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             configs = Array.from(checkboxes).map(cb => decodeURIComponent(cb.dataset.config));
+        } else if (scope === 'auto') {
+            const sortedConfigs = getSortedConfigsByPing(coreName);
+            configs = sortedConfigs.slice(0, Math.min(20, sortedConfigs.length));
+            
+            if (configs.length === 0) {
+                showToast('ابتدا تست پینگ را اجرا کنید!', true);
+                return;
+            }
         } else {
             const coreData = allLiveConfigsData[coreName];
             for (const protocol in coreData) {
@@ -265,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (workerAvailable) {
             try {
-                const uuid = crypto.randomUUID();
                 const workerUrl = getNextWorkerUrl();
                 
                 const controller = new AbortController();
@@ -274,17 +179,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`${workerUrl}/create-sub`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ uuid, configs, core: coreName, format }),
+                    body: JSON.stringify({ configs, core: coreName, format }),
                     signal: controller.signal
                 });
                 
                 clearTimeout(timeoutId);
                 
                 if (response.ok) {
-                    const subUrl = `${workerUrl}/sub/${format}/${uuid}`;
+                    const data = await response.json();
+                    const subUrl = `${workerUrl}/sub/${format}/${data.id}`;
                     
                     if (action === 'copy') {
-                        await window.copyToClipboard(subUrl, 'لینک V2V کپی شد (معتبر 120 روز)!');
+                        await window.copyToClipboard(subUrl, 'لینک کپی شد!');
                     } else if (action === 'qr') {
                         window.openQrModal(subUrl);
                     }
@@ -292,41 +198,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 workerAvailable = false;
-                showToast('Worker در دسترس نیست، حالت Fallback فعال شد', true);
+                showToast('Worker در دسترس نیست', true);
             } catch (error) {
                 workerAvailable = false;
-                showToast('Worker در دسترس نیست، حالت Fallback فعال شد', true);
+                showToast('Worker در دسترس نیست', true);
             }
         }
+    };
+
+    const getSortedConfigsByPing = (coreName) => {
+        const coreData = allLiveConfigsData[coreName];
+        const configsWithPing = [];
         
-        const uuid = crypto.randomUUID();
-        let content, filename, mimeType;
-        
-        if (format === 'clash') {
-            content = generateClashYAML(configs, coreName);
-            if (!content) {
-                showToast('خطا در ساخت فایل Clash!', true);
-                return;
-            }
-            filename = `v2v-${coreName}-clash-${uuid}.yaml`;
-            mimeType = 'application/x-yaml';
-        } else {
-            content = generateSingboxJSON(configs, coreName);
-            if (!content) {
-                showToast('خطا در ساخت فایل Singbox!', true);
-                return;
-            }
-            filename = `v2v-${coreName}-singbox-${uuid}.json`;
-            mimeType = 'application/json';
+        for (const protocol in coreData) {
+            coreData[protocol].forEach((config, idx) => {
+                const key = `${coreName}-${protocol}-${idx}`;
+                const ping = pingResults[key];
+                if (ping && ping > 0) {
+                    configsWithPing.push({ config, ping });
+                }
+            });
         }
         
-        if (action === 'copy') {
-            await window.copyToClipboard(content, 'محتوا کپی شد (Fallback Mode)!');
-        } else if (action === 'qr') {
-            window.openQrModal(content);
-        } else if (action === 'download') {
-            downloadFile(content, filename, mimeType);
-        }
+        configsWithPing.sort((a, b) => a.ping - b.ping);
+        return configsWithPing.map(item => item.config);
     };
 
     const fetchAndRender = async () => {
@@ -370,27 +265,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">تست پینگ</button>`;
         const copySelectedButton = `<button class="action-btn-wide" onclick="window.copySelectedConfigs('${coreName}')">کپی موارد انتخابی</button>`;
-        const actionGroupTitle = (title) => `<div class="action-group-title">${title}</div>`;
         
         let contentHtml = runPingButton + copySelectedButton + `
-            ${actionGroupTitle(`لینک اشتراک Clash [${coreName}]`)}
-            <div class="action-box">
-                <span class="action-box-label">Clash Subscription</span>
-                <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="window.generateSubscription('${coreName}', 'selected', 'clash', 'copy')">انتخابی (کپی)</button>
-                    <button class="action-btn-small" onclick="window.generateSubscription('${coreName}', 'selected', 'clash', 'qr')">انتخابی (QR)</button>
-                    <button class="action-btn-small" onclick="window.generateSubscription('${coreName}', 'all', 'clash', 'copy')">همه (کپی)</button>
-                    <button class="action-btn-small" onclick="window.generateSubscription('${coreName}', 'all', 'clash', 'qr')">همه (QR)</button>
+            <div class="sub-section">
+                <div class="sub-title">Clash Subscription</div>
+                <div class="sub-actions">
+                    <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'clash', 'copy')">انتخابی</button>
+                    <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'auto', 'clash', 'copy')">خودکار</button>
+                    <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'clash', 'qr')">QR</button>
                 </div>
             </div>
-            ${actionGroupTitle(`لینک اشتراک Singbox [${coreName}]`)}
-            <div class="action-box">
-                <span class="action-box-label">Singbox Subscription</span>
-                <div class="action-box-buttons">
-                    <button class="action-btn-small" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox', 'copy')">انتخابی (کپی)</button>
-                    <button class="action-btn-small" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox', 'qr')">انتخابی (QR)</button>
-                    <button class="action-btn-small" onclick="window.generateSubscription('${coreName}', 'all', 'singbox', 'copy')">همه (کپی)</button>
-                    <button class="action-btn-small" onclick="window.generateSubscription('${coreName}', 'all', 'singbox', 'qr')">همه (QR)</button>
+            <div class="sub-section">
+                <div class="sub-title">Singbox Subscription</div>
+                <div class="sub-actions">
+                    <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox', 'copy')">انتخابی</button>
+                    <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'copy')">خودکار</button>
+                    <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'qr')">QR</button>
                 </div>
             </div>
         `;
@@ -423,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const name = shortenName(rawName, protocol, server);
                     
                     contentHtml += `
-                        <li class="config-item">
+                        <li class="config-item" data-config-key="${coreName}-${protocol}-${idx}">
                             <input type="checkbox" class="config-checkbox" data-core="${coreName}" data-protocol="${protocol}" data-config="${encodeURIComponent(config)}" id="${coreName}-${protocol}-${idx}">
                             <div class="config-details">
                                 <label for="${coreName}-${protocol}-${idx}">${name}</label>
@@ -466,12 +356,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!btn) return;
         
         if (!workerAvailable) {
-            showToast('تست پینگ نیازمند Worker است که در دسترس نیست', true);
+            showToast('تست پینگ نیازمند Worker است', true);
             return;
         }
         
         btn.disabled = true;
         btn.innerHTML = '<span class="loader-small"></span> تست...';
+        
+        pingResults = {};
 
         const coreData = allLiveConfigsData[coreName];
         const allConfigs = [];
@@ -498,27 +390,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const urlObj = new URL(config);
                     const host = urlObj.hostname;
                     const port = urlObj.port;
-                    
-                    let tls = false;
-                    let sni = host;
-
-                    if (protocol === 'vmess') {
-                        const parsed = parseVmessConfig(config);
-                        if (parsed) {
-                            tls = parsed.tls;
-                            sni = parsed.sni;
-                        }
-                    } else if (protocol === 'vless') {
-                        const parsed = parseVlessConfig(config);
-                        if (parsed) {
-                            tls = parsed.tls;
-                            sni = parsed.sni;
-                        }
-                    } else if (['trojan', 'hy2', 'tuic'].includes(protocol)) {
-                        tls = true;
-                        const params = new URLSearchParams(urlObj.search);
-                        sni = params.get('sni') || host;
-                    }
 
                     const workerUrl = WORKER_URLS[batchIdx % WORKER_URLS.length];
                     const controller = new AbortController();
@@ -527,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const response = await fetch(`${workerUrl}/ping`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ host, port, tls, sni }),
+                        body: JSON.stringify({ host, port }),
                         signal: controller.signal
                     });
 
@@ -538,6 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (result.latency && result.latency > 0) {
                             const color = result.latency < 200 ? '#4CAF50' : result.latency < 500 ? '#FFC107' : '#F44336';
                             resultEl.innerHTML = `<span style="color: ${color};">${result.latency}ms</span>`;
+                            pingResults[`${coreName}-${protocol}-${idx}`] = result.latency;
                         } else {
                             resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
                         }
@@ -552,10 +424,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.textContent = `تست (${completed}/${total})`;
             }));
         }
+        
+        sortConfigsByPing(coreName);
 
         btn.disabled = false;
         btn.textContent = `تست پینگ`;
         showToast('تست تکمیل شد!');
+    };
+    
+    const sortConfigsByPing = (coreName) => {
+        const wrapper = coreName === 'xray' ? xrayWrapper : singboxWrapper;
+        const protocolGroups = wrapper.querySelectorAll('.protocol-group');
+        
+        protocolGroups.forEach(group => {
+            const configList = group.querySelector('.config-list');
+            if (!configList) return;
+            
+            const items = Array.from(configList.querySelectorAll('.config-item'));
+            
+            items.sort((a, b) => {
+                const keyA = a.dataset.configKey;
+                const keyB = b.dataset.configKey;
+                const pingA = pingResults[keyA] || 9999999;
+                const pingB = pingResults[keyB] || 9999999;
+                return pingA - pingB;
+            });
+            
+            items.forEach(item => configList.appendChild(item));
+        });
     };
 
     fetchAndRender();
