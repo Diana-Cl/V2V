@@ -23,7 +23,7 @@ def timeout_handler(signum, frame):
 signal.signal(signal.SIGALRM, timeout_handler)
 signal.alarm(50 * 60)
 
-print("INFO: V2V Enhanced Scraper v6.0")
+print("INFO: V2V Enhanced Scraper v6.1 - TUIC Support Added")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
@@ -31,7 +31,6 @@ OUTPUT_JSON_FILE = os.path.join(BASE_DIR, "all_live_configs.json")
 OUTPUT_CLASH_FILE = os.path.join(BASE_DIR, "clash_subscription.yml")
 CACHE_VERSION_FILE = os.path.join(BASE_DIR, "cache_version.txt")
 
-# تعریف دقیق پروتکل‌ها بدون تکرار
 XRAY_PROTOCOLS = {'vless', 'vmess', 'trojan', 'ss'}
 SINGBOX_ONLY_PROTOCOLS = {'hy2', 'tuic'}
 ALL_PROTOCOLS = XRAY_PROTOCOLS.union(SINGBOX_ONLY_PROTOCOLS)
@@ -71,13 +70,33 @@ def decode_base64_content(content: str) -> str:
     return ""
 
 def normalize_protocol(protocol: str) -> str:
-    """تطبیق یکپارچه پروتکل‌ها"""
     protocol = protocol.lower()
     if protocol in ['shadowsocks']:
         return 'ss'
     if protocol in ['hysteria2', 'hysteria']:
         return 'hy2'
     return protocol
+
+def parse_tuic_config(config: str) -> Optional[Dict]:
+    try:
+        parsed = urlparse(config)
+        if not parsed.hostname or not parsed.port:
+            return None
+        
+        params = parse_qs(parsed.query)
+        
+        return {
+            'hostname': parsed.hostname,
+            'port': int(parsed.port),
+            'uuid': parsed.username or '',
+            'password': params.get('password', [''])[0],
+            'congestion_control': params.get('congestion_control', ['bbr'])[0],
+            'udp_relay_mode': params.get('udp_relay_mode', ['native'])[0],
+            'alpn': params.get('alpn', ['h3'])[0].split(',') if params.get('alpn') else ['h3'],
+            'sni': params.get('sni', [parsed.hostname])[0],
+        }
+    except:
+        return None
 
 def is_valid_config(config: str) -> bool:
     if not isinstance(config, str) or not config.strip():
@@ -99,6 +118,10 @@ def is_valid_config(config: str) -> bool:
                 return bool(decoded.get('add')) and bool(decoded.get('port'))
             except:
                 return False
+        
+        if scheme == 'tuic':
+            tuic_info = parse_tuic_config(config)
+            return tuic_info is not None
         
         return bool(parsed.hostname) and bool(parsed.port)
         
@@ -175,6 +198,7 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
         queries = [
             "vless vmess trojan ss extension:txt -user:mahdibland",
             "hysteria2 hy2 tuic extension:json -user:mahdibland",
+            "tuic:// extension:txt -user:mahdibland",
             "subscription proxy v2ray extension:txt -user:mahdibland"
         ]
         
@@ -223,6 +247,14 @@ def test_protocol_connection(config: str) -> Optional[Tuple[str, int, str]]:
                 sni = decoded.get('sni') or decoded.get('host') or hostname
             except:
                 return None
+        elif protocol == 'tuic':
+            tuic_info = parse_tuic_config(config)
+            if not tuic_info:
+                return None
+            hostname = tuic_info['hostname']
+            port = tuic_info['port']
+            is_tls = True
+            sni = tuic_info['sni']
         elif protocol in ['vless', 'trojan']:
             hostname, port = parsed.hostname, int(parsed.port or 0)
             params = parse_qs(parsed.query)
@@ -230,7 +262,7 @@ def test_protocol_connection(config: str) -> Optional[Tuple[str, int, str]]:
             sni = params.get('sni', [hostname])[0]
         elif protocol == 'ss':
             hostname, port = parsed.hostname, int(parsed.port or 0)
-        elif protocol in SINGBOX_ONLY_PROTOCOLS:
+        elif protocol == 'hy2':
             hostname, port = parsed.hostname, int(parsed.port or 0)
             is_tls = True
         else:
@@ -241,11 +273,12 @@ def test_protocol_connection(config: str) -> Optional[Tuple[str, int, str]]:
         
         start = time.monotonic()
         
-        if protocol in SINGBOX_ONLY_PROTOCOLS:
+        if protocol in ['tuic', 'hy2']:
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.settimeout(TCP_TIMEOUT)
                 sock.connect((hostname, port))
+                sock.send(b'\x00' * 16)
                 sock.close()
             except:
                 return None
@@ -285,7 +318,6 @@ def balance_protocols(configs_with_info: List[Tuple[str, int, str]], target: int
     selected = []
     used = set()
     
-    # مرحله 1: حداقل از هر پروتکل
     for protocol in ALL_PROTOCOLS:
         if protocol in protocol_groups:
             count = min(MIN_CONFIGS_PER_PROTOCOL, len(protocol_groups[protocol]))
@@ -294,7 +326,6 @@ def balance_protocols(configs_with_info: List[Tuple[str, int, str]], target: int
                     selected.append(config)
                     used.add(config)
     
-    # مرحله 2: پر کردن بقیه
     remaining = target - len(selected)
     if remaining > 0:
         pool = []
@@ -432,9 +463,8 @@ def main():
 
         print("\n--- 4. Protocol Selection ---")
         
-        # جداسازی دقیق بدون تکرار
         xray_pool = [(c, l, p) for c, l, p in tested if p in XRAY_PROTOCOLS]
-        singbox_pool = tested.copy()  # Sing-box همه را پشتیبانی می‌کند
+        singbox_pool = tested.copy()
         
         selected_xray = balance_protocols(xray_pool, min(5000, len(xray_pool)))
         selected_singbox = balance_protocols(singbox_pool, min(5000, len(singbox_pool)))
@@ -451,7 +481,6 @@ def main():
         xray_grouped = group_configs(selected_xray)
         singbox_grouped = group_configs(selected_singbox)
         
-        # اطمینان از وجود همه پروتکل‌ها
         for p in XRAY_PROTOCOLS:
             if p not in xray_grouped:
                 xray_grouped[p] = []
@@ -490,11 +519,7 @@ def main():
         total_singbox = sum(len(v) for v in singbox_grouped.values())
         print(f"Final: Xray={total_xray}, Sing-box={total_singbox}")
         
-        empty_xray = [p for p, c in xray_grouped.items() if not c]
         empty_singbox = [p for p, c in singbox_grouped.items() if not c]
-        
-        if empty_xray:
-            print(f"WARNING: Empty Xray protocols: {empty_xray}")
         if empty_singbox:
             print(f"WARNING: Empty Sing-box protocols: {empty_singbox}")
         
