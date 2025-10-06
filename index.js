@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     let workerAvailable = true;
     
-    const PING_BATCH_SIZE = 30;
-    const PING_ATTEMPTS = 2;
+    const PING_BATCH_SIZE = 75;
+    const PING_ATTEMPTS = 7;
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
