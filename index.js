@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const STATIC_CONFIG_URL = './all_live_configs.json';
     const STATIC_CACHE_VERSION_URL = './cache_version.txt';
-    const PING_TIMEOUT = 3000;
+    const PING_TIMEOUT = 2000;
     
     const WORKER_URLS = [
         'https://v2v-proxy.mbrgh87.workers.dev',
@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     let workerAvailable = true;
     
-    const PING_BATCH_SIZE = 20; // Per worker
-    const PING_ATTEMPTS = 3;
+    const PING_BATCH_SIZE = 30;
+    const PING_ATTEMPTS = 2;
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
@@ -72,8 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const shortenName = (name, protocol, server) => {
-        if (!name || name.length > 30) {
-            return `${protocol}-${server.substring(0, 15)}`;
+        if (!name || name.length > 25) {
+            return `${protocol}-${server.substring(0, 12)}`;
         }
         return name;
     };
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let contentHtml = runPingButton + copySelectedButton + `
             <div class="sub-section">
-                <div class="sub-title">Clash Subscription</div>
+                <div class="sub-title">Clash</div>
                 <div class="sub-actions">
                     <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'clash', 'copy')">انتخابی</button>
                     <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'auto', 'clash', 'copy')">خودکار</button>
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div class="sub-section">
-                <div class="sub-title">Singbox Subscription</div>
+                <div class="sub-title">Singbox</div>
                 <div class="sub-actions">
                     <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox', 'copy')">انتخابی</button>
                     <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'copy')">خودکار</button>
@@ -230,10 +230,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const configs = coreData[protocol];
             if (configs.length === 0) continue;
             
-            const protocolName = protocol.charAt(0).toUpperCase() + protocol.slice(1)
-                .replace('ss', 'Shadowsocks')
-                .replace('hy2', 'Hysteria2')
-                .replace('tuic', 'TUIC');
+            const protocolMap = {
+                'vmess': 'VMess',
+                'vless': 'VLESS',
+                'trojan': 'Trojan',
+                'ss': 'SS',
+                'hy2': 'Hy2',
+                'tuic': 'TUIC'
+            };
+            const protocolName = protocolMap[protocol] || protocol.toUpperCase();
             
             contentHtml += `
                 <div class="protocol-group" data-protocol="${protocol}">
@@ -256,14 +261,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     contentHtml += `
                         <li class="config-item" data-config-key="${coreName}-${protocol}-${idx}">
                             <input type="checkbox" class="config-checkbox" data-core="${coreName}" data-protocol="${protocol}" data-config="${encodeURIComponent(config)}" id="${coreName}-${protocol}-${idx}">
-                            <div class="config-details">
+                            <div class="config-info">
                                 <label for="${coreName}-${protocol}-${idx}">${name}</label>
                                 <span class="server">${server}:${port}</span>
                             </div>
-                            <div class="ping-result-container" id="ping-${coreName}-${protocol}-${idx}"></div>
-                            <div class="config-item-buttons">
-                                <button class="action-btn-small" onclick="window.copyToClipboard(decodeURIComponent('${encodeURIComponent(config)}'))">کپی</button>
-                                <button class="action-btn-small" onclick="window.openQrModal(decodeURIComponent('${encodeURIComponent(config)}'))">QR</button>
+                            <span class="ping-result" id="ping-${coreName}-${protocol}-${idx}"></span>
+                            <div class="config-btns">
+                                <button class="btn-icon" onclick="window.copyToClipboard(decodeURIComponent('${encodeURIComponent(config)}'))" title="کپی">📋</button>
+                                <button class="btn-icon" onclick="window.openQrModal(decodeURIComponent('${encodeURIComponent(config)}'))" title="QR">📱</button>
                             </div>
                         </li>
                     `;
@@ -318,11 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let completed = 0;
         const total = allConfigs.length;
         
-        // تقسیم کانفیگ‌ها به دسته‌های بزرگ
         for (let i = 0; i < allConfigs.length; i += (PING_BATCH_SIZE * WORKER_URLS.length)) {
             const megaBatch = allConfigs.slice(i, i + (PING_BATCH_SIZE * WORKER_URLS.length));
             
-            // توزیع بین 4 worker به صورت موازی
             await Promise.all(WORKER_URLS.map(async (workerUrl, workerIdx) => {
                 const workerBatch = megaBatch.filter((_, idx) => idx % WORKER_URLS.length === workerIdx);
                 
@@ -330,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const resultEl = getEl(`ping-${coreName}-${protocol}-${idx}`);
                     if (!resultEl) return;
 
-                    resultEl.innerHTML = '<span class="loader-small"></span>';
+                    resultEl.innerHTML = '<span class="loader-mini"></span>';
 
                     try {
                         const urlObj = new URL(config);
@@ -339,7 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         const latencies = [];
                         
-                        // 3 بار تست برای دقت بیشتر
                         for (let attempt = 0; attempt < PING_ATTEMPTS; attempt++) {
                             try {
                                 const controller = new AbortController();
@@ -360,13 +362,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                         latencies.push(result.latency);
                                     }
                                 }
-                            } catch (e) {
-                                // تلاش بعدی
-                            }
+                            } catch (e) {}
                             
-                            // تاخیر کوچک بین تلاش‌ها
                             if (attempt < PING_ATTEMPTS - 1) {
-                                await new Promise(resolve => setTimeout(resolve, 50));
+                                await new Promise(resolve => setTimeout(resolve, 30));
                             }
                         }
                         
@@ -375,6 +374,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             const color = avgLatency < 200 ? '#4CAF50' : avgLatency < 500 ? '#FFC107' : '#F44336';
                             resultEl.innerHTML = `<span style="color: ${color};">${avgLatency}ms</span>`;
                             pingResults[`${coreName}-${protocol}-${idx}`] = avgLatency;
+                            
+                            sortConfigsByPingLive(coreName, protocol);
                         } else {
                             resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
                         }
@@ -386,9 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     btn.textContent = `تست (${completed}/${total})`;
                 }));
             }));
-            
-            // مرتب‌سازی بعد از هر mega batch
-            sortConfigsByPing(coreName);
         }
 
         btn.disabled = false;
@@ -396,27 +394,25 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('تست تکمیل شد!');
     };
     
-    const sortConfigsByPing = (coreName) => {
+    const sortConfigsByPingLive = (coreName, protocol) => {
         const wrapper = coreName === 'xray' ? xrayWrapper : singboxWrapper;
-        const protocolGroups = wrapper.querySelectorAll('.protocol-group');
+        const group = wrapper.querySelector(`.protocol-group[data-protocol="${protocol}"]`);
+        if (!group) return;
         
-        protocolGroups.forEach(group => {
-            const configList = group.querySelector('.config-list');
-            if (!configList) return;
-            
-            const items = Array.from(configList.querySelectorAll('.config-item'));
-            
-            items.sort((a, b) => {
-                const keyA = a.dataset.configKey;
-                const keyB = b.dataset.configKey;
-                const pingA = pingResults[keyA] || 9999999;
-                const pingB = pingResults[keyB] || 9999999;
-                return pingA - pingB;
-            });
-            
-            items.forEach(item => configList.appendChild(item));
+        const configList = group.querySelector('.config-list');
+        if (!configList) return;
+        
+        const items = Array.from(configList.querySelectorAll('.config-item'));
+        
+        items.sort((a, b) => {
+            const keyA = a.dataset.configKey;
+            const keyB = b.dataset.configKey;
+            const pingA = pingResults[keyA] || 9999999;
+            const pingB = pingResults[keyB] || 9999999;
+            return pingA - pingB;
         });
+        
+        items.forEach(item => configList.appendChild(item));
     };
 
     fetchAndRender();
-});
