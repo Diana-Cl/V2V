@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+-*- coding: utf-8 -*-
 import requests
 import base64
 import os
@@ -8,9 +8,9 @@ import time
 import socket
 import ssl
 import random
-from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FutureTimeoutError
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs
-from github import Github, Auth, BadCredentialsException, RateLimitExceededException, UnknownObjectException 
+from github import Github, Auth
 from typing import Optional, Set, List, Dict, Tuple
 from collections import defaultdict
 import yaml
@@ -23,7 +23,7 @@ def timeout_handler(signum, frame):
 signal.signal(signal.SIGALRM, timeout_handler)
 signal.alarm(50 * 60)
 
-print("INFO: V2V Enhanced Scraper v6.1 - TUIC Support Added")
+print("INFO: V2V Enhanced Scraper v6.2")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
@@ -41,14 +41,13 @@ HEADERS = {
 }
 
 GITHUB_PAT = os.environ.get('GH_PAT')
-
 MAX_CONFIGS_TO_TEST = 10000
-MIN_CONFIGS_PER_PROTOCOL = 100
-MAX_CONFIGS_PER_PROTOCOL = 800
+MIN_CONFIGS_PER_PROTOCOL = 50
+MAX_CONFIGS_PER_PROTOCOL = 500
 MAX_TEST_WORKERS = 100
-TCP_TIMEOUT = 4.0
+TCP_TIMEOUT = 3.5
 MAX_LATENCY_MS = 5000
-GITHUB_SEARCH_LIMIT = int(os.environ.get('GITHUB_SEARCH_LIMIT', 200))
+GITHUB_SEARCH_LIMIT = int(os.environ.get('GITHUB_SEARCH_LIMIT', 150))
 MAX_RETRIES = 2
 
 def decode_base64_content(content: str) -> str:
@@ -90,9 +89,6 @@ def parse_tuic_config(config: str) -> Optional[Dict]:
             'port': int(parsed.port),
             'uuid': parsed.username or '',
             'password': params.get('password', [''])[0],
-            'congestion_control': params.get('congestion_control', ['bbr'])[0],
-            'udp_relay_mode': params.get('udp_relay_mode', ['native'])[0],
-            'alpn': params.get('alpn', ['h3'])[0].split(',') if params.get('alpn') else ['h3'],
             'sni': params.get('sni', [parsed.hostname])[0],
         }
     except:
@@ -320,33 +316,11 @@ def balance_protocols(configs_with_info: List[Tuple[str, int, str]], target: int
     
     for protocol in ALL_PROTOCOLS:
         if protocol in protocol_groups:
-            count = min(MIN_CONFIGS_PER_PROTOCOL, len(protocol_groups[protocol]))
+            count = min(MAX_CONFIGS_PER_PROTOCOL, len(protocol_groups[protocol]))
             for config, _ in protocol_groups[protocol][:count]:
                 if config not in used:
                     selected.append(config)
                     used.add(config)
-    
-    remaining = target - len(selected)
-    if remaining > 0:
-        pool = []
-        for protocol in protocol_groups:
-            for config, latency in protocol_groups[protocol]:
-                if config not in used:
-                    pool.append((config, latency, protocol))
-        
-        pool.sort(key=lambda x: x[1])
-        counts = defaultdict(int)
-        for config in selected:
-            proto = normalize_protocol(urlparse(config).scheme)
-            counts[proto] += 1
-        
-        for config, _, protocol in pool:
-            if len(selected) >= target:
-                break
-            if counts[protocol] < MAX_CONFIGS_PER_PROTOCOL:
-                selected.append(config)
-                used.add(config)
-                counts[protocol] += 1
     
     return selected[:target]
 
@@ -464,10 +438,10 @@ def main():
         print("\n--- 4. Protocol Selection ---")
         
         xray_pool = [(c, l, p) for c, l, p in tested if p in XRAY_PROTOCOLS]
-        singbox_pool = tested.copy()
+        singbox_pool = [(c, l, p) for c, l, p in tested if p in ALL_PROTOCOLS]
         
-        selected_xray = balance_protocols(xray_pool, min(5000, len(xray_pool)))
-        selected_singbox = balance_protocols(singbox_pool, min(5000, len(singbox_pool)))
+        selected_xray = balance_protocols(xray_pool, min(3000, len(xray_pool)))
+        selected_singbox = balance_protocols(singbox_pool, min(3000, len(singbox_pool)))
         
         print(f"Selected: Xray={len(selected_xray)}, Sing-box={len(selected_singbox)}")
         
@@ -493,11 +467,11 @@ def main():
         
         print("\nProtocol Distribution:")
         print("Xray:")
-        for p, c in xray_grouped.items():
-            print(f"  {p}: {len(c)}")
+        for p in sorted(xray_grouped.keys()):
+            print(f"  {p}: {len(xray_grouped[p])}")
         print("Sing-box:")
-        for p, c in singbox_grouped.items():
-            print(f"  {p}: {len(c)}")
+        for p in sorted(singbox_grouped.keys()):
+            print(f"  {p}: {len(singbox_grouped[p])}")
 
         print("\n--- 5. Writing Files ---")
         
@@ -519,9 +493,15 @@ def main():
         total_singbox = sum(len(v) for v in singbox_grouped.values())
         print(f"Final: Xray={total_xray}, Sing-box={total_singbox}")
         
-        empty_singbox = [p for p, c in singbox_grouped.items() if not c]
-        if empty_singbox:
-            print(f"WARNING: Empty Sing-box protocols: {empty_singbox}")
+        empty_protocols = []
+        for p in ALL_PROTOCOLS:
+            if p in XRAY_PROTOCOLS and not xray_grouped.get(p):
+                empty_protocols.append(f"Xray-{p}")
+            if not singbox_grouped.get(p):
+                empty_protocols.append(f"Singbox-{p}")
+        
+        if empty_protocols:
+            print(f"WARNING: Empty protocols: {', '.join(empty_protocols)}")
         
     except Exception as e:
         print(f"FATAL: {e}")
