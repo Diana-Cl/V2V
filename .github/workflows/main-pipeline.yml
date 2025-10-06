@@ -43,7 +43,7 @@ jobs:
         git config user.email "action@github.com"
         git add all_live_configs.json clash_subscription.yml cache_version.txt
         git diff --quiet && git diff --staged --quiet || git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M')"
-        git push
+        git push --force
 
   deploy_vercel:
     needs: update_configs
@@ -60,7 +60,7 @@ jobs:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        vercel-args: '--prod'
+        vercel-args: '--prod --force'
       continue-on-error: true
 
   deploy_arvan:
@@ -71,11 +71,13 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        ref: main
 
     - name: Deploy to Arvan
       uses: jakejarvis/s3-sync-action@master
       with:
-        args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*" --exclude "*.py"
+        args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*" --exclude "*.py" --cache-control "no-cache,must-revalidate"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
@@ -101,6 +103,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        ref: main
 
     - name: Setup Pages
       uses: actions/configure-pages@v4
