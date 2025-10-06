@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const STATIC_CONFIG_URL = './all_live_configs.json';
-    const STATIC_CACHE_VERSION_URL = './cache_version.txt';
+    const STATIC_CONFIG_URL = './all_live_configs.json?t=' + Date.now();
+    const STATIC_CACHE_VERSION_URL = './cache_version.txt?t=' + Date.now();
     const PING_TIMEOUT = 2000;
     
     const WORKER_URLS = [
@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     let workerAvailable = true;
     
-    const PING_BATCH_SIZE = 75;
-    const PING_ATTEMPTS = 7;
+    const PING_BATCH_SIZE = 30;
+    const PING_ATTEMPTS = 3;
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
@@ -162,13 +162,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         allConfigs.sort((a, b) => a.ping - b.ping);
-        return allConfigs.slice(0, 30).map(item => item.config);
+        return allConfigs.slice(0, 20).map(item => item.config);
     };
 
     const fetchAndRender = async () => {
-        statusBar.textContent = 'درحال دریافت کانفیگ‌ها...';
+        statusBar.textContent = 'بارگذاری...';
         try {
-            const configResponse = await fetch(STATIC_CONFIG_URL, { signal: AbortSignal.timeout(10000) });
+            const configResponse = await fetch(STATIC_CONFIG_URL, { 
+                signal: AbortSignal.timeout(15000),
+                cache: 'no-store'
+            });
             if (!configResponse.ok) throw new Error(`HTTP ${configResponse.status}`);
             allLiveConfigsData = await configResponse.json();
             
@@ -180,7 +183,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let cacheVersion = 'نامشخص';
             try {
-                const versionResponse = await fetch(STATIC_CACHE_VERSION_URL, { signal: AbortSignal.timeout(5000) });
+                const versionResponse = await fetch(STATIC_CACHE_VERSION_URL, { 
+                    signal: AbortSignal.timeout(5000),
+                    cache: 'no-store'
+                });
                 if (versionResponse.ok) {
                     cacheVersion = await versionResponse.text();
                 }
@@ -416,3 +422,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     fetchAndRender();
+});
