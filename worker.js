@@ -1,6 +1,6 @@
 import { connect } from 'cloudflare:sockets';
 
-const TTL_SUBSCRIPTION = 60 * 60 * 24 * 120;
+const TTL_SUBSCRIPTION = 60 * 60 * 24 * 365;
 
 const ALLOWED_ORIGINS = [
     'https://smbcryp.github.io',
@@ -32,39 +32,10 @@ function yamlResponse(text, corsHeaders) {
         status: 200,
         headers: { 
             'Content-Type': 'application/x-yaml; charset=utf-8',
-            'Content-Disposition': 'attachment; filename="v2v.yaml"',
+            'Content-Disposition': 'attachment; filename="config.yaml"',
             ...corsHeaders 
         } 
     });
-}
-
-function toYAML(obj, indent = 0) {
-    const spaces = '  '.repeat(indent);
-    let yaml = '';
-    
-    for (const [key, value] of Object.entries(obj)) {
-        if (value === null || value === undefined) continue;
-        
-        if (Array.isArray(value)) {
-            yaml += `${spaces}${key}:\n`;
-            value.forEach(item => {
-                if (typeof item === 'object') {
-                    yaml += `${spaces}- \n${toYAML(item, indent + 1).split('\n').map(line => line ? `${spaces}  ${line}` : '').join('\n')}\n`;
-                } else {
-                    yaml += `${spaces}- ${item}\n`;
-                }
-            });
-        } else if (typeof value === 'object') {
-            yaml += `${spaces}${key}:\n${toYAML(value, indent + 1)}`;
-        } else if (typeof value === 'boolean') {
-            yaml += `${spaces}${key}: ${value}\n`;
-        } else if (typeof value === 'number') {
-            yaml += `${spaces}${key}: ${value}\n`;
-        } else {
-            yaml += `${spaces}${key}: ${value}\n`;
-        }
-    }
-    return yaml;
 }
 
 function parseVmessConfig(config) {
@@ -140,7 +111,7 @@ function parseSsConfig(config) {
     } catch { return null; }
 }
 
-function generateClashYAML(configs, coreName) {
+function generateClashYAML(configs) {
     const proxies = [];
     const seen = new Set();
     
@@ -249,37 +220,94 @@ function generateClashYAML(configs, coreName) {
     if (proxies.length === 0) return null;
     
     const names = proxies.map(p => p.name);
-    const config = {
-        proxies,
-        'proxy-groups': [
-            { 
-                name: 'Auto', 
-                type: 'url-test', 
-                proxies: names, 
-                url: 'http://www.gstatic.com/generate_204', 
-                interval: 300 
-            },
-            { 
-                name: 'Select', 
-                type: 'select', 
-                proxies: ['Auto', ...names] 
-            }
-        ],
-        rules: [
-            'DOMAIN-SUFFIX,local,DIRECT', 
-            'IP-CIDR,127.0.0.0/8,DIRECT', 
-            'IP-CIDR,10.0.0.0/8,DIRECT', 
-            'IP-CIDR,172.16.0.0/12,DIRECT', 
-            'IP-CIDR,192.168.0.0/16,DIRECT', 
-            'GEOIP,IR,DIRECT', 
-            'MATCH,Select'
-        ]
-    };
     
-    return toYAML(config);
+    let yaml = 'proxies:\n';
+    for (const proxy of proxies) {
+        yaml += `  - name: "${proxy.name}"\n`;
+        yaml += `    type: ${proxy.type}\n`;
+        yaml += `    server: ${proxy.server}\n`;
+        yaml += `    port: ${proxy.port}\n`;
+        
+        if (proxy.type === 'vmess') {
+            yaml += `    uuid: ${proxy.uuid}\n`;
+            yaml += `    alterId: ${proxy.alterId}\n`;
+            yaml += `    cipher: ${proxy.cipher}\n`;
+            yaml += `    udp: true\n`;
+            if (proxy.network) {
+                yaml += `    network: ${proxy.network}\n`;
+                if (proxy['ws-opts']) {
+                    yaml += `    ws-opts:\n`;
+                    yaml += `      path: ${proxy['ws-opts'].path}\n`;
+                    yaml += `      headers:\n`;
+                    yaml += `        Host: ${proxy['ws-opts'].headers.Host}\n`;
+                }
+            }
+            if (proxy.tls) {
+                yaml += `    tls: true\n`;
+                yaml += `    servername: ${proxy.servername}\n`;
+            }
+            yaml += `    skip-cert-verify: true\n`;
+        } else if (proxy.type === 'vless') {
+            yaml += `    uuid: ${proxy.uuid}\n`;
+            yaml += `    udp: true\n`;
+            if (proxy.network) {
+                yaml += `    network: ${proxy.network}\n`;
+                if (proxy['ws-opts']) {
+                    yaml += `    ws-opts:\n`;
+                    yaml += `      path: ${proxy['ws-opts'].path}\n`;
+                    yaml += `      headers:\n`;
+                    yaml += `        Host: ${proxy['ws-opts'].headers.Host}\n`;
+                }
+            }
+            if (proxy.tls) {
+                yaml += `    tls: true\n`;
+                yaml += `    servername: ${proxy.servername}\n`;
+                if (proxy.flow) yaml += `    flow: ${proxy.flow}\n`;
+            }
+            yaml += `    skip-cert-verify: true\n`;
+        } else if (proxy.type === 'trojan') {
+            yaml += `    password: ${proxy.password}\n`;
+            yaml += `    udp: true\n`;
+            yaml += `    sni: ${proxy.sni}\n`;
+            yaml += `    skip-cert-verify: true\n`;
+        } else if (proxy.type === 'ss') {
+            yaml += `    cipher: ${proxy.cipher}\n`;
+            yaml += `    password: ${proxy.password}\n`;
+            yaml += `    udp: true\n`;
+        }
+    }
+    
+    yaml += '\nproxy-groups:\n';
+    yaml += `  - name: "Auto"\n`;
+    yaml += `    type: url-test\n`;
+    yaml += `    proxies:\n`;
+    for (const name of names) {
+        yaml += `      - "${name}"\n`;
+    }
+    yaml += `    url: http://www.gstatic.com/generate_204\n`;
+    yaml += `    interval: 300\n`;
+    
+    yaml += `  - name: "Select"\n`;
+    yaml += `    type: select\n`;
+    yaml += `    proxies:\n`;
+    yaml += `      - "Auto"\n`;
+    for (const name of names) {
+        yaml += `      - "${name}"\n`;
+    }
+    
+    yaml += '\nrules:\n';
+    yaml += '  - DOMAIN-SUFFIX,local,DIRECT\n';
+    yaml += '  - IP-CIDR,127.0.0.0/8,DIRECT\n';
+    yaml += '  - IP-CIDR,10.0.0.0/8,DIRECT\n';
+    yaml += '  - IP-CIDR,172.16.0.0/12,DIRECT\n';
+    yaml += '  - IP-CIDR,192.168.0.0/16,DIRECT\n';
+    yaml += '  - GEOIP,IR,DIRECT\n';
+    yaml += '  - MATCH,Select\n';
+    
+    return yaml;
 }
 
-function generateSingboxJSON(configs, coreName) {
+function generateSingboxJSON(configs) {
     const outbounds = [];
     const seen = new Set();
     
@@ -408,14 +436,14 @@ async function testConnection(host, port) {
         
         await Promise.race([
             socket.opened,
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
         ]);
         
         const latency = Date.now() - startTime;
         
         try { await socket.close(); } catch {}
         
-        return { latency: latency > 0 && latency < 5000 ? latency : null, status: 'Live' };
+        return { latency: latency > 0 && latency < 2000 ? latency : null, status: 'Live' };
     } catch (error) {
         return { latency: null, status: 'Dead' };
     }
@@ -442,8 +470,8 @@ export default {
             }
             
             if (url.pathname === '/create-sub' && request.method === 'POST') {
-                const { configs, core, format } = await request.json();
-                if (!Array.isArray(configs) || configs.length === 0 || !core || !format) {
+                const { configs, format } = await request.json();
+                if (!Array.isArray(configs) || configs.length === 0 || !format) {
                     return jsonResponse({ error: 'Invalid request' }, 400, corsHeaders);
                 }
                 
@@ -451,7 +479,7 @@ export default {
                 
                 await env.v2v_kv.put(
                     `sub:${shortId}`, 
-                    JSON.stringify({ configs, core, format, created: Date.now() }), 
+                    JSON.stringify({ configs, format, created: Date.now() }), 
                     { expirationTtl: TTL_SUBSCRIPTION }
                 );
                 
@@ -465,7 +493,7 @@ export default {
                 
                 const storedData = await env.v2v_kv.get(`sub:${shortId}`, { type: 'json' });
                 if (!storedData || !storedData.configs) {
-                    return new Response('Subscription not found or expired', { status: 404, headers: corsHeaders });
+                    return new Response('Not found', { status: 404, headers: corsHeaders });
                 }
                 
                 await env.v2v_kv.put(
@@ -474,26 +502,26 @@ export default {
                     { expirationTtl: TTL_SUBSCRIPTION }
                 );
                 
-                const { configs, core } = storedData;
+                const { configs } = storedData;
                 
                 if (format === 'clash') {
-                    const content = generateClashYAML(configs, core);
-                    if (!content) return new Response('Failed to generate Clash config', { status: 500, headers: corsHeaders });
+                    const content = generateClashYAML(configs);
+                    if (!content) return new Response('Failed to generate config', { status: 500, headers: corsHeaders });
                     return yamlResponse(content, corsHeaders);
                 }
                 
                 if (format === 'singbox') {
-                    const content = generateSingboxJSON(configs, core);
-                    if (!content) return new Response('Failed to generate Singbox config', { status: 500, headers: corsHeaders });
+                    const content = generateSingboxJSON(configs);
+                    if (!content) return new Response('Failed to generate config', { status: 500, headers: corsHeaders });
                     return jsonResponse(JSON.parse(content), 200, corsHeaders);
                 }
             }
             
-            return new Response('V2V Worker Active', { status: 200, headers: corsHeaders });
+            return new Response('V2V Worker', { status: 200, headers: corsHeaders });
             
         } catch (err) {
             console.error('Worker error:', err);
-            return jsonResponse({ error: 'Internal error', details: err.message }, 500, corsHeaders);
+            return jsonResponse({ error: 'Internal error' }, 500, corsHeaders);
         }
     },
 };
