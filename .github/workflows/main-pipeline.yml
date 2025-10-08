@@ -20,6 +20,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Setup Python
       uses: actions/setup-python@v5
@@ -32,27 +33,31 @@ jobs:
 
     - name: Run Scraper
       run: |
-        timeout 2700 python scraper.py || echo "Scraper completed with errors"
+        timeout 2700 python scraper.py || echo "Scraper completed"
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         GITHUB_SEARCH_LIMIT: 150
 
-    - name: Commit Changes
+    - name: Commit and Push
       run: |
-        git config user.name "GitHub Action"
-        git config user.email "action@github.com"
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
         git add all_live_configs.json clash_subscription.yml cache_version.txt
-        git diff --quiet && git diff --staged --quiet || git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M')"
-        git push --force
+        git diff --quiet && git diff --staged --quiet || {
+          git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push origin main --force
+        }
 
   deploy_vercel:
     needs: update_configs
     runs-on: ubuntu-latest
-    if: always()
+    if: success()
     
     steps:
-    - name: Checkout
+    - name: Checkout Latest
       uses: actions/checkout@v4
+      with:
+        ref: main
 
     - name: Deploy to Vercel
       uses: amondnet/vercel-action@v25
@@ -66,30 +71,42 @@ jobs:
   deploy_arvan:
     needs: update_configs
     runs-on: ubuntu-latest
-    if: always()
+    if: success()
     
     steps:
-    - name: Checkout
+    - name: Checkout Latest
       uses: actions/checkout@v4
       with:
         ref: main
 
-    - name: Deploy to Arvan
-      uses: jakejarvis/s3-sync-action@master
-      with:
-        args: --acl public-read --delete --exclude ".git/*" --exclude ".github/*" --exclude "*.py" --cache-control "no-cache,must-revalidate"
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-        AWS_S3_ENDPOINT: 'https://s3.ir-thr-at1.arvanstorage.ir'
-        AWS_S3_BUCKET: ${{ secrets.ARVAN_BUCKET_NAME }}
-        SOURCE_DIR: '.'
+    - name: Install AWS CLI
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+
+    - name: Sync to Arvan S3
+      run: |
+        aws configure set aws_access_key_id ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+        aws configure set default.region us-east-1
+        
+        aws s3 sync . s3://${{ secrets.ARVAN_BUCKET_NAME }}/ \
+          --endpoint-url=https://s3.ir-thr-at1.arvanstorage.ir \
+          --exclude ".git/*" \
+          --exclude ".github/*" \
+          --exclude "*.py" \
+          --exclude "*.zip" \
+          --delete \
+          --acl public-read \
+          --cache-control "no-cache, no-store, must-revalidate" \
+          --metadata-directive REPLACE
       continue-on-error: true
 
   deploy_pages:
     needs: update_configs
     runs-on: ubuntu-latest
-    if: always()
+    if: success()
     
     permissions:
       contents: read
@@ -101,7 +118,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
-    - name: Checkout
+    - name: Checkout Latest
       uses: actions/checkout@v4
       with:
         ref: main
