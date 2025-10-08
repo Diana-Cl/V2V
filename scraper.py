@@ -23,7 +23,7 @@ def timeout_handler(signum, frame):
 signal.signal(signal.SIGALRM, timeout_handler)
 signal.alarm(50 * 60)
 
-print("INFO: V2V Enhanced Scraper v6.3 - Fixed TUIC + No Duplicates")
+print("INFO: V2V Enhanced Scraper v6.4 - Complete Protocol Extraction")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
@@ -83,7 +83,6 @@ def parse_tuic_config(config: str) -> Optional[Dict]:
         
         params = parse_qs(parsed.query)
         
-        # TUIC باید UUID یا password داشته باشه
         uuid = parsed.username if parsed.username else params.get('uuid', [''])[0]
         password = params.get('password', [''])[0]
         
@@ -135,11 +134,9 @@ def extract_configs_from_content(content: str) -> Set[str]:
     if not content:
         return configs
     
-    # جستجوی دقیق‌تر برای TUIC
     protocols = ['vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hysteria2', 'hy2', 'tuic', 'hysteria']
     
     for protocol in protocols:
-        # Pattern دقیق‌تر
         pattern = rf'{protocol}://[^\s<>"\'`\n\r\[\]{{}}\|\\]+'
         matches = re.findall(pattern, content, re.IGNORECASE | re.MULTILINE)
         for match in matches:
@@ -147,7 +144,6 @@ def extract_configs_from_content(content: str) -> Set[str]:
             if is_valid_config(clean_match):
                 configs.add(clean_match)
     
-    # جستجو در Base64
     base64_pattern = r'[A-Za-z0-9+/=]{100,}'
     for b64_block in re.findall(base64_pattern, content)[:30]:
         try:
@@ -457,7 +453,6 @@ def main():
 
         print("\n--- 4. Protocol Selection (NO DUPLICATES) ---")
         
-        # جداسازی کامل - هر هسته کانفیگ‌های خودش رو داره
         selected_xray = balance_protocols_separate(tested, XRAY_PROTOCOLS)
         selected_singbox = balance_protocols_separate(tested, ALL_PROTOCOLS)
         
