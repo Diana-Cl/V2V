@@ -111,6 +111,45 @@ function parseSsConfig(config) {
     } catch { return null; }
 }
 
+function parseTuicConfig(config) {
+    try {
+        const urlObj = new URL(config);
+        if (!urlObj.hostname || !urlObj.port) return null;
+        const params = new URLSearchParams(urlObj.search);
+        
+        const uuid = urlObj.username || params.get('uuid') || '';
+        const password = params.get('password') || '';
+        
+        if (!uuid && !password) return null;
+        
+        return {
+            server: urlObj.hostname,
+            port: parseInt(urlObj.port),
+            uuid: uuid,
+            password: password,
+            congestion_control: params.get('congestion_control') || 'bbr',
+            alpn: params.get('alpn') || 'h3',
+            sni: params.get('sni') || urlObj.hostname,
+            name: decodeURIComponent(urlObj.hash.substring(1)) || `tuic-${urlObj.hostname.substring(0,8)}`
+        };
+    } catch { return null; }
+}
+
+function parseHy2Config(config) {
+    try {
+        const urlObj = new URL(config);
+        if (!urlObj.hostname || !urlObj.port || !urlObj.username) return null;
+        const params = new URLSearchParams(urlObj.search);
+        return {
+            server: urlObj.hostname,
+            port: parseInt(urlObj.port),
+            password: urlObj.username,
+            sni: params.get('sni') || urlObj.hostname,
+            name: decodeURIComponent(urlObj.hash.substring(1)) || `hy2-${urlObj.hostname.substring(0,8)}`
+        };
+    } catch { return null; }
+}
+
 function generateClashYAML(configs) {
     const proxies = [];
     const seen = new Set();
@@ -210,6 +249,7 @@ function generateClashYAML(configs) {
                     udp: true 
                 };
             }
+            // TUIC و Hy2 در Clash پشتیبانی نمی‌شن
             
             if (proxy) proxies.push(proxy);
         } catch (e) {
@@ -394,6 +434,49 @@ function generateSingboxJSON(configs) {
                     method: p.method, 
                     password: p.password 
                 };
+            } else if (config.startsWith('tuic://')) {
+                const p = parseTuicConfig(config);
+                if (!p) continue;
+                
+                const key = `tuic-${p.server}-${p.port}-${p.uuid}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                
+                outbound = {
+                    tag: p.name,
+                    type: 'tuic',
+                    server: p.server,
+                    server_port: p.port,
+                    uuid: p.uuid,
+                    password: p.password,
+                    congestion_control: p.congestion_control,
+                    tls: {
+                        enabled: true,
+                        server_name: p.sni,
+                        insecure: true,
+                        alpn: [p.alpn]
+                    }
+                };
+            } else if (config.startsWith('hysteria2://') || config.startsWith('hy2://')) {
+                const p = parseHy2Config(config);
+                if (!p) continue;
+                
+                const key = `hy2-${p.server}-${p.port}-${p.password}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                
+                outbound = {
+                    tag: p.name,
+                    type: 'hysteria2',
+                    server: p.server,
+                    server_port: p.port,
+                    password: p.password,
+                    tls: {
+                        enabled: true,
+                        server_name: p.sni,
+                        insecure: true
+                    }
+                };
             }
             
             if (outbound) outbounds.push(outbound);
@@ -506,13 +589,13 @@ export default {
                 
                 if (format === 'clash') {
                     const content = generateClashYAML(configs);
-                    if (!content) return new Response('Failed to generate config', { status: 500, headers: corsHeaders });
+                    if (!content) return new Response('No valid configs', { status: 500, headers: corsHeaders });
                     return yamlResponse(content, corsHeaders);
                 }
                 
                 if (format === 'singbox') {
                     const content = generateSingboxJSON(configs);
-                    if (!content) return new Response('Failed to generate config', { status: 500, headers: corsHeaders });
+                    if (!content) return new Response('No valid configs', { status: 500, headers: corsHeaders });
                     return jsonResponse(JSON.parse(content), 200, corsHeaders);
                 }
             }
@@ -521,7 +604,7 @@ export default {
             
         } catch (err) {
             console.error('Worker error:', err);
-            return jsonResponse({ error: 'Internal error' }, 500, corsHeaders);
+            return jsonResponse({ error: 'Internal error', details: err.message }, 500, corsHeaders);
         }
     },
 };
