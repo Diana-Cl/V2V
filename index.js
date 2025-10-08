@@ -9,7 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
         'https://rapid-scene-1da6.mbrgh87.workers.dev',
         'https://winter-hill-0307.mbrgh87.workers.dev',
     ];
-    let workerAvailable = true;
+    
+    let activeWorkers = [];
+    let workerAvailable = false;
     
     const PING_BATCH_SIZE = 30;
     const PING_ATTEMPTS = 3;
@@ -27,6 +29,47 @@ document.addEventListener('DOMContentLoaded', () => {
         toastEl.className = `toast show ${isError ? 'error' : ''}`;
         setTimeout(() => toastEl.classList.remove('show'), 3000);
     };
+
+    async function detectActiveWorkers() {
+        console.log('🔍 Testing all workers in parallel...');
+        activeWorkers = [];
+        
+        const testPromises = WORKER_URLS.map(async (url) => {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                
+                const response = await fetch(`${url}/ping`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ host: '8.8.8.8', port: 53 }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    console.log('✅ Worker active:', url);
+                    return url;
+                }
+            } catch (e) {
+                console.log('❌ Worker failed:', url);
+            }
+            return null;
+        });
+        
+        const results = await Promise.all(testPromises);
+        activeWorkers = results.filter(url => url !== null);
+        workerAvailable = activeWorkers.length > 0;
+        
+        console.log(`📊 Active workers: ${activeWorkers.length}/${WORKER_URLS.length}`);
+        return workerAvailable;
+    }
+
+    function getRandomWorker() {
+        if (activeWorkers.length === 0) return null;
+        return activeWorkers[Math.floor(Math.random() * activeWorkers.length)];
+    }
 
     window.copyToClipboard = async (text, successMessage = 'کپی شد!') => {
         try {
@@ -78,7 +121,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return name;
     };
 
+    window.copyProtocolConfigs = (coreName, protocol) => {
+        const coreData = allLiveConfigsData[coreName];
+        if (!coreData || !coreData[protocol] || coreData[protocol].length === 0) {
+            showToast('کانفیگی یافت نشد!', true);
+            return;
+        }
+        
+        const configs = coreData[protocol].join('\n');
+        window.copyToClipboard(configs, `${coreData[protocol].length} کانفیگ ${protocol.toUpperCase()} کپی شد!`);
+    };
+
     window.generateSubscription = async (coreName, scope, format, action) => {
+        if (!workerAvailable || activeWorkers.length === 0) {
+            showToast('در حال بررسی Workers...', false);
+            await detectActiveWorkers();
+            if (!workerAvailable) {
+                showToast('هیچ Worker فعالی یافت نشد', true);
+                return;
+            }
+        }
+
         let configs = [];
         
         if (scope === 'selected') {
@@ -89,9 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             configs = Array.from(checkboxes).map(cb => decodeURIComponent(cb.dataset.config));
         } else if (scope === 'auto') {
-            const sortedConfigs = getTopConfigsFromBackend(coreName);
-            configs = sortedConfigs;
-            
+            configs = getTopConfigsFromBackend(coreName);
             if (configs.length === 0) {
                 showToast('کانفیگی یافت نشد!', true);
                 return;
@@ -103,41 +164,91 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        if (!workerAvailable) {
-            showToast('Worker در دسترس نیست', true);
-            return;
-        }
+        showToast(`در حال ساخت با ${activeWorkers.length} Worker...`, false);
+        
+        // استراتژی: تمام Workers موازی URL/UUID می‌سازن، اولین موفق برنده است
+        const createPromises = activeWorkers.map(async (workerUrl, index) => {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                const startTime = Date.now();
+                
+                const response = await fetch(`${workerUrl}/create-sub`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ configs, format }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                const elapsed = Date.now() - startTime;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(`✅ Worker ${index + 1} succeeded in ${elapsed}ms:`, workerUrl);
+                    return { 
+                        success: true, 
+                        workerUrl, 
+                        id: data.id, 
+                        elapsed,
+                        workerIndex: index + 1
+                    };
+                } else {
+                    console.log(`❌ Worker ${index + 1} HTTP error:`, response.status);
+                }
+            } catch (error) {
+                console.log(`❌ Worker ${index + 1} failed:`, error.message);
+            }
+            return { success: false, workerUrl, workerIndex: index + 1 };
+        });
         
         try {
-            const workerUrl = WORKER_URLS[Math.floor(Math.random() * WORKER_URLS.length)];
+            // Race: اولین Worker که موفق شد برنده است
+            const firstSuccess = await Promise.race(
+                createPromises.map(async (promise) => {
+                    const result = await promise;
+                    if (result.success) return result;
+                    throw new Error('Worker failed');
+                })
+            );
             
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            // حالا منتظر می‌مونیم تا ببینیم چند Worker موفق شدن
+            const allResults = await Promise.allSettled(createPromises);
+            const successCount = allResults.filter(r => r.status === 'fulfilled' && r.value.success).length;
             
-            const response = await fetch(`${workerUrl}/create-sub`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ configs, format }),
-                signal: controller.signal
-            });
+            const subUrl = `${firstSuccess.workerUrl}/sub/${format}/${firstSuccess.id}`;
             
-            clearTimeout(timeoutId);
+            console.log(`📊 Success: ${successCount}/${activeWorkers.length} workers in ${firstSuccess.elapsed}ms`);
             
-            if (response.ok) {
-                const data = await response.json();
-                const subUrl = `${workerUrl}/sub/${format}/${data.id}`;
-                
-                if (action === 'copy') {
-                    await window.copyToClipboard(subUrl, 'لینک کپی شد!');
-                } else if (action === 'qr') {
-                    window.openQrModal(subUrl);
-                }
-                return;
+            if (action === 'copy') {
+                await window.copyToClipboard(subUrl, `لینک کپی شد! (${successCount}/${activeWorkers.length} Worker موفق)`);
+            } else if (action === 'qr') {
+                window.openQrModal(subUrl);
+                showToast(`QR ساخته شد (Worker ${firstSuccess.workerIndex})`, false);
             }
             
-            throw new Error('Worker failed');
+            return;
+            
         } catch (error) {
-            showToast('خطا در ساخت لینک!', true);
+            console.error('All workers failed:', error);
+            
+            // بررسی دقیق‌تر خطا
+            const allResults = await Promise.allSettled(createPromises);
+            const failedWorkers = allResults.filter(r => r.status === 'rejected' || !r.value.success);
+            
+            console.log(`❌ Failed: ${failedWorkers.length}/${activeWorkers.length} workers`);
+            
+            showToast(`خطا در ${failedWorkers.length} Worker! در حال تست مجدد...`, true);
+            
+            // ری‌تست Workers در پس‌زمینه
+            setTimeout(async () => {
+                await detectActiveWorkers();
+                if (workerAvailable) {
+                    showToast(`${activeWorkers.length} Worker آماده است`, false);
+                }
+            }, 2000);
         }
     };
 
@@ -167,6 +278,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fetchAndRender = async () => {
         statusBar.textContent = 'بارگذاری...';
+        
+        await detectActiveWorkers();
+        
         try {
             const configResponse = await fetch(STATIC_CONFIG_URL, { 
                 signal: AbortSignal.timeout(15000),
@@ -193,7 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {}
 
             const updateTime = new Date(parseInt(cacheVersion) * 1000).toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' });
-            statusBar.textContent = `آخرین بروزرسانی: ${updateTime}`;
+            const workerStatus = workerAvailable ? `✅ ${activeWorkers.length} Worker فعال` : '❌ Worker غیرفعال';
+            statusBar.textContent = `${updateTime} | ${workerStatus}`;
             
             renderCore('xray', allLiveConfigsData.xray, xrayWrapper);
             renderCore('singbox', allLiveConfigsData.singbox, singboxWrapper);
@@ -210,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">تست پینگ</button>`;
+        const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">تست پینگ (${activeWorkers.length} Worker)</button>`;
         const copySelectedButton = `<button class="action-btn-wide" onclick="window.copySelectedConfigs('${coreName}')">کپی موارد انتخابی</button>`;
         
         let contentHtml = runPingButton + copySelectedButton + `
@@ -250,6 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="protocol-group" data-protocol="${protocol}">
                     <div class="protocol-header">
                         <span>${protocolName} (${configs.length})</span>
+                        <button class="btn-copy-protocol" onclick="window.copyProtocolConfigs('${coreName}', '${protocol}')" title="کپی همه ${protocolName}">📋 کپی</button>
                         <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
@@ -287,8 +403,10 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.innerHTML = contentHtml;
 
         wrapper.querySelectorAll('.protocol-header').forEach(header => {
-            header.addEventListener('click', () => {
-                header.closest('.protocol-group').classList.toggle('open');
+            header.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('btn-copy-protocol')) {
+                    header.closest('.protocol-group').classList.toggle('open');
+                }
             });
         });
     };
@@ -307,13 +425,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = getEl(`ping-${coreName}-btn`);
         if (!btn) return;
         
-        if (!workerAvailable) {
-            showToast('تست پینگ نیازمند Worker است', true);
-            return;
+        if (!workerAvailable || activeWorkers.length === 0) {
+            showToast('در حال بررسی Workers...', false);
+            await detectActiveWorkers();
+            if (!workerAvailable) {
+                showToast('تست پینگ نیازمند Workers فعال است', true);
+                return;
+            }
         }
         
         btn.disabled = true;
-        btn.innerHTML = '<span class="loader-small"></span> تست...';
+        btn.innerHTML = `<span class="loader-small"></span> تست با ${activeWorkers.length} Worker...`;
         
         pingResults = {};
 
@@ -329,11 +451,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let completed = 0;
         const total = allConfigs.length;
         
-        for (let i = 0; i < allConfigs.length; i += (PING_BATCH_SIZE * WORKER_URLS.length)) {
-            const megaBatch = allConfigs.slice(i, i + (PING_BATCH_SIZE * WORKER_URLS.length));
+        // توزیع موازی بین تمام Workers فعال
+        for (let i = 0; i < allConfigs.length; i += (PING_BATCH_SIZE * activeWorkers.length)) {
+            const megaBatch = allConfigs.slice(i, i + (PING_BATCH_SIZE * activeWorkers.length));
             
-            await Promise.all(WORKER_URLS.map(async (workerUrl, workerIdx) => {
-                const workerBatch = megaBatch.filter((_, idx) => idx % WORKER_URLS.length === workerIdx);
+            await Promise.all(activeWorkers.map(async (workerUrl, workerIdx) => {
+                const workerBatch = megaBatch.filter((_, idx) => idx % activeWorkers.length === workerIdx);
                 
                 await Promise.all(workerBatch.map(async ({ config, protocol, idx }) => {
                     const resultEl = getEl(`ping-${coreName}-${protocol}-${idx}`);
@@ -390,13 +513,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     completed++;
-                    btn.textContent = `تست (${completed}/${total})`;
+                    const progress = Math.round((completed / total) * 100);
+                    btn.textContent = `تست ${progress}% (${completed}/${total})`;
                 }));
             }));
         }
 
         btn.disabled = false;
-        btn.textContent = `تست پینگ`;
+        btn.textContent = `تست پینگ (${activeWorkers.length} Worker)`;
         showToast('تست تکمیل شد!');
     };
     
