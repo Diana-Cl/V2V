@@ -32,7 +32,7 @@ function yamlResponse(text, corsHeaders) {
         status: 200,
         headers: { 
             'Content-Type': 'application/x-yaml; charset=utf-8',
-            'Content-Disposition': 'attachment; filename="config.yaml"',
+            'Content-Disposition': 'attachment; filename="v2v-config.yaml"',
             ...corsHeaders 
         } 
     });
@@ -54,7 +54,7 @@ function parseVmessConfig(config) {
             sni: decoded.sni || decoded.host || decoded.add, 
             path: decoded.path || '/',
             host: decoded.host || decoded.add, 
-            name: decoded.ps || `vmess-${decoded.add.substring(0,8)}`
+            name: decoded.ps || `V2V-VMess-${decoded.add.substring(0,8)}`
         };
     } catch { return null; }
 }
@@ -74,7 +74,7 @@ function parseVlessConfig(config) {
             path: params.get('path') || '/',
             host: params.get('host') || urlObj.hostname, 
             flow: params.get('flow') || '',
-            name: decodeURIComponent(urlObj.hash.substring(1)) || `vless-${urlObj.hostname.substring(0,8)}`
+            name: decodeURIComponent(urlObj.hash.substring(1)) || `V2V-VLESS-${urlObj.hostname.substring(0,8)}`
         };
     } catch { return null; }
 }
@@ -89,7 +89,7 @@ function parseTrojanConfig(config) {
             port: parseInt(urlObj.port), 
             password: urlObj.username,
             sni: params.get('sni') || urlObj.hostname,
-            name: decodeURIComponent(urlObj.hash.substring(1)) || `trojan-${urlObj.hostname.substring(0,8)}`
+            name: decodeURIComponent(urlObj.hash.substring(1)) || `V2V-Trojan-${urlObj.hostname.substring(0,8)}`
         };
     } catch { return null; }
 }
@@ -106,7 +106,7 @@ function parseSsConfig(config) {
             port: parseInt(urlObj.port), 
             method, 
             password,
-            name: decodeURIComponent(urlObj.hash.substring(1)) || `ss-${urlObj.hostname.substring(0,8)}`
+            name: decodeURIComponent(urlObj.hash.substring(1)) || `V2V-SS-${urlObj.hostname.substring(0,8)}`
         };
     } catch { return null; }
 }
@@ -130,7 +130,7 @@ function parseTuicConfig(config) {
             congestion_control: params.get('congestion_control') || 'bbr',
             alpn: params.get('alpn') || 'h3',
             sni: params.get('sni') || urlObj.hostname,
-            name: decodeURIComponent(urlObj.hash.substring(1)) || `tuic-${urlObj.hostname.substring(0,8)}`
+            name: decodeURIComponent(urlObj.hash.substring(1)) || `V2V-TUIC-${urlObj.hostname.substring(0,8)}`
         };
     } catch { return null; }
 }
@@ -145,7 +145,7 @@ function parseHy2Config(config) {
             port: parseInt(urlObj.port),
             password: urlObj.username,
             sni: params.get('sni') || urlObj.hostname,
-            name: decodeURIComponent(urlObj.hash.substring(1)) || `hy2-${urlObj.hostname.substring(0,8)}`
+            name: decodeURIComponent(urlObj.hash.substring(1)) || `V2V-Hy2-${urlObj.hostname.substring(0,8)}`
         };
     } catch { return null; }
 }
@@ -249,7 +249,6 @@ function generateClashYAML(configs) {
                     udp: true 
                 };
             }
-            // TUIC و Hy2 در Clash پشتیبانی نمی‌شن
             
             if (proxy) proxies.push(proxy);
         } catch (e) {
@@ -318,7 +317,7 @@ function generateClashYAML(configs) {
     }
     
     yaml += '\nproxy-groups:\n';
-    yaml += `  - name: "Auto"\n`;
+    yaml += `  - name: "V2V-Auto"\n`;
     yaml += `    type: url-test\n`;
     yaml += `    proxies:\n`;
     for (const name of names) {
@@ -327,10 +326,10 @@ function generateClashYAML(configs) {
     yaml += `    url: http://www.gstatic.com/generate_204\n`;
     yaml += `    interval: 300\n`;
     
-    yaml += `  - name: "Select"\n`;
+    yaml += `  - name: "V2V-Select"\n`;
     yaml += `    type: select\n`;
     yaml += `    proxies:\n`;
-    yaml += `      - "Auto"\n`;
+    yaml += `      - "V2V-Auto"\n`;
     for (const name of names) {
         yaml += `      - "${name}"\n`;
     }
@@ -342,7 +341,7 @@ function generateClashYAML(configs) {
     yaml += '  - IP-CIDR,172.16.0.0/12,DIRECT\n';
     yaml += '  - IP-CIDR,192.168.0.0/16,DIRECT\n';
     yaml += '  - GEOIP,IR,DIRECT\n';
-    yaml += '  - MATCH,Select\n';
+    yaml += '  - MATCH,V2V-Select\n';
     
     return yaml;
 }
@@ -493,7 +492,7 @@ function generateSingboxJSON(configs) {
         inbounds: [{ type: "mixed", listen: "127.0.0.1", listen_port: 7890 }],
         outbounds: [
             { 
-                tag: "Auto", 
+                tag: "V2V-Auto", 
                 type: "urltest", 
                 outbounds: outbounds.map(o => o.tag), 
                 url: "http://www.gstatic.com/generate_204", 
@@ -576,7 +575,7 @@ export default {
                 
                 const storedData = await env.v2v_kv.get(`sub:${shortId}`, { type: 'json' });
                 if (!storedData || !storedData.configs) {
-                    return new Response('Not found', { status: 404, headers: corsHeaders });
+                    return new Response('Subscription not found', { status: 404, headers: corsHeaders });
                 }
                 
                 await env.v2v_kv.put(
@@ -600,7 +599,7 @@ export default {
                 }
             }
             
-            return new Response('V2V Worker', { status: 200, headers: corsHeaders });
+            return new Response('V2V Worker Active', { status: 200, headers: corsHeaders });
             
         } catch (err) {
             console.error('Worker error:', err);
