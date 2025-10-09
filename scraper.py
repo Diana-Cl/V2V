@@ -23,7 +23,7 @@ def timeout_handler(signum, frame):
 signal.signal(signal.SIGALRM, timeout_handler)
 signal.alarm(50 * 60)
 
-print("INFO: V2V Enhanced Scraper v6.4 - Complete Protocol Extraction")
+print("INFO: V2V Enhanced Scraper v7.0 - ZERO DUPLICATES")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
@@ -311,25 +311,28 @@ def test_protocol_connection(config: str) -> Optional[Tuple[str, int, str]]:
         return None
 
 def balance_protocols_separate(configs_with_info: List[Tuple[str, int, str]], protocols: Set[str]) -> List[str]:
-    """توزیع جداگانه برای هر هسته بدون تکرار"""
+    """توزیع جداگانه برای هر هسته با حذف تکرار داخلی"""
     protocol_groups = defaultdict(list)
+    seen_configs = set()
+    
     for config, latency, protocol in configs_with_info:
         if protocol in protocols:
-            protocol_groups[protocol].append((config, latency))
+            config_normalized = config.lower().strip()
+            
+            if config_normalized not in seen_configs:
+                protocol_groups[protocol].append((config, latency))
+                seen_configs.add(config_normalized)
     
     for protocol in protocol_groups:
         protocol_groups[protocol].sort(key=lambda x: x[1])
     
     selected = []
-    used = set()
     
-    for protocol in protocols:
+    for protocol in sorted(protocols):
         if protocol in protocol_groups:
             count = min(MAX_CONFIGS_PER_PROTOCOL, len(protocol_groups[protocol]))
             for config, _ in protocol_groups[protocol][:count]:
-                if config not in used:
-                    selected.append(config)
-                    used.add(config)
+                selected.append(config)
     
     return selected
 
@@ -449,20 +452,40 @@ def main():
                 except:
                     pass
         
-        print(f"Found {len(tested)} working")
+        print(f"Found {len(tested)} working configs")
 
-        print("\n--- 4. Protocol Selection (NO DUPLICATES) ---")
+        print("\n--- 4. Protocol Selection (ZERO DUPLICATES) ---")
         
-        selected_xray = balance_protocols_separate(tested, XRAY_PROTOCOLS)
-        selected_singbox = balance_protocols_separate(tested, ALL_PROTOCOLS)
+        # مرحله 1: فیلتر کانفیگ‌های Xray
+        xray_tested = [(cfg, lat, prot) for cfg, lat, prot in tested if prot in XRAY_PROTOCOLS]
+        selected_xray = balance_protocols_separate(xray_tested, XRAY_PROTOCOLS)
+        
+        # مرحله 2: ساخت set نرمال شده از کانفیگ‌های Xray
+        used_normalized = set(cfg.lower().strip() for cfg in selected_xray)
+        
+        # مرحله 3: فیلتر کانفیگ‌های باقی‌مانده برای Singbox
+        remaining_tested = []
+        for cfg, lat, prot in tested:
+            if cfg.lower().strip() not in used_normalized:
+                remaining_tested.append((cfg, lat, prot))
+        
+        # مرحله 4: انتخاب برای Singbox از کانفیگ‌های باقی‌مانده
+        selected_singbox = balance_protocols_separate(remaining_tested, ALL_PROTOCOLS)
         
         print(f"Selected: Xray={len(selected_xray)}, Sing-box={len(selected_singbox)}")
         
         def group_configs(configs: List[str]) -> Dict[str, List[str]]:
             grouped = defaultdict(list)
+            seen_per_protocol = defaultdict(set)
+            
             for config in configs:
                 protocol = normalize_protocol(urlparse(config).scheme)
-                grouped[protocol].append(config)
+                config_normalized = config.lower().strip()
+                
+                if config_normalized not in seen_per_protocol[protocol]:
+                    grouped[protocol].append(config)
+                    seen_per_protocol[protocol].add(config_normalized)
+            
             return dict(grouped)
         
         xray_grouped = group_configs(selected_xray)
@@ -485,6 +508,22 @@ def main():
         print("Sing-box:")
         for p in sorted(singbox_grouped.keys()):
             print(f"  {p}: {len(singbox_grouped[p])}")
+        
+        # بررسی تکرار بین هسته‌ها
+        xray_all = set()
+        for configs_list in xray_grouped.values():
+            xray_all.update(c.lower().strip() for c in configs_list)
+        
+        singbox_all = set()
+        for configs_list in singbox_grouped.values():
+            singbox_all.update(c.lower().strip() for c in configs_list)
+        
+        duplicates = xray_all.intersection(singbox_all)
+        
+        if duplicates:
+            print(f"\n⚠️  WARNING: Found {len(duplicates)} duplicates between cores!")
+        else:
+            print("\n✅ ZERO duplicates between Xray and Singbox!")
 
         print("\n--- 5. Writing Files ---")
         
