@@ -21,7 +21,7 @@ jobs:
     - name: 1. Checkout
       uses: actions/checkout@v4
       with:
-        # ✅ استفاده از GH_PAT برای مجوز Checkout/Push
+        # ✅ استفاده از GH_PAT برای Commit/Push
         token: ${{ secrets.GH_PAT }} 
 
     - name: 2. Setup Python
@@ -47,7 +47,7 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-    - run: npm install -g wrangler@3 # ✅ استفاده از wrangler v3
+    - run: npm install -g wrangler@3
 
     - name: 6. Deploy All Workers & Update KV
       if: secrets.CLOUDFLARE_API_TOKEN != ''
@@ -56,7 +56,8 @@ jobs:
         
         echo "--- Deploying Cloudflare Workers ---"
         for worker_name in "${worker_names[@]}"; do
-          # ✅ اصلاح دستور deploy: استفاده از فایل پیکربندی جداگانه
+          # ⭐️ اصلاح حیاتی: استفاده از --config و worker.js 
+          # این روش از روش نامعتبر --env بهتر است و خطای Exit Code 1 را رفع می‌کند.
           wrangler deploy worker.js \
             --config "wrangler-${worker_name}.toml" \
             --name "$worker_name" || { 
@@ -81,7 +82,8 @@ jobs:
       env:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
+        # اضافه کردن KV ID به ENV برای دسترسی Wrangler
+        CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }} 
       continue-on-error: true
 
     - name: 7. Commit Configs
@@ -97,7 +99,6 @@ jobs:
           git push origin main
         fi
       env:
-        # ✅ استفاده از GH_PAT برای push
         GITHUB_TOKEN: ${{ secrets.GH_PAT }} 
 
     - name: 8. Deploy Vercel
@@ -123,7 +124,6 @@ jobs:
     - name: 10. Deploy GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
-        # ✅ استفاده از GH_PAT (مطابق درخواست شما)
         github_token: ${{ secrets.GH_PAT }} 
         publish_dir: ./
         exclude_assets: '.github,*.py'
