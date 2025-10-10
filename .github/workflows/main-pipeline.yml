@@ -1,4 +1,4 @@
-name: 'V2V Config Updater'
+name: 'V2V Complete Deploy'
 
 on:
   schedule:
@@ -6,60 +6,58 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
-    paths: 
-      - 'scraper.py'
-      - 'sources.json'
 
 jobs:
-  update_configs:
+  update_and_deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 60
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
-    - name: Install Dependencies
-      run: |
-        pip install requests PyGithub PyYAML
+    - name: Install Python Dependencies
+      run: pip install requests PyGithub PyYAML
 
     - name: Run Scraper
-      run: |
-        timeout 2700 python scraper.py || echo "Scraper completed"
+      run: timeout 2700 python scraper.py || true
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         GITHUB_SEARCH_LIMIT: 150
 
-    - name: Commit and Push
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install Wrangler
+      run: npm install -g wrangler
+
+    - name: Deploy All Workers
+      run: |
+        wrangler deploy --env v2v-proxy
+        wrangler deploy --env v2v
+        wrangler deploy --env winter-hill-0307
+        wrangler deploy --env rapid-scene-1da6
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    - name: Commit Configs
       run: |
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add all_live_configs.json clash_subscription.yml cache_version.txt
         git diff --quiet && git diff --staged --quiet || {
-          git commit -m "Update configs $(date -u '+%Y-%m-%d %H:%M UTC')"
-          git push origin main --force
+          git commit -m "Update: $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push origin main
         }
 
-  deploy_vercel:
-    needs: update_configs
-    runs-on: ubuntu-latest
-    if: success()
-    
-    steps:
-    - name: Checkout Latest
-      uses: actions/checkout@v4
-      with:
-        ref: main
-
-    - name: Deploy to Vercel
+    - name: Deploy Vercel
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -68,80 +66,26 @@ jobs:
         vercel-args: '--prod --force'
       continue-on-error: true
 
-  deploy_arvan:
-    needs: update_configs
-    runs-on: ubuntu-latest
-    if: success()
-    
-    steps:
-    - name: Checkout Latest
-      uses: actions/checkout@v4
-      with:
-        ref: main
-
     - name: Install AWS CLI
       run: |
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip -q awscliv2.zip
-        sudo ./aws/install --update
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
+        unzip -q aws.zip
+        sudo ./aws/install
 
-    - name: Configure AWS
+    - name: Deploy Arvan S3
       run: |
         aws configure set aws_access_key_id ${{ secrets.ARVAN_ACCESS_KEY_ID }}
         aws configure set aws_secret_access_key ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-        aws configure set default.region ir-thr-at1
-
-    - name: Sync to Arvan S3
-      run: |
         aws s3 sync . s3://${{ secrets.ARVAN_BUCKET_NAME }}/ \
           --endpoint-url=https://s3.ir-thr-at1.arvanstorage.ir \
-          --exclude ".git/*" \
-          --exclude ".github/*" \
-          --exclude "*.py" \
-          --exclude "*.zip" \
-          --exclude "awscliv2.zip" \
-          --exclude "aws/*" \
-          --delete \
-          --acl public-read \
-          --cache-control "max-age=0, no-cache, no-store, must-revalidate" \
-          --metadata-directive REPLACE
-      continue-on-error: false
+          --exclude ".git/*" --exclude ".github/*" --exclude "*.py" \
+          --delete --acl public-read
+      continue-on-error: true
 
-    - name: Verify Upload
-      run: |
-        echo "Checking uploaded files..."
-        aws s3 ls s3://${{ secrets.ARVAN_BUCKET_NAME }}/ \
-          --endpoint-url=https://s3.ir-thr-at1.arvanstorage.ir \
-          --recursive | tail -20
-
-  deploy_pages:
-    needs: update_configs
-    runs-on: ubuntu-latest
-    if: success()
-    
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
-    steps:
-    - name: Checkout Latest
-      uses: actions/checkout@v4
+    - name: Deploy GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
       with:
-        ref: main
-
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: Upload
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: '.'
-
-    - name: Deploy
-      id: deployment
-      uses: actions/deploy-pages@v4
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./
+        exclude_assets: '.github,*.py'
+      continue-on-error: true
