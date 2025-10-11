@@ -1,163 +1,113 @@
-# ⭐️ نام Workflow: V2V Full Pipeline
-name: 'V2V: Full Scrape, Build, and Deploy Pipeline'
+name: 'V2V Complete Pipeline'
 
 on:
   schedule:
-    - cron: '0 */3 * * *' # runs every 3 hours
-  workflow_dispatch: # allows manual trigger
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
     paths:
       - 'scraper.py'
       - 'sources.json'
       - 'worker.js'
-      - 'index.html'
-      - '.github/workflows/**'
+      - 'wrangler.toml'
 
-# ⭐️ مجوزهای مورد نیاز برای Commit و Pages
 permissions:
-  contents: write 
-  pages: write    
-  id-token: write 
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  full_pipeline:
+  pipeline:
     runs-on: ubuntu-latest
-    name: 1. Scrape, Commit, and Deploy All Services
     timeout-minutes: 60
     
     steps:
-      - name: 1. Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          # ✅ استفاده از GH_PAT برای مجوز Push در مرحله بعدی (Commit)
-          token: ${{ secrets.GH_PAT }} 
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GH_PAT }}
 
-      - name: 2. Setup Python & Install Dependencies (Including AWS CLI Pre-reqs)
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: |
-          python -m pip install --upgrade pip
-          pip install requests pygithub PyYAML awscli # نصب awscli برای ارون S3
-          
-      - name: 3. Setup Node.js 20 & Install Wrangler (for Cloudflare Steps)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm install -g wrangler@3
-
-      - name: 4. Execute Scraper (with Timeout)
-        timeout-minutes: 27
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-          GITHUB_SEARCH_LIMIT: 150
-        run: |
-          timeout 27m python scraper.py || {
-            exit_code=$?
-            if [ $exit_code -eq 124 ]; then
-              echo "Scraper timed out, creating fallback files."
-              echo '{"xray": {}, "singbox": {}}' > all_live_configs.json
-              echo 'proxies: []' > clash_subscription.yml
-              date +%s > cache_version.txt
-            elif [ $exit_code -ne 0 ]; then
-              exit 1
-            fi
-          }
-
-      # --- Cloudflare Deployment (Workers and KV) ---
-      - name: 5. Deploy All Cloudflare Workers & Update KV
-        if: always() && secrets.CLOUDFLARE_API_TOKEN != ''
-        run: |
-          worker_names=("v2v-proxy" "v2v" "winter-hill-0307" "rapid-scene-1da6")
-          
-          # Worker Deployment (استفاده از روش صحیح با config)
-          for worker_name in "${worker_names[@]}"; do
-            echo "--- Deploying worker: $worker_name ---"
-            wrangler deploy worker.js \
-              --config "wrangler-${worker_name}.toml" \
-              --name "$worker_name" || echo "Deployment of $worker_name failed. Continuing."
-          done
-          
-          # KV Update
-          if [ -n "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
-              if [ -f "all_live_configs.json" ]; then
-                  wrangler kv:key put "all_live_configs.json" \
-                      --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
-                      --path "all_live_configs.json"
-              fi
-              if [ -f "cache_version.txt" ]; then
-                  wrangler kv:key put "cache_version.txt" \
-                      --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
-                      --path "cache_version.txt"
-              fi
-          fi
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
-        continue-on-error: true
-
-      - name: 6. Check, Commit, and Push Changes
-        id: commit_check
-        uses: stefanzweifel/git-auto-commit-action@v5
-        if: always()
-        with:
-          commit_message: "🤖 V2V Auto-Update: Deploying changes"
-          file_pattern: "*.json *.yml *.txt index.html index.js manifest.json logo.png"
-          # ⭐️ استفاده از GH_PAT (مطابق درخواست شما) ⭐️
-          token: ${{ secrets.GH_PAT }} 
-
-      # --- Deployment to Mirrors ---
-      - name: 7. Deploy to Vercel Mirror
-        if: always() && secrets.VERCEL_TOKEN != ''
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod --force'
-        continue-on-error: true
-
-      - name: 8. Deploy to Arvan Cloud S3
-        if: always() && secrets.ARVAN_ACCESS_KEY_ID != ''
-        run: |
-          # دستور نصب AWS CLI دیگر لازم نیست (در مرحله ۲ نصب شد)
-          aws s3 sync . s3://${{ secrets.ARVAN_BUCKET_NAME }}/ \
-            --endpoint-url=https://s3.ir-thr-at1.arvanstorage.ir \
-            --exclude ".git/*" --exclude ".github/*" --exclude "*.py" \
-            --delete --acl public-read
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-        continue-on-error: true
-
-      # --- GitHub Pages Deployment (Official Method for 'main' branch) ---
-      - name: 9. Setup Pages Configuration
-        if: always()
-        uses: actions/configure-pages@v4
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
         
-      - name: 10. Upload Pages Artifact
-        if: always()
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
+    - name: Install Python Deps
+      run: pip install requests PyGithub PyYAML
 
-      - name: 11. Deploy to GitHub Pages
-        if: always()
-        id: deployment
-        uses: actions/deploy-pages@v4
-        
-      - name: 12. Final Status Summary
-        if: always()
-        run: |
-          echo "=========================================="
-          echo "✅ V2V Unified Pipeline Completed"
-          echo "=========================================="
-          echo "GitHub Pages Deploy Status: ${{ steps.deployment.outcome }}"
-          echo "=========================================="
+    - name: Run Scraper
+      timeout-minutes: 45
+      run: timeout 2700 python scraper.py || true
+      env:
+        GH_PAT: ${{ secrets.GH_PAT }}
+        GITHUB_SEARCH_LIMIT: 150
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install Wrangler
+      run: npm install -g wrangler
+
+    - name: Deploy All Workers
+      if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+      run: |
+        echo "🚀 Deploying 4 Workers..."
+        wrangler deploy --env v2v-proxy
+        wrangler deploy --env v2v
+        wrangler deploy --env winter-hill-0307
+        wrangler deploy --env rapid-scene-1da6
+        echo "✅ All workers deployed!"
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      continue-on-error: false
+
+    - name: Commit Changes
+      run: |
+        git config user.name "V2V Bot"
+        git config user.email "bot@v2v.dev"
+        git add all_live_configs.json clash_subscription.yml cache_version.txt || true
+        git diff --quiet && git diff --staged --quiet || {
+          git commit -m "Update: $(date '+%Y-%m-%d %H:%M')"
+          git push origin main
+        }
+      continue-on-error: true
+
+    - name: Deploy Vercel
+      if: ${{ secrets.VERCEL_TOKEN != '' }}
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod --force'
+      continue-on-error: true
+
+    - name: Deploy Arvan S3
+      if: ${{ secrets.ARVAN_ACCESS_KEY_ID != '' }}
+      run: |
+        curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
+        unzip -q aws.zip
+        sudo ./aws/install
+        aws s3 sync . s3://${{ secrets.ARVAN_BUCKET_NAME }}/ \
+          --endpoint-url=https://s3.ir-thr-at1.arvanstorage.ir \
+          --exclude ".git/*" --exclude ".github/*" --exclude "*.py" \
+          --delete --acl public-read
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+      continue-on-error: true
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+
+    - name: Upload Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: '.'
+
+    - name: Deploy Pages
+      uses: actions/deploy-pages@v4
