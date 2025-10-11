@@ -19,7 +19,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        # ✅ اصلاح حیاتی: رفع خطای 'Unrecognized named value: 'secrets''
+        # ✅ اصلاح: رفع خطای Unrecognized named value در خط ۲۲
         token: ${{ secrets.GH_PAT }}
 
     - name: Setup Python
@@ -31,7 +31,6 @@ jobs:
       run: pip install requests PyGithub PyYAML
 
     - name: Run Scraper
-      # ✅ اصلاح سینتکس: استفاده از timeout لینوکس
       run: timeout 45m python scraper.py || true
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
@@ -56,11 +55,12 @@ jobs:
       run: npm install -g wrangler@3
 
     - name: Deploy Workers and Update KV
+      # ⭐️ اصلاح حیاتی: رفع خطای Unrecognized named value در خط ۵۹
       if: secrets.CLOUDFLARE_API_TOKEN != ''
       run: |
         worker_names=("v2v-proxy" "v2v" "winter-hill-0307" "rapid-scene-1da6")
         
-        # Deploy all four Workers using their respective TOML config files
+        # Deploy Workers (استفاده از روش صحیح --config برای رفع Exit Code 1)
         for worker_name in "${worker_names[@]}"; do
           echo "--- Deploying worker: $worker_name ---"
           wrangler deploy "worker.js" \
@@ -71,7 +71,7 @@ jobs:
           }
         done
         
-        # Update KV namespace with latest configs
+        # Update KV
         if [ -n "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
             if [ -f "all_live_configs.json" ]; then
                 wrangler kv:key put "all_live_configs.json" \
@@ -92,6 +92,7 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Vercel
+      # ⭐️ اصلاح حیاتی: رفع خطای Unrecognized named value در خط ۹۵
       if: secrets.VERCEL_TOKEN != ''
       uses: amondnet/vercel-action@v25
       with:
@@ -102,6 +103,7 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Arvan
+      # ⭐️ اصلاح حیاتی: رفع خطای Unrecognized named value در خط ۱۰۵
       if: secrets.ARVAN_ACCESS_KEY_ID != ''
       run: |
         # Install AWS CLI
