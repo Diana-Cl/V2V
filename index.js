@@ -13,8 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeWorkers = [];
     let workerAvailable = false;
     
-    const PING_BATCH_SIZE = 30;
-    const PING_ATTEMPTS = 3;
+    const PING_BATCH_SIZE = 20;  // کاهش یافت برای دقت بیشتر
+    const PING_ATTEMPTS = 5;     // افزایش تعداد تلاش
+    const PING_TIMEOUT = 4000;   // 4 ثانیه timeout
+    const PING_RETRY_DELAY = 100; // 100ms بین تلاش‌ها
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
@@ -34,11 +36,14 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('🔍 Testing all workers in parallel...');
         activeWorkers = [];
         
-        const testPromises = WORKER_URLS.map(async (url) => {
+        const startTime = Date.now();
+        
+        const testPromises = WORKER_URLS.map(async (url, index) => {
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 3000);
                 
+                const testStart = Date.now();
                 const response = await fetch(`${url}/ping`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -47,22 +52,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 clearTimeout(timeoutId);
+                const latency = Date.now() - testStart;
                 
                 if (response.ok) {
-                    console.log('✅ Worker active:', url);
-                    return url;
+                    console.log(`✅ Worker ${index + 1} active (${latency}ms)`);
+                    return { url, latency, index: index + 1 };
                 }
             } catch (e) {
-                console.log('❌ Worker failed:', url);
+                console.log(`❌ Worker ${index + 1} failed`);
             }
             return null;
         });
         
         const results = await Promise.all(testPromises);
-        activeWorkers = results.filter(url => url !== null);
+        const validWorkers = results.filter(w => w !== null);
+        
+        // مرتب‌سازی بر اساس سرعت
+        validWorkers.sort((a, b) => a.latency - b.latency);
+        activeWorkers = validWorkers.map(w => w.url);
+        
         workerAvailable = activeWorkers.length > 0;
         
-        console.log(`📊 Active workers: ${activeWorkers.length}/${WORKER_URLS.length}`);
+        const totalTime = Date.now() - startTime;
+        console.log(`📊 Active workers: ${activeWorkers.length}/${WORKER_URLS.length} (tested in ${totalTime}ms)`);
+        
+        if (validWorkers.length > 0) {
+            console.log('🏆 Workers sorted by speed:', validWorkers.map(w => `Worker ${w.index} (${w.latency}ms)`).join(', '));
+        }
+        
         return workerAvailable;
     }
 
@@ -164,15 +181,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        showToast(`در حال ساخت با ${activeWorkers.length} Worker...`, false);
+        console.log(`🚀 Creating subscription with ${activeWorkers.length} workers in parallel...`);
         
-        // استراتژی: تمام Workers موازی URL/UUID می‌سازن، اولین موفق برنده است
+        // تلاش موازی با تمام Workers - اولین موفق برنده می‌شه
         const createPromises = activeWorkers.map(async (workerUrl, index) => {
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
                 
-                const startTime = Date.now();
+                console.log(`⏳ Worker ${index + 1} trying...`);
                 
                 const response = await fetch(`${workerUrl}/create-sub`, {
                     method: 'POST',
@@ -183,72 +200,72 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 clearTimeout(timeoutId);
                 
-                const elapsed = Date.now() - startTime;
-                
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(`✅ Worker ${index + 1} succeeded in ${elapsed}ms:`, workerUrl);
-                    return { 
-                        success: true, 
-                        workerUrl, 
-                        id: data.id, 
-                        elapsed,
-                        workerIndex: index + 1
-                    };
+                    console.log(`✅ Worker ${index + 1} SUCCESS! ID: ${data.id}`);
+                    return { success: true, workerUrl, id: data.id, workerIndex: index + 1 };
                 } else {
-                    console.log(`❌ Worker ${index + 1} HTTP error:`, response.status);
+                    console.log(`❌ Worker ${index + 1} failed with status ${response.status}`);
                 }
             } catch (error) {
-                console.log(`❌ Worker ${index + 1} failed:`, error.message);
+                console.log(`❌ Worker ${index + 1} error:`, error.message);
             }
             return { success: false, workerUrl, workerIndex: index + 1 };
         });
         
         try {
-            // Race: اولین Worker که موفق شد برنده است
+            // استفاده از Promise.race برای اولین نتیجه موفق
             const firstSuccess = await Promise.race(
-                createPromises.map(async (promise) => {
-                    const result = await promise;
-                    if (result.success) return result;
-                    throw new Error('Worker failed');
-                })
-            );
+                createPromises.map(p => 
+                    p.then(result => result.success ? result : Promise.reject(result))
+                )
+            ).catch(() => null);
             
-            // حالا منتظر می‌مونیم تا ببینیم چند Worker موفق شدن
-            const allResults = await Promise.allSettled(createPromises);
-            const successCount = allResults.filter(r => r.status === 'fulfilled' && r.value.success).length;
-            
-            const subUrl = `${firstSuccess.workerUrl}/sub/${format}/${firstSuccess.id}`;
-            
-            console.log(`📊 Success: ${successCount}/${activeWorkers.length} workers in ${firstSuccess.elapsed}ms`);
-            
-            if (action === 'copy') {
-                await window.copyToClipboard(subUrl, `لینک کپی شد! (${successCount}/${activeWorkers.length} Worker موفق)`);
-            } else if (action === 'qr') {
-                window.openQrModal(subUrl);
-                showToast(`QR ساخته شد (Worker ${firstSuccess.workerIndex})`, false);
+            if (firstSuccess) {
+                const subUrl = `${firstSuccess.workerUrl}/sub/${format}/${firstSuccess.id}`;
+                
+                if (action === 'copy') {
+                    await window.copyToClipboard(subUrl, `لینک کپی شد! (Worker ${firstSuccess.workerIndex})`);
+                } else if (action === 'qr') {
+                    window.openQrModal(subUrl);
+                    showToast(`QR ساخته شد (Worker ${firstSuccess.workerIndex})`);
+                }
+                
+                console.log(`🎯 Final URL: ${subUrl}`);
+                return;
             }
             
-            return;
+            // اگر Promise.race موفق نشد، منتظر تمام Workers می‌مونیم
+            console.log('⚠️ No quick success, waiting for all workers...');
+            const allResults = await Promise.all(createPromises);
+            const successResult = allResults.find(r => r.success);
             
-        } catch (error) {
-            console.error('All workers failed:', error);
-            
-            // بررسی دقیق‌تر خطا
-            const allResults = await Promise.allSettled(createPromises);
-            const failedWorkers = allResults.filter(r => r.status === 'rejected' || !r.value.success);
-            
-            console.log(`❌ Failed: ${failedWorkers.length}/${activeWorkers.length} workers`);
-            
-            showToast(`خطا در ${failedWorkers.length} Worker! در حال تست مجدد...`, true);
-            
-            // ری‌تست Workers در پس‌زمینه
-            setTimeout(async () => {
-                await detectActiveWorkers();
-                if (workerAvailable) {
-                    showToast(`${activeWorkers.length} Worker آماده است`, false);
+            if (successResult) {
+                const subUrl = `${successResult.workerUrl}/sub/${format}/${successResult.id}`;
+                
+                if (action === 'copy') {
+                    await window.copyToClipboard(subUrl, `لینک کپی شد! (Worker ${successResult.workerIndex})`);
+                } else if (action === 'qr') {
+                    window.openQrModal(subUrl);
+                    showToast(`QR ساخته شد (Worker ${successResult.workerIndex})`);
                 }
-            }, 2000);
+                
+                console.log(`🎯 Final URL: ${subUrl}`);
+                return;
+            }
+            
+            throw new Error('All workers failed');
+        } catch (error) {
+            console.error('❌ All workers failed:', error);
+            showToast(`خطا در ساخت لینک! (${activeWorkers.length} Worker تست شد)`, true);
+            
+            // ری‌تست Workers در صورت خطا
+            console.log('🔄 Re-testing workers...');
+            await detectActiveWorkers();
+            
+            if (activeWorkers.length > 0) {
+                showToast(`${activeWorkers.length} Worker فعال یافت شد. دوباره تلاش کنید`, false);
+            }
         }
     };
 
