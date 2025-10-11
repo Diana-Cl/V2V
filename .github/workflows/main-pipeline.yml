@@ -19,8 +19,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        # ⭐️ اصلاح حیاتی برای رفع خطای 'Unrecognized named value: 'secrets''
-        # در بخش 'with' نباید از ${{ }} استفاده شود.
+        # ✅ اصلاح حیاتی: رفع خطای 'Unrecognized named value: 'secrets''
         token: ${{ secrets.GH_PAT }}
 
     - name: Setup Python
@@ -32,8 +31,7 @@ jobs:
       run: pip install requests PyGithub PyYAML
 
     - name: Run Scraper
-      # ⭐️ اصلاح سینتکس: 'timeout-minutes' باید زیر 'name' یا 'run' قرار گیرد.
-      # برای جلوگیری از تداخل با سینتکس YAML، آن را درون run قرار می‌دهیم.
+      # ✅ اصلاح سینتکس: استفاده از timeout لینوکس
       run: timeout 45m python scraper.py || true
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
@@ -43,7 +41,8 @@ jobs:
       run: |
         git config user.name "V2V Bot"
         git config user.email "bot@v2v.dev"
-        git add *.json *.yml *.txt || true
+        # Include all relevant files for commit
+        git add *.json *.yml *.txt *.js *.toml || true
         git diff --quiet || git commit -m "Update $(date '+%Y-%m-%d')" || true
         git push || true
       continue-on-error: true
@@ -54,31 +53,45 @@ jobs:
         node-version: '20'
 
     - name: Install Wrangler
-      run: npm install -g wrangler
+      run: npm install -g wrangler@3
 
-    - name: Deploy Workers
-      # ⭐️ اصلاح حیاتی: استفاده از ساختار صحیح deploy برای رفع خطای "Exit Code 1"
-      # (بر اساس روشی که در deploy-cloudflare-worker.yml خودتان استفاده کردید)
+    - name: Deploy Workers and Update KV
       if: secrets.CLOUDFLARE_API_TOKEN != ''
       run: |
         worker_names=("v2v-proxy" "v2v" "winter-hill-0307" "rapid-scene-1da6")
+        
+        # Deploy all four Workers using their respective TOML config files
         for worker_name in "${worker_names[@]}"; do
           echo "--- Deploying worker: $worker_name ---"
           wrangler deploy "worker.js" \
             --config "wrangler-${worker_name}.toml" \
             --name "$worker_name" \
-            --compatibility-date "2024-03-20" \
-            --compatibility-flag "nodejs_compat" || { 
+            --compatibility-date "2024-03-20" || { 
             echo "Deployment of $worker_name failed. Continuing." 
           }
         done
+        
+        # Update KV namespace with latest configs
+        if [ -n "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
+            if [ -f "all_live_configs.json" ]; then
+                wrangler kv:key put "all_live_configs.json" \
+                    --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
+                    --path "all_live_configs.json" || echo "KV upload failed for configs."
+            fi
+            if [ -f "cache_version.txt" ]; then
+                wrangler kv:key put "cache_version.txt" \
+                    --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
+                    --path "cache_version.txt" || echo "KV upload failed for cache version."
+            fi
+        fi
+
       env:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
       continue-on-error: true
 
     - name: Deploy Vercel
-      # ⭐️ اصلاح سینتکس: استفاده از if: secrets.VERCEL_TOKEN
       if: secrets.VERCEL_TOKEN != ''
       uses: amondnet/vercel-action@v25
       with:
@@ -89,11 +102,12 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Arvan
-      # ⭐️ اصلاح سینتکس: استفاده از if: secrets.ARVAN_ACCESS_KEY_ID
       if: secrets.ARVAN_ACCESS_KEY_ID != ''
       run: |
+        # Install AWS CLI
         curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
         unzip -q aws.zip && sudo ./aws/install
+        # Sync to S3
         aws s3 sync . s3://${{ secrets.ARVAN_BUCKET_NAME }}/ \
           --endpoint-url=https://s3.ir-thr-at1.arvanstorage.ir \
           --exclude ".git/*" --exclude "*.py" --delete --acl public-read
