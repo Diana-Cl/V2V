@@ -1,39 +1,31 @@
-# Worker 1
-[[env.v2v-proxy]]
-name = "v2v-proxy"
+name = "v2v-workers"
 main = "worker.js"
 compatibility_date = "2024-03-20"
 
+# Worker 1: v2v-proxy
+[env.v2v-proxy]
+name = "v2v-proxy"
 [[env.v2v-proxy.kv_namespaces]]
 binding = "v2v_kv"
 id = "a71ebd79ab2e4c3883e1383e16141537"
 
-# Worker 2
-[[env.v2v]]
+# Worker 2: v2v
+[env.v2v]
 name = "v2v"
-main = "worker.js"
-compatibility_date = "2024-03-20"
-
 [[env.v2v.kv_namespaces]]
 binding = "v2v_kv"
 id = "a71ebd79ab2e4c3883e1383e16141537"
 
-# Worker 3
-[[env.winter-hill-0307]]
+# Worker 3: winter-hill-0307
+[env.winter-hill-0307]
 name = "winter-hill-0307"
-main = "worker.js"
-compatibility_date = "2024-03-20"
-
 [[env.winter-hill-0307.kv_namespaces]]
 binding = "v2v_kv"
 id = "a71ebd79ab2e4c3883e1383e16141537"
 
-# Worker 4
-[[env.rapid-scene-1da6]]
+# Worker 4: rapid-scene-1da6
+[env.rapid-scene-1da6]
 name = "rapid-scene-1da6"
-main = "worker.js"
-compatibility_date = "2024-03-20"
-
 [[env.rapid-scene-1da6.kv_namespaces]]
 binding = "v2v_kv"
-id = "a71ebd79ab2e4c3883e16141537"
+id = "a71ebd79ab2e4c3883e1383e16141537"
