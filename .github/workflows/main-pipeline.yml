@@ -14,6 +14,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
+    # قرار دادن سکرت در env سطح job تا بتوانیم در if از env استفاده کنیم
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      # در صورت تمایل می‌توانید بقیهٔ سکرت‌ها را هم اینجا تعریف کنید
+      # CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # ARVAN_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
     
     steps:
     - name: Checkout
@@ -39,6 +46,7 @@ jobs:
       run: |
         git config user.name "V2V Bot"
         git config user.email "bot@v2v.dev"
+        # Include all relevant files for commit
         git add *.json *.yml *.txt *.js *.toml || true
         git diff --quiet || git commit -m "Update $(date '+%Y-%m-%d')" || true
         git push || true
@@ -75,57 +83,4 @@ jobs:
             if [ -f "all_live_configs.json" ]; then
                 wrangler kv:key put "all_live_configs.json" \
                     --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
-                    --path "all_live_configs.json" || echo "KV upload failed for configs."
-            fi
-            if [ -f "cache_version.txt" ]; then
-                wrangler kv:key put "cache_version.txt" \
-                    --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
-                    --path "cache_version.txt" || echo "KV upload failed for cache version."
-            fi
-        fi
-
-      env:
-        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
-      continue-on-error: true
-
-    - name: Deploy Vercel
-      # ✅ شرط اصلاح‌شده برای جلوگیری از خطای parsing
-      if: ${{ secrets.VERCEL_TOKEN != '' }}
-      uses: amondnet/vercel-action@v25
-      with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        vercel-args: '--prod'
-      continue-on-error: true
-
-    - name: Deploy Arvan
-      run: |
-        if [ -z "${{ secrets.ARVAN_ACCESS_KEY_ID }}" ]; then
-          echo "Skipping Arvan deployment: ARVAN_ACCESS_KEY_ID is missing."
-          exit 0
-        fi
-        
-        curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
-        unzip -q aws.zip && sudo ./aws/install
-        aws s3 sync . s3://${{ secrets.ARVAN_BUCKET_NAME }}/ \
-          --endpoint-url=https://s3.ir-thr-at1.arvanstorage.ir \
-          --exclude ".git/*" --exclude "*.py" --delete --acl public-read
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-      continue-on-error: true
-
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: Upload Pages
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: '.'
-
-    - name: Deploy Pages
-      uses: actions/deploy-pages@v4
-      continue-on-error: true
+                    --path "all_live_configs.json
