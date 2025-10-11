@@ -39,7 +39,6 @@ jobs:
       run: |
         git config user.name "V2V Bot"
         git config user.email "bot@v2v.dev"
-        # Include all relevant files for commit
         git add *.json *.yml *.txt *.js *.toml || true
         git diff --quiet || git commit -m "Update $(date '+%Y-%m-%d')" || true
         git push || true
@@ -54,9 +53,7 @@ jobs:
       run: npm install -g wrangler@3
 
     - name: Deploy Workers and Update KV
-      # ⭐️ حذف خط if: برای رفع خطای L59 (با توجه به خطای قبلی)
       run: |
-        # بررسی وجود سکرت قبل از اجرای دستورات
         if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
           echo "Skipping Cloudflare deployment: CLOUDFLARE_API_TOKEN is missing."
           exit 0
@@ -64,7 +61,6 @@ jobs:
         
         worker_names=("v2v-proxy" "v2v" "winter-hill-0307" "rapid-scene-1da6")
         
-        # Deploy Workers (استفاده از روش صحیح --config برای رفع Exit Code 1)
         for worker_name in "${worker_names[@]}"; do
           echo "--- Deploying worker: $worker_name ---"
           wrangler deploy "worker.js" \
@@ -75,7 +71,6 @@ jobs:
           }
         done
         
-        # Update KV
         if [ -n "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
             if [ -f "all_live_configs.json" ]; then
                 wrangler kv:key put "all_live_configs.json" \
@@ -96,8 +91,8 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Vercel
-      # ⭐️ رفع خطای L100: تصحیح شرط if برای شناسایی secrets
-      if: ${{ secrets.VERCEL_TOKEN }}
+      # ✅ شرط اصلاح‌شده برای جلوگیری از خطای parsing
+      if: ${{ secrets.VERCEL_TOKEN != '' }}
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -107,17 +102,14 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Arvan
-      # ⭐️ حذف خط if: و انتقال چک سکرت به داخل run (برای رفع خطای L111)
       run: |
         if [ -z "${{ secrets.ARVAN_ACCESS_KEY_ID }}" ]; then
           echo "Skipping Arvan deployment: ARVAN_ACCESS_KEY_ID is missing."
           exit 0
         fi
         
-        # Install AWS CLI
         curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
         unzip -q aws.zip && sudo ./aws/install
-        # Sync to S3
         aws s3 sync . s3://${{ secrets.ARVAN_BUCKET_NAME }}/ \
           --endpoint-url=https://s3.ir-thr-at1.arvanstorage.ir \
           --exclude ".git/*" --exclude "*.py" --delete --acl public-read
