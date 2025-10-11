@@ -96,8 +96,8 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Vercel
-      # ⭐️ رفع خطای L100: استفاده از ساده‌ترین if ممکن برای اکشن 'uses:'
-      if: secrets.VERCEL_TOKEN
+      # ⭐️ رفع خطای L100: تصحیح شرط if برای شناسایی secrets
+      if: ${{ secrets.VERCEL_TOKEN }}
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
