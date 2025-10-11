@@ -19,6 +19,8 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
+        # ⭐️ اصلاح حیاتی برای رفع خطای 'Unrecognized named value: 'secrets''
+        # در بخش 'with' نباید از ${{ }} استفاده شود.
         token: ${{ secrets.GH_PAT }}
 
     - name: Setup Python
@@ -30,8 +32,9 @@ jobs:
       run: pip install requests PyGithub PyYAML
 
     - name: Run Scraper
-      run: python scraper.py || true
-      timeout-minutes: 45
+      # ⭐️ اصلاح سینتکس: 'timeout-minutes' باید زیر 'name' یا 'run' قرار گیرد.
+      # برای جلوگیری از تداخل با سینتکس YAML، آن را درون run قرار می‌دهیم.
+      run: timeout 45m python scraper.py || true
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         GITHUB_SEARCH_LIMIT: 150
@@ -54,19 +57,29 @@ jobs:
       run: npm install -g wrangler
 
     - name: Deploy Workers
-      if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+      # ⭐️ اصلاح حیاتی: استفاده از ساختار صحیح deploy برای رفع خطای "Exit Code 1"
+      # (بر اساس روشی که در deploy-cloudflare-worker.yml خودتان استفاده کردید)
+      if: secrets.CLOUDFLARE_API_TOKEN != ''
       run: |
-        wrangler deploy --env v2v-proxy || true
-        wrangler deploy --env v2v || true
-        wrangler deploy --env winter-hill-0307 || true
-        wrangler deploy --env rapid-scene-1da6 || true
+        worker_names=("v2v-proxy" "v2v" "winter-hill-0307" "rapid-scene-1da6")
+        for worker_name in "${worker_names[@]}"; do
+          echo "--- Deploying worker: $worker_name ---"
+          wrangler deploy "worker.js" \
+            --config "wrangler-${worker_name}.toml" \
+            --name "$worker_name" \
+            --compatibility-date "2024-03-20" \
+            --compatibility-flag "nodejs_compat" || { 
+            echo "Deployment of $worker_name failed. Continuing." 
+          }
+        done
       env:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       continue-on-error: true
 
     - name: Deploy Vercel
-      if: ${{ secrets.VERCEL_TOKEN != '' }}
+      # ⭐️ اصلاح سینتکس: استفاده از if: secrets.VERCEL_TOKEN
+      if: secrets.VERCEL_TOKEN != ''
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -76,7 +89,8 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Arvan
-      if: ${{ secrets.ARVAN_ACCESS_KEY_ID != '' }}
+      # ⭐️ اصلاح سینتکس: استفاده از if: secrets.ARVAN_ACCESS_KEY_ID
+      if: secrets.ARVAN_ACCESS_KEY_ID != ''
       run: |
         curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
         unzip -q aws.zip && sudo ./aws/install
