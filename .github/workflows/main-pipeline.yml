@@ -54,7 +54,7 @@ jobs:
       run: npm install -g wrangler@3
 
     - name: Deploy Workers and Update KV
-      # ⭐️ حذف خط if: secrets.CLOUDFLARE_API_TOKEN != '' (برای رفع خطای L59)
+      # ⭐️ حذف خط if: برای رفع خطای L59 (با توجه به خطای قبلی)
       run: |
         # بررسی وجود سکرت قبل از اجرای دستورات
         if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
@@ -96,8 +96,8 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Vercel
-      # ⭐️ حذف خط if: ${{ secrets.VERCEL_TOKEN != '' }} (برای رفع خطای L96)
-      if: ${{ secrets.VERCEL_TOKEN != '' }} # ❌ خطای شما در اینجا رخ می دهد
+      # ⭐️ رفع خطای L100: استفاده از ساده‌ترین if ممکن برای اکشن 'uses:'
+      if: secrets.VERCEL_TOKEN
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -107,9 +107,13 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Arvan
-      # ⭐️ حذف خط if: ${{ secrets.ARVAN_ACCESS_KEY_ID != '' }} (برای رفع خطای L107)
-      if: ${{ secrets.ARVAN_ACCESS_KEY_ID != '' }} # ❌ خطای شما در اینجا رخ می دهد
+      # ⭐️ حذف خط if: و انتقال چک سکرت به داخل run (برای رفع خطای L111)
       run: |
+        if [ -z "${{ secrets.ARVAN_ACCESS_KEY_ID }}" ]; then
+          echo "Skipping Arvan deployment: ARVAN_ACCESS_KEY_ID is missing."
+          exit 0
+        fi
+        
         # Install AWS CLI
         curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
         unzip -q aws.zip && sudo ./aws/install
