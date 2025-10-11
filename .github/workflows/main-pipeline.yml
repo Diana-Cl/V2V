@@ -19,7 +19,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        # ✅ اصلاح: رفع خطای Unrecognized named value در خط ۲۲
+        # ✅ این خط قبلا در with: token: ${{ secrets.GH_PAT }} اصلاح شده بود.
         token: ${{ secrets.GH_PAT }}
 
     - name: Setup Python
@@ -55,8 +55,8 @@ jobs:
       run: npm install -g wrangler@3
 
     - name: Deploy Workers and Update KV
-      # ⭐️ اصلاح حیاتی: رفع خطای Unrecognized named value در خط ۵۹
-      if: secrets.CLOUDFLARE_API_TOKEN != ''
+      # ⭐️ اصلاح نهایی: خط ۵۹ - کل عبارت شرطی در ${{ }} قرار گرفت.
+      if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
       run: |
         worker_names=("v2v-proxy" "v2v" "winter-hill-0307" "rapid-scene-1da6")
         
@@ -92,8 +92,8 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Vercel
-      # ⭐️ اصلاح حیاتی: رفع خطای Unrecognized named value در خط ۹۵
-      if: secrets.VERCEL_TOKEN != ''
+      # ⭐️ اصلاح نهایی: خط ۹۶ (۹۵ در تصویر شما) - کل عبارت شرطی در ${{ }} قرار گرفت.
+      if: ${{ secrets.VERCEL_TOKEN != '' }}
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -103,8 +103,8 @@ jobs:
       continue-on-error: true
 
     - name: Deploy Arvan
-      # ⭐️ اصلاح حیاتی: رفع خطای Unrecognized named value در خط ۱۰۵
-      if: secrets.ARVAN_ACCESS_KEY_ID != ''
+      # ⭐️ اصلاح نهایی: خط ۱۰۷ (۱۰۵ در تصویر شما) - کل عبارت شرطی در ${{ }} قرار گرفت.
+      if: ${{ secrets.ARVAN_ACCESS_KEY_ID != '' }}
       run: |
         # Install AWS CLI
         curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
