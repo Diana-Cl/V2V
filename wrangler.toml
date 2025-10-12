@@ -2,26 +2,28 @@ name = "v2v-workers"
 main = "worker.js"
 compatibility_date = "2024-03-20"
 
+# KV Namespace ID: a71ebd79ab2e4c3883e1303e16141537
+
 [env.v2v-proxy]
 name = "v2v-proxy"
 [[env.v2v-proxy.kv_namespaces]]
 binding = "v2v_kv"
-id = "a71ebd79ab2e4c3883e1383e16141537"
+id = "a71ebd79ab2e4c3883e1303e16141537"
 
 [env.v2v]
 name = "v2v"
 [[env.v2v.kv_namespaces]]
 binding = "v2v_kv"
-id = "a71ebd79ab2e4c3883e1383e16141537"
+id = "a71ebd79ab2e4c3883e1303e16141537"
 
 [env.winter-hill-0307]
 name = "winter-hill-0307"
 [[env.winter-hill-0307.kv_namespaces]]
 binding = "v2v_kv"
-id = "a71ebd79ab2e4c3883e1383e16141537"
+id = "a71ebd79ab2e4c3883e1303e16141537"
 
 [env.rapid-scene-1da6]
 name = "rapid-scene-1da6"
 [[env.rapid-scene-1da6.kv_namespaces]]
 binding = "v2v_kv"
-id = "a71ebd79ab2e4c3883e1383e16141537"
+id = "a71ebd79ab2e4c3883e1303e16141537"
