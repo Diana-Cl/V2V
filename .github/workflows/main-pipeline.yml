@@ -1,4 +1,4 @@
-name: 'V2V Pipeline'
+name: 'V2V Deploy'
 
 on:
   workflow_dispatch:
@@ -14,41 +14,32 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-
-    # قرار دادن سکرت در env سطح job تا بتوانیم در if از env استفاده کنیم
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      # در صورت تمایل می‌توانید بقیهٔ سکرت‌ها را هم اینجا تعریف کنید
-      # CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      # ARVAN_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GH_PAT }}
 
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
-    - name: Install Python Deps
+    - name: Install Python
       run: pip install requests PyGithub PyYAML
 
     - name: Run Scraper
-      run: timeout 45m python scraper.py || true
+      run: python scraper.py || echo "Scraper done"
+      timeout-minutes: 40
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         GITHUB_SEARCH_LIMIT: 150
 
-    - name: Commit Changes
+    - name: Commit
       run: |
-        git config user.name "V2V Bot"
+        git config user.name "Bot"
         git config user.email "bot@v2v.dev"
-        # Include all relevant files for commit
-        git add *.json *.yml *.txt *.js *.toml || true
-        git diff --quiet || git commit -m "Update $(date '+%Y-%m-%d')" || true
+        git add . || true
+        git commit -m "Update" || true
         git push || true
       continue-on-error: true
 
@@ -58,29 +49,16 @@ jobs:
         node-version: '20'
 
     - name: Install Wrangler
-      run: npm install -g wrangler@3
+      run: npm install -g wrangler@latest
 
-    - name: Deploy Workers and Update KV
+    - name: Deploy Workers
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       run: |
-        if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
-          echo "Skipping Cloudflare deployment: CLOUDFLARE_API_TOKEN is missing."
-          exit 0
-        fi
-        
-        worker_names=("v2v-proxy" "v2v" "winter-hill-0307" "rapid-scene-1da6")
-        
-        for worker_name in "${worker_names[@]}"; do
-          echo "--- Deploying worker: $worker_name ---"
-          wrangler deploy "worker.js" \
-            --config "wrangler-${worker_name}.toml" \
-            --name "$worker_name" \
-            --compatibility-date "2024-03-20" || { 
-            echo "Deployment of $worker_name failed. Continuing." 
-          }
-        done
-        
-        if [ -n "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" ]; then
-            if [ -f "all_live_configs.json" ]; then
-                wrangler kv:key put "all_live_configs.json" \
-                    --namespace-id "${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}" \
-                    --path "all_live_configs.json
+        echo "Deploying workers..."
+        wrangler deploy --env v2v-proxy || echo "v2v-proxy failed"
+        wrangler deploy --env v2v || echo "v2v failed"
+        wrangler deploy --env winter-hill-0307 || echo "winter-hill failed"
+        wrangler deploy --env rapid-scene-1da6 || echo "rapid-scene failed"
+      continue-on-error: true
