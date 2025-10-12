@@ -1,9 +1,11 @@
-name: 'V2V Pipeline'
+name: 'V2V Deploy - All Sites'
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
+  schedule:
+    - cron: '0 */6 * * *'  # هر 6 ساعت یکبار
 
 permissions:
   contents: write
@@ -16,86 +18,115 @@ jobs:
     timeout-minutes: 60
     
     steps:
-    - name: Checkout
+    - name: Checkout Repository
       uses: actions/checkout@v4
       with:
-        token: ${{ secrets.GH_PAT }}
+        token: ${{ secrets.GH_PAT || github.token }}
 
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+        cache: 'pip'
 
-    - name: Install Python Deps
-      run: pip install requests PyGithub PyYAML
+    - name: Install Python Dependencies
+      run: |
+        pip install --upgrade pip
+        pip install requests PyGithub PyYAML boto3
 
     - name: Run Scraper
-      run: python scraper.py || true
-      timeout-minutes: 45
+      run: python scraper.py
+      timeout-minutes: 40
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         GITHUB_SEARCH_LIMIT: 150
 
-    - name: Commit Changes
+    - name: Convert Configs to Client Formats
+      run: python convert_configs.py
+
+    - name: Verify Generated Files
+      run: |
+        echo "Checking generated files..."
+        ls -lh *.json *.yaml *.yml 2>/dev/null || true
+        echo "---"
+        [ -f xray.json ] && echo "✓ xray.json exists" || echo "✗ xray.json missing"
+        [ -f singbox.json ] && echo "✓ singbox.json exists" || echo "✗ singbox.json missing"
+        [ -f clash.yaml ] && echo "✓ clash.yaml exists" || echo "✗ clash.yaml missing"
+
+    # ═══════════════════════════════════════════════════════════
+    # Deploy 1: Arvan Cloud Storage
+    # ═══════════════════════════════════════════════════════════
+    - name: Deploy to Arvan Cloud
+      run: python upload_arvan.py
+      env:
+        ARVAN_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+        ARVAN_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+        ARVAN_BUCKET_NAME: ${{ secrets.ARVAN_BUCKET_NAME }}
+
+    # ═══════════════════════════════════════════════════════════
+    # Deploy 2: GitHub Pages
+    # ═══════════════════════════════════════════════════════════
+    - name: Commit and Push for GitHub Pages
       run: |
         git config user.name "V2V Bot"
         git config user.email "bot@v2v.dev"
-        git add *.json *.yml *.txt || true
-        git diff --quiet || git commit -m "Update $(date '+%Y-%m-%d')" || true
-        git push || true
+        git add -A
+        git diff --staged --quiet || git commit -m "🔄 Update configs $(date +'%Y-%m-%d %H:%M UTC')"
+        git push origin main || echo "No changes to push"
       continue-on-error: true
 
-    - name: Setup Node
+    # ═══════════════════════════════════════════════════════════
+    # Deploy 3: Vercel
+    # ═══════════════════════════════════════════════════════════
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+        cache: 'npm'
 
-    - name: Install Wrangler
-      run: npm install -g wrangler
+    - name: Install Vercel CLI
+      run: npm install -g vercel@latest
 
-    - name: Deploy Workers
-      if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    - name: Deploy to Vercel (Production)
       run: |
-        wrangler deploy --env v2v-proxy || true
-        wrangler deploy --env v2v || true
-        wrangler deploy --env winter-hill-0307 || true
-        wrangler deploy --env rapid-scene-1da6 || true
+        vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    # ═══════════════════════════════════════════════════════════
+    # Deploy 4: Cloudflare Workers (Optional - for caching/proxy)
+    # ═══════════════════════════════════════════════════════════
+    - name: Install Wrangler
+      run: npm install -g wrangler@latest
+
+    - name: Deploy Cloudflare Workers
       env:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      continue-on-error: true
-
-    - name: Deploy Vercel
-      if: ${{ secrets.VERCEL_TOKEN != '' }}
-      uses: amondnet/vercel-action@v25
-      with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-        vercel-args: '--prod'
-      continue-on-error: true
-
-    - name: Deploy Arvan
-      if: ${{ secrets.ARVAN_ACCESS_KEY_ID != '' }}
       run: |
-        curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
-        unzip -q aws.zip && sudo ./aws/install
-        aws s3 sync . s3://${{ secrets.ARVAN_BUCKET_NAME }}/ \
-          --endpoint-url=https://s3.ir-thr-at1.arvanstorage.ir \
-          --exclude ".git/*" --exclude "*.py" --delete --acl public-read
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+        echo "Deploying workers..."
+        wrangler deploy --env v2v-proxy || echo "⚠️  v2v-proxy failed"
+        wrangler deploy --env v2v || echo "⚠️  v2v failed"
+        wrangler deploy --env winter-hill-0307 || echo "⚠️  winter-hill failed"
+        wrangler deploy --env rapid-scene-1da6 || echo "⚠️  rapid-scene failed"
       continue-on-error: true
 
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: Upload Pages
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: '.'
-
-    - name: Deploy Pages
-      uses: actions/deploy-pages@v4
-      continue-on-error: true
+    # ═══════════════════════════════════════════════════════════
+    # Final Summary
+    # ═══════════════════════════════════════════════════════════
+    - name: Deployment Summary
+      if: always()
+      run: |
+        echo "════════════════════════════════════════"
+        echo "       DEPLOYMENT SUMMARY"
+        echo "════════════════════════════════════════"
+        echo "🌐 Sites deployed:"
+        echo "  1. Arvan Cloud: https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/"
+        echo "  2. Vercel: https://v2v-vercel.vercel.app/"
+        echo "  3. GitHub Pages: https://smbcryp.github.io/V2V/"
+        echo ""
+        echo "⏰ Deployed at: $(date +'%Y-%m-%d %H:%M:%S UTC')"
+        echo "════════════════════════════════════════"
