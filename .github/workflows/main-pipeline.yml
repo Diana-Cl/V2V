@@ -1,11 +1,11 @@
-name: 'V2V Deploy - All Sites'
+name: 'V2V Complete Deploy'
 
 on:
+  schedule:
+    - cron: '0 */3 * * *'
   workflow_dispatch:
   push:
-    branches: [main]
-  schedule:
-    - cron: '0 */6 * * *'  # هر 6 ساعت یکبار
+    branches: [ main ]
 
 permissions:
   contents: write
@@ -13,12 +13,15 @@ permissions:
   id-token: write
 
 jobs:
-  deploy:
+  update_and_deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     
     steps:
-    - name: Checkout Repository
+    # ═══════════════════════════════════════════════════════════
+    # 1. Setup & Scrape
+    # ═══════════════════════════════════════════════════════════
+    - name: Checkout
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GH_PAT || github.token }}
@@ -27,106 +30,132 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-        cache: 'pip'
 
     - name: Install Python Dependencies
-      run: |
-        pip install --upgrade pip
-        pip install requests PyGithub PyYAML boto3
+      run: pip install requests PyGithub PyYAML boto3
 
     - name: Run Scraper
-      run: python scraper.py
-      timeout-minutes: 40
+      run: timeout 2700 python scraper.py || true
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
         GITHUB_SEARCH_LIMIT: 150
 
-    - name: Convert Configs to Client Formats
-      run: python convert_configs.py
-
     - name: Verify Generated Files
       run: |
-        echo "Checking generated files..."
-        ls -lh *.json *.yaml *.yml 2>/dev/null || true
-        echo "---"
-        [ -f xray.json ] && echo "✓ xray.json exists" || echo "✗ xray.json missing"
-        [ -f singbox.json ] && echo "✓ singbox.json exists" || echo "✗ singbox.json missing"
-        [ -f clash.yaml ] && echo "✓ clash.yaml exists" || echo "✗ clash.yaml missing"
+        echo "📁 Checking files..."
+        ls -lh all_live_configs.json clash_subscription.yml cache_version.txt 2>/dev/null || true
+        echo ""
+        [ -f all_live_configs.json ] && echo "✅ all_live_configs.json" || echo "❌ Missing"
+        [ -f clash_subscription.yml ] && echo "✅ clash_subscription.yml" || echo "❌ Missing"
+        [ -f cache_version.txt ] && echo "✅ cache_version.txt" || echo "❌ Missing"
 
     # ═══════════════════════════════════════════════════════════
-    # Deploy 1: Arvan Cloud Storage
+    # 2. Commit to Git (for GitHub Pages)
     # ═══════════════════════════════════════════════════════════
-    - name: Deploy to Arvan Cloud
-      run: python upload_arvan.py
-      env:
-        ARVAN_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
-        ARVAN_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
-        ARVAN_BUCKET_NAME: ${{ secrets.ARVAN_BUCKET_NAME }}
-
-    # ═══════════════════════════════════════════════════════════
-    # Deploy 2: GitHub Pages
-    # ═══════════════════════════════════════════════════════════
-    - name: Commit and Push for GitHub Pages
+    - name: Commit Configs
       run: |
         git config user.name "V2V Bot"
         git config user.email "bot@v2v.dev"
-        git add -A
-        git diff --staged --quiet || git commit -m "🔄 Update configs $(date +'%Y-%m-%d %H:%M UTC')"
-        git push origin main || echo "No changes to push"
+        git add all_live_configs.json clash_subscription.yml cache_version.txt
+        git diff --quiet && git diff --staged --quiet || {
+          git commit -m "🔄 Update: $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push origin main
+        }
       continue-on-error: true
 
     # ═══════════════════════════════════════════════════════════
-    # Deploy 3: Vercel
+    # 3. Deploy to Arvan Cloud S3
+    # ═══════════════════════════════════════════════════════════
+    - name: Install AWS CLI
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
+        unzip -q aws.zip
+        sudo ./aws/install --update
+
+    - name: Deploy to Arvan S3
+      run: |
+        aws configure set aws_access_key_id ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+        aws configure set default.s3.signature_version s3v4
+        
+        echo "🚀 Syncing to Arvan Cloud S3..."
+        aws s3 sync . s3://${{ secrets.ARVAN_BUCKET_NAME }}/ \
+          --endpoint-url=https://s3.ir-thr-at1.arvanstorage.ir \
+          --exclude ".git/*" \
+          --exclude ".github/*" \
+          --exclude "*.py" \
+          --exclude "*.pyc" \
+          --exclude "__pycache__/*" \
+          --exclude "*.zip" \
+          --exclude "aws/*" \
+          --exclude "node_modules/*" \
+          --cache-control "no-cache, must-revalidate" \
+          --acl public-read
+        
+        echo "✅ Arvan deployment complete"
+        echo "🌐 https://${{ secrets.ARVAN_BUCKET_NAME }}.s3-website.ir-thr-at1.arvanstorage.ir/"
+      continue-on-error: true
+
+    # ═══════════════════════════════════════════════════════════
+    # 4. Deploy to Vercel
+    # ═══════════════════════════════════════════════════════════
+    - name: Deploy to Vercel
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod --yes'
+      continue-on-error: true
+
+    # ═══════════════════════════════════════════════════════════
+    # 5. Deploy Cloudflare Workers
     # ═══════════════════════════════════════════════════════════
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
 
-    - name: Install Vercel CLI
-      run: npm install -g vercel@latest
-
-    - name: Deploy to Vercel (Production)
-      run: |
-        vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-      env:
-        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-    # ═══════════════════════════════════════════════════════════
-    # Deploy 4: Cloudflare Workers (Optional - for caching/proxy)
-    # ═══════════════════════════════════════════════════════════
     - name: Install Wrangler
       run: npm install -g wrangler@latest
 
-    - name: Deploy Cloudflare Workers
+    - name: Deploy All Workers
+      run: |
+        echo "🚀 Deploying Cloudflare Workers..."
+        wrangler deploy --env v2v-proxy && echo "✅ v2v-proxy" || echo "❌ v2v-proxy failed"
+        wrangler deploy --env v2v && echo "✅ v2v" || echo "❌ v2v failed"
+        wrangler deploy --env winter-hill-0307 && echo "✅ winter-hill-0307" || echo "❌ winter-hill-0307 failed"
+        wrangler deploy --env rapid-scene-1da6 && echo "✅ rapid-scene-1da6" || echo "❌ rapid-scene-1da6 failed"
       env:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      run: |
-        echo "Deploying workers..."
-        wrangler deploy --env v2v-proxy || echo "⚠️  v2v-proxy failed"
-        wrangler deploy --env v2v || echo "⚠️  v2v failed"
-        wrangler deploy --env winter-hill-0307 || echo "⚠️  winter-hill failed"
-        wrangler deploy --env rapid-scene-1da6 || echo "⚠️  rapid-scene failed"
       continue-on-error: true
 
     # ═══════════════════════════════════════════════════════════
-    # Final Summary
+    # 6. Summary
     # ═══════════════════════════════════════════════════════════
     - name: Deployment Summary
       if: always()
       run: |
-        echo "════════════════════════════════════════"
-        echo "       DEPLOYMENT SUMMARY"
-        echo "════════════════════════════════════════"
-        echo "🌐 Sites deployed:"
-        echo "  1. Arvan Cloud: https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir/"
-        echo "  2. Vercel: https://v2v-vercel.vercel.app/"
-        echo "  3. GitHub Pages: https://smbcryp.github.io/V2V/"
         echo ""
-        echo "⏰ Deployed at: $(date +'%Y-%m-%d %H:%M:%S UTC')"
-        echo "════════════════════════════════════════"
+        echo "╔══════════════════════════════════════════════════════╗"
+        echo "║           V2V DEPLOYMENT COMPLETED                   ║"
+        echo "╠══════════════════════════════════════════════════════╣"
+        echo "║                                                      ║"
+        echo "║  🌐 Live Sites:                                      ║"
+        echo "║                                                      ║"
+        echo "║  1️⃣  Arvan Cloud:                                    ║"
+        echo "║     https://v2v-data.s3-website.ir-thr-at1.arvan... ║"
+        echo "║                                                      ║"
+        echo "║  2️⃣  Vercel:                                         ║"
+        echo "║     https://v2v-vercel.vercel.app/                   ║"
+        echo "║                                                      ║"
+        echo "║  3️⃣  GitHub Pages:                                   ║"
+        echo "║     https://smbcryp.github.io/V2V/                   ║"
+        echo "║                                                      ║"
+        echo "║  ⚡ Workers: 4 endpoints deployed                    ║"
+        echo "║                                                      ║"
+        echo "║  ⏰ $(date -u '+%Y-%m-%d %H:%M:%S UTC')                          ║"
+        echo "║                                                      ║"
+        echo "╚══════════════════════════════════════════════════════╝"
+        echo ""
