@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const STATIC_CONFIG_URL = './all_live_configs.json?t=' + Date.now();
     const STATIC_CACHE_VERSION_URL = './cache_version.txt?t=' + Date.now();
-    const PING_TIMEOUT = 2000;
     
     const WORKER_URLS = [
         'https://v2v-proxy.mbrgh87.workers.dev',
@@ -13,10 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeWorkers = [];
     let workerAvailable = false;
     
-    const PING_BATCH_SIZE = 20;  // کاهش یافت برای دقت بیشتر
-    const PING_ATTEMPTS = 5;     // افزایش تعداد تلاش
-    const PING_TIMEOUT = 4000;   // 4 ثانیه timeout
-    const PING_RETRY_DELAY = 100; // 100ms بین تلاش‌ها
+    const PING_BATCH_SIZE = 20;
+    const PING_ATTEMPTS = 5;
+    const PING_TIMEOUT = 4000;
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
@@ -33,10 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     async function detectActiveWorkers() {
-        console.log('🔍 Testing all workers in parallel...');
+        console.log('🔍 Testing workers...');
         activeWorkers = [];
-        
-        const startTime = Date.now();
         
         const testPromises = WORKER_URLS.map(async (url, index) => {
             try {
@@ -55,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const latency = Date.now() - testStart;
                 
                 if (response.ok) {
-                    console.log(`✅ Worker ${index + 1} active (${latency}ms)`);
+                    console.log(`✅ Worker ${index + 1} OK (${latency}ms)`);
                     return { url, latency, index: index + 1 };
                 }
             } catch (e) {
@@ -66,26 +62,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const results = await Promise.all(testPromises);
         const validWorkers = results.filter(w => w !== null);
-        
-        // مرتب‌سازی بر اساس سرعت
         validWorkers.sort((a, b) => a.latency - b.latency);
         activeWorkers = validWorkers.map(w => w.url);
-        
         workerAvailable = activeWorkers.length > 0;
         
-        const totalTime = Date.now() - startTime;
-        console.log(`📊 Active workers: ${activeWorkers.length}/${WORKER_URLS.length} (tested in ${totalTime}ms)`);
-        
-        if (validWorkers.length > 0) {
-            console.log('🏆 Workers sorted by speed:', validWorkers.map(w => `Worker ${w.index} (${w.latency}ms)`).join(', '));
-        }
-        
+        console.log(`📊 Active: ${activeWorkers.length}/${WORKER_URLS.length}`);
         return workerAvailable;
-    }
-
-    function getRandomWorker() {
-        if (activeWorkers.length === 0) return null;
-        return activeWorkers[Math.floor(Math.random() * activeWorkers.length)];
     }
 
     window.copyToClipboard = async (text, successMessage = 'کپی شد!') => {
@@ -181,15 +163,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        console.log(`🚀 Creating subscription with ${activeWorkers.length} workers in parallel...`);
-        
-        // تلاش موازی با تمام Workers - اولین موفق برنده می‌شه
         const createPromises = activeWorkers.map(async (workerUrl, index) => {
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 8000);
-                
-                console.log(`⏳ Worker ${index + 1} trying...`);
                 
                 const response = await fetch(`${workerUrl}/create-sub`, {
                     method: 'POST',
@@ -202,19 +179,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(`✅ Worker ${index + 1} SUCCESS! ID: ${data.id}`);
                     return { success: true, workerUrl, id: data.id, workerIndex: index + 1 };
-                } else {
-                    console.log(`❌ Worker ${index + 1} failed with status ${response.status}`);
                 }
-            } catch (error) {
-                console.log(`❌ Worker ${index + 1} error:`, error.message);
-            }
-            return { success: false, workerUrl, workerIndex: index + 1 };
+            } catch (error) {}
+            return { success: false };
         });
         
         try {
-            // استفاده از Promise.race برای اولین نتیجه موفق
             const firstSuccess = await Promise.race(
                 createPromises.map(p => 
                     p.then(result => result.success ? result : Promise.reject(result))
@@ -230,13 +201,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.openQrModal(subUrl);
                     showToast(`QR ساخته شد (Worker ${firstSuccess.workerIndex})`);
                 }
-                
-                console.log(`🎯 Final URL: ${subUrl}`);
                 return;
             }
             
-            // اگر Promise.race موفق نشد، منتظر تمام Workers می‌مونیم
-            console.log('⚠️ No quick success, waiting for all workers...');
             const allResults = await Promise.all(createPromises);
             const successResult = allResults.find(r => r.success);
             
@@ -244,28 +211,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const subUrl = `${successResult.workerUrl}/sub/${format}/${successResult.id}`;
                 
                 if (action === 'copy') {
-                    await window.copyToClipboard(subUrl, `لینک کپی شد! (Worker ${successResult.workerIndex})`);
+                    await window.copyToClipboard(subUrl, `لینک کپی شد!`);
                 } else if (action === 'qr') {
                     window.openQrModal(subUrl);
-                    showToast(`QR ساخته شد (Worker ${successResult.workerIndex})`);
+                    showToast(`QR ساخته شد`);
                 }
-                
-                console.log(`🎯 Final URL: ${subUrl}`);
                 return;
             }
             
             throw new Error('All workers failed');
         } catch (error) {
-            console.error('❌ All workers failed:', error);
-            showToast(`خطا در ساخت لینک! (${activeWorkers.length} Worker تست شد)`, true);
-            
-            // ری‌تست Workers در صورت خطا
-            console.log('🔄 Re-testing workers...');
+            showToast(`خطا در ساخت لینک!`, true);
             await detectActiveWorkers();
-            
-            if (activeWorkers.length > 0) {
-                showToast(`${activeWorkers.length} Worker فعال یافت شد. دوباره تلاش کنید`, false);
-            }
         }
     };
 
@@ -294,51 +251,94 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const fetchAndRender = async () => {
+        console.log('🚀 Starting V2V...');
         statusBar.textContent = 'بارگذاری...';
         
-        await detectActiveWorkers();
-        
         try {
-            const configResponse = await fetch(STATIC_CONFIG_URL, { 
-                signal: AbortSignal.timeout(15000),
-                cache: 'no-store'
-            });
-            if (!configResponse.ok) throw new Error(`HTTP ${configResponse.status}`);
-            allLiveConfigsData = await configResponse.json();
+            // تست Workers موازی
+            detectActiveWorkers().catch(e => console.warn('Worker test failed:', e));
             
+            console.log('📥 Fetching configs from:', STATIC_CONFIG_URL);
+            
+            const configResponse = await fetch(STATIC_CONFIG_URL, { 
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json' }
+            });
+            
+            if (!configResponse.ok) {
+                throw new Error(`HTTP ${configResponse.status}: ${configResponse.statusText}`);
+            }
+            
+            const responseText = await configResponse.text();
+            console.log('📦 Response length:', responseText.length);
+            
+            allLiveConfigsData = JSON.parse(responseText);
+            console.log('✅ Parsed JSON successfully');
+            console.log('📊 Data structure:', Object.keys(allLiveConfigsData));
+            
+            // بررسی ساختار داده
+            if (!allLiveConfigsData.xray || !allLiveConfigsData.singbox) {
+                throw new Error('Invalid data structure - missing xray or singbox');
+            }
+            
+            console.log('Xray protocols:', Object.keys(allLiveConfigsData.xray));
+            console.log('Singbox protocols:', Object.keys(allLiveConfigsData.singbox));
+            
+            // حذف duplicates
             for (const core in allLiveConfigsData) {
                 for (const protocol in allLiveConfigsData[core]) {
+                    const before = allLiveConfigsData[core][protocol].length;
                     allLiveConfigsData[core][protocol] = removeDuplicates(allLiveConfigsData[core][protocol]);
+                    const after = allLiveConfigsData[core][protocol].length;
+                    if (before !== after) {
+                        console.log(`Removed ${before - after} duplicates from ${core}/${protocol}`);
+                    }
                 }
             }
             
+            // دریافت نسخه cache
             let cacheVersion = 'نامشخص';
             try {
                 const versionResponse = await fetch(STATIC_CACHE_VERSION_URL, { 
-                    signal: AbortSignal.timeout(5000),
                     cache: 'no-store'
                 });
                 if (versionResponse.ok) {
                     cacheVersion = await versionResponse.text();
+                    console.log('📅 Cache version:', cacheVersion);
                 }
-            } catch (error) {}
+            } catch (e) {
+                console.warn('Cache version fetch failed:', e);
+            }
 
             const updateTime = new Date(parseInt(cacheVersion) * 1000).toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' });
             const workerStatus = workerAvailable ? `✅ ${activeWorkers.length} Worker فعال` : '❌ Worker غیرفعال';
             statusBar.textContent = `${updateTime} | ${workerStatus}`;
             
+            console.log('🎨 Rendering cores...');
             renderCore('xray', allLiveConfigsData.xray, xrayWrapper);
             renderCore('singbox', allLiveConfigsData.singbox, singboxWrapper);
+            
+            console.log('✅ V2V loaded successfully!');
+            
         } catch (error) {
-            console.error('Fetch error:', error);
-            statusBar.textContent = 'خطا در دریافت کانفیگ‌ها.';
-            showToast('خطا در دریافت کانفیگ‌ها!', true);
+            console.error('❌ Fatal error:', error);
+            console.error('Error stack:', error.stack);
+            
+            statusBar.textContent = 'خطا در بارگذاری - لطفاً صفحه را رفرش کنید';
+            
+            xrayWrapper.innerHTML = `<div class="alert">❌ خطا: ${error.message}</div>`;
+            singboxWrapper.innerHTML = `<div class="alert">❌ خطا: ${error.message}</div>`;
+            
+            showToast('خطا در دریافت کانفیگ‌ها! لطفاً صفحه را رفرش کنید', true);
         }
     };
     
     const renderCore = (coreName, coreData, wrapper) => {
+        console.log(`🎨 Rendering ${coreName}...`);
+        
         if (!coreData || Object.keys(coreData).length === 0) {
             wrapper.innerHTML = `<div class="alert">کانفیگی یافت نشد.</div>`;
+            console.warn(`No data for ${coreName}`);
             return;
         }
 
@@ -411,13 +411,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </li>
                     `;
-                } catch (e) {}
+                } catch (e) {
+                    console.warn(`Failed to parse config ${idx} in ${protocol}:`, e);
+                }
             });
             
             contentHtml += `</ul></div>`;
         }
 
         wrapper.innerHTML = contentHtml;
+        console.log(`✅ ${coreName} rendered`);
 
         wrapper.querySelectorAll('.protocol-header').forEach(header => {
             header.addEventListener('click', (e) => {
@@ -468,7 +471,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let completed = 0;
         const total = allConfigs.length;
         
-        // توزیع موازی بین تمام Workers فعال
         for (let i = 0; i < allConfigs.length; i += (PING_BATCH_SIZE * activeWorkers.length)) {
             const megaBatch = allConfigs.slice(i, i + (PING_BATCH_SIZE * activeWorkers.length));
             
@@ -520,8 +522,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             const color = avgLatency < 200 ? '#4CAF50' : avgLatency < 500 ? '#FFC107' : '#F44336';
                             resultEl.innerHTML = `<span style="color: ${color};">${avgLatency}ms</span>`;
                             pingResults[`${coreName}-${protocol}-${idx}`] = avgLatency;
-                            
-                            sortConfigsByPingLive(coreName, protocol);
                         } else {
                             resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
                         }
@@ -539,27 +539,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = false;
         btn.textContent = `تست پینگ (${activeWorkers.length} Worker)`;
         showToast('تست تکمیل شد!');
-    };
-    
-    const sortConfigsByPingLive = (coreName, protocol) => {
-        const wrapper = coreName === 'xray' ? xrayWrapper : singboxWrapper;
-        const group = wrapper.querySelector(`.protocol-group[data-protocol="${protocol}"]`);
-        if (!group) return;
-        
-        const configList = group.querySelector('.config-list');
-        if (!configList) return;
-        
-        const items = Array.from(configList.querySelectorAll('.config-item'));
-        
-        items.sort((a, b) => {
-            const keyA = a.dataset.configKey;
-            const keyB = b.dataset.configKey;
-            const pingA = pingResults[keyA] || 9999999;
-            const pingB = pingResults[keyB] || 9999999;
-            return pingA - pingB;
-        });
-        
-        items.forEach(item => configList.appendChild(item));
     };
 
     fetchAndRender();
