@@ -1,15 +1,22 @@
 {
   "name": "V2V",
   "short_name": "V2V",
-  "start_url": "/V2V/",
+  "description": "V2V Proxy Configuration Manager",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#121212",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "/V2V/icon-192.png",
-      "type": "image/png",
-      "sizes": "192x192"
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }
