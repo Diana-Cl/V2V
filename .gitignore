@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.vercel
+
+# Wrangler
+.wrangler/
+wrangler.toml.bak
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Don't ignore these important files
+!all_live_configs.json
+!clash_subscription.yml
+!cache_version.txt
+!index.html
+!index.js
+!logo.png
+!manifest.json
