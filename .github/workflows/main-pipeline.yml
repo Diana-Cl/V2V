@@ -2,9 +2,8 @@ name: 'V2V Complete Deploy'
 
 on:
   schedule:
-    - cron: '0 */3 * * *'  # هر 3 ساعت
-  workflow_dispatch:  # فقط manual trigger
-  # push رو کامل حذف کردیم تا loop نشه!
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,9 +16,6 @@ jobs:
     timeout-minutes: 60
     
     steps:
-    # ═══════════════════════════════════════════════════════════
-    # 1. Setup
-    # ═══════════════════════════════════════════════════════════
     - name: Checkout
       uses: actions/checkout@v4
       with:
@@ -33,9 +29,6 @@ jobs:
     - name: Install Dependencies
       run: pip install requests PyGithub PyYAML
 
-    # ═══════════════════════════════════════════════════════════
-    # 2. Scrape Configs
-    # ═══════════════════════════════════════════════════════════
     - name: Run Scraper
       run: timeout 2700 python scraper.py || true
       env:
@@ -44,12 +37,9 @@ jobs:
 
     - name: Check Generated Files
       run: |
-        echo "📁 Files:"
+        echo "📁 Generated Files:"
         ls -lh all_live_configs.json clash_subscription.yml cache_version.txt 2>/dev/null || echo "⚠️ Files missing"
 
-    # ═══════════════════════════════════════════════════════════
-    # 3. Deploy to Arvan Cloud (اولین اولویت!)
-    # ═══════════════════════════════════════════════════════════
     - name: Install AWS CLI
       run: |
         curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
@@ -58,7 +48,6 @@ jobs:
 
     - name: Deploy to Arvan Cloud
       run: |
-        # تنظیم credentials
         aws configure set aws_access_key_id "${{ secrets.ARVAN_ACCESS_KEY_ID }}"
         aws configure set aws_secret_access_key "${{ secrets.ARVAN_SECRET_ACCESS_KEY }}"
         aws configure set default.region us-east-1
@@ -66,9 +55,8 @@ jobs:
         BUCKET="${{ secrets.ARVAN_BUCKET_NAME }}"
         ENDPOINT="https://s3.ir-thr-at1.arvanstorage.ir"
         
-        echo "🚀 Uploading to Arvan: $BUCKET"
+        echo "🚀 Uploading to Arvan Cloud: $BUCKET"
         
-        # آپلود فایل‌های ضروری یک به یک
         for file in all_live_configs.json clash_subscription.yml cache_version.txt index.html index.js logo.png manifest.json; do
           if [ -f "$file" ]; then
             echo "📤 Uploading $file..."
@@ -84,25 +72,19 @@ jobs:
         done
         
         echo ""
-        echo "🌐 Arvan: https://$BUCKET.s3-website.ir-thr-at1.arvanstorage.ir/"
+        echo "🌐 Arvan URL: https://$BUCKET.s3-website.ir-thr-at1.arvanstorage.ir/"
       continue-on-error: false
 
-    # ═══════════════════════════════════════════════════════════
-    # 4. Commit (برای GitHub Pages) - بدون trigger کردن workflow!
-    # ═══════════════════════════════════════════════════════════
     - name: Commit Changes
       run: |
         git config user.name "V2V Bot"
         git config user.email "bot@v2v.dev"
         
-        # فقط فایل‌های مهم رو add کن
         git add all_live_configs.json clash_subscription.yml cache_version.txt
         
-        # چک کن که تغییری هست یا نه
         if git diff --staged --quiet; then
           echo "ℹ️ No changes to commit"
         else
-          # Commit با [skip ci] تا workflow دوباره trigger نشه!
           git commit -m "🔄 Update configs [skip ci]
           
           Automated update at $(date -u '+%Y-%m-%d %H:%M UTC')"
@@ -110,9 +92,6 @@ jobs:
           echo "✅ Committed to GitHub"
         fi
 
-    # ═══════════════════════════════════════════════════════════
-    # 5. Deploy to Vercel
-    # ═══════════════════════════════════════════════════════════
     - name: Deploy to Vercel
       run: |
         npm install -g vercel@latest
@@ -126,19 +105,16 @@ jobs:
         VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       continue-on-error: true
 
-    # ═══════════════════════════════════════════════════════════
-    # 6. Deploy Cloudflare Workers
-    # ═══════════════════════════════════════════════════════════
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
         node-version: '20'
 
-    - name: Deploy Workers
+    - name: Deploy Cloudflare Workers
       run: |
         npm install -g wrangler@latest
         
-        echo "🚀 Deploying Workers..."
+        echo "🚀 Deploying Cloudflare Workers..."
         wrangler deploy --env v2v-proxy || echo "❌ v2v-proxy failed"
         wrangler deploy --env v2v || echo "❌ v2v failed"
         wrangler deploy --env winter-hill-0307 || echo "❌ winter-hill-0307 failed"
@@ -148,10 +124,7 @@ jobs:
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       continue-on-error: true
 
-    # ═══════════════════════════════════════════════════════════
-    # 7. Summary
-    # ═══════════════════════════════════════════════════════════
-    - name: Summary
+    - name: Deployment Summary
       if: always()
       run: |
         echo ""
@@ -164,5 +137,5 @@ jobs:
         echo "║  3️⃣  Vercel                                ║"
         echo "║  4️⃣  Cloudflare Workers (4x)               ║"
         echo "║                                            ║"
-        echo "║  ⏰ $(date -u '+%Y-%m-%d %H:%M UTC')                   ║"
+        echo "║  ⏰ $(date -u '+%Y-%m-%d %H:%M UTC')       ║"
         echo "╚════════════════════════════════════════════╝"
