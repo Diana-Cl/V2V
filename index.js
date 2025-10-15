@@ -12,9 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeWorkers = [];
     let workerAvailable = false;
     
-    const PING_BATCH_SIZE = 20;
-    const PING_ATTEMPTS = 5;
-    const PING_TIMEOUT = 4000;
+    const PING_BATCH_SIZE = 15;
+    const PING_ATTEMPTS = 3;
+    const PING_TIMEOUT = 3000;
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
@@ -131,6 +131,17 @@ document.addEventListener('DOMContentLoaded', () => {
         window.copyToClipboard(configs, `${coreData[protocol].length} کانفیگ ${protocol.toUpperCase()} کپی شد!`);
     };
 
+    window.selectAllProtocol = (coreName, protocol) => {
+        const checkboxes = document.querySelectorAll(`input.config-checkbox[data-core="${coreName}"][data-protocol="${protocol}"]`);
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        
+        checkboxes.forEach(cb => {
+            cb.checked = !allChecked;
+        });
+        
+        showToast(allChecked ? 'انتخاب همه لغو شد' : 'همه انتخاب شدند');
+    };
+
     window.generateSubscription = async (coreName, scope, format, action) => {
         if (!workerAvailable || activeWorkers.length === 0) {
             showToast('در حال بررسی Workers...', false);
@@ -196,10 +207,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const subUrl = `${firstSuccess.workerUrl}/sub/${format}/${firstSuccess.id}`;
                 
                 if (action === 'copy') {
-                    await window.copyToClipboard(subUrl, `لینک کپی شد! (Worker ${firstSuccess.workerIndex})`);
+                    await window.copyToClipboard(subUrl, `لینک ${format} کپی شد!`);
                 } else if (action === 'qr') {
                     window.openQrModal(subUrl);
-                    showToast(`QR ساخته شد (Worker ${firstSuccess.workerIndex})`);
+                    showToast(`QR ${format} ساخته شد`);
                 }
                 return;
             }
@@ -211,17 +222,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const subUrl = `${successResult.workerUrl}/sub/${format}/${successResult.id}`;
                 
                 if (action === 'copy') {
-                    await window.copyToClipboard(subUrl, `لینک کپی شد!`);
+                    await window.copyToClipboard(subUrl, `لینک ${format} کپی شد!`);
                 } else if (action === 'qr') {
                     window.openQrModal(subUrl);
-                    showToast(`QR ساخته شد`);
+                    showToast(`QR ${format} ساخته شد`);
                 }
                 return;
             }
             
             throw new Error('All workers failed');
         } catch (error) {
-            showToast(`خطا در ساخت لینک!`, true);
+            showToast(`خطا در ساخت لینک ${format}!`, true);
             await detectActiveWorkers();
         }
     };
@@ -255,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
         statusBar.textContent = 'بارگذاری...';
         
         try {
-            // تست Workers موازی
             detectActiveWorkers().catch(e => console.warn('Worker test failed:', e));
             
             console.log('📥 Fetching configs from:', STATIC_CONFIG_URL);
@@ -274,17 +284,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             allLiveConfigsData = JSON.parse(responseText);
             console.log('✅ Parsed JSON successfully');
-            console.log('📊 Data structure:', Object.keys(allLiveConfigsData));
             
-            // بررسی ساختار داده
             if (!allLiveConfigsData.xray || !allLiveConfigsData.singbox) {
-                throw new Error('Invalid data structure - missing xray or singbox');
+                throw new Error('Invalid data structure');
             }
             
-            console.log('Xray protocols:', Object.keys(allLiveConfigsData.xray));
-            console.log('Singbox protocols:', Object.keys(allLiveConfigsData.singbox));
-            
-            // حذف duplicates
             for (const core in allLiveConfigsData) {
                 for (const protocol in allLiveConfigsData[core]) {
                     const before = allLiveConfigsData[core][protocol].length;
@@ -296,23 +300,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // دریافت نسخه cache
             let cacheVersion = 'نامشخص';
             try {
-                const versionResponse = await fetch(STATIC_CACHE_VERSION_URL, { 
-                    cache: 'no-store'
-                });
+                const versionResponse = await fetch(STATIC_CACHE_VERSION_URL, { cache: 'no-store' });
                 if (versionResponse.ok) {
                     cacheVersion = await versionResponse.text();
-                    console.log('📅 Cache version:', cacheVersion);
                 }
-            } catch (e) {
-                console.warn('Cache version fetch failed:', e);
-            }
+            } catch (e) {}
 
             const updateTime = new Date(parseInt(cacheVersion) * 1000).toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' });
-            const workerStatus = workerAvailable ? `✅ ${activeWorkers.length} Worker فعال` : '❌ Worker غیرفعال';
-            statusBar.textContent = `${updateTime} | ${workerStatus}`;
+            statusBar.textContent = updateTime;
             
             console.log('🎨 Rendering cores...');
             renderCore('xray', allLiveConfigsData.xray, xrayWrapper);
@@ -322,27 +319,21 @@ document.addEventListener('DOMContentLoaded', () => {
             
         } catch (error) {
             console.error('❌ Fatal error:', error);
-            console.error('Error stack:', error.stack);
             
             statusBar.textContent = 'خطا در بارگذاری - لطفاً صفحه را رفرش کنید';
-            
             xrayWrapper.innerHTML = `<div class="alert">❌ خطا: ${error.message}</div>`;
             singboxWrapper.innerHTML = `<div class="alert">❌ خطا: ${error.message}</div>`;
-            
-            showToast('خطا در دریافت کانفیگ‌ها! لطفاً صفحه را رفرش کنید', true);
+            showToast('خطا در دریافت کانفیگ‌ها!', true);
         }
     };
     
     const renderCore = (coreName, coreData, wrapper) => {
-        console.log(`🎨 Rendering ${coreName}...`);
-        
         if (!coreData || Object.keys(coreData).length === 0) {
             wrapper.innerHTML = `<div class="alert">کانفیگی یافت نشد.</div>`;
-            console.warn(`No data for ${coreName}`);
             return;
         }
 
-        const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">تست پینگ (${activeWorkers.length} Worker)</button>`;
+        const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">تست پینگ همه کانفیگ‌ها</button>`;
         const copySelectedButton = `<button class="action-btn-wide" onclick="window.copySelectedConfigs('${coreName}')">کپی موارد انتخابی</button>`;
         
         let contentHtml = runPingButton + copySelectedButton + `
@@ -369,12 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (configs.length === 0) continue;
             
             const protocolMap = {
-                'vmess': 'VMess',
-                'vless': 'VLESS',
-                'trojan': 'Trojan',
-                'ss': 'SS',
-                'hy2': 'Hy2',
-                'tuic': 'TUIC'
+                'vmess': 'VMess', 'vless': 'VLESS', 'trojan': 'Trojan',
+                'ss': 'SS', 'hy2': 'Hy2', 'tuic': 'TUIC'
             };
             const protocolName = protocolMap[protocol] || protocol.toUpperCase();
             
@@ -382,7 +369,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="protocol-group" data-protocol="${protocol}">
                     <div class="protocol-header">
                         <span>${protocolName} (${configs.length})</span>
-                        <button class="btn-copy-protocol" onclick="window.copyProtocolConfigs('${coreName}', '${protocol}')" title="کپی همه ${protocolName}">📋 کپی</button>
+                        <button class="btn-copy-protocol" onclick="window.selectAllProtocol('${coreName}', '${protocol}')" title="انتخاب همه">☑️</button>
+                        <button class="btn-copy-protocol" onclick="window.copyProtocolConfigs('${coreName}', '${protocol}')" title="کپی همه">📋</button>
                         <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
@@ -411,16 +399,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </li>
                     `;
-                } catch (e) {
-                    console.warn(`Failed to parse config ${idx} in ${protocol}:`, e);
-                }
+                } catch (e) {}
             });
             
             contentHtml += `</ul></div>`;
         }
 
         wrapper.innerHTML = contentHtml;
-        console.log(`✅ ${coreName} rendered`);
 
         wrapper.querySelectorAll('.protocol-header').forEach(header => {
             header.addEventListener('click', (e) => {
@@ -455,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         btn.disabled = true;
-        btn.innerHTML = `<span class="loader-small"></span> تست با ${activeWorkers.length} Worker...`;
+        btn.innerHTML = `<span class="loader-small"></span> در حال تست...`;
         
         pingResults = {};
 
@@ -513,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             } catch (e) {}
                             
                             if (attempt < PING_ATTEMPTS - 1) {
-                                await new Promise(resolve => setTimeout(resolve, 30));
+                                await new Promise(resolve => setTimeout(resolve, 100));
                             }
                         }
                         
@@ -537,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         btn.disabled = false;
-        btn.textContent = `تست پینگ (${activeWorkers.length} Worker)`;
+        btn.textContent = `تست پینگ همه کانفیگ‌ها`;
         showToast('تست تکمیل شد!');
     };
 
