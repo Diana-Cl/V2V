@@ -12,9 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeWorkers = [];
     let workerAvailable = false;
     
-    const PING_BATCH_SIZE = 15;
-    const PING_ATTEMPTS = 3;
-    const PING_TIMEOUT = 3000;
+    const PING_BATCH_SIZE = 10;
+    const PING_ATTEMPTS = 5;
+    const PING_TIMEOUT = 7000;
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             } catch (e) {}
                             
                             if (attempt < PING_ATTEMPTS - 1) {
-                                await new Promise(resolve => setTimeout(resolve, 100));
+                                await new Promise(resolve => setTimeout(resolve, 150));
                             }
                         }
                         
