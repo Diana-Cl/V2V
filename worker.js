@@ -371,7 +371,7 @@ function generateClashYAML(configs) {
     yaml += '    type: url-test\n';
     yaml += '    proxies:\n';
     for (const name of names) yaml += `      - "${name}"\n`;
-    yaml += '    url: http://www.gstatic.com/generate_204\n';
+    yaml += '    url: "http://www.gstatic.com/generate_204"\n';
     yaml += '    interval: 300\n\n';
     
     yaml += '  - name: "🎯 V2V Select"\n';
@@ -379,8 +379,9 @@ function generateClashYAML(configs) {
     yaml += '    proxies:\n';
     yaml += '      - "🚀 V2V Auto"\n';
     for (const name of names) yaml += `      - "${name}"\n`;
+    yaml += '\n';
     
-    yaml += '\nrules:\n';
+    yaml += 'rules:\n';
     yaml += '  - GEOIP,IR,DIRECT\n';
     yaml += '  - MATCH,🎯 V2V Select\n';
     
@@ -538,7 +539,7 @@ function generateSingboxJSON(configs) {
 
 async function testConnection(host, port) {
     const tests = [];
-    const maxTests = 3;
+    const maxTests = 5;
     
     for (let i = 0; i < maxTests; i++) {
         try {
@@ -547,18 +548,18 @@ async function testConnection(host, port) {
             
             await Promise.race([
                 socket.opened,
-                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 7000))
             ]);
             
             const latency = Date.now() - startTime;
             try { await socket.close(); } catch {}
             
-            if (latency > 0 && latency < 3000) {
+            if (latency > 0 && latency < 7000) {
                 tests.push(latency);
             }
             
             if (i < maxTests - 1) {
-                await new Promise(resolve => setTimeout(resolve, 50));
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
         } catch {
             continue;
