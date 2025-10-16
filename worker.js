@@ -8,7 +8,7 @@ const ALLOWED_ORIGINS = [
     'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir',
 ];
 
-function generateCorsHeaders(requestOrigin) { 
+function generateCorsHeaders(requestOrigin) {
     if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
         return {
             'Access-Control-Allow-Origin': requestOrigin,
@@ -18,39 +18,28 @@ function generateCorsHeaders(requestOrigin) {
             'Vary': 'Origin',
         };
     }
-    return { 
+    return {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     };
 }
 
-function jsonResponse(data, status, corsHeaders) { 
-    return new Response(JSON.stringify(data), { 
-        status, 
-        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+function jsonResponse(data, status, corsHeaders) {
+    return new Response(JSON.stringify(data), {
+        status,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
 }
 
-function yamlResponse(text, corsHeaders) { 
-    return new Response(text, { 
-        status: 200,
-        headers: { 
-            'Content-Type': 'text/yaml; charset=utf-8',
-            'Content-Disposition': 'attachment; filename="V2V-Clash.yaml"',
-            ...corsHeaders 
-        } 
-    });
-}
-
-function singboxResponse(text, corsHeaders) { 
-    return new Response(text, { 
-        status: 200,
-        headers: { 
-            'Content-Type': 'application/json; charset=utf-8',
-            'Content-Disposition': 'attachment; filename="V2V-Singbox.json"',
-            ...corsHeaders 
-        } 
-    });
+function textResponse(text, contentType, corsHeaders, filename = null) {
+    const headers = {
+        'Content-Type': `${contentType}; charset=utf-8`,
+        ...corsHeaders
+    };
+    if (filename) {
+        headers['Content-Disposition'] = `attachment; filename="${filename}"`;
+    }
+    return new Response(text, { status: 200, headers });
 }
 
 function safeBase64Decode(str) {
@@ -72,21 +61,19 @@ function safeJsonParse(str) {
 function parseVmessConfig(config) {
     try {
         if (!config || !config.startsWith('vmess://')) return null;
-        
+
         const vmessData = config.replace('vmess://', '').trim();
         if (!vmessData) return null;
-        
+
         const decoded = safeBase64Decode(vmessData);
         if (!decoded) return null;
-        
+
         const json = safeJsonParse(decoded);
-        if (!json) return null;
-        
-        if (!json.add || !json.port || !json.id) return null;
-        
+        if (!json || !json.add || !json.port || !json.id) return null;
+
         const port = parseInt(json.port);
         if (isNaN(port) || port <= 0 || port > 65535) return null;
-        
+
         return {
             server: String(json.add).trim(),
             port: port,
@@ -98,7 +85,7 @@ function parseVmessConfig(config) {
             sni: json.sni || json.host || json.add,
             path: json.path || '/',
             host: json.host || json.add,
-            name: (json.ps || `VMess-${json.add.substring(0,8)}`).replace(/[^\w\-_.]/g, '')
+            name: (json.ps || `VMess-${json.add.substring(0, 8)}`).replace(/[^\w\-_.]/g, '')
         };
     } catch {
         return null;
@@ -108,15 +95,15 @@ function parseVmessConfig(config) {
 function parseVlessConfig(config) {
     try {
         if (!config || !config.startsWith('vless://')) return null;
-        
+
         const urlObj = new URL(config);
         if (!urlObj.hostname || !urlObj.port || !urlObj.username) return null;
-        
+
         const port = parseInt(urlObj.port);
         if (isNaN(port) || port <= 0 || port > 65535) return null;
-        
+
         const params = new URLSearchParams(urlObj.search);
-        
+
         return {
             server: urlObj.hostname,
             port: port,
@@ -127,7 +114,7 @@ function parseVlessConfig(config) {
             path: params.get('path') || '/',
             host: params.get('host') || urlObj.hostname,
             flow: params.get('flow') || '',
-            name: (decodeURIComponent(urlObj.hash.substring(1)) || `VLESS-${urlObj.hostname.substring(0,8)}`).replace(/[^\w\-_.]/g, '')
+            name: (decodeURIComponent(urlObj.hash.substring(1)) || `VLESS-${urlObj.hostname.substring(0, 8)}`).replace(/[^\w\-_.]/g, '')
         };
     } catch {
         return null;
@@ -137,21 +124,21 @@ function parseVlessConfig(config) {
 function parseTrojanConfig(config) {
     try {
         if (!config || !config.startsWith('trojan://')) return null;
-        
+
         const urlObj = new URL(config);
         if (!urlObj.hostname || !urlObj.port || !urlObj.username) return null;
-        
+
         const port = parseInt(urlObj.port);
         if (isNaN(port) || port <= 0 || port > 65535) return null;
-        
+
         const params = new URLSearchParams(urlObj.search);
-        
+
         return {
             server: urlObj.hostname,
             port: port,
             password: urlObj.username,
             sni: params.get('sni') || urlObj.hostname,
-            name: (decodeURIComponent(urlObj.hash.substring(1)) || `Trojan-${urlObj.hostname.substring(0,8)}`).replace(/[^\w\-_.]/g, '')
+            name: (decodeURIComponent(urlObj.hash.substring(1)) || `Trojan-${urlObj.hostname.substring(0, 8)}`).replace(/[^\w\-_.]/g, '')
         };
     } catch {
         return null;
@@ -161,34 +148,34 @@ function parseTrojanConfig(config) {
 function parseSsConfig(config) {
     try {
         if (!config || !config.startsWith('ss://')) return null;
-        
+
         const urlObj = new URL(config);
         if (!urlObj.hostname || !urlObj.port) return null;
-        
+
         const port = parseInt(urlObj.port);
         if (isNaN(port) || port <= 0 || port > 65535) return null;
-        
+
         if (urlObj.username) {
             const decoded = safeBase64Decode(urlObj.username);
             if (!decoded || !decoded.includes(':')) return null;
-            
+
             const parts = decoded.split(':');
             if (parts.length < 2) return null;
-            
+
             const method = parts[0];
             const password = parts.slice(1).join(':');
-            
+
             if (!method || !password) return null;
-            
+
             return {
                 server: urlObj.hostname,
                 port: port,
                 method: method,
                 password: password,
-                name: (decodeURIComponent(urlObj.hash.substring(1)) || `SS-${urlObj.hostname.substring(0,8)}`).replace(/[^\w\-_.]/g, '')
+                name: (decodeURIComponent(urlObj.hash.substring(1)) || `SS-${urlObj.hostname.substring(0, 8)}`).replace(/[^\w\-_.]/g, '')
             };
         }
-        
+
         return null;
     } catch {
         return null;
@@ -198,100 +185,106 @@ function parseSsConfig(config) {
 function generateClashYAML(configs) {
     const proxies = [];
     const seen = new Set();
-    
+
     for (const config of configs) {
         try {
             let proxy = null;
             let uniqueKey = null;
-            
+
             if (config.startsWith('vmess://')) {
                 const p = parseVmessConfig(config);
                 if (!p) continue;
-                
+
                 uniqueKey = `vmess-${p.server}-${p.port}-${p.uuid}`;
                 if (seen.has(uniqueKey)) continue;
-                
-                proxy = { 
+
+                proxy = {
                     name: `[V2V] ${p.name}`,
-                    type: 'vmess', 
-                    server: p.server, 
-                    port: p.port, 
-                    uuid: p.uuid, 
-                    alterId: p.alterId, 
-                    cipher: p.cipher, 
-                    udp: true, 
-                    'skip-cert-verify': true 
+                    type: 'vmess',
+                    server: p.server,
+                    port: p.port,
+                    uuid: p.uuid,
+                    alterId: p.alterId,
+                    cipher: p.cipher,
+                    udp: true,
+                    'skip-cert-verify': true
                 };
-                
-                if (p.network === 'ws') { 
-                    proxy.network = 'ws'; 
-                    proxy['ws-opts'] = { path: p.path, headers: { Host: p.host } }; 
+
+                if (p.network === 'ws') {
+                    proxy.network = 'ws';
+                    proxy['ws-opts'] = { 
+                        path: p.path, 
+                        headers: { Host: p.host } 
+                    };
                 }
-                if (p.tls) { 
-                    proxy.tls = true; 
-                    proxy.servername = p.sni; 
+                if (p.tls) {
+                    proxy.tls = true;
+                    proxy.servername = p.sni;
                 }
             } else if (config.startsWith('vless://')) {
                 const p = parseVlessConfig(config);
                 if (!p) continue;
-                
+
                 uniqueKey = `vless-${p.server}-${p.port}-${p.uuid}`;
                 if (seen.has(uniqueKey)) continue;
-                
-                proxy = { 
+
+                proxy = {
                     name: `[V2V] ${p.name}`,
-                    type: 'vless', 
-                    server: p.server, 
-                    port: p.port, 
-                    uuid: p.uuid, 
-                    udp: true, 
-                    'skip-cert-verify': true 
+                    type: 'vless',
+                    server: p.server,
+                    port: p.port,
+                    uuid: p.uuid,
+                    udp: true,
+                    'skip-cert-verify': true
                 };
-                
-                if (p.network === 'ws') { 
-                    proxy.network = 'ws'; 
-                    proxy['ws-opts'] = { path: p.path, headers: { Host: p.host } }; 
+
+                if (p.network === 'ws') {
+                    proxy.network = 'ws';
+                    proxy['ws-opts'] = { 
+                        path: p.path, 
+                        headers: { Host: p.host } 
+                    };
                 }
-                if (p.tls) { 
-                    proxy.tls = true; 
+                if (p.tls) {
+                    proxy.tls = true;
                     proxy.servername = p.sni;
                     if (p.flow) proxy.flow = p.flow;
                 }
             } else if (config.startsWith('trojan://')) {
                 const p = parseTrojanConfig(config);
                 if (!p) continue;
-                
+
                 uniqueKey = `trojan-${p.server}-${p.port}-${p.password}`;
                 if (seen.has(uniqueKey)) continue;
-                
-                proxy = { 
+
+                proxy = {
                     name: `[V2V] ${p.name}`,
-                    type: 'trojan', 
-                    server: p.server, 
-                    port: p.port, 
-                    password: p.password, 
-                    udp: true, 
-                    sni: p.sni, 
-                    'skip-cert-verify': true 
+                    type: 'trojan',
+                    server: p.server,
+                    port: p.port,
+                    password: p.password,
+                    udp: true,
+                    sni: p.sni,
+                    'skip-cert-verify': true
                 };
             } else if (config.startsWith('ss://')) {
                 const p = parseSsConfig(config);
                 if (!p) continue;
-                
+
                 uniqueKey = `ss-${p.server}-${p.port}-${p.method}-${p.password}`;
                 if (seen.has(uniqueKey)) continue;
-                
-                proxy = { 
+
+                proxy = {
                     name: `[V2V] ${p.name}`,
-                    type: 'ss', 
-                    server: p.server, 
-                    port: p.port, 
-                    cipher: p.method, 
-                    password: p.password, 
-                    udp: true 
+                    type: 'ss',
+                    server: p.server,
+                    port: p.port,
+                    cipher: p.method,
+                    password: p.password,
+                    udp: true
                 };
             }
-            
+
             if (proxy && uniqueKey) {
                 seen.add(uniqueKey);
                 proxies.push(proxy);
@@ -300,23 +293,23 @@ function generateClashYAML(configs) {
             continue;
         }
     }
-    
+
     if (proxies.length === 0) {
-        return '# V2V - No Proxies Available\nproxies: []\nproxy-groups:\n  - name: "V2V"\n    type: select\n    proxies: []\nrules:\n  - MATCH,DIRECT\n';
+        return '# V2V - No Valid Proxies\nproxies: []\nproxy-groups:\n  - name: "V2V"\n    type: select\n    proxies: []\nrules:\n  - MATCH,DIRECT\n';
     }
-    
+
     const names = proxies.map(p => p.name);
-    
-    let yaml = '# Generated by V2V\n';
+
+    let yaml = '# Generated by V2V Worker\n';
     yaml += '# https://github.com/smbcryp/V2V\n\n';
     yaml += 'proxies:\n';
-    
+
     for (const proxy of proxies) {
         yaml += `  - name: "${proxy.name}"\n`;
         yaml += `    type: ${proxy.type}\n`;
         yaml += `    server: ${proxy.server}\n`;
         yaml += `    port: ${proxy.port}\n`;
-        
+
         if (proxy.type === 'vmess') {
             yaml += `    uuid: ${proxy.uuid}\n`;
             yaml += `    alterId: ${proxy.alterId}\n`;
@@ -365,115 +358,136 @@ function generateClashYAML(configs) {
             yaml += `    udp: true\n`;
         }
     }
-    
+
     yaml += '\nproxy-groups:\n';
     yaml += '  - name: "🚀 V2V Auto"\n';
     yaml += '    type: url-test\n';
     yaml += '    proxies:\n';
     for (const name of names) yaml += `      - "${name}"\n`;
     yaml += '    url: "http://www.gstatic.com/generate_204"\n';
-    yaml += '    interval: 300\n\n';
-    
+    yaml += '    interval: 300\n';
+    yaml += '    tolerance: 50\n\n';
+
     yaml += '  - name: "🎯 V2V Select"\n';
     yaml += '    type: select\n';
     yaml += '    proxies:\n';
     yaml += '      - "🚀 V2V Auto"\n';
     for (const name of names) yaml += `      - "${name}"\n`;
     yaml += '\n';
-    
+
     yaml += 'rules:\n';
     yaml += '  - GEOIP,IR,DIRECT\n';
     yaml += '  - MATCH,🎯 V2V Select\n';
-    
+
     return yaml;
 }
 
 function generateSingboxJSON(configs) {
     const outbounds = [];
     const seen = new Set();
-    
+
     for (const config of configs) {
         try {
             let outbound = null;
             let uniqueKey = null;
-            
+
             if (config.startsWith('vmess://')) {
                 const p = parseVmessConfig(config);
                 if (!p) continue;
-                
+
                 uniqueKey = `vmess-${p.server}-${p.port}-${p.uuid}`;
                 if (seen.has(uniqueKey)) continue;
-                
-                outbound = { 
+
+                outbound = {
                     tag: `[V2V] ${p.name}`,
-                    type: 'vmess', 
-                    server: p.server, 
-                    server_port: p.port, 
-                    uuid: p.uuid, 
-                    alter_id: p.alterId, 
-                    security: p.cipher 
+                    type: 'vmess',
+                    server: p.server,
+                    server_port: p.port,
+                    uuid: p.uuid,
+                    alter_id: p.alterId,
+                    security: p.cipher
                 };
-                
+
                 if (p.network === 'ws') {
-                    outbound.transport = { type: 'ws', path: p.path, headers: { Host: p.host } };
+                    outbound.transport = { 
+                        type: 'ws', 
+                        path: p.path, 
+                        headers: { Host: p.host } 
+                    };
                 }
                 if (p.tls) {
-                    outbound.tls = { enabled: true, server_name: p.sni, insecure: true };
+                    outbound.tls = { 
+                        enabled: true, 
+                        server_name: p.sni, 
+                        insecure: true 
+                    };
                 }
             } else if (config.startsWith('vless://')) {
                 const p = parseVlessConfig(config);
                 if (!p) continue;
-                
+
                 uniqueKey = `vless-${p.server}-${p.port}-${p.uuid}`;
                 if (seen.has(uniqueKey)) continue;
-                
-                outbound = { 
+
+                outbound = {
                     tag: `[V2V] ${p.name}`,
-                    type: 'vless', 
-                    server: p.server, 
-                    server_port: p.port, 
+                    type: 'vless',
+                    server: p.server,
+                    server_port: p.port,
                     uuid: p.uuid
                 };
-                
+
                 if (p.network === 'ws') {
-                    outbound.transport = { type: 'ws', path: p.path, headers: { Host: p.host } };
+                    outbound.transport = { 
+                        type: 'ws', 
+                        path: p.path, 
+                        headers: { Host: p.host } 
+                    };
                 }
                 if (p.tls) {
-                    outbound.tls = { enabled: true, server_name: p.sni, insecure: true };
+                    outbound.tls = { 
+                        enabled: true, 
+                        server_name: p.sni, 
+                        insecure: true 
+                    };
                     if (p.flow) outbound.flow = p.flow;
                 }
             } else if (config.startsWith('trojan://')) {
                 const p = parseTrojanConfig(config);
                 if (!p) continue;
-                
+
                 uniqueKey = `trojan-${p.server}-${p.port}-${p.password}`;
                 if (seen.has(uniqueKey)) continue;
-                
-                outbound = { 
+
+                outbound = {
                     tag: `[V2V] ${p.name}`,
-                    type: 'trojan', 
-                    server: p.server, 
-                    server_port: p.port, 
-                    password: p.password, 
-                    tls: { enabled: true, server_name: p.sni, insecure: true } 
+                    type: 'trojan',
+                    server: p.server,
+                    server_port: p.port,
+                    password: p.password,
+                    tls: { 
+                        enabled: true, 
+                        server_name: p.sni, 
+                        insecure: true 
+                    }
                 };
             } else if (config.startsWith('ss://')) {
                 const p = parseSsConfig(config);
                 if (!p) continue;
-                
+
                 uniqueKey = `ss-${p.server}-${p.port}-${p.method}-${p.password}`;
                 if (seen.has(uniqueKey)) continue;
-                
-                outbound = { 
+
+                outbound = {
                     tag: `[V2V] ${p.name}`,
-                    type: 'shadowsocks', 
-                    server: p.server, 
-                    server_port: p.port, 
-                    method: p.method, 
-                    password: p.password 
+                    type: 'shadowsocks',
+                    server: p.server,
+                    server_port: p.port,
+                    method: p.method,
+                    password: p.password
                 };
             }
-            
+
             if (outbound && uniqueKey) {
                 seen.add(uniqueKey);
                 outbounds.push(outbound);
@@ -482,38 +496,52 @@ function generateSingboxJSON(configs) {
             continue;
         }
     }
-    
+
     if (outbounds.length === 0) return null;
-    
+
     return JSON.stringify({
-        log: { disabled: false, level: "info", timestamp: true },
-        dns: { 
+        log: { 
+            disabled: false, 
+            level: "info", 
+            timestamp: true 
+        },
+        dns: {
             servers: [
-                { tag: "google", address: "8.8.8.8", strategy: "prefer_ipv4" },
-                { tag: "local", address: "local", detour: "direct" }
+                { 
+                    tag: "google", 
+                    address: "8.8.8.8", 
+                    strategy: "prefer_ipv4" 
+                },
+                { 
+                    tag: "local", 
+                    address: "local", 
+                    detour: "direct" 
+                }
             ],
-            rules: [{ geosite: "ir", server: "local" }]
+            rules: [
+                { geosite: "ir", server: "local" }
+            ]
         },
         inbounds: [
-            { 
+            {
                 tag: "mixed-in",
-                type: "mixed", 
-                listen: "127.0.0.1", 
-                listen_port: 7890 
+                type: "mixed",
+                listen: "127.0.0.1",
+                listen_port: 7890
             }
         ],
         outbounds: [
-            { 
-                tag: "🚀 V2V Auto", 
-                type: "urltest", 
-                outbounds: outbounds.map(o => o.tag), 
-                url: "http://www.gstatic.com/generate_204", 
+            {
+                tag: "🚀 V2V Auto",
+                type: "urltest",
+                outbounds: outbounds.map(o => o.tag),
+                url: "http://www.gstatic.com/generate_204",
                 interval: "5m",
                 tolerance: 50
             },
-            { 
-                tag: "🎯 V2V Select", 
-                type: "selector", 
+            {
+                tag: "🎯 V2V Select",
+                type: "selector",
                 outbounds: ["🚀 V2V Auto", ...outbounds.map(o => o.tag)],
                 default: "🚀 V2V Auto"
             },
@@ -521,14 +549,14 @@ function generateSingboxJSON(configs) {
             { tag: "direct", type: "direct" },
             { tag: "block", type: "block" }
         ],
-        route: { 
+        route: {
             rules: [
                 { geoip: "ir", outbound: "direct" },
                 { geoip: "private", outbound: "direct" },
                 { geosite: "category-ads-all", outbound: "block" }
             ],
             final: "🎯 V2V Select",
-            auto_detect_interface: true 
+            auto_detect_interface: true
         },
         experimental: {
             cache_file: { enabled: true },
@@ -540,36 +568,44 @@ function generateSingboxJSON(configs) {
 async function testConnection(host, port) {
     const tests = [];
     const maxTests = 5;
-    
+
     for (let i = 0; i < maxTests; i++) {
         try {
             const startTime = Date.now();
-            const socket = connect({ hostname: host, port: parseInt(port) });
-            
+            const socket = connect({ 
+                hostname: host, 
+                port: parseInt(port) 
+            });
+
             await Promise.race([
                 socket.opened,
-                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 7000))
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('timeout')), 7000)
+                )
             ]);
-            
+
             const latency = Date.now() - startTime;
-            try { await socket.close(); } catch {}
             
+            try { 
+                await socket.close(); 
+            } catch {}
+
             if (latency > 0 && latency < 7000) {
                 tests.push(latency);
             }
-            
-            if (i < maxTests - 1) {
+
+            if (i < maxTests - 1 && tests.length < 3) {
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
         } catch {
             continue;
         }
     }
-    
+
     if (tests.length === 0) {
         return { latency: null, status: 'Dead' };
     }
-    
+
     const avgLatency = Math.round(tests.reduce((a, b) => a + b) / tests.length);
     return { latency: avgLatency, status: 'Live' };
 }
@@ -590,114 +626,164 @@ export default {
         const corsHeaders = generateCorsHeaders(origin);
 
         if (request.method === 'OPTIONS') {
-            return new Response(null, { status: 204, headers: corsHeaders });
+            return new Response(null, { 
+                status: 204, 
+                headers: corsHeaders 
+            });
         }
 
         try {
+            // Root endpoint
             if (url.pathname === '/' && request.method === 'GET') {
-                return jsonResponse({ 
+                return jsonResponse({
                     status: 'V2V Worker Active',
-                    version: '4.0',
-                    endpoints: ['/ping', '/create-sub', '/sub/{format}/{id}']
+                    version: '5.0',
+                    endpoints: [
+                        '/ping',
+                        '/create-sub',
+                        '/sub/{format}/{id}'
+                    ]
                 }, 200, corsHeaders);
             }
 
+            // Ping endpoint
             if (url.pathname === '/ping' && request.method === 'POST') {
                 try {
                     const body = await request.json();
                     const { host, port } = body;
-                    
+
                     if (!host || !port) {
-                        return jsonResponse({ 
-                            error: 'Missing host or port', 
-                            received: body 
+                        return jsonResponse({
+                            error: 'Missing host or port',
+                            received: body
                         }, 400, corsHeaders);
                     }
-                    
+
                     const portNum = parseInt(port);
                     if (isNaN(portNum) || portNum <= 0 || portNum > 65535) {
-                        return jsonResponse({ 
+                        return jsonResponse({
                             error: 'Invalid port number',
                             port: port
                         }, 400, corsHeaders);
                     }
-                    
+
                     const result = await testConnection(host, portNum);
                     return jsonResponse(result, 200, corsHeaders);
                 } catch (e) {
-                    return jsonResponse({ 
-                        error: 'Invalid request body', 
-                        message: e.message 
+                    return jsonResponse({
+                        error: 'Invalid request body',
+                        message: e.message
                     }, 400, corsHeaders);
                 }
             }
-            
+
+            // Create subscription endpoint
             if (url.pathname === '/create-sub' && request.method === 'POST') {
-                const { configs, format } = await request.json();
-                
-                if (!Array.isArray(configs) || configs.length === 0) {
-                    return jsonResponse({ error: 'Invalid configs' }, 400, corsHeaders);
+                try {
+                    const body = await request.json();
+                    const { configs, format } = body;
+
+                    if (!Array.isArray(configs) || configs.length === 0) {
+                        return jsonResponse({ 
+                            error: 'Invalid configs array' 
+                        }, 400, corsHeaders);
+                    }
+
+                    if (!['clash', 'singbox'].includes(format)) {
+                        return jsonResponse({ 
+                            error: 'Invalid format. Must be clash or singbox' 
+                        }, 400, corsHeaders);
+                    }
+
+                    const shortId = generateShortId();
+
+                    await env.v2v_kv.put(
+                        `sub:${shortId}`,
+                        JSON.stringify({ 
+                            configs, 
+                            format, 
+                            created: Date.now() 
+                        }),
+                        { expirationTtl: TTL_SUBSCRIPTION }
+                    );
+
+                    return jsonResponse({
+                        success: true,
+                        id: shortId,
+                        url: `${url.origin}/sub/${format}/${shortId}`,
+                        expires: new Date(Date.now() + TTL_SUBSCRIPTION * 1000).toISOString()
+                    }, 200, corsHeaders);
+                } catch (e) {
+                    return jsonResponse({
+                        error: 'Failed to create subscription',
+                        message: e.message
+                    }, 500, corsHeaders);
                 }
-                
-                if (!['clash', 'singbox'].includes(format)) {
-                    return jsonResponse({ error: 'Invalid format. Must be clash or singbox' }, 400, corsHeaders);
-                }
-                
-                const shortId = generateShortId();
-                
-                await env.v2v_kv.put(
-                    `sub:${shortId}`, 
-                    JSON.stringify({ configs, format, created: Date.now() }), 
-                    { expirationTtl: TTL_SUBSCRIPTION }
-                );
-                
-                return jsonResponse({ 
-                    success: true, 
-                    id: shortId,
-                    url: `${url.origin}/sub/${format}/${shortId}`
-                }, 200, corsHeaders);
             }
-            
+
+            // Get subscription endpoint
             const subMatch = url.pathname.match(/^\/sub\/(clash|singbox)\/([a-z0-9]{8})$/);
             if (subMatch && request.method === 'GET') {
                 const format = subMatch[1];
                 const shortId = subMatch[2];
-                
-                const storedData = await env.v2v_kv.get(`sub:${shortId}`, { type: 'json' });
-                
-                if (!storedData || !storedData.configs) {
-                    return new Response('Subscription not found', { status: 404, headers: corsHeaders });
-                }
-                
-                await env.v2v_kv.put(
+
+                const storedData = await env.v2v_kv.get(
                     `sub:${shortId}`, 
-                    JSON.stringify(storedData), 
+                    { type: 'json' }
+                );
+
+                if (!storedData || !storedData.configs) {
+                    return new Response('Subscription not found or expired', {
+                        status: 404,
+                        headers: corsHeaders
+                    });
+                }
+
+                // تمدید TTL
+                await env.v2v_kv.put(
+                    `sub:${shortId}`,
+                    JSON.stringify(storedData),
                     { expirationTtl: TTL_SUBSCRIPTION }
                 );
-                
+
                 const { configs } = storedData;
-                
+
                 if (format === 'clash') {
                     const content = generateClashYAML(configs);
-                    return yamlResponse(content, corsHeaders);
+                    return textResponse(
+                        content,
+                        'text/yaml',
+                        corsHeaders,
+                        'V2V-Clash.yaml'
+                    );
                 }
-                
+
                 if (format === 'singbox') {
                     const content = generateSingboxJSON(configs);
                     if (!content) {
-                        return jsonResponse({ error: 'No valid configs for singbox' }, 500, corsHeaders);
+                        return jsonResponse({
+                            error: 'No valid configs for singbox format'
+                        }, 500, corsHeaders);
                     }
-                    return singboxResponse(content, corsHeaders);
+                    return textResponse(
+                        content,
+                        'application/json',
+                        corsHeaders,
+                        'V2V-Singbox.json'
+                    );
                 }
             }
-            
-            return new Response('Not Found', { status: 404, headers: corsHeaders });
-            
+
+            return new Response('Not Found', {
+                status: 404,
+                headers: corsHeaders
+            });
+
         } catch (err) {
             console.error('Worker error:', err);
-            return jsonResponse({ 
-                error: 'Internal server error', 
-                message: err.message 
+            return jsonResponse({
+                error: 'Internal server error',
+                message: err.message
             }, 500, corsHeaders);
         }
     },
