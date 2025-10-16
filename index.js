@@ -12,9 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeWorkers = [];
     let workerAvailable = false;
     
-    const PING_BATCH_SIZE = 10;
+    const PING_BATCH_SIZE = 15;
     const PING_ATTEMPTS = 5;
-    const PING_TIMEOUT = 7000;
+    const PING_TIMEOUT = 6000;
     
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
@@ -103,12 +103,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let allLiveConfigsData = null;
     let pingResults = {};
 
+    const getConfigHash = (config) => {
+        try {
+            const url = new URL(config);
+            return `${url.protocol}//${url.hostname}:${url.port}:${url.username}`;
+        } catch {
+            return config;
+        }
+    };
+
     const removeDuplicates = (configs) => {
         const seen = new Set();
         return configs.filter(config => {
-            const normalized = config.toLowerCase().trim();
-            if (seen.has(normalized)) return false;
-            seen.add(normalized);
+            const hash = getConfigHash(config);
+            if (seen.has(hash)) return false;
+            seen.add(hash);
             return true;
         });
     };
@@ -169,6 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
+        configs = removeDuplicates(configs);
+        
         if (configs.length === 0) {
             showToast('کانفیگی یافت نشد!', true);
             return;
@@ -192,7 +203,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = await response.json();
                     return { success: true, workerUrl, id: data.id, workerIndex: index + 1 };
                 }
-            } catch (error) {}
+            } catch (error) {
+                console.error(`Worker ${index + 1} failed:`, error);
+            }
             return { success: false };
         });
         
@@ -232,6 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             throw new Error('All workers failed');
         } catch (error) {
+            console.error('Subscription creation failed:', error);
             showToast(`خطا در ساخت لینک ${format}!`, true);
             await detectActiveWorkers();
         }
@@ -258,11 +272,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         allConfigs.sort((a, b) => a.ping - b.ping);
-        return allConfigs.slice(0, 20).map(item => item.config);
+        return removeDuplicates(allConfigs.slice(0, 20).map(item => item.config));
     };
 
     const fetchAndRender = async () => {
-        console.log('🚀 Starting V2V...');
+        console.log('🚀 Starting V2V Client...');
         statusBar.textContent = 'بارگذاری...';
         
         try {
@@ -289,13 +303,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Invalid data structure');
             }
             
+            // حذف تکرار در سمت کلاینت
             for (const core in allLiveConfigsData) {
                 for (const protocol in allLiveConfigsData[core]) {
                     const before = allLiveConfigsData[core][protocol].length;
                     allLiveConfigsData[core][protocol] = removeDuplicates(allLiveConfigsData[core][protocol]);
                     const after = allLiveConfigsData[core][protocol].length;
                     if (before !== after) {
-                        console.log(`Removed ${before - after} duplicates from ${core}/${protocol}`);
+                        console.log(`🧹 Removed ${before - after} duplicates from ${core}/${protocol}`);
                     }
                 }
             }
@@ -306,23 +321,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (versionResponse.ok) {
                     cacheVersion = await versionResponse.text();
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn('Cache version fetch failed:', e);
+            }
 
-            const updateTime = new Date(parseInt(cacheVersion) * 1000).toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' });
-            statusBar.textContent = updateTime;
+            const updateTime = new Date(parseInt(cacheVersion) * 1000).toLocaleString('fa-IR', { 
+                dateStyle: 'short', 
+                timeStyle: 'short' 
+            });
+            statusBar.textContent = `آخرین بروزرسانی: ${updateTime}`;
             
             console.log('🎨 Rendering cores...');
             renderCore('xray', allLiveConfigsData.xray, xrayWrapper);
             renderCore('singbox', allLiveConfigsData.singbox, singboxWrapper);
+            
+            // نمایش آمار
+            const xrayTotal = Object.values(allLiveConfigsData.xray).reduce((sum, arr) => sum + arr.length, 0);
+            const singboxTotal = Object.values(allLiveConfigsData.singbox).reduce((sum, arr) => sum + arr.length, 0);
+            console.log(`📊 Stats: Xray=${xrayTotal}, Singbox=${singboxTotal}, Total=${xrayTotal + singboxTotal}`);
             
             console.log('✅ V2V loaded successfully!');
             
         } catch (error) {
             console.error('❌ Fatal error:', error);
             
-            statusBar.textContent = 'خطا در بارگذاری - لطفاً صفحه را رفرش کنید';
-            xrayWrapper.innerHTML = `<div class="alert">❌ خطا: ${error.message}</div>`;
-            singboxWrapper.innerHTML = `<div class="alert">❌ خطا: ${error.message}</div>`;
+            statusBar.textContent = 'خطا در بارگذاری';
+            xrayWrapper.innerHTML = `<div class="alert alert-error">❌ خطا: ${error.message}<br><small>لطفاً صفحه را رفرش کنید</small></div>`;
+            singboxWrapper.innerHTML = `<div class="alert alert-error">❌ خطا: ${error.message}<br><small>لطفاً صفحه را رفرش کنید</small></div>`;
             showToast('خطا در دریافت کانفیگ‌ها!', true);
         }
     };
@@ -333,24 +358,27 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">تست پینگ همه کانفیگ‌ها</button>`;
-        const copySelectedButton = `<button class="action-btn-wide" onclick="window.copySelectedConfigs('${coreName}')">کپی موارد انتخابی</button>`;
+        const totalConfigs = Object.values(coreData).reduce((sum, arr) => sum + arr.length, 0);
+        const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">🔬 تست پینگ ${totalConfigs} کانفیگ</button>`;
+        const copySelectedButton = `<button class="action-btn-wide" onclick="window.copySelectedConfigs('${coreName}')">📋 کپی موارد انتخابی</button>`;
         
-        let contentHtml = runPingButton + copySelectedButton + `
+        let contentHtml = `<div class="action-bar">${runPingButton}${copySelectedButton}</div>`;
+        
+        contentHtml += `
             <div class="sub-section">
-                <div class="sub-title">Clash</div>
+                <div class="sub-title">⚡ Clash Subscription</div>
                 <div class="sub-actions">
                     <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'clash', 'copy')">انتخابی</button>
-                    <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'auto', 'clash', 'copy')">خودکار</button>
-                    <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'clash', 'qr')">QR</button>
+                    <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'clash', 'copy')">خودکار (بهترین‌ها)</button>
+                    <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'clash', 'qr')">📱 QR</button>
                 </div>
             </div>
             <div class="sub-section">
-                <div class="sub-title">Singbox</div>
+                <div class="sub-title">📦 Singbox Subscription</div>
                 <div class="sub-actions">
                     <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox', 'copy')">انتخابی</button>
-                    <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'copy')">خودکار</button>
-                    <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'qr')">QR</button>
+                    <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'copy')">خودکار (بهترین‌ها)</button>
+                    <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'qr')">📱 QR</button>
                 </div>
             </div>
         `;
@@ -361,19 +389,25 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const protocolMap = {
                 'vmess': 'VMess', 'vless': 'VLESS', 'trojan': 'Trojan',
-                'ss': 'SS', 'hy2': 'Hy2', 'tuic': 'TUIC'
+                'ss': 'Shadowsocks', 'hy2': 'Hysteria2', 'tuic': 'TUIC'
             };
             const protocolName = protocolMap[protocol] || protocol.toUpperCase();
             
             contentHtml += `
                 <div class="protocol-group" data-protocol="${protocol}">
                     <div class="protocol-header">
-                        <span>${protocolName} (${configs.length})</span>
-                        <button class="btn-copy-protocol" onclick="window.selectAllProtocol('${coreName}', '${protocol}')" title="انتخاب همه">☑️</button>
-                        <button class="btn-copy-protocol" onclick="window.copyProtocolConfigs('${coreName}', '${protocol}')" title="کپی همه">📋</button>
-                        <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
+                        <span class="protocol-name">${protocolName} <span class="badge">${configs.length}</span></span>
+                        <div class="protocol-actions">
+                            <button class="btn-copy-protocol" onclick="window.selectAllProtocol('${coreName}', '${protocol}')" title="انتخاب همه">
+                                ☑️
+                            </button>
+                            <button class="btn-copy-protocol" onclick="window.copyProtocolConfigs('${coreName}', '${protocol}')" title="کپی همه">
+                                📋
+                            </button>
+                            <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
                     </div>
                     <ul class="config-list">`;
             
@@ -387,19 +421,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     contentHtml += `
                         <li class="config-item" data-config-key="${coreName}-${protocol}-${idx}">
-                            <input type="checkbox" class="config-checkbox" data-core="${coreName}" data-protocol="${protocol}" data-config="${encodeURIComponent(config)}" id="${coreName}-${protocol}-${idx}">
+                            <input type="checkbox" class="config-checkbox" 
+                                   data-core="${coreName}" 
+                                   data-protocol="${protocol}" 
+                                   data-config="${encodeURIComponent(config)}" 
+                                   id="${coreName}-${protocol}-${idx}">
                             <div class="config-info">
-                                <label for="${coreName}-${protocol}-${idx}">${name}</label>
+                                <label for="${coreName}-${protocol}-${idx}" class="config-name">${name}</label>
                                 <span class="server">${server}:${port}</span>
                             </div>
                             <span class="ping-result" id="ping-${coreName}-${protocol}-${idx}"></span>
                             <div class="config-btns">
-                                <button class="btn-icon" onclick="window.copyToClipboard(decodeURIComponent('${encodeURIComponent(config)}'))" title="کپی">📋</button>
-                                <button class="btn-icon" onclick="window.openQrModal(decodeURIComponent('${encodeURIComponent(config)}'))" title="QR">📱</button>
+                                <button class="btn-icon" 
+                                        onclick="window.copyToClipboard(decodeURIComponent('${encodeURIComponent(config)}'))" 
+                                        title="کپی">📋</button>
+                                <button class="btn-icon" 
+                                        onclick="window.openQrModal(decodeURIComponent('${encodeURIComponent(config)}'))" 
+                                        title="QR">📱</button>
                             </div>
                         </li>
                     `;
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('Config parse error:', e);
+                }
             });
             
             contentHtml += `</ul></div>`;
@@ -409,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         wrapper.querySelectorAll('.protocol-header').forEach(header => {
             header.addEventListener('click', (e) => {
-                if (!e.target.classList.contains('btn-copy-protocol')) {
+                if (!e.target.classList.contains('btn-copy-protocol') && !e.target.closest('.btn-copy-protocol')) {
                     header.closest('.protocol-group').classList.toggle('open');
                 }
             });
@@ -493,16 +537,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                 if (response.ok) {
                                     const result = await response.json();
-                                    if (result.latency && result.latency > 0 && result.latency < 7000) {
+                                    if (result.latency && result.latency > 0 && result.latency < 6000) {
                                         latencies.push(result.latency);
                                         
-                                        // نمایش زنده بعد از هر تست موفق
                                         const currentAvg = Math.round(latencies.reduce((a,b) => a+b) / latencies.length);
                                         const color = currentAvg < 200 ? '#4CAF50' : currentAvg < 500 ? '#FFC107' : '#F44336';
-                                        resultEl.innerHTML = `<span style="color: ${color};">${currentAvg}ms</span>`;
+                                        resultEl.innerHTML = `<span style="color: ${color}; font-weight: bold;">${currentAvg}ms</span>`;
                                     }
                                 }
-                            } catch (e) {}
+                            } catch (e) {
+                                // ادامه تلاش
+                            }
                             
                             if (attempt < PING_ATTEMPTS - 1 && latencies.length < 3) {
                                 await new Promise(resolve => setTimeout(resolve, 150));
@@ -512,7 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (latencies.length > 0) {
                             const avgLatency = Math.round(latencies.reduce((a, b) => a + b) / latencies.length);
                             const color = avgLatency < 200 ? '#4CAF50' : avgLatency < 500 ? '#FFC107' : '#F44336';
-                            resultEl.innerHTML = `<span style="color: ${color};">${avgLatency}ms</span>`;
+                            resultEl.innerHTML = `<span style="color: ${color}; font-weight: bold;">${avgLatency}ms</span>`;
                             pingResults[`${coreName}-${protocol}-${idx}`] = avgLatency;
                         } else {
                             resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
@@ -531,10 +576,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         btn.disabled = false;
-        btn.textContent = `تست پینگ همه کانفیگ‌ها`;
-        showToast('تست تکمیل شد!');
+        btn.textContent = `🔬 تست پینگ ${total} کانفیگ`;
+        showToast(`✅ تست ${total} کانفیگ تکمیل شد!`);
         
-        // مرتب‌سازی خودکار بر اساس پینگ
         sortConfigsByPing(coreName);
     };
     
@@ -560,7 +604,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             items.forEach(item => configList.appendChild(item));
         });
+        
+        console.log(`📊 ${coreName} configs sorted by ping`);
     }
 
+    // شروع برنامه
     fetchAndRender();
 });
