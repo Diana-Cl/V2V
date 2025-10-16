@@ -480,6 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const controller = new AbortController();
                                 const timeoutId = setTimeout(() => controller.abort(), PING_TIMEOUT);
 
+                                const testStart = Date.now();
                                 const response = await fetch(`${workerUrl}/ping`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
@@ -488,16 +489,22 @@ document.addEventListener('DOMContentLoaded', () => {
                                 });
 
                                 clearTimeout(timeoutId);
+                                const requestTime = Date.now() - testStart;
 
                                 if (response.ok) {
                                     const result = await response.json();
-                                    if (result.latency && result.latency > 0) {
+                                    if (result.latency && result.latency > 0 && result.latency < 7000) {
                                         latencies.push(result.latency);
+                                        
+                                        // نمایش زنده بعد از هر تست موفق
+                                        const currentAvg = Math.round(latencies.reduce((a,b) => a+b) / latencies.length);
+                                        const color = currentAvg < 200 ? '#4CAF50' : currentAvg < 500 ? '#FFC107' : '#F44336';
+                                        resultEl.innerHTML = `<span style="color: ${color};">${currentAvg}ms</span>`;
                                     }
                                 }
                             } catch (e) {}
                             
-                            if (attempt < PING_ATTEMPTS - 1) {
+                            if (attempt < PING_ATTEMPTS - 1 && latencies.length < 3) {
                                 await new Promise(resolve => setTimeout(resolve, 150));
                             }
                         }
@@ -509,9 +516,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             pingResults[`${coreName}-${protocol}-${idx}`] = avgLatency;
                         } else {
                             resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
+                            pingResults[`${coreName}-${protocol}-${idx}`] = 9999;
                         }
                     } catch (error) {
                         resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
+                        pingResults[`${coreName}-${protocol}-${idx}`] = 9999;
                     }
 
                     completed++;
@@ -524,7 +533,34 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = false;
         btn.textContent = `تست پینگ همه کانفیگ‌ها`;
         showToast('تست تکمیل شد!');
+        
+        // مرتب‌سازی خودکار بر اساس پینگ
+        sortConfigsByPing(coreName);
     };
+    
+    function sortConfigsByPing(coreName) {
+        const wrapper = coreName === 'xray' ? xrayWrapper : singboxWrapper;
+        const protocolGroups = wrapper.querySelectorAll('.protocol-group');
+        
+        protocolGroups.forEach(group => {
+            const configList = group.querySelector('.config-list');
+            if (!configList) return;
+            
+            const items = Array.from(configList.querySelectorAll('.config-item'));
+            
+            items.sort((a, b) => {
+                const keyA = a.dataset.configKey;
+                const keyB = b.dataset.configKey;
+                
+                const pingA = pingResults[keyA] || 9999;
+                const pingB = pingResults[keyB] || 9999;
+                
+                return pingA - pingB;
+            });
+            
+            items.forEach(item => configList.appendChild(item));
+        });
+    }
 
     fetchAndRender();
 });
