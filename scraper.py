@@ -8,6 +8,7 @@ import time
 import socket
 import ssl
 import random
+import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs, unquote
 from github import Github, Auth
@@ -17,13 +18,13 @@ import yaml
 import signal
 
 def timeout_handler(signum, frame):
-    print("TIMEOUT: Script exceeded maximum runtime")
+    print("⏰ TIMEOUT: Script exceeded maximum runtime")
     exit(1)
 
 signal.signal(signal.SIGALRM, timeout_handler)
 signal.alarm(50 * 60)
 
-print("INFO: V2V Enhanced Scraper v7.0 - ZERO DUPLICATES")
+print("🚀 V2V Enhanced Scraper v8.0 - ZERO DUPLICATES + FIXED PING")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCES_FILE = os.path.join(BASE_DIR, "sources.json")
@@ -44,10 +45,20 @@ GITHUB_PAT = os.environ.get('GH_PAT')
 MAX_CONFIGS_TO_TEST = 10000
 MAX_CONFIGS_PER_PROTOCOL = 500
 MAX_TEST_WORKERS = 100
-TCP_TIMEOUT = 3.5
+TCP_TIMEOUT = 4.0
 MAX_LATENCY_MS = 5000
 GITHUB_SEARCH_LIMIT = int(os.environ.get('GITHUB_SEARCH_LIMIT', 150))
 MAX_RETRIES = 2
+
+def get_config_hash(config: str) -> str:
+    """ایجاد hash منحصر به فرد برای هر کانفیگ"""
+    try:
+        parsed = urlparse(config)
+        # استفاده از server, port و username/id برای hash
+        unique_parts = f"{parsed.scheme}://{parsed.hostname}:{parsed.port}:{parsed.username}"
+        return hashlib.sha256(unique_parts.encode()).hexdigest()[:16]
+    except:
+        return hashlib.sha256(config.encode()).hexdigest()[:16]
 
 def decode_base64_content(content: str) -> str:
     if not isinstance(content, str) or not content.strip():
@@ -82,7 +93,6 @@ def parse_tuic_config(config: str) -> Optional[Dict]:
             return None
         
         params = parse_qs(parsed.query)
-        
         uuid = parsed.username if parsed.username else params.get('uuid', [''])[0]
         password = params.get('password', [''])[0]
         
@@ -96,7 +106,7 @@ def parse_tuic_config(config: str) -> Optional[Dict]:
             'password': password,
             'sni': params.get('sni', [parsed.hostname])[0],
         }
-    except Exception as e:
+    except:
         return None
 
 def is_valid_config(config: str) -> bool:
@@ -160,7 +170,7 @@ def extract_configs_from_content(content: str) -> Set[str]:
 
 def fetch_from_static_sources(sources: List[str]) -> Set[str]:
     all_configs = set()
-    print(f"Fetching from {len(sources)} static sources...")
+    print(f"📡 Fetching from {len(sources)} static sources...")
 
     def fetch_url(url: str, retry: int = 0) -> Set[str]:
         if retry >= MAX_RETRIES:
@@ -171,7 +181,7 @@ def fetch_from_static_sources(sources: List[str]) -> Set[str]:
             response.raise_for_status()
             configs = extract_configs_from_content(response.text)
             if configs:
-                print(f"  Found {len(configs)} from {url[:60]}")
+                print(f"  ✓ Found {len(configs)} from {url[:60]}")
             return configs
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429 and retry < MAX_RETRIES:
@@ -204,11 +214,10 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
             "vless vmess trojan ss extension:txt",
             "hysteria2 hy2 extension:json",
             "tuic:// protocol",
-            "tuic protocol config",
             "subscription v2ray proxy"
         ]
         
-        print(f"  Searching GitHub (limit: {limit})")
+        print(f"🔍 Searching GitHub (limit: {limit})")
         start = time.time()
         
         for query in queries:
@@ -227,18 +236,19 @@ def fetch_from_github(pat: str, limit: int) -> Set[str]:
                             all_configs.update(configs)
                             processed += 1
                             if processed % 50 == 0:
-                                print(f"    Processed {processed} files")
+                                print(f"  📄 Processed {processed} files")
                     except:
                         continue
             except:
                 continue
         
-        print(f"  GitHub: {len(all_configs)} configs from {processed} files")
+        print(f"  ✅ GitHub: {len(all_configs)} configs from {processed} files")
         return all_configs
     except:
         return set()
 
 def test_protocol_connection(config: str) -> Optional[Tuple[str, int, str]]:
+    """تست اتصال با پشتیبانی کامل از همه پروتکل‌ها"""
     try:
         parsed = urlparse(config)
         protocol = normalize_protocol(parsed.scheme)
@@ -248,11 +258,13 @@ def test_protocol_connection(config: str) -> Optional[Tuple[str, int, str]]:
         if protocol == 'vmess':
             try:
                 decoded = json.loads(decode_base64_content(config.replace("vmess://", "")))
-                hostname, port = decoded.get('add'), int(decoded.get('port', 0))
+                hostname = decoded.get('add')
+                port = int(decoded.get('port', 0))
                 is_tls = decoded.get('tls') in ['tls', 'xtls']
                 sni = decoded.get('sni') or decoded.get('host') or hostname
             except:
                 return None
+                
         elif protocol == 'tuic':
             tuic_info = parse_tuic_config(config)
             if not tuic_info:
@@ -261,16 +273,29 @@ def test_protocol_connection(config: str) -> Optional[Tuple[str, int, str]]:
             port = tuic_info['port']
             is_tls = True
             sni = tuic_info['sni']
+            
         elif protocol in ['vless', 'trojan']:
-            hostname, port = parsed.hostname, int(parsed.port or 0)
+            hostname = parsed.hostname
+            port = int(parsed.port or 0)
             params = parse_qs(parsed.query)
-            is_tls = params.get('security', [''])[0] == 'tls' or protocol == 'trojan'
-            sni = params.get('sni', [hostname])[0]
+            
+            # برای Trojan همیشه TLS فعال است
+            if protocol == 'trojan':
+                is_tls = True
+                sni = params.get('sni', [hostname])[0] if params.get('sni') else hostname
+            else:  # vless
+                is_tls = params.get('security', [''])[0] == 'tls'
+                sni = params.get('sni', [hostname])[0] if params.get('sni') else hostname
+                
         elif protocol == 'ss':
-            hostname, port = parsed.hostname, int(parsed.port or 0)
+            hostname = parsed.hostname
+            port = int(parsed.port or 0)
+            
         elif protocol == 'hy2':
-            hostname, port = parsed.hostname, int(parsed.port or 0)
+            hostname = parsed.hostname
+            port = int(parsed.port or 0)
             is_tls = True
+            
         else:
             return None
         
@@ -279,66 +304,90 @@ def test_protocol_connection(config: str) -> Optional[Tuple[str, int, str]]:
         
         start = time.monotonic()
         
+        # تست UDP برای Hy2 و TUIC
         if protocol in ['tuic', 'hy2']:
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.settimeout(TCP_TIMEOUT)
                 sock.connect((hostname, port))
                 sock.send(b'\x00' * 16)
+                try:
+                    sock.recv(16)
+                except:
+                    pass
                 sock.close()
             except:
                 return None
         else:
+            # تست TCP برای بقیه پروتکل‌ها
             try:
                 sock = socket.create_connection((hostname, port), timeout=TCP_TIMEOUT)
+                
+                # برای پروتکل‌های TLS (Trojan, VLESS با TLS, VMess با TLS)
                 if is_tls:
                     context = ssl.create_default_context()
                     context.check_hostname = False
                     context.verify_mode = ssl.CERT_NONE
-                    ssock = context.wrap_socket(sock, server_hostname=sni or hostname)
-                    ssock.close()
-                sock.close()
+                    context.minimum_version = ssl.TLSVersion.TLSv1_2
+                    
+                    try:
+                        ssock = context.wrap_socket(sock, server_hostname=sni or hostname)
+                        # خواندن داده‌های اولیه برای اطمینان از اتصال
+                        ssock.do_handshake()
+                        ssock.close()
+                    except ssl.SSLError:
+                        # برخی سرورها ممکن است SSLError برگردانند ولی باز هم کار می‌کنند
+                        sock.close()
+                else:
+                    sock.close()
+                    
+            except socket.timeout:
+                return None
+            except socket.error:
+                return None
             except:
                 return None
         
         latency = int((time.monotonic() - start) * 1000)
         
-        if latency <= MAX_LATENCY_MS:
+        if latency > 0 and latency <= MAX_LATENCY_MS:
             return config, latency, protocol
         
         return None
-    except:
+        
+    except Exception as e:
         return None
 
 def balance_protocols_separate(configs_with_info: List[Tuple[str, int, str]], protocols: Set[str]) -> List[str]:
-    """توزیع جداگانه برای هر هسته با حذف تکرار داخلی"""
+    """توزیع جداگانه با حذف تکرار کامل"""
     protocol_groups = defaultdict(list)
-    seen_configs = set()
+    seen_hashes = set()
     
     for config, latency, protocol in configs_with_info:
         if protocol in protocols:
-            config_normalized = config.lower().strip()
+            config_hash = get_config_hash(config)
             
-            if config_normalized not in seen_configs:
-                protocol_groups[protocol].append((config, latency))
-                seen_configs.add(config_normalized)
+            if config_hash not in seen_hashes:
+                protocol_groups[protocol].append((config, latency, config_hash))
+                seen_hashes.add(config_hash)
     
+    # مرتب‌سازی بر اساس ping
     for protocol in protocol_groups:
         protocol_groups[protocol].sort(key=lambda x: x[1])
     
     selected = []
-    
     for protocol in sorted(protocols):
         if protocol in protocol_groups:
             count = min(MAX_CONFIGS_PER_PROTOCOL, len(protocol_groups[protocol]))
-            for config, _ in protocol_groups[protocol][:count]:
+            for config, _, _ in protocol_groups[protocol][:count]:
                 selected.append(config)
     
     return selected
 
 def generate_clash_yaml(configs: List[str]) -> Optional[str]:
+    """تولید فایل Clash با ساختار صحیح"""
     proxies = []
-    seen = set()
+    seen_hashes = set()
     
     for config in configs:
         try:
@@ -348,15 +397,20 @@ def generate_clash_yaml(configs: List[str]) -> Optional[str]:
             if protocol in SINGBOX_ONLY_PROTOCOLS:
                 continue
             
+            config_hash = get_config_hash(config)
+            if config_hash in seen_hashes:
+                continue
+            seen_hashes.add(config_hash)
+            
             name = unquote(parsed.fragment) if parsed.fragment else f"V2V-{protocol}-{random.randint(1000,9999)}"
             name = re.sub(r'[^\w\-_.]', '', name)[:50]
             
-            proxy_id = f"{parsed.hostname}:{parsed.port}:{name}"
-            if proxy_id in seen:
-                continue
-            seen.add(proxy_id)
-            
-            proxy = {'name': name, 'server': parsed.hostname, 'port': int(parsed.port), 'skip-cert-verify': True}
+            proxy = {
+                'name': name,
+                'server': parsed.hostname,
+                'port': int(parsed.port),
+                'skip-cert-verify': True
+            }
             
             if protocol == 'vmess':
                 decoded = json.loads(decode_base64_content(config.replace("vmess://", "")))
@@ -364,58 +418,109 @@ def generate_clash_yaml(configs: List[str]) -> Optional[str]:
                     'type': 'vmess',
                     'uuid': decoded.get('id'),
                     'alterId': int(decoded.get('aid', 0)),
-                    'cipher': decoded.get('scy', 'auto')
+                    'cipher': decoded.get('scy', 'auto'),
+                    'udp': True
                 })
+                if decoded.get('net') == 'ws':
+                    proxy['network'] = 'ws'
+                    proxy['ws-opts'] = {
+                        'path': decoded.get('path', '/'),
+                        'headers': {'Host': decoded.get('host', parsed.hostname)}
+                    }
                 if decoded.get('tls') == 'tls':
                     proxy['tls'] = True
                     proxy['servername'] = decoded.get('sni') or decoded.get('host') or parsed.hostname
+                    
             elif protocol == 'vless':
-                proxy.update({'type': 'vless', 'uuid': parsed.username})
+                proxy.update({
+                    'type': 'vless',
+                    'uuid': parsed.username,
+                    'udp': True
+                })
                 params = parse_qs(parsed.query)
+                if params.get('type', [''])[0] == 'ws':
+                    proxy['network'] = 'ws'
+                    proxy['ws-opts'] = {
+                        'path': params.get('path', ['/'])[0],
+                        'headers': {'Host': params.get('host', [parsed.hostname])[0]}
+                    }
                 if params.get('security', [''])[0] == 'tls':
                     proxy['tls'] = True
                     proxy['servername'] = params.get('sni', [parsed.hostname])[0]
+                    if params.get('flow'):
+                        proxy['flow'] = params.get('flow')[0]
+                        
             elif protocol == 'trojan':
-                proxy.update({'type': 'trojan', 'password': parsed.username})
+                proxy.update({
+                    'type': 'trojan',
+                    'password': parsed.username,
+                    'udp': True
+                })
                 params = parse_qs(parsed.query)
                 proxy['sni'] = params.get('sni', [parsed.hostname])[0]
+                
             elif protocol == 'ss':
                 decoded = decode_base64_content(parsed.username)
                 if ':' in decoded:
                     method, password = decoded.split(':', 1)
-                    proxy.update({'type': 'ss', 'cipher': method, 'password': password})
+                    proxy.update({
+                        'type': 'ss',
+                        'cipher': method,
+                        'password': password,
+                        'udp': True
+                    })
             
             if proxy.get('type'):
                 proxies.append(proxy)
-        except Exception as e:
+                
+        except:
             continue
     
     if not proxies:
         return None
     
     names = [p['name'] for p in proxies]
-    config = {
+    
+    clash_config = {
         'proxies': proxies,
         'proxy-groups': [
-            {'name': 'V2V-Auto', 'type': 'url-test', 'proxies': names, 'url': 'http://www.gstatic.com/generate_204', 'interval': 300},
-            {'name': 'V2V-Select', 'type': 'select', 'proxies': ['V2V-Auto'] + names}
+            {
+                'name': '🚀 V2V Auto',
+                'type': 'url-test',
+                'proxies': names,
+                'url': 'http://www.gstatic.com/generate_204',
+                'interval': 300,
+                'tolerance': 50
+            },
+            {
+                'name': '🎯 V2V Select',
+                'type': 'select',
+                'proxies': ['🚀 V2V Auto'] + names
+            }
         ],
-        'rules': ['MATCH,V2V-Select']
+        'rules': [
+            'GEOIP,IR,DIRECT',
+            'MATCH,🎯 V2V Select'
+        ]
     }
     
     try:
-        return yaml.dump(config, allow_unicode=True, sort_keys=False)
+        return yaml.dump(clash_config, allow_unicode=True, sort_keys=False, default_flow_style=False)
     except:
         return None
 
 def main():
     try:
-        print("--- 1. Loading Sources ---")
+        print("\n" + "="*60)
+        print("🚀 V2V SCRAPER STARTED")
+        print("="*60)
+        
+        print("\n📂 1. Loading Sources...")
         with open(SOURCES_FILE, 'r') as f:
             sources = json.load(f).get("static", [])
-        print(f"Loaded {len(sources)} sources")
+        print(f"   ✓ Loaded {len(sources)} sources")
 
-        print("\n--- 2. Fetching Configs ---")
+        print("\n📥 2. Fetching Configs...")
         all_configs = set()
         
         with ThreadPoolExecutor(max_workers=2) as executor:
@@ -429,12 +534,12 @@ def main():
                 pass
         
         if not all_configs:
-            print("No configs found")
+            print("   ❌ No configs found")
             return
         
-        print(f"Total unique: {len(all_configs)}")
+        print(f"   ✓ Total unique: {len(all_configs)}")
 
-        print("\n--- 3. Testing Configs ---")
+        print("\n🔬 3. Testing Configs...")
         tested = []
         to_test = list(all_configs)[:MAX_CONFIGS_TO_TEST]
         
@@ -448,31 +553,28 @@ def main():
                         tested.append(result)
                     completed += 1
                     if completed % 500 == 0:
-                        print(f"    {completed}/{len(to_test)} ({len(tested)} working)")
+                        print(f"   📊 {completed}/{len(to_test)} tested ({len(tested)} working)")
                 except:
                     pass
         
-        print(f"Found {len(tested)} working configs")
+        print(f"   ✓ Found {len(tested)} working configs")
 
-        print("\n--- 4. Protocol Selection (ZERO DUPLICATES) ---")
+        print("\n🎯 4. Selecting Best Configs (ZERO DUPLICATES)...")
         
-        # مرحله 1: فیلتر کانفیگ‌های Xray
+        # Xray
         xray_tested = [(cfg, lat, prot) for cfg, lat, prot in tested if prot in XRAY_PROTOCOLS]
         selected_xray = balance_protocols_separate(xray_tested, XRAY_PROTOCOLS)
         
-        # مرحله 2: ساخت set نرمال شده از کانفیگ‌های Xray
-        used_normalized = set(cfg.lower().strip() for cfg in selected_xray)
-        
-        # مرحله 3: فیلتر کانفیگ‌های باقی‌مانده برای Singbox
-        remaining_tested = []
-        for cfg, lat, prot in tested:
-            if cfg.lower().strip() not in used_normalized:
-                remaining_tested.append((cfg, lat, prot))
-        
-        # مرحله 4: انتخاب برای Singbox از کانفیگ‌های باقی‌مانده
+        # Singbox (با حذف کانفیگ‌های استفاده شده در Xray)
+        used_hashes = set(get_config_hash(cfg) for cfg in selected_xray)
+        remaining_tested = [
+            (cfg, lat, prot) for cfg, lat, prot in tested 
+            if get_config_hash(cfg) not in used_hashes
+        ]
         selected_singbox = balance_protocols_separate(remaining_tested, ALL_PROTOCOLS)
         
-        print(f"Selected: Xray={len(selected_xray)}, Sing-box={len(selected_singbox)}")
+        print(f"   ✓ Xray: {len(selected_xray)} configs")
+        print(f"   ✓ Singbox: {len(selected_singbox)} configs")
         
         def group_configs(configs: List[str]) -> Dict[str, List[str]]:
             grouped = defaultdict(list)
@@ -480,11 +582,11 @@ def main():
             
             for config in configs:
                 protocol = normalize_protocol(urlparse(config).scheme)
-                config_normalized = config.lower().strip()
+                config_hash = get_config_hash(config)
                 
-                if config_normalized not in seen_per_protocol[protocol]:
+                if config_hash not in seen_per_protocol[protocol]:
                     grouped[protocol].append(config)
-                    seen_per_protocol[protocol].add(config_normalized)
+                    seen_per_protocol[protocol].add(config_hash)
             
             return dict(grouped)
         
@@ -501,62 +603,58 @@ def main():
         
         output = {"xray": xray_grouped, "singbox": singbox_grouped}
         
-        print("\nProtocol Distribution:")
-        print("Xray:")
+        print("\n📊 Protocol Distribution:")
+        print("   Xray:")
         for p in sorted(xray_grouped.keys()):
-            print(f"  {p}: {len(xray_grouped[p])}")
-        print("Sing-box:")
+            print(f"     • {p}: {len(xray_grouped[p])}")
+        print("   Singbox:")
         for p in sorted(singbox_grouped.keys()):
-            print(f"  {p}: {len(singbox_grouped[p])}")
+            print(f"     • {p}: {len(singbox_grouped[p])}")
         
-        # بررسی تکرار بین هسته‌ها
-        xray_all = set()
+        # بررسی تکرار
+        xray_hashes = set()
         for configs_list in xray_grouped.values():
-            xray_all.update(c.lower().strip() for c in configs_list)
+            xray_hashes.update(get_config_hash(c) for c in configs_list)
         
-        singbox_all = set()
+        singbox_hashes = set()
         for configs_list in singbox_grouped.values():
-            singbox_all.update(c.lower().strip() for c in configs_list)
+            singbox_hashes.update(get_config_hash(c) for c in configs_list)
         
-        duplicates = xray_all.intersection(singbox_all)
+        duplicates = xray_hashes.intersection(singbox_hashes)
         
         if duplicates:
-            print(f"\n⚠️  WARNING: Found {len(duplicates)} duplicates between cores!")
+            print(f"\n   ⚠️  WARNING: Found {len(duplicates)} duplicates!")
         else:
-            print("\n✅ ZERO duplicates between Xray and Singbox!")
+            print("\n   ✅ ZERO duplicates confirmed!")
 
-        print("\n--- 5. Writing Files ---")
+        print("\n💾 5. Writing Files...")
         
         with open(OUTPUT_JSON_FILE, 'w', encoding='utf-8') as f:
             json.dump(output, f, indent=2, ensure_ascii=False)
-        print(f"Wrote {OUTPUT_JSON_FILE}")
+        print(f"   ✓ {OUTPUT_JSON_FILE}")
         
         clash_yaml = generate_clash_yaml(selected_xray)
         with open(OUTPUT_CLASH_FILE, 'w', encoding='utf-8') as f:
-            f.write(clash_yaml if clash_yaml else "proxies: []\n")
-        print(f"Wrote {OUTPUT_CLASH_FILE}")
+            f.write(clash_yaml if clash_yaml else "# No valid Clash configs\nproxies: []\n")
+        print(f"   ✓ {OUTPUT_CLASH_FILE}")
         
         with open(CACHE_VERSION_FILE, 'w') as f:
             f.write(str(int(time.time())))
-        print(f"Updated {CACHE_VERSION_FILE}")
+        print(f"   ✓ {CACHE_VERSION_FILE}")
         
-        print("\n=== COMPLETED ===")
+        print("\n" + "="*60)
+        print("✅ SCRAPER COMPLETED SUCCESSFULLY")
+        print("="*60)
         total_xray = sum(len(v) for v in xray_grouped.values())
         total_singbox = sum(len(v) for v in singbox_grouped.values())
-        print(f"Final: Xray={total_xray}, Sing-box={total_singbox}")
-        
-        empty_protocols = []
-        for p in ALL_PROTOCOLS:
-            if p in XRAY_PROTOCOLS and not xray_grouped.get(p):
-                empty_protocols.append(f"Xray-{p}")
-            if not singbox_grouped.get(p):
-                empty_protocols.append(f"Singbox-{p}")
-        
-        if empty_protocols:
-            print(f"WARNING: Empty protocols: {', '.join(empty_protocols)}")
+        print(f"📈 Final Stats:")
+        print(f"   • Xray: {total_xray} configs")
+        print(f"   • Singbox: {total_singbox} configs")
+        print(f"   • Total: {total_xray + total_singbox} configs")
+        print("="*60 + "\n")
         
     except Exception as e:
-        print(f"FATAL: {e}")
+        print(f"\n❌ FATAL ERROR: {e}")
         import traceback
         traceback.print_exc()
     finally:
