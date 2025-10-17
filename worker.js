@@ -1,650 +1,410 @@
 import { connect } from 'cloudflare:sockets';
 
-const TTL_SUBSCRIPTION = 60 * 60 * 24 * 365;
+const TTL = 365 * 24 * 60 * 60; // 1 year
+const ORIGINS = ['https://smbcryp.github.io', 'https://v2v-vercel.vercel.app', 'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir'];
 
-const ALLOWED_ORIGINS = [
-    'https://smbcryp.github.io',
-    'https://v2v-vercel.vercel.app',
-    'https://v2v-data.s3-website.ir-thr-at1.arvanstorage.ir',
-];
+const cors = (o) => ORIGINS.includes(o) ? { 'Access-Control-Allow-Origin': o, 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' } : { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS' };
+const json = (d, s, h) => new Response(JSON.stringify(d), { status: s, headers: { 'Content-Type': 'application/json', ...h } });
+const text = (t, c, h, f) => new Response(t, { status: 200, headers: { 'Content-Type': `${c}; charset=utf-8`, ...(f ? { 'Content-Disposition': `attachment; filename="${f}"` } : {}), ...h } });
 
-function generateCorsHeaders(requestOrigin) {
-    if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
-        return {
-            'Access-Control-Allow-Origin': requestOrigin,
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Access-Control-Max-Age': '86400',
-        };
-    }
+// Unique ID generator
+const uid = (p, s, i) => {
+  const h = (s + i).split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
+  return `${p}${Math.abs(h).toString(36).slice(0, 7)}`;
+};
+
+const b64d = (s) => { try { return atob(s.replace(/-/g, '+').replace(/_/g, '/')); } catch { return null; } };
+
+const parseVmess = (cfg) => {
+  try {
+    if (!cfg?.startsWith('vmess://')) return null;
+    const d = b64d(cfg.slice(8));
+    if (!d) return null;
+    const j = JSON.parse(d);
+    if (!j.add || !j.port || !j.id) return null;
     return {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      s: j.add,
+      p: parseInt(j.port),
+      u: j.id,
+      a: parseInt(j.aid) || 0,
+      c: j.scy || 'auto',
+      n: j.net || 'tcp',
+      t: j.tls === 'tls',
+      sni: j.sni || j.host || j.add,
+      path: j.path || '/',
+      host: j.host || j.add
     };
-}
+  } catch { return null; }
+};
 
-function jsonResponse(data, status, corsHeaders) {
-    return new Response(JSON.stringify(data), {
-        status,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-    });
-}
-
-function textResponse(text, contentType, corsHeaders, filename = null) {
-    const headers = {
-        'Content-Type': `${contentType}; charset=utf-8`,
-        ...corsHeaders
+const parseVless = (cfg) => {
+  try {
+    if (!cfg?.startsWith('vless://')) return null;
+    const u = new URL(cfg);
+    if (!u.hostname || !u.port || !u.username) return null;
+    const q = new URLSearchParams(u.search);
+    return {
+      s: u.hostname,
+      p: parseInt(u.port),
+      u: u.username,
+      n: q.get('type') || 'tcp',
+      t: q.get('security') === 'tls',
+      sni: q.get('sni') || u.hostname,
+      path: q.get('path') || '/',
+      host: q.get('host') || u.hostname,
+      flow: q.get('flow') || ''
     };
-    if (filename) {
-        headers['Content-Disposition'] = `attachment; filename="${filename}"`;
-    }
-    return new Response(text, { status: 200, headers });
-}
+  } catch { return null; }
+};
 
-// تولید UUID منحصر به فرد برای tag
-function generateUniqueTag(protocol, server, index) {
-    const hash = `${server}${index}`.split('').reduce((a, b) => {
-        a = ((a << 5) - a) + b.charCodeAt(0);
-        return a & a;
-    }, 0);
-    return `V2V-${protocol}-${Math.abs(hash).toString(36).substring(0, 6)}`;
-}
+const parseTrojan = (cfg) => {
+  try {
+    if (!cfg?.startsWith('trojan://')) return null;
+    const u = new URL(cfg);
+    if (!u.hostname || !u.port || !u.username) return null;
+    const q = new URLSearchParams(u.search);
+    return {
+      s: u.hostname,
+      p: parseInt(u.port),
+      pw: u.username,
+      sni: q.get('sni') || u.hostname
+    };
+  } catch { return null; }
+};
 
-function safeBase64Decode(str) {
+const parseSs = (cfg) => {
+  try {
+    if (!cfg?.startsWith('ss://')) return null;
+    const u = new URL(cfg);
+    if (!u.hostname || !u.port || !u.username) return null;
+    const d = b64d(u.username);
+    if (!d || !d.includes(':')) return null;
+    const i = d.indexOf(':');
+    return {
+      s: u.hostname,
+      p: parseInt(u.port),
+      m: d.slice(0, i),
+      pw: d.slice(i + 1)
+    };
+  } catch { return null; }
+};
+
+const genClash = (cfgs) => {
+  const prx = [];
+  const seen = new Set();
+  
+  for (let i = 0; i < cfgs.length; i++) {
     try {
-        return atob(str.replace(/-/g, '+').replace(/_/g, '/'));
-    } catch {
-        return null;
-    }
-}
-
-function parseVmessConfig(config) {
-    try {
-        if (!config || !config.startsWith('vmess://')) return null;
-
-        const vmessData = config.replace('vmess://', '').trim();
-        const decoded = safeBase64Decode(vmessData);
-        if (!decoded) return null;
-
-        const json = JSON.parse(decoded);
-        if (!json.add || !json.port || !json.id) return null;
-
-        return {
-            server: String(json.add).trim(),
-            port: parseInt(json.port),
-            uuid: String(json.id).trim(),
-            alterId: parseInt(json.aid) || 0,
-            cipher: json.scy || 'auto',
-            network: json.net || 'tcp',
-            tls: json.tls === 'tls',
-            sni: json.sni || json.host || json.add,
-            path: json.path || '/',
-            host: json.host || json.add,
-            name: (json.ps || `VMess-${json.add}`).substring(0, 30)
+      let p = null;
+      let k = null;
+      
+      if (cfgs[i].startsWith('vmess://')) {
+        const v = parseVmess(cfgs[i]);
+        if (!v) continue;
+        k = `vm${v.s}${v.p}${v.u}`;
+        if (seen.has(k)) continue;
+        p = {
+          name: uid('vm', v.s, i),
+          type: 'vmess',
+          server: v.s,
+          port: v.p,
+          uuid: v.u,
+          alterId: v.a,
+          cipher: v.c,
+          udp: true,
+          'skip-cert-verify': true
         };
-    } catch {
-        return null;
-    }
-}
-
-function parseVlessConfig(config) {
-    try {
-        if (!config || !config.startsWith('vless://')) return null;
-
-        const urlObj = new URL(config);
-        if (!urlObj.hostname || !urlObj.port || !urlObj.username) return null;
-
-        const params = new URLSearchParams(urlObj.search);
-
-        return {
-            server: urlObj.hostname,
-            port: parseInt(urlObj.port),
-            uuid: urlObj.username,
-            network: params.get('type') || 'tcp',
-            tls: params.get('security') === 'tls',
-            sni: params.get('sni') || urlObj.hostname,
-            path: params.get('path') || '/',
-            host: params.get('host') || urlObj.hostname,
-            flow: params.get('flow') || '',
-            name: (decodeURIComponent(urlObj.hash.substring(1)) || `VLESS-${urlObj.hostname}`).substring(0, 30)
+        if (v.n === 'ws') {
+          p.network = 'ws';
+          p['ws-opts'] = { path: v.path, headers: { Host: v.host } };
+        }
+        if (v.t) {
+          p.tls = true;
+          p.servername = v.sni;
+        }
+      } else if (cfgs[i].startsWith('vless://')) {
+        const v = parseVless(cfgs[i]);
+        if (!v) continue;
+        k = `vl${v.s}${v.p}${v.u}`;
+        if (seen.has(k)) continue;
+        p = {
+          name: uid('vl', v.s, i),
+          type: 'vless',
+          server: v.s,
+          port: v.p,
+          uuid: v.u,
+          udp: true,
+          'skip-cert-verify': true
         };
-    } catch {
-        return null;
-    }
-}
-
-function parseTrojanConfig(config) {
-    try {
-        if (!config || !config.startsWith('trojan://')) return null;
-
-        const urlObj = new URL(config);
-        if (!urlObj.hostname || !urlObj.port || !urlObj.username) return null;
-
-        const params = new URLSearchParams(urlObj.search);
-
-        return {
-            server: urlObj.hostname,
-            port: parseInt(urlObj.port),
-            password: urlObj.username,
-            sni: params.get('sni') || urlObj.hostname,
-            name: (decodeURIComponent(urlObj.hash.substring(1)) || `Trojan-${urlObj.hostname}`).substring(0, 30)
+        if (v.n === 'ws') {
+          p.network = 'ws';
+          p['ws-opts'] = { path: v.path, headers: { Host: v.host } };
+        }
+        if (v.t) {
+          p.tls = true;
+          p.servername = v.sni;
+          if (v.flow) p.flow = v.flow;
+        }
+      } else if (cfgs[i].startsWith('trojan://')) {
+        const v = parseTrojan(cfgs[i]);
+        if (!v) continue;
+        k = `tr${v.s}${v.p}${v.pw}`;
+        if (seen.has(k)) continue;
+        p = {
+          name: uid('tr', v.s, i),
+          type: 'trojan',
+          server: v.s,
+          port: v.p,
+          password: v.pw,
+          udp: true,
+          sni: v.sni,
+          'skip-cert-verify': true
         };
-    } catch {
-        return null;
-    }
-}
-
-function parseSsConfig(config) {
-    try {
-        if (!config || !config.startsWith('ss://')) return null;
-
-        const urlObj = new URL(config);
-        if (!urlObj.hostname || !urlObj.port || !urlObj.username) return null;
-
-        const decoded = safeBase64Decode(urlObj.username);
-        if (!decoded || !decoded.includes(':')) return null;
-
-        const colonIndex = decoded.indexOf(':');
-        const method = decoded.substring(0, colonIndex);
-        const password = decoded.substring(colonIndex + 1);
-
-        if (!method || !password) return null;
-
-        return {
-            server: urlObj.hostname,
-            port: parseInt(urlObj.port),
-            method: method,
-            password: password,
-            name: (decodeURIComponent(urlObj.hash.substring(1)) || `SS-${urlObj.hostname}`).substring(0, 30)
+      } else if (cfgs[i].startsWith('ss://')) {
+        const v = parseSs(cfgs[i]);
+        if (!v) continue;
+        k = `ss${v.s}${v.p}${v.m}`;
+        if (seen.has(k)) continue;
+        p = {
+          name: uid('ss', v.s, i),
+          type: 'ss',
+          server: v.s,
+          port: v.p,
+          cipher: v.m,
+          password: v.pw,
+          udp: true
         };
-    } catch {
-        return null;
-    }
-}
-
-function generateClashYAML(configs) {
-    const proxies = [];
-    const seen = new Set();
-
-    for (let i = 0; i < configs.length; i++) {
-        const config = configs[i];
-        try {
-            let proxy = null;
-            let uniqueKey = null;
-
-            if (config.startsWith('vmess://')) {
-                const p = parseVmessConfig(config);
-                if (!p) continue;
-
-                uniqueKey = `vmess-${p.server}-${p.port}-${p.uuid}`;
-                if (seen.has(uniqueKey)) continue;
-
-                const name = generateUniqueTag('vmess', p.server, i);
-
-                proxy = {
-                    name: name,
-                    type: 'vmess',
-                    server: p.server,
-                    port: p.port,
-                    uuid: p.uuid,
-                    alterId: p.alterId,
-                    cipher: p.cipher,
-                    udp: true,
-                    'skip-cert-verify': true
-                };
-
-                if (p.network === 'ws') {
-                    proxy.network = 'ws';
-                    proxy['ws-opts'] = {
-                        path: p.path,
-                        headers: { Host: p.host }
-                    };
-                }
-                if (p.tls) {
-                    proxy.tls = true;
-                    proxy.servername = p.sni;
-                }
-            } else if (config.startsWith('vless://')) {
-                const p = parseVlessConfig(config);
-                if (!p) continue;
-
-                uniqueKey = `vless-${p.server}-${p.port}-${p.uuid}`;
-                if (seen.has(uniqueKey)) continue;
-
-                const name = generateUniqueTag('vless', p.server, i);
-
-                proxy = {
-                    name: name,
-                    type: 'vless',
-                    server: p.server,
-                    port: p.port,
-                    uuid: p.uuid,
-                    udp: true,
-                    'skip-cert-verify': true
-                };
-
-                if (p.network === 'ws') {
-                    proxy.network = 'ws';
-                    proxy['ws-opts'] = {
-                        path: p.path,
-                        headers: { Host: p.host }
-                    };
-                }
-                if (p.tls) {
-                    proxy.tls = true;
-                    proxy.servername = p.sni;
-                    if (p.flow) proxy.flow = p.flow;
-                }
-            } else if (config.startsWith('trojan://')) {
-                const p = parseTrojanConfig(config);
-                if (!p) continue;
-
-                uniqueKey = `trojan-${p.server}-${p.port}-${p.password}`;
-                if (seen.has(uniqueKey)) continue;
-
-                const name = generateUniqueTag('trojan', p.server, i);
-
-                proxy = {
-                    name: name,
-                    type: 'trojan',
-                    server: p.server,
-                    port: p.port,
-                    password: p.password,
-                    udp: true,
-                    sni: p.sni,
-                    'skip-cert-verify': true
-                };
-            } else if (config.startsWith('ss://')) {
-                const p = parseSsConfig(config);
-                if (!p) continue;
-
-                uniqueKey = `ss-${p.server}-${p.port}-${p.method}`;
-                if (seen.has(uniqueKey)) continue;
-
-                const name = generateUniqueTag('ss', p.server, i);
-
-                proxy = {
-                    name: name,
-                    type: 'ss',
-                    server: p.server,
-                    port: p.port,
-                    cipher: p.method,
-                    password: p.password,
-                    udp: true
-                };
-            }
-
-            if (proxy && uniqueKey) {
-                seen.add(uniqueKey);
-                proxies.push(proxy);
-            }
-        } catch (err) {
-            console.error('Proxy parse error:', err);
+      }
+      
+      if (p && k) {
+        seen.add(k);
+        prx.push(p);
+      }
+    } catch {}
+  }
+  
+  if (!prx.length) return 'proxies: []';
+  
+  const n = prx.map(x => x.name);
+  let y = 'proxies:\n';
+  
+  for (const x of prx) {
+    y += `  - name: ${x.name}\n`;
+    y += `    type: ${x.type}\n`;
+    y += `    server: ${x.server}\n`;
+    y += `    port: ${x.port}\n`;
+    
+    if (x.type === 'vmess') {
+      y += `    uuid: ${x.uuid}\n`;
+      y += `    alterId: ${x.alterId}\n`;
+      y += `    cipher: ${x.cipher}\n`;
+      y += `    udp: true\n`;
+      if (x.network) {
+        y += `    network: ${x.network}\n`;
+        if (x['ws-opts']) {
+          y += `    ws-opts:\n      path: ${x['ws-opts'].path}\n      headers:\n        Host: ${x['ws-opts'].headers.Host}\n`;
         }
-    }
-
-    if (proxies.length === 0) {
-        return 'proxies: []';
-    }
-
-    const names = proxies.map(p => p.name);
-
-    // تولید YAML دستی (بدون کتابخانه)
-    let yaml = 'proxies:\n';
-
-    for (const proxy of proxies) {
-        yaml += `  - name: ${proxy.name}\n`;
-        yaml += `    type: ${proxy.type}\n`;
-        yaml += `    server: ${proxy.server}\n`;
-        yaml += `    port: ${proxy.port}\n`;
-
-        if (proxy.type === 'vmess') {
-            yaml += `    uuid: ${proxy.uuid}\n`;
-            yaml += `    alterId: ${proxy.alterId}\n`;
-            yaml += `    cipher: ${proxy.cipher}\n`;
-            yaml += `    udp: true\n`;
-            if (proxy.network) {
-                yaml += `    network: ${proxy.network}\n`;
-                if (proxy['ws-opts']) {
-                    yaml += `    ws-opts:\n`;
-                    yaml += `      path: ${proxy['ws-opts'].path}\n`;
-                    yaml += `      headers:\n`;
-                    yaml += `        Host: ${proxy['ws-opts'].headers.Host}\n`;
-                }
-            }
-            if (proxy.tls) {
-                yaml += `    tls: true\n`;
-                yaml += `    servername: ${proxy.servername}\n`;
-            }
-            yaml += `    skip-cert-verify: true\n`;
-        } else if (proxy.type === 'vless') {
-            yaml += `    uuid: ${proxy.uuid}\n`;
-            yaml += `    udp: true\n`;
-            if (proxy.network) {
-                yaml += `    network: ${proxy.network}\n`;
-                if (proxy['ws-opts']) {
-                    yaml += `    ws-opts:\n`;
-                    yaml += `      path: ${proxy['ws-opts'].path}\n`;
-                    yaml += `      headers:\n`;
-                    yaml += `        Host: ${proxy['ws-opts'].headers.Host}\n`;
-                }
-            }
-            if (proxy.tls) {
-                yaml += `    tls: true\n`;
-                yaml += `    servername: ${proxy.servername}\n`;
-                if (proxy.flow) yaml += `    flow: ${proxy.flow}\n`;
-            }
-            yaml += `    skip-cert-verify: true\n`;
-        } else if (proxy.type === 'trojan') {
-            yaml += `    password: ${proxy.password}\n`;
-            yaml += `    udp: true\n`;
-            yaml += `    sni: ${proxy.sni}\n`;
-            yaml += `    skip-cert-verify: true\n`;
-        } else if (proxy.type === 'ss') {
-            yaml += `    cipher: ${proxy.cipher}\n`;
-            yaml += `    password: ${proxy.password}\n`;
-            yaml += `    udp: true\n`;
+      }
+      if (x.tls) {
+        y += `    tls: true\n    servername: ${x.servername}\n`;
+      }
+      y += `    skip-cert-verify: true\n`;
+    } else if (x.type === 'vless') {
+      y += `    uuid: ${x.uuid}\n    udp: true\n`;
+      if (x.network) {
+        y += `    network: ${x.network}\n`;
+        if (x['ws-opts']) {
+          y += `    ws-opts:\n      path: ${x['ws-opts'].path}\n      headers:\n        Host: ${x['ws-opts'].headers.Host}\n`;
         }
+      }
+      if (x.tls) {
+        y += `    tls: true\n    servername: ${x.servername}\n`;
+        if (x.flow) y += `    flow: ${x.flow}\n`;
+      }
+      y += `    skip-cert-verify: true\n`;
+    } else if (x.type === 'trojan') {
+      y += `    password: ${x.password}\n    udp: true\n    sni: ${x.sni}\n    skip-cert-verify: true\n`;
+    } else if (x.type === 'ss') {
+      y += `    cipher: ${x.cipher}\n    password: ${x.password}\n    udp: true\n`;
     }
+  }
+  
+  y += '\nproxy-groups:\n';
+  y += '  - name: V2V-Auto\n    type: url-test\n    proxies:\n';
+  for (const x of n) y += `      - ${x}\n`;
+  y += '    url: http://www.gstatic.com/generate_204\n    interval: 300\n\n';
+  y += '  - name: V2V-Select\n    type: select\n    proxies:\n      - V2V-Auto\n';
+  for (const x of n) y += `      - ${x}\n`;
+  y += '\nrules:\n  - GEOIP,IR,DIRECT\n  - MATCH,V2V-Select\n';
+  
+  return y;
+};
 
-    yaml += '\nproxy-groups:\n';
-    yaml += '  - name: V2V-Auto\n';
-    yaml += '    type: url-test\n';
-    yaml += '    proxies:\n';
-    for (const name of names) {
-        yaml += `      - ${name}\n`;
-    }
-    yaml += '    url: http://www.gstatic.com/generate_204\n';
-    yaml += '    interval: 300\n\n';
-
-    yaml += '  - name: V2V-Select\n';
-    yaml += '    type: select\n';
-    yaml += '    proxies:\n';
-    yaml += '      - V2V-Auto\n';
-    for (const name of names) {
-        yaml += `      - ${name}\n`;
-    }
-
-    yaml += '\nrules:\n';
-    yaml += '  - GEOIP,IR,DIRECT\n';
-    yaml += '  - MATCH,V2V-Select\n';
-
-    return yaml;
-}
-
-function generateSingboxJSON(configs) {
-    const outbounds = [];
-    const seen = new Set();
-
-    for (let i = 0; i < configs.length; i++) {
-        const config = configs[i];
-        try {
-            let outbound = null;
-            let uniqueKey = null;
-
-            if (config.startsWith('vmess://')) {
-                const p = parseVmessConfig(config);
-                if (!p) continue;
-
-                uniqueKey = `vmess-${p.server}-${p.port}-${p.uuid}`;
-                if (seen.has(uniqueKey)) continue;
-
-                const tag = generateUniqueTag('vmess', p.server, i);
-
-                outbound = {
-                    tag: tag,
-                    type: 'vmess',
-                    server: p.server,
-                    server_port: p.port,
-                    uuid: p.uuid,
-                    alter_id: p.alterId,
-                    security: p.cipher
-                };
-
-                if (p.network === 'ws') {
-                    outbound.transport = {
-                        type: 'ws',
-                        path: p.path,
-                        headers: { Host: p.host }
-                    };
-                }
-                if (p.tls) {
-                    outbound.tls = {
-                        enabled: true,
-                        server_name: p.sni,
-                        insecure: true
-                    };
-                }
-            } else if (config.startsWith('vless://')) {
-                const p = parseVlessConfig(config);
-                if (!p) continue;
-
-                uniqueKey = `vless-${p.server}-${p.port}-${p.uuid}`;
-                if (seen.has(uniqueKey)) continue;
-
-                const tag = generateUniqueTag('vless', p.server, i);
-
-                outbound = {
-                    tag: tag,
-                    type: 'vless',
-                    server: p.server,
-                    server_port: p.port,
-                    uuid: p.uuid
-                };
-
-                if (p.network === 'ws') {
-                    outbound.transport = {
-                        type: 'ws',
-                        path: p.path,
-                        headers: { Host: p.host }
-                    };
-                }
-                if (p.tls) {
-                    outbound.tls = {
-                        enabled: true,
-                        server_name: p.sni,
-                        insecure: true
-                    };
-                    if (p.flow) outbound.flow = p.flow;
-                }
-            } else if (config.startsWith('trojan://')) {
-                const p = parseTrojanConfig(config);
-                if (!p) continue;
-
-                uniqueKey = `trojan-${p.server}-${p.port}-${p.password}`;
-                if (seen.has(uniqueKey)) continue;
-
-                const tag = generateUniqueTag('trojan', p.server, i);
-
-                outbound = {
-                    tag: tag,
-                    type: 'trojan',
-                    server: p.server,
-                    server_port: p.port,
-                    password: p.password,
-                    tls: {
-                        enabled: true,
-                        server_name: p.sni,
-                        insecure: true
-                    }
-                };
-            } else if (config.startsWith('ss://')) {
-                const p = parseSsConfig(config);
-                if (!p) continue;
-
-                uniqueKey = `ss-${p.server}-${p.port}-${p.method}`;
-                if (seen.has(uniqueKey)) continue;
-
-                const tag = generateUniqueTag('ss', p.server, i);
-
-                outbound = {
-                    tag: tag,
-                    type: 'shadowsocks',
-                    server: p.server,
-                    server_port: p.port,
-                    method: p.method,
-                    password: p.password
-                };
-            }
-
-            if (outbound && uniqueKey) {
-                seen.add(uniqueKey);
-                outbounds.push(outbound);
-            }
-        } catch (err) {
-            console.error('Outbound parse error:', err);
-        }
-    }
-
-    if (outbounds.length === 0) return null;
-
-    return JSON.stringify({
-        log: { level: 'info' },
-        dns: {
-            servers: [
-                { tag: 'google', address: '8.8.8.8' },
-                { tag: 'local', address: 'local', detour: 'direct' }
-            ]
-        },
-        inbounds: [
-            { type: 'mixed', listen: '127.0.0.1', listen_port: 7890 }
-        ],
-        outbounds: [
-            {
-                tag: 'V2V-Auto',
-                type: 'urltest',
-                outbounds: outbounds.map(o => o.tag),
-                url: 'http://www.gstatic.com/generate_204',
-                interval: '5m'
-            },
-            {
-                tag: 'V2V-Select',
-                type: 'selector',
-                outbounds: ['V2V-Auto', ...outbounds.map(o => o.tag)]
-            },
-            ...outbounds,
-            { tag: 'direct', type: 'direct' },
-            { tag: 'block', type: 'block' }
-        ],
-        route: {
-            rules: [
-                { geoip: 'ir', outbound: 'direct' }
-            ],
-            final: 'V2V-Select'
-        }
-    }, null, 2);
-}
-
-async function testConnection(host, port) {
+const genSingbox = (cfgs) => {
+  const out = [];
+  const seen = new Set();
+  
+  for (let i = 0; i < cfgs.length; i++) {
     try {
-        const startTime = Date.now();
-        const socket = connect({ hostname: host, port: parseInt(port) });
+      let o = null;
+      let k = null;
+      
+      if (cfgs[i].startsWith('vmess://')) {
+        const v = parseVmess(cfgs[i]);
+        if (!v) continue;
+        k = `vm${v.s}${v.p}${v.u}`;
+        if (seen.has(k)) continue;
+        o = {
+          tag: uid('vm', v.s, i),
+          type: 'vmess',
+          server: v.s,
+          server_port: v.p,
+          uuid: v.u,
+          alter_id: v.a,
+          security: v.c
+        };
+        if (v.n === 'ws') {
+          o.transport = { type: 'ws', path: v.path, headers: { Host: v.host } };
+        }
+        if (v.t) {
+          o.tls = { enabled: true, server_name: v.sni, insecure: true };
+        }
+      } else if (cfgs[i].startsWith('vless://')) {
+        const v = parseVless(cfgs[i]);
+        if (!v) continue;
+        k = `vl${v.s}${v.p}${v.u}`;
+        if (seen.has(k)) continue;
+        o = {
+          tag: uid('vl', v.s, i),
+          type: 'vless',
+          server: v.s,
+          server_port: v.p,
+          uuid: v.u
+        };
+        if (v.n === 'ws') {
+          o.transport = { type: 'ws', path: v.path, headers: { Host: v.host } };
+        }
+        if (v.t) {
+          o.tls = { enabled: true, server_name: v.sni, insecure: true };
+          if (v.flow) o.flow = v.flow;
+        }
+      } else if (cfgs[i].startsWith('trojan://')) {
+        const v = parseTrojan(cfgs[i]);
+        if (!v) continue;
+        k = `tr${v.s}${v.p}${v.pw}`;
+        if (seen.has(k)) continue;
+        o = {
+          tag: uid('tr', v.s, i),
+          type: 'trojan',
+          server: v.s,
+          server_port: v.p,
+          password: v.pw,
+          tls: { enabled: true, server_name: v.sni, insecure: true }
+        };
+      } else if (cfgs[i].startsWith('ss://')) {
+        const v = parseSs(cfgs[i]);
+        if (!v) continue;
+        k = `ss${v.s}${v.p}${v.m}`;
+        if (seen.has(k)) continue;
+        o = {
+          tag: uid('ss', v.s, i),
+          type: 'shadowsocks',
+          server: v.s,
+          server_port: v.p,
+          method: v.m,
+          password: v.pw
+        };
+      }
+      
+      if (o && k) {
+        seen.add(k);
+        out.push(o);
+      }
+    } catch {}
+  }
+  
+  if (!out.length) return null;
+  
+  return JSON.stringify({
+    log: { level: 'info' },
+    dns: { servers: [{ tag: 'g', address: '8.8.8.8' }, { tag: 'l', address: 'local', detour: 'direct' }] },
+    inbounds: [{ type: 'mixed', listen: '127.0.0.1', listen_port: 7890 }],
+    outbounds: [
+      { tag: 'V2V-Auto', type: 'urltest', outbounds: out.map(x => x.tag), url: 'http://www.gstatic.com/generate_204', interval: '5m' },
+      { tag: 'V2V-Select', type: 'selector', outbounds: ['V2V-Auto', ...out.map(x => x.tag)] },
+      ...out,
+      { tag: 'direct', type: 'direct' },
+      { tag: 'block', type: 'block' }
+    ],
+    route: { rules: [{ geoip: 'ir', outbound: 'direct' }], final: 'V2V-Select' }
+  }, null, 2);
+};
 
-        await Promise.race([
-            socket.opened,
-            new Promise((_, reject) => setTimeout(() => reject(), 5000))
-        ]);
+const testConn = async (h, p) => {
+  try {
+    const t = Date.now();
+    const s = connect({ hostname: h, port: parseInt(p) });
+    await Promise.race([s.opened, new Promise((_, r) => setTimeout(r, 5000))]);
+    const l = Date.now() - t;
+    try { await s.close(); } catch {}
+    return { latency: l, status: 'Live' };
+  } catch { return { latency: null, status: 'Dead' }; }
+};
 
-        const latency = Date.now() - startTime;
-        try { await socket.close(); } catch {}
-
-        return { latency, status: 'Live' };
-    } catch {
-        return { latency: null, status: 'Dead' };
-    }
-}
-
-function generateShortId() {
-    return Array.from({ length: 8 }, () =>
-        'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]
-    ).join('');
-}
+const genId = () => Array.from({ length: 8 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
 
 export default {
-    async fetch(request, env) {
-        const url = new URL(request.url);
-        const origin = request.headers.get('Origin');
-        const corsHeaders = generateCorsHeaders(origin);
-
-        if (request.method === 'OPTIONS') {
-            return new Response(null, { status: 204, headers: corsHeaders });
+  async fetch(req, env) {
+    const u = new URL(req.url);
+    const o = req.headers.get('Origin');
+    const h = cors(o);
+    
+    if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
+    
+    try {
+      if (u.pathname === '/' && req.method === 'GET') {
+        return json({ status: 'V2V Pro v7', endpoints: ['/ping', '/create-sub', '/sub/{format}/{id}'] }, 200, h);
+      }
+      
+      if (u.pathname === '/ping' && req.method === 'POST') {
+        const { host, port } = await req.json();
+        if (!host || !port) return json({ error: 'Missing params' }, 400, h);
+        const r = await testConn(host, port);
+        return json(r, 200, h);
+      }
+      
+      if (u.pathname === '/create-sub' && req.method === 'POST') {
+        const { configs, format } = await req.json();
+        if (!Array.isArray(configs) || !configs.length) return json({ error: 'Invalid configs' }, 400, h);
+        if (!['clash', 'singbox'].includes(format)) return json({ error: 'Invalid format' }, 400, h);
+        
+        const id = genId();
+        await env.v2v_kv.put(`sub:${id}`, JSON.stringify({ configs, format, created: Date.now() }), { expirationTtl: TTL });
+        return json({ success: true, id, url: `${u.origin}/sub/${format}/${id}` }, 200, h);
+      }
+      
+      const m = u.pathname.match(/^\/sub\/(clash|singbox)\/([a-z0-9]{8})$/);
+      if (m && req.method === 'GET') {
+        const [, fmt, id] = m;
+        const d = await env.v2v_kv.get(`sub:${id}`, { type: 'json' });
+        if (!d?.configs) return new Response('Not found', { status: 404, headers: h });
+        
+        if (fmt === 'clash') {
+          const c = genClash(d.configs);
+          return text(c, 'text/yaml', h, 'V2V.yaml');
         }
-
-        try {
-            if (url.pathname === '/' && request.method === 'GET') {
-                return jsonResponse({
-                    status: 'V2V Worker v6.0',
-                    endpoints: ['/ping', '/create-sub', '/sub/{format}/{id}']
-                }, 200, corsHeaders);
-            }
-
-            if (url.pathname === '/ping' && request.method === 'POST') {
-                const { host, port } = await request.json();
-                if (!host || !port) {
-                    return jsonResponse({ error: 'Missing host/port' }, 400, corsHeaders);
-                }
-                const result = await testConnection(host, port);
-                return jsonResponse(result, 200, corsHeaders);
-            }
-
-            if (url.pathname === '/create-sub' && request.method === 'POST') {
-                const { configs, format } = await request.json();
-
-                if (!Array.isArray(configs) || configs.length === 0) {
-                    return jsonResponse({ error: 'Invalid configs' }, 400, corsHeaders);
-                }
-
-                if (!['clash', 'singbox'].includes(format)) {
-                    return jsonResponse({ error: 'Invalid format' }, 400, corsHeaders);
-                }
-
-                const shortId = generateShortId();
-
-                await env.v2v_kv.put(
-                    `sub:${shortId}`,
-                    JSON.stringify({ configs, format, created: Date.now() }),
-                    { expirationTtl: TTL_SUBSCRIPTION }
-                );
-
-                return jsonResponse({
-                    success: true,
-                    id: shortId,
-                    url: `${url.origin}/sub/${format}/${shortId}`
-                }, 200, corsHeaders);
-            }
-
-            const subMatch = url.pathname.match(/^\/sub\/(clash|singbox)\/([a-z0-9]{8})$/);
-            if (subMatch && request.method === 'GET') {
-                const format = subMatch[1];
-                const shortId = subMatch[2];
-
-                const storedData = await env.v2v_kv.get(`sub:${shortId}`, { type: 'json' });
-
-                if (!storedData || !storedData.configs) {
-                    return new Response('Not found', { status: 404, headers: corsHeaders });
-                }
-
-                const { configs } = storedData;
-
-                if (format === 'clash') {
-                    const content = generateClashYAML(configs);
-                    return textResponse(content, 'text/yaml', corsHeaders, 'V2V-Clash.yaml');
-                }
-
-                if (format === 'singbox') {
-                    const content = generateSingboxJSON(configs);
-                    if (!content) {
-                        return jsonResponse({ error: 'No valid configs' }, 500, corsHeaders);
-                    }
-                    return textResponse(content, 'application/json', corsHeaders, 'V2V-Singbox.json');
-                }
-            }
-
-            return new Response('Not Found', { status: 404, headers: corsHeaders });
-
-        } catch (err) {
-            console.error('Worker error:', err);
-            return jsonResponse({ error: err.message }, 500, corsHeaders);
+        
+        if (fmt === 'singbox') {
+          const c = genSingbox(d.configs);
+          if (!c) return json({ error: 'No valid configs' }, 500, h);
+          return text(c, 'application/json', h, 'V2V.json');
         }
-    },
+      }
+      
+      return new Response('Not Found', { status: 404, headers: h });
+    } catch (e) {
+      console.error(e);
+      return json({ error: e.message }, 500, h);
+    }
+  }
 };
