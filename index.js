@@ -188,12 +188,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const createPromises = activeWorkers.map(async (workerUrl, index) => {
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 
                 const response = await fetch(`${workerUrl}/create-sub`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ configs, format }),
+                    body: JSON.stringify({ 
+                        configs, 
+                        format, 
+                        core: coreName 
+                    }),
                     signal: controller.signal
                 });
                 
@@ -201,7 +205,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    return { success: true, workerUrl, id: data.id, workerIndex: index + 1 };
+                    return { 
+                        success: true, 
+                        workerUrl, 
+                        id: data.id, 
+                        urls: data.urls,
+                        workerIndex: index + 1 
+                    };
                 }
             } catch (error) {
                 console.error(`Worker ${index + 1} failed:`, error);
@@ -217,10 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ).catch(() => null);
             
             if (firstSuccess) {
-                const subUrl = `${firstSuccess.workerUrl}/sub/${format}/${firstSuccess.id}`;
+                const subUrl = firstSuccess.urls[format];
                 
                 if (action === 'copy') {
-                    await window.copyToClipboard(subUrl, `لینک ${format} کپی شد!`);
+                    await window.copyToClipboard(subUrl, `لینک ${format} کپی شد! (از Worker ${firstSuccess.workerIndex})`);
                 } else if (action === 'qr') {
                     window.openQrModal(subUrl);
                     showToast(`QR ${format} ساخته شد`);
@@ -232,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const successResult = allResults.find(r => r.success);
             
             if (successResult) {
-                const subUrl = `${successResult.workerUrl}/sub/${format}/${successResult.id}`;
+                const subUrl = successResult.urls[format];
                 
                 if (action === 'copy') {
                     await window.copyToClipboard(subUrl, `لینک ${format} کپی شد!`);
@@ -303,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Invalid data structure');
             }
             
-            // حذف تکرار در سمت کلاینت
             for (const core in allLiveConfigsData) {
                 for (const protocol in allLiveConfigsData[core]) {
                     const before = allLiveConfigsData[core][protocol].length;
@@ -335,7 +344,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCore('xray', allLiveConfigsData.xray, xrayWrapper);
             renderCore('singbox', allLiveConfigsData.singbox, singboxWrapper);
             
-            // نمایش آمار
             const xrayTotal = Object.values(allLiveConfigsData.xray).reduce((sum, arr) => sum + arr.length, 0);
             const singboxTotal = Object.values(allLiveConfigsData.singbox).reduce((sum, arr) => sum + arr.length, 0);
             console.log(`📊 Stats: Xray=${xrayTotal}, Singbox=${singboxTotal}, Total=${xrayTotal + singboxTotal}`);
@@ -364,24 +372,46 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let contentHtml = `<div class="action-bar">${runPingButton}${copySelectedButton}</div>`;
         
-        contentHtml += `
-            <div class="sub-section">
-                <div class="sub-title">⚡ Clash Subscription</div>
-                <div class="sub-actions">
-                    <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'clash', 'copy')">انتخابی</button>
-                    <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'clash', 'copy')">خودکار (بهترین‌ها)</button>
-                    <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'clash', 'qr')">📱 QR</button>
+        // Subscription sections based on core type
+        if (coreName === 'xray') {
+            contentHtml += `
+                <div class="sub-section">
+                    <div class="sub-title">🔷 Xray Subscription (خام)</div>
+                    <div class="sub-actions">
+                        <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'xray', 'copy')">انتخابی</button>
+                        <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'xray', 'copy')">خودکار (بهترین‌ها)</button>
+                        <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'xray', 'qr')">📱 QR</button>
+                    </div>
                 </div>
-            </div>
-            <div class="sub-section">
-                <div class="sub-title">📦 Singbox Subscription</div>
-                <div class="sub-actions">
-                    <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox', 'copy')">انتخابی</button>
-                    <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'copy')">خودکار (بهترین‌ها)</button>
-                    <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'qr')">📱 QR</button>
+                <div class="sub-section">
+                    <div class="sub-title">⚡ Clash for Xray</div>
+                    <div class="sub-actions">
+                        <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'xray-clash', 'copy')">انتخابی</button>
+                        <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'xray-clash', 'copy')">خودکار (بهترین‌ها)</button>
+                        <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'xray-clash', 'qr')">📱 QR</button>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else if (coreName === 'singbox') {
+            contentHtml += `
+                <div class="sub-section">
+                    <div class="sub-title">📦 Singbox Subscription</div>
+                    <div class="sub-actions">
+                        <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox', 'copy')">انتخابی</button>
+                        <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'copy')">خودکار (بهترین‌ها)</button>
+                        <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'qr')">📱 QR</button>
+                    </div>
+                </div>
+                <div class="sub-section">
+                    <div class="sub-title">⚡ Clash for Singbox</div>
+                    <div class="sub-actions">
+                        <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox-clash', 'copy')">انتخابی</button>
+                        <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox-clash', 'copy')">خودکار (بهترین‌ها)</button>
+                        <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox-clash', 'qr')">📱 QR</button>
+                    </div>
+                </div>
+            `;
+        }
 
         for (const protocol in coreData) {
             const configs = coreData[protocol];
@@ -533,7 +563,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 });
 
                                 clearTimeout(timeoutId);
-                                const requestTime = Date.now() - testStart;
 
                                 if (response.ok) {
                                     const result = await response.json();
@@ -546,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     }
                                 }
                             } catch (e) {
-                                // ادامه تلاش
+                                // Continue trying
                             }
                             
                             if (attempt < PING_ATTEMPTS - 1 && latencies.length < 3) {
@@ -608,6 +637,5 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`📊 ${coreName} configs sorted by ping`);
     }
 
-    // شروع برنامه
     fetchAndRender();
 });
