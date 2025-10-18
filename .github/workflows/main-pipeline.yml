@@ -2,8 +2,8 @@ name: 'V2V Complete Deploy'
 
 on:
   schedule:
-    - cron: '0 */3 * * *'  # Every 3 hours
-  workflow_dispatch:  # Manual trigger
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -24,27 +24,24 @@ jobs:
     timeout-minutes: 60
     
     steps:
-    # ==================== CHECKOUT ====================
-    - name: 📥 Checkout Repository
+    - name: Checkout Repository
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GH_PAT || github.token }}
         fetch-depth: 0
 
-    # ==================== PYTHON SETUP ====================
-    - name: 🐍 Setup Python
+    - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
         cache: 'pip'
 
-    - name: 📦 Install Python Dependencies
+    - name: Install Python Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install requests PyGithub PyYAML
 
-    # ==================== RUN SCRAPER ====================
-    - name: 🕷️ Run Scraper
+    - name: Run Scraper
       id: scraper
       run: |
         echo "Starting scraper..."
@@ -52,13 +49,13 @@ jobs:
         timeout 2700 python scraper.py || EXIT_CODE=$?
         
         if [ $EXIT_CODE -eq 124 ]; then
-          echo "⚠️ Scraper timeout after 45min"
+          echo "Scraper timeout after 45min"
           echo "scraper_status=timeout" >> $GITHUB_OUTPUT
         elif [ $EXIT_CODE -ne 0 ]; then
-          echo "❌ Scraper failed with code $EXIT_CODE"
+          echo "Scraper failed with code $EXIT_CODE"
           echo "scraper_status=failed" >> $GITHUB_OUTPUT
         else
-          echo "✅ Scraper completed successfully"
+          echo "Scraper completed successfully"
           echo "scraper_status=success" >> $GITHUB_OUTPUT
         fi
       env:
@@ -66,67 +63,61 @@ jobs:
         GITHUB_SEARCH_LIMIT: 200
       continue-on-error: true
 
-    # ==================== VERIFY FILES ====================
-    - name: 🔍 Verify Generated Files
+    - name: Verify Generated Files
       id: verify
       run: |
-        echo "📁 Checking generated files..."
+        echo "Checking generated files..."
         
         MISSING=""
         for file in all_live_configs.json clash_subscription.yml cache_version.txt; do
           if [ ! -f "$file" ]; then
-            echo "❌ Missing: $file"
+            echo "Missing: $file"
             MISSING="$MISSING $file"
           else
-            SIZE=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
-            echo "✅ Found: $file ($SIZE bytes)"
+            SIZE=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null)
+            echo "Found: $file ($SIZE bytes)"
           fi
         done
         
         if [ -n "$MISSING" ]; then
           echo "files_valid=false" >> $GITHUB_OUTPUT
-          echo "⚠️ Some files are missing: $MISSING"
+          echo "Some files are missing: $MISSING"
         else
           echo "files_valid=true" >> $GITHUB_OUTPUT
-          echo "✅ All files generated successfully"
+          echo "All files generated successfully"
         fi
 
-    # ==================== NODE SETUP ====================
-    - name: 📦 Setup Node.js
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'npm'
 
-    # ==================== CLOUDFLARE WORKERS ====================
-    - name: ☁️ Deploy Cloudflare Workers
+    - name: Deploy Cloudflare Workers
       if: steps.verify.outputs.files_valid == 'true'
       run: |
         npm install -g wrangler@latest
         
-        echo "🚀 Deploying to Cloudflare Workers..."
+        echo "Deploying to Cloudflare Workers..."
         
-        # Deploy main worker
-        wrangler deploy && echo "✅ Main worker deployed" || echo "❌ Main worker failed"
+        wrangler deploy && echo "Main worker deployed" || echo "Main worker failed"
         
-        # Deploy environment workers
         for env in v2v-proxy v2v winter-hill-0307 rapid-scene-1da6; do
-          wrangler deploy --env $env && echo "✅ $env deployed" || echo "❌ $env failed"
+          wrangler deploy --env $env && echo "$env deployed" || echo "$env failed"
         done
       env:
         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       continue-on-error: true
 
-    # ==================== ARVAN CLOUD ====================
-    - name: ☁️ Install AWS CLI
+    - name: Install AWS CLI
       if: steps.verify.outputs.files_valid == 'true'
       run: |
         curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "aws.zip"
         unzip -q aws.zip
         sudo ./aws/install --update 2>/dev/null || sudo ./aws/install
 
-    - name: 📤 Deploy to Arvan Cloud
+    - name: Deploy to Arvan Cloud
       if: steps.verify.outputs.files_valid == 'true'
       run: |
         aws configure set aws_access_key_id "${{ secrets.ARVAN_ACCESS_KEY_ID }}"
@@ -136,121 +127,102 @@ jobs:
         BUCKET="${{ secrets.ARVAN_BUCKET_NAME }}"
         ENDPOINT="https://s3.ir-thr-at1.arvanstorage.ir"
         
-        echo "🚀 Uploading to Arvan Cloud: $BUCKET"
+        echo "Uploading to Arvan Cloud: $BUCKET"
         
-        # Upload critical files
         CRITICAL_FILES="all_live_configs.json clash_subscription.yml cache_version.txt"
         for file in $CRITICAL_FILES; do
           if [ -f "$file" ]; then
-            echo "📤 Uploading $file..."
+            echo "Uploading $file..."
             aws s3 cp "$file" "s3://$BUCKET/$file" \
               --endpoint-url="$ENDPOINT" \
               --acl public-read \
               --cache-control "no-cache, must-revalidate" \
               --metadata "updated=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              && echo "✅ $file uploaded" \
-              || echo "❌ $file upload failed"
+              && echo "$file uploaded" \
+              || echo "$file upload failed"
           fi
         done
         
-        # Upload UI files
         UI_FILES="index.html index.js logo.png manifest.json"
         for file in $UI_FILES; do
           if [ -f "$file" ]; then
-            echo "📤 Uploading $file..."
+            echo "Uploading $file..."
             aws s3 cp "$file" "s3://$BUCKET/$file" \
               --endpoint-url="$ENDPOINT" \
               --acl public-read \
               --cache-control "public, max-age=3600" \
-              && echo "✅ $file uploaded" \
-              || echo "⚠️ $file upload skipped"
+              && echo "$file uploaded" \
+              || echo "$file upload skipped"
           fi
         done
         
         echo ""
-        echo "🌐 Arvan URL: https://$BUCKET.s3-website.ir-thr-at1.arvanstorage.ir/"
+        echo "Arvan URL: https://$BUCKET.s3-website.ir-thr-at1.arvanstorage.ir/"
       continue-on-error: false
 
-    # ==================== GIT COMMIT ====================
-    - name: 💾 Commit Changes to Repository
+    - name: Commit Changes to Repository
       if: steps.verify.outputs.files_valid == 'true'
       run: |
         git config user.name "V2V Bot"
         git config user.email "bot@v2v.dev"
         
-        # Add generated files
         git add all_live_configs.json clash_subscription.yml cache_version.txt
         
-        # Check if there are changes
         if git diff --staged --quiet; then
-          echo "ℹ️ No changes to commit"
+          echo "No changes to commit"
         else
-          # Get stats
           XRAY_COUNT=$(jq '.xray | map(length) | add' all_live_configs.json 2>/dev/null || echo "0")
           SINGBOX_COUNT=$(jq '.singbox | map(length) | add' all_live_configs.json 2>/dev/null || echo "0")
           TOTAL=$((XRAY_COUNT + SINGBOX_COUNT))
           TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
           
-          git commit -m "🔄 Update configs [skip ci]
-
-Automated update at ${TIMESTAMP}
-
-📊 Stats:
-- Xray: ${XRAY_COUNT} configs
-- Singbox: ${SINGBOX_COUNT} configs  
-- Total: ${TOTAL} configs"
+          git commit -m "Update configs [skip ci]" -m "Automated update at ${TIMESTAMP}" -m "Xray: ${XRAY_COUNT} configs" -m "Singbox: ${SINGBOX_COUNT} configs" -m "Total: ${TOTAL} configs"
           
           git push origin main
-          echo "✅ Changes committed and pushed"
+          echo "Changes committed and pushed"
         fi
       continue-on-error: true
 
-    # ==================== GITHUB PAGES ====================
-    - name: 🌐 Setup GitHub Pages
+    - name: Setup GitHub Pages
       if: steps.verify.outputs.files_valid == 'true'
       uses: actions/configure-pages@v4
 
-    - name: 📤 Upload Pages Artifact
+    - name: Upload Pages Artifact
       if: steps.verify.outputs.files_valid == 'true'
       uses: actions/upload-pages-artifact@v3
       with:
         path: '.'
 
-    - name: 🚀 Deploy to GitHub Pages
+    - name: Deploy to GitHub Pages
       if: steps.verify.outputs.files_valid == 'true'
       id: pages_deploy
       uses: actions/deploy-pages@v4
 
-    # ==================== VERCEL ====================
-    - name: 🔷 Deploy to Vercel
+    - name: Deploy to Vercel
       if: steps.verify.outputs.files_valid == 'true'
       id: vercel_deploy
       run: |
         npm install -g vercel@latest
         
-        echo "🚀 Deploying to Vercel..."
+        echo "Deploying to Vercel..."
         
-        # Set Vercel token
         export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
         
-        # Pull Vercel environment
         vercel pull --yes --environment=production --token="$VERCEL_TOKEN" 2>&1 | tee vercel-pull.log || true
         
-        # Build project
         vercel build --prod --token="$VERCEL_TOKEN" 2>&1 | tee vercel-build.log || true
         
-        # Deploy to production
         DEPLOY_OUTPUT=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" 2>&1 | tee vercel-deploy.log)
         DEPLOY_EXIT=$?
         
         if [ $DEPLOY_EXIT -eq 0 ]; then
           VERCEL_URL=$(echo "$DEPLOY_OUTPUT" | grep -Eo 'https://[^ ]+' | tail -1)
-          echo "✅ Vercel deployed successfully"
-          echo "🌐 URL: $VERCEL_URL"
+          echo "Vercel deployed successfully"
+          echo "URL: $VERCEL_URL"
           echo "vercel_status=success" >> $GITHUB_OUTPUT
           echo "vercel_url=$VERCEL_URL" >> $GITHUB_OUTPUT
         else
-          echo "❌ Vercel deployment failed"
+          echo "Vercel deployment failed"
           echo "vercel_status=failed" >> $GITHUB_OUTPUT
           cat vercel-deploy.log
         fi
@@ -260,73 +232,68 @@ Automated update at ${TIMESTAMP}
         VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       continue-on-error: true
 
-    # ==================== SUMMARY ====================
-    - name: 📊 Deployment Summary
+    - name: Deployment Summary
       if: always()
       run: |
         DEPLOY_TIME=$(date -u '+%Y-%m-%d %H:%M UTC')
+        SCRAPER_STATUS="${{ steps.scraper.outputs.scraper_status }}"
+        FILES_VALID="${{ steps.verify.outputs.files_valid }}"
+        PAGES_STATUS="${{ steps.pages_deploy.outcome }}"
+        VERCEL_STATUS="${{ steps.vercel_deploy.outputs.vercel_status }}"
+        PAGES_URL="${{ steps.pages_deploy.outputs.page_url }}"
+        VERCEL_URL="${{ steps.vercel_deploy.outputs.vercel_url }}"
+        BUCKET="${{ secrets.ARVAN_BUCKET_NAME }}"
         
         echo ""
-        echo "╔═══════════════════════════════════════════════════════════╗"
-        echo "║              ✅ V2V DEPLOYMENT COMPLETED                  ║"
-        echo "╠═══════════════════════════════════════════════════════════╣"
-        echo "║                                                           ║"
-        echo "║  🕷️  Scraper: ${{ steps.scraper.outputs.scraper_status || 'unknown' }}"
-        echo "║  📁 Files: ${{ steps.verify.outputs.files_valid || 'unknown' }}"
-        echo "║                                                           ║"
-        echo "║  Deployments:                                            ║"
-        echo "║  1️⃣  Arvan Cloud Storage                                 ║"
-        echo "║  2️⃣  GitHub Pages                                        ║"
-        echo "║  3️⃣  Vercel: ${{ steps.vercel_deploy.outputs.vercel_status || 'N/A' }}"
-        echo "║  4️⃣  Cloudflare Workers (4x environments)                ║"
-        echo "║                                                           ║"
-        echo "║  ⏰ Completed: ${DEPLOY_TIME}                            ║"
-        echo "╚═══════════════════════════════════════════════════════════╝"
+        echo "V2V DEPLOYMENT COMPLETED"
+        echo "========================"
+        echo ""
+        echo "Scraper: ${SCRAPER_STATUS:-unknown}"
+        echo "Files: ${FILES_VALID:-unknown}"
+        echo ""
+        echo "Deployments:"
+        echo "  Arvan Cloud: Deployed"
+        echo "  GitHub Pages: ${PAGES_STATUS:-N/A}"
+        echo "  Vercel: ${VERCEL_STATUS:-N/A}"
+        echo "  Cloudflare Workers: Deployed"
+        echo ""
+        echo "Completed: ${DEPLOY_TIME}"
         echo ""
         
-        # Create deployment summary for GitHub
-        cat >> $GITHUB_STEP_SUMMARY << EOF
-        ## 🚀 V2V Deployment Summary
+        cat >> $GITHUB_STEP_SUMMARY << ENDOFSUMMARY
+        ## V2V Deployment Summary
         
-        ### 📊 Status Overview
+        ### Status Overview
         
         | Component | Status |
         |-----------|--------|
-        | 🕷️ Scraper | ${{ steps.scraper.outputs.scraper_status || '❓ Unknown' }} |
-        | 📁 Files | ${{ steps.verify.outputs.files_valid == 'true' && '✅ Valid' || '❌ Invalid' }} |
-        | ☁️ Arvan Cloud | ✅ Deployed |
-        | 🌐 GitHub Pages | ${{ steps.pages_deploy.outcome == 'success' && '✅ Deployed' || '❌ Failed' }} |
-        | 🔷 Vercel | ${{ steps.vercel_deploy.outputs.vercel_status == 'success' && '✅ Deployed' || '❌ Failed' }} |
-        | ☁️ Cloudflare Workers | ✅ Deployed |
+        | Scraper | ${SCRAPER_STATUS:-Unknown} |
+        | Files | ${FILES_VALID} |
+        | Arvan Cloud | Deployed |
+        | GitHub Pages | ${PAGES_STATUS:-N/A} |
+        | Vercel | ${VERCEL_STATUS:-N/A} |
+        | Cloudflare Workers | Deployed |
         
-        ### 🔗 Deployment URLs
+        ### Deployment URLs
         
-        - **GitHub Pages**: ${{ steps.pages_deploy.outputs.page_url || 'N/A' }}
-        - **Vercel**: ${{ steps.vercel_deploy.outputs.vercel_url || 'N/A' }}
-        - **Arvan Cloud**: https://${{ secrets.ARVAN_BUCKET_NAME }}.s3-website.ir-thr-at1.arvanstorage.ir/
+        - **GitHub Pages**: ${PAGES_URL:-N/A}
+        - **Vercel**: ${VERCEL_URL:-N/A}
+        - **Arvan Cloud**: https://${BUCKET}.s3-website.ir-thr-at1.arvanstorage.ir/
         
-        ### ⏰ Deployment Information
+        ### Deployment Information
         
         - **Completed At**: ${DEPLOY_TIME}
-        - **Workflow Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        - **Workflow Run**: #${{ github.run_number }}
         - **Trigger**: ${{ github.event_name }}
         
         ---
         
-        *Next scheduled run: Every 3 hours (0 */3 * * *)*
-        EOF
+        *Next scheduled run: Every 3 hours*
+        ENDOFSUMMARY
 
-    # ==================== NOTIFICATION ====================
-    - name: 📢 Deployment Failed Notification
+    - name: Deployment Failed Notification
       if: failure()
       run: |
-        echo "❌ DEPLOYMENT FAILED!"
-        echo ""
-        echo "Please check the logs above for details."
-        echo "Common issues:"
-        echo "  - Missing secrets configuration"
-        echo "  - Network connectivity problems"
-        echo "  - Invalid deployment credentials"
-        echo "  - File generation errors"
-        echo ""
+        echo "DEPLOYMENT FAILED"
+        echo "Please check the logs above for details"
         exit 1
