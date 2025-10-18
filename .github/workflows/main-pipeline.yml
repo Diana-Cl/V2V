@@ -2,8 +2,8 @@ name: 'V2V Complete Deploy'
 
 on:
   schedule:
-    - cron: '0 */3 * * *'  # هر 3 ساعت یکبار
-  workflow_dispatch:  # اجرای دستی
+    - cron: '0 */3 * * *'  # Every 3 hours
+  workflow_dispatch:  # Manual trigger
   push:
     branches:
       - main
@@ -48,6 +48,7 @@ jobs:
       id: scraper
       run: |
         echo "Starting scraper..."
+        EXIT_CODE=0
         timeout 2700 python scraper.py || EXIT_CODE=$?
         
         if [ $EXIT_CODE -eq 124 ]; then
@@ -188,10 +189,11 @@ jobs:
           XRAY_COUNT=$(jq '.xray | map(length) | add' all_live_configs.json 2>/dev/null || echo "0")
           SINGBOX_COUNT=$(jq '.singbox | map(length) | add' all_live_configs.json 2>/dev/null || echo "0")
           TOTAL=$((XRAY_COUNT + SINGBOX_COUNT))
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
           
           git commit -m "🔄 Update configs [skip ci]
 
-Automated update at $(date -u '+%Y-%m-%d %H:%M UTC')
+Automated update at ${TIMESTAMP}
 
 📊 Stats:
 - Xray: ${XRAY_COUNT} configs
@@ -262,6 +264,8 @@ Automated update at $(date -u '+%Y-%m-%d %H:%M UTC')
     - name: 📊 Deployment Summary
       if: always()
       run: |
+        DEPLOY_TIME=$(date -u '+%Y-%m-%d %H:%M UTC')
+        
         echo ""
         echo "╔═══════════════════════════════════════════════════════════╗"
         echo "║              ✅ V2V DEPLOYMENT COMPLETED                  ║"
@@ -272,47 +276,57 @@ Automated update at $(date -u '+%Y-%m-%d %H:%M UTC')
         echo "║                                                           ║"
         echo "║  Deployments:                                            ║"
         echo "║  1️⃣  Arvan Cloud Storage                                 ║"
-        echo "║  2️⃣  GitHub Pages: ${{ steps.pages_deploy.outputs.page_url || 'N/A' }}"
+        echo "║  2️⃣  GitHub Pages                                        ║"
         echo "║  3️⃣  Vercel: ${{ steps.vercel_deploy.outputs.vercel_status || 'N/A' }}"
-        if [ -n "${{ steps.vercel_deploy.outputs.vercel_url }}" ]; then
-          echo "║      URL: ${{ steps.vercel_deploy.outputs.vercel_url }}"
-        fi
         echo "║  4️⃣  Cloudflare Workers (4x environments)                ║"
         echo "║                                                           ║"
-        echo "║  ⏰ Completed: $(date -u '+%Y-%m-%d %H:%M UTC')          ║"
+        echo "║  ⏰ Completed: ${DEPLOY_TIME}                            ║"
         echo "╚═══════════════════════════════════════════════════════════╝"
         echo ""
         
-        # Create deployment summary
-        cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+        # Create deployment summary for GitHub
+        cat >> $GITHUB_STEP_SUMMARY << EOF
         ## 🚀 V2V Deployment Summary
         
-        ### 📊 Status
+        ### 📊 Status Overview
         
         | Component | Status |
         |-----------|--------|
-        | Scraper | ${{ steps.scraper.outputs.scraper_status || '❓ Unknown' }} |
-        | Files | ${{ steps.verify.outputs.files_valid == 'true' && '✅ Valid' || '❌ Invalid' }} |
-        | Arvan Cloud | ✅ Deployed |
-        | GitHub Pages | ${{ steps.pages_deploy.outcome == 'success' && '✅ Deployed' || '❌ Failed' }} |
-        | Vercel | ${{ steps.vercel_deploy.outputs.vercel_status == 'success' && '✅ Deployed' || '❌ Failed' }} |
-        | Cloudflare Workers | ✅ Deployed |
+        | 🕷️ Scraper | ${{ steps.scraper.outputs.scraper_status || '❓ Unknown' }} |
+        | 📁 Files | ${{ steps.verify.outputs.files_valid == 'true' && '✅ Valid' || '❌ Invalid' }} |
+        | ☁️ Arvan Cloud | ✅ Deployed |
+        | 🌐 GitHub Pages | ${{ steps.pages_deploy.outcome == 'success' && '✅ Deployed' || '❌ Failed' }} |
+        | 🔷 Vercel | ${{ steps.vercel_deploy.outputs.vercel_status == 'success' && '✅ Deployed' || '❌ Failed' }} |
+        | ☁️ Cloudflare Workers | ✅ Deployed |
         
-        ### 🔗 URLs
+        ### 🔗 Deployment URLs
         
         - **GitHub Pages**: ${{ steps.pages_deploy.outputs.page_url || 'N/A' }}
         - **Vercel**: ${{ steps.vercel_deploy.outputs.vercel_url || 'N/A' }}
         - **Arvan Cloud**: https://${{ secrets.ARVAN_BUCKET_NAME }}.s3-website.ir-thr-at1.arvanstorage.ir/
         
-        ### ⏰ Deployment Time
+        ### ⏰ Deployment Information
         
-        Completed at: $(date -u '+%Y-%m-%d %H:%M UTC')
+        - **Completed At**: ${DEPLOY_TIME}
+        - **Workflow Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        - **Trigger**: ${{ github.event_name }}
+        
+        ---
+        
+        *Next scheduled run: Every 3 hours (0 */3 * * *)*
         EOF
 
     # ==================== NOTIFICATION ====================
     - name: 📢 Deployment Failed Notification
       if: failure()
       run: |
-        echo "❌ Deployment failed!"
-        echo "Check the logs above for details."
+        echo "❌ DEPLOYMENT FAILED!"
+        echo ""
+        echo "Please check the logs above for details."
+        echo "Common issues:"
+        echo "  - Missing secrets configuration"
+        echo "  - Network connectivity problems"
+        echo "  - Invalid deployment credentials"
+        echo "  - File generation errors"
+        echo ""
         exit 1
