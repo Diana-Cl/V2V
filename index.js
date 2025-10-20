@@ -12,10 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeWorkers = [];
     let workerAvailable = false;
     
-    const PING_BATCH_SIZE = 15;
-    const PING_ATTEMPTS = 5;
-    const PING_TIMEOUT = 6000;
-    
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
     const xrayWrapper = getEl('xray-content-wrapper');
@@ -33,12 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function detectActiveWorkers() {
         console.log('🔍 Testing workers...');
         activeWorkers = [];
-        
         const testPromises = WORKER_URLS.map(async (url, index) => {
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 3000);
-                
                 const testStart = Date.now();
                 const response = await fetch(`${url}/ping`, {
                     method: 'POST',
@@ -46,10 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ host: '8.8.8.8', port: 53 }),
                     signal: controller.signal
                 });
-                
                 clearTimeout(timeoutId);
                 const latency = Date.now() - testStart;
-                
                 if (response.ok) {
                     console.log(`✅ Worker ${index + 1} OK (${latency}ms)`);
                     return { url, latency, index: index + 1 };
@@ -59,13 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return null;
         });
-        
         const results = await Promise.all(testPromises);
         const validWorkers = results.filter(w => w !== null);
         validWorkers.sort((a, b) => a.latency - b.latency);
         activeWorkers = validWorkers.map(w => w.url);
         workerAvailable = activeWorkers.length > 0;
-        
         console.log(`📊 Active: ${activeWorkers.length}/${WORKER_URLS.length}`);
         return workerAvailable;
     }
@@ -101,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let allLiveConfigsData = null;
-    let pingResults = {};
+    let realPingResults = {};
 
     const getConfigHash = (config) => {
         try {
@@ -135,7 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('کانفیگی یافت نشد!', true);
             return;
         }
-        
         const configs = coreData[protocol].join('\n');
         window.copyToClipboard(configs, `${coreData[protocol].length} کانفیگ ${protocol.toUpperCase()} کپی شد!`);
     };
@@ -143,11 +132,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.selectAllProtocol = (coreName, protocol) => {
         const checkboxes = document.querySelectorAll(`input.config-checkbox[data-core="${coreName}"][data-protocol="${protocol}"]`);
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        
         checkboxes.forEach(cb => {
             cb.checked = !allChecked;
         });
-        
         showToast(allChecked ? 'انتخاب همه لغو شد' : 'همه انتخاب شدند');
     };
 
@@ -160,9 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
         }
-
         let configs = [];
-        
         if (scope === 'selected') {
             const checkboxes = document.querySelectorAll(`input.config-checkbox[data-core="${coreName}"]:checked`);
             if (checkboxes.length === 0) {
@@ -177,58 +162,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
         }
-        
         configs = removeDuplicates(configs);
-        
         if (configs.length === 0) {
             showToast('کانفیگی یافت نشد!', true);
             return;
         }
-        
         const createPromises = activeWorkers.map(async (workerUrl, index) => {
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
                 const response = await fetch(`${workerUrl}/create-sub`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        configs, 
-                        format, 
-                        core: coreName 
-                    }),
+                    body: JSON.stringify({ configs, format, core: coreName }),
                     signal: controller.signal
                 });
-                
                 clearTimeout(timeoutId);
-                
                 if (response.ok) {
                     const data = await response.json();
-                    return { 
-                        success: true, 
-                        workerUrl, 
-                        id: data.id, 
-                        urls: data.urls,
-                        workerIndex: index + 1 
-                    };
+                    return { success: true, workerUrl, id: data.id, urls: data.urls, workerIndex: index + 1 };
                 }
             } catch (error) {
                 console.error(`Worker ${index + 1} failed:`, error);
             }
             return { success: false };
         });
-        
         try {
             const firstSuccess = await Promise.race(
-                createPromises.map(p => 
-                    p.then(result => result.success ? result : Promise.reject(result))
-                )
+                createPromises.map(p => p.then(result => result.success ? result : Promise.reject(result)))
             ).catch(() => null);
-            
             if (firstSuccess) {
                 const subUrl = firstSuccess.urls[format];
-                
                 if (action === 'copy') {
                     await window.copyToClipboard(subUrl, `لینک ${format} کپی شد! (از Worker ${firstSuccess.workerIndex})`);
                 } else if (action === 'qr') {
@@ -237,13 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
-            
             const allResults = await Promise.all(createPromises);
             const successResult = allResults.find(r => r.success);
-            
             if (successResult) {
                 const subUrl = successResult.urls[format];
-                
                 if (action === 'copy') {
                     await window.copyToClipboard(subUrl, `لینک ${format} کپی شد!`);
                 } else if (action === 'qr') {
@@ -252,7 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
-            
             throw new Error('All workers failed');
         } catch (error) {
             console.error('Subscription creation failed:', error);
@@ -264,23 +224,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const getTopConfigsFromBackend = (coreName) => {
         const coreData = allLiveConfigsData[coreName];
         const allConfigs = [];
-        
         for (const protocol in coreData) {
             coreData[protocol].forEach((config, idx) => {
                 const key = `${coreName}-${protocol}-${idx}`;
-                const ping = pingResults[key];
+                const ping = realPingResults[key];
                 if (ping && ping > 0 && ping < 500) {
                     allConfigs.push({ config, ping });
                 }
             });
         }
-        
         if (allConfigs.length === 0) {
             for (const protocol in coreData) {
                 allConfigs.push(...coreData[protocol].slice(0, 5).map(config => ({ config, ping: 9999 })));
             }
         }
-        
         allConfigs.sort((a, b) => a.ping - b.ping);
         return removeDuplicates(allConfigs.slice(0, 20).map(item => item.config));
     };
@@ -288,31 +245,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchAndRender = async () => {
         console.log('🚀 Starting V2V Client...');
         statusBar.textContent = 'بارگذاری...';
-        
         try {
             detectActiveWorkers().catch(e => console.warn('Worker test failed:', e));
-            
             console.log('📥 Fetching configs from:', STATIC_CONFIG_URL);
-            
             const configResponse = await fetch(STATIC_CONFIG_URL, { 
                 cache: 'no-store',
                 headers: { 'Accept': 'application/json' }
             });
-            
             if (!configResponse.ok) {
                 throw new Error(`HTTP ${configResponse.status}: ${configResponse.statusText}`);
             }
-            
             const responseText = await configResponse.text();
             console.log('📦 Response length:', responseText.length);
-            
             allLiveConfigsData = JSON.parse(responseText);
             console.log('✅ Parsed JSON successfully');
-            
             if (!allLiveConfigsData.xray || !allLiveConfigsData.singbox) {
                 throw new Error('Invalid data structure');
             }
-            
             for (const core in allLiveConfigsData) {
                 for (const protocol in allLiveConfigsData[core]) {
                     const before = allLiveConfigsData[core][protocol].length;
@@ -323,7 +272,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            
             let cacheVersion = 'نامشخص';
             try {
                 const versionResponse = await fetch(STATIC_CACHE_VERSION_URL, { cache: 'no-store' });
@@ -333,114 +281,47 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 console.warn('Cache version fetch failed:', e);
             }
-
             const updateTime = new Date(parseInt(cacheVersion) * 1000).toLocaleString('fa-IR', { 
                 dateStyle: 'short', 
                 timeStyle: 'short' 
             });
             statusBar.textContent = `آخرین بروزرسانی: ${updateTime}`;
-            
             console.log('🎨 Rendering cores...');
             renderCore('xray', allLiveConfigsData.xray, xrayWrapper);
             renderCore('singbox', allLiveConfigsData.singbox, singboxWrapper);
-            
             const xrayTotal = Object.values(allLiveConfigsData.xray).reduce((sum, arr) => sum + arr.length, 0);
             const singboxTotal = Object.values(allLiveConfigsData.singbox).reduce((sum, arr) => sum + arr.length, 0);
             console.log(`📊 Stats: Xray=${xrayTotal}, Singbox=${singboxTotal}, Total=${xrayTotal + singboxTotal}`);
-            
             console.log('✅ V2V loaded successfully!');
-            
         } catch (error) {
             console.error('❌ Fatal error:', error);
-            
             statusBar.textContent = 'خطا در بارگذاری';
-            xrayWrapper.innerHTML = `<div class="alert alert-error">❌ خطا: ${error.message}<br><small>لطفاً صفحه را رفرش کنید</small></div>`;
-            singboxWrapper.innerHTML = `<div class="alert alert-error">❌ خطا: ${error.message}<br><small>لطفاً صفحه را رفرش کنید</small></div>`;
+            xrayWrapper.innerHTML = `<div class="alert">❌ خطا: ${error.message}<br><small>لطفاً صفحه را رفرش کنید</small></div>`;
+            singboxWrapper.innerHTML = `<div class="alert">❌ خطا: ${error.message}<br><small>لطفاً صفحه را رفرش کنید</small></div>`;
             showToast('خطا در دریافت کانفیگ‌ها!', true);
         }
     };
-    
+
     const renderCore = (coreName, coreData, wrapper) => {
         if (!coreData || Object.keys(coreData).length === 0) {
             wrapper.innerHTML = `<div class="alert">کانفیگی یافت نشد.</div>`;
             return;
         }
-
         const totalConfigs = Object.values(coreData).reduce((sum, arr) => sum + arr.length, 0);
-        const runPingButton = `<button class="test-button" onclick="window.runPingTest('${coreName}')" id="ping-${coreName}-btn">🔬 تست پینگ ${totalConfigs} کانفیگ</button>`;
+        const realTestButton = `<button class="test-button" style="background: linear-gradient(135deg, #c31432, #240b36); margin-bottom: 15px;" onclick="window.startRealPingTest('${coreName}')" id="real-test-${coreName}-btn">🌐 تست واقعی از شبکه شما (${totalConfigs} کانفیگ)</button>`;
         const copySelectedButton = `<button class="action-btn-wide" onclick="window.copySelectedConfigs('${coreName}')">📋 کپی موارد انتخابی</button>`;
-        
-        let contentHtml = `<div class="action-bar">${runPingButton}${copySelectedButton}</div>`;
-        
-        // Subscription sections based on core type
+        let contentHtml = `<div class="action-bar">${realTestButton}${copySelectedButton}</div>`;
         if (coreName === 'xray') {
-            contentHtml += `
-                <div class="sub-section">
-                    <div class="sub-title">🔷 Xray Subscription (خام)</div>
-                    <div class="sub-actions">
-                        <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'xray', 'copy')">انتخابی</button>
-                        <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'xray', 'copy')">خودکار (بهترین‌ها)</button>
-                        <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'xray', 'qr')">📱 QR</button>
-                    </div>
-                </div>
-                <div class="sub-section">
-                    <div class="sub-title">⚡ Clash for Xray</div>
-                    <div class="sub-actions">
-                        <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'xray-clash', 'copy')">انتخابی</button>
-                        <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'xray-clash', 'copy')">خودکار (بهترین‌ها)</button>
-                        <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'xray-clash', 'qr')">📱 QR</button>
-                    </div>
-                </div>
-            `;
+            contentHtml += `<div class="sub-section"><div class="sub-title">🔷 Xray Subscription (خام)</div><div class="sub-actions"><button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'xray', 'copy')">انتخابی</button><button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'xray', 'copy')">خودکار (بهترین‌ها)</button><button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'xray', 'qr')">📱 QR</button></div></div><div class="sub-section"><div class="sub-title">⚡ Clash for Xray</div><div class="sub-actions"><button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'xray-clash', 'copy')">انتخابی</button><button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'xray-clash', 'copy')">خودکار (بهترین‌ها)</button><button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'xray-clash', 'qr')">📱 QR</button></div></div>`;
         } else if (coreName === 'singbox') {
-            contentHtml += `
-                <div class="sub-section">
-                    <div class="sub-title">📦 Singbox Subscription</div>
-                    <div class="sub-actions">
-                        <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox', 'copy')">انتخابی</button>
-                        <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'copy')">خودکار (بهترین‌ها)</button>
-                        <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'qr')">📱 QR</button>
-                    </div>
-                </div>
-                <div class="sub-section">
-                    <div class="sub-title">⚡ Clash for Singbox</div>
-                    <div class="sub-actions">
-                        <button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox-clash', 'copy')">انتخابی</button>
-                        <button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox-clash', 'copy')">خودکار (بهترین‌ها)</button>
-                        <button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox-clash', 'qr')">📱 QR</button>
-                    </div>
-                </div>
-            `;
+            contentHtml += `<div class="sub-section"><div class="sub-title">📦 Singbox Subscription</div><div class="sub-actions"><button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox', 'copy')">انتخابی</button><button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'copy')">خودکار (بهترین‌ها)</button><button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox', 'qr')">📱 QR</button></div></div><div class="sub-section"><div class="sub-title">⚡ Clash for Singbox</div><div class="sub-actions"><button class="sub-btn" onclick="window.generateSubscription('${coreName}', 'selected', 'singbox-clash', 'copy')">انتخابی</button><button class="sub-btn primary" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox-clash', 'copy')">خودکار (بهترین‌ها)</button><button class="sub-btn qr" onclick="window.generateSubscription('${coreName}', 'auto', 'singbox-clash', 'qr')">📱 QR</button></div></div>`;
         }
-
         for (const protocol in coreData) {
             const configs = coreData[protocol];
             if (configs.length === 0) continue;
-            
-            const protocolMap = {
-                'vmess': 'VMess', 'vless': 'VLESS', 'trojan': 'Trojan',
-                'ss': 'Shadowsocks', 'hy2': 'Hysteria2', 'tuic': 'TUIC'
-            };
+            const protocolMap = {'vmess': 'VMess', 'vless': 'VLESS', 'trojan': 'Trojan', 'ss': 'Shadowsocks', 'hy2': 'Hysteria2', 'tuic': 'TUIC'};
             const protocolName = protocolMap[protocol] || protocol.toUpperCase();
-            
-            contentHtml += `
-                <div class="protocol-group" data-protocol="${protocol}">
-                    <div class="protocol-header">
-                        <span class="protocol-name">${protocolName} <span class="badge">${configs.length}</span></span>
-                        <div class="protocol-actions">
-                            <button class="btn-copy-protocol" onclick="window.selectAllProtocol('${coreName}', '${protocol}')" title="انتخاب همه">
-                                ☑️
-                            </button>
-                            <button class="btn-copy-protocol" onclick="window.copyProtocolConfigs('${coreName}', '${protocol}')" title="کپی همه">
-                                📋
-                            </button>
-                            <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </div>
-                    </div>
-                    <ul class="config-list">`;
-            
+            contentHtml += `<div class="protocol-group" data-protocol="${protocol}"><div class="protocol-header"><span class="protocol-name">${protocolName} <span class="badge">${configs.length}</span></span><div class="protocol-actions"><button class="btn-copy-protocol" onclick="window.selectAllProtocol('${coreName}', '${protocol}')" title="انتخاب همه">☑️</button><button class="btn-copy-protocol" onclick="window.copyProtocolConfigs('${coreName}', '${protocol}')" title="کپی همه">📋</button><svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div></div><ul class="config-list">`;
             configs.forEach((config, idx) => {
                 try {
                     const urlObj = new URL(config);
@@ -448,39 +329,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     const port = urlObj.port;
                     const rawName = decodeURIComponent(urlObj.hash.substring(1) || `${protocol}-${server}`);
                     const name = shortenName(rawName, protocol, server);
-                    
-                    contentHtml += `
-                        <li class="config-item" data-config-key="${coreName}-${protocol}-${idx}">
-                            <input type="checkbox" class="config-checkbox" 
-                                   data-core="${coreName}" 
-                                   data-protocol="${protocol}" 
-                                   data-config="${encodeURIComponent(config)}" 
-                                   id="${coreName}-${protocol}-${idx}">
-                            <div class="config-info">
-                                <label for="${coreName}-${protocol}-${idx}" class="config-name">${name}</label>
-                                <span class="server">${server}:${port}</span>
-                            </div>
-                            <span class="ping-result" id="ping-${coreName}-${protocol}-${idx}"></span>
-                            <div class="config-btns">
-                                <button class="btn-icon" 
-                                        onclick="window.copyToClipboard(decodeURIComponent('${encodeURIComponent(config)}'))" 
-                                        title="کپی">📋</button>
-                                <button class="btn-icon" 
-                                        onclick="window.openQrModal(decodeURIComponent('${encodeURIComponent(config)}'))" 
-                                        title="QR">📱</button>
-                            </div>
-                        </li>
-                    `;
+                    contentHtml += `<li class="config-item" data-config-key="${coreName}-${protocol}-${idx}"><input type="checkbox" class="config-checkbox" data-core="${coreName}" data-protocol="${protocol}" data-config="${encodeURIComponent(config)}" id="${coreName}-${protocol}-${idx}"><div class="config-info"><label for="${coreName}-${protocol}-${idx}" class="config-name">${name}</label><span class="server">${server}:${port}</span></div><span class="ping-result" id="ping-${coreName}-${protocol}-${idx}"></span><div class="config-btns"><button class="btn-icon" onclick="window.copyToClipboard(decodeURIComponent('${encodeURIComponent(config)}'))" title="کپی">📋</button><button class="btn-icon" onclick="window.openQrModal(decodeURIComponent('${encodeURIComponent(config)}'))" title="QR">📱</button></div></li>`;
                 } catch (e) {
                     console.warn('Config parse error:', e);
                 }
             });
-            
             contentHtml += `</ul></div>`;
         }
-
         wrapper.innerHTML = contentHtml;
-
         wrapper.querySelectorAll('.protocol-header').forEach(header => {
             header.addEventListener('click', (e) => {
                 if (!e.target.classList.contains('btn-copy-protocol') && !e.target.closest('.btn-copy-protocol')) {
@@ -500,141 +356,130 @@ document.addEventListener('DOMContentLoaded', () => {
         window.copyToClipboard(configs.join('\n'), `${configs.length} کانفیگ کپی شد!`);
     };
 
-    window.runPingTest = async (coreName) => {
-        const btn = getEl(`ping-${coreName}-btn`);
-        if (!btn) return;
-        
-        if (!workerAvailable || activeWorkers.length === 0) {
-            showToast('در حال بررسی Workers...', false);
-            await detectActiveWorkers();
-            if (!workerAvailable) {
-                showToast('تست پینگ نیازمند Workers فعال است', true);
-                return;
+    async function tcpPingReal(server, port, protocol, attempts = 3) {
+        const latencies = [];
+        let useHttps = false;
+        const httpsProtocols = ['vless', 'vmess', 'trojan', 'tuic', 'hy2'];
+        const httpsPorts = ['443', '8443', '2096', '2053', '2083', '2087', '2052', '2082', '8880'];
+        if (httpsProtocols.includes(protocol) || httpsPorts.includes(port)) {
+            useHttps = true;
+        }
+        const connectionProtocol = useHttps ? 'https' : 'http';
+        for (let i = 0; i < attempts; i++) {
+            try {
+                const start = performance.now();
+                await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    const timeout = setTimeout(() => {
+                        img.src = '';
+                        reject(new Error('timeout'));
+                    }, 8000);
+                    img.onload = img.onerror = () => {
+                        clearTimeout(timeout);
+                        resolve();
+                    };
+                    img.src = `${connectionProtocol}://${server}:${port}/favicon.ico?_=${Date.now()}_${i}`;
+                });
+                const latency = Math.round(performance.now() - start);
+                if (latency < 8000) {
+                    latencies.push(latency);
+                }
+            } catch {}
+            if (i < attempts - 1) {
+                await new Promise(r => setTimeout(r, 300));
             }
         }
-        
-        btn.disabled = true;
-        btn.innerHTML = `<span class="loader-small"></span> در حال تست...`;
-        
-        pingResults = {};
+        if (latencies.length === 0) {
+            return { status: 'Dead', latency: null };
+        }
+        const avg = Math.round(latencies.reduce((a, b) => a + b) / latencies.length);
+        return {
+            status: 'Live',
+            latency: avg,
+            min: Math.min(...latencies),
+            max: Math.max(...latencies),
+            successRate: Math.round((latencies.length / attempts) * 100)
+        };
+    }
 
+    window.startRealPingTest = async (coreName) => {
+        const btn = getEl(`real-test-${coreName}-btn`);
+        if (!btn) return;
+        const confirmTest = confirm(`🌐 تست واقعی از شبکه شما\n\nاین تست مستقیماً از اینترنت شما در ایران انجام میشه.\nممکنه چند دقیقه طول بکشه.\n\n📌 نکته: کانفیگ‌ها قبلاً توسط سرور تست شدن و زنده هستن.\nاین تست فقط برای بررسی دسترسی از شبکه شماست.\n\nادامه میدی؟`);
+        if (!confirmTest) return;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="loader-small"></span> در حال تست واقعی...`;
+        realPingResults = {};
         const coreData = allLiveConfigsData[coreName];
         const allConfigs = [];
-        
         for (const protocol in coreData) {
             coreData[protocol].forEach((config, idx) => {
-                allConfigs.push({ config, protocol, idx });
+                try {
+                    const urlObj = new URL(config);
+                    allConfigs.push({ config, protocol, idx, server: urlObj.hostname, port: urlObj.port || '443' });
+                } catch {}
             });
         }
-
         let completed = 0;
         const total = allConfigs.length;
-        
-        for (let i = 0; i < allConfigs.length; i += (PING_BATCH_SIZE * activeWorkers.length)) {
-            const megaBatch = allConfigs.slice(i, i + (PING_BATCH_SIZE * activeWorkers.length));
-            
-            await Promise.all(activeWorkers.map(async (workerUrl, workerIdx) => {
-                const workerBatch = megaBatch.filter((_, idx) => idx % activeWorkers.length === workerIdx);
-                
-                await Promise.all(workerBatch.map(async ({ config, protocol, idx }) => {
-                    const resultEl = getEl(`ping-${coreName}-${protocol}-${idx}`);
-                    if (!resultEl) return;
-
-                    resultEl.innerHTML = '<span class="loader-mini"></span>';
-
-                    try {
-                        const urlObj = new URL(config);
-                        const host = urlObj.hostname;
-                        const port = urlObj.port;
-
-                        const latencies = [];
-                        
-                        for (let attempt = 0; attempt < PING_ATTEMPTS; attempt++) {
-                            try {
-                                const controller = new AbortController();
-                                const timeoutId = setTimeout(() => controller.abort(), PING_TIMEOUT);
-
-                                const testStart = Date.now();
-                                const response = await fetch(`${workerUrl}/ping`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ host, port }),
-                                    signal: controller.signal
-                                });
-
-                                clearTimeout(timeoutId);
-
-                                if (response.ok) {
-                                    const result = await response.json();
-                                    if (result.latency && result.latency > 0 && result.latency < 6000) {
-                                        latencies.push(result.latency);
-                                        
-                                        const currentAvg = Math.round(latencies.reduce((a,b) => a+b) / latencies.length);
-                                        const color = currentAvg < 200 ? '#4CAF50' : currentAvg < 500 ? '#FFC107' : '#F44336';
-                                        resultEl.innerHTML = `<span style="color: ${color}; font-weight: bold;">${currentAvg}ms</span>`;
-                                    }
-                                }
-                            } catch (e) {
-                                // Continue trying
-                            }
-                            
-                            if (attempt < PING_ATTEMPTS - 1 && latencies.length < 3) {
-                                await new Promise(resolve => setTimeout(resolve, 150));
-                            }
-                        }
-                        
-                        if (latencies.length > 0) {
-                            const avgLatency = Math.round(latencies.reduce((a, b) => a + b) / latencies.length);
-                            const color = avgLatency < 200 ? '#4CAF50' : avgLatency < 500 ? '#FFC107' : '#F44336';
-                            resultEl.innerHTML = `<span style="color: ${color}; font-weight: bold;">${avgLatency}ms</span>`;
-                            pingResults[`${coreName}-${protocol}-${idx}`] = avgLatency;
-                        } else {
-                            resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
-                            pingResults[`${coreName}-${protocol}-${idx}`] = 9999;
-                        }
-                    } catch (error) {
-                        resultEl.innerHTML = '<span style="color: #F44336;">✗</span>';
-                        pingResults[`${coreName}-${protocol}-${idx}`] = 9999;
-                    }
-
-                    completed++;
-                    const progress = Math.round((completed / total) * 100);
-                    btn.textContent = `تست ${progress}% (${completed}/${total})`;
-                }));
-            }));
+        let liveCount = 0;
+        let deadCount = 0;
+        showToast(`شروع تست ${total} کانفیگ از شبکه شما...`);
+        for (const item of allConfigs) {
+            const { config, protocol, idx, server, port } = item;
+            const resultEl = getEl(`ping-${coreName}-${protocol}-${idx}`);
+            if (!resultEl) continue;
+            resultEl.innerHTML = '<span class="loader-mini"></span>';
+            const result = await tcpPingReal(server, port, protocol, 3);
+            if (result.status === 'Live') {
+                const color = result.latency < 200 ? '#4CAF50' : result.latency < 500 ? '#FFC107' : '#F44336';
+                resultEl.innerHTML = `<span style="color: ${color}; font-weight: bold;" title="از شبکه شما: کمترین ${result.min}ms | بیشترین ${result.max}ms | موفقیت ${result.successRate}%">${result.latency}ms</span>`;
+                realPingResults[`${coreName}-${protocol}-${idx}`] = result.latency;
+                liveCount++;
+            } else {
+                resultEl.innerHTML = '<span style="color: #F44336;" title="از شبکه شما غیرقابل دسترس">✗</span>';
+                realPingResults[`${coreName}-${protocol}-${idx}`] = 9999;
+                deadCount++;
+            }
+            completed++;
+            const progress = Math.round((completed / total) * 100);
+            btn.textContent = `تست ${progress}% (${completed}/${total}) - زنده: ${liveCount} | مرده: ${deadCount}`;
+            if (completed % 50 === 0) {
+                showToast(`${completed}/${total} تست شد - زنده: ${liveCount}`);
+            }
         }
-
         btn.disabled = false;
-        btn.textContent = `🔬 تست پینگ ${total} کانفیگ`;
-        showToast(`✅ تست ${total} کانفیگ تکمیل شد!`);
-        
-        sortConfigsByPing(coreName);
+        btn.innerHTML = `🌐 تست واقعی از شبکه شما (${total} کانفیگ)`;
+        showToast(`✅ تست کامل شد! زنده: ${liveCount} | مرده: ${deadCount}`);
+        sortConfigsByRealPing(coreName);
+        if (liveCount > 0) {
+            setTimeout(() => {
+                const createSub = confirm(`✅ تست تکمیل شد!\n\n${liveCount} کانفیگ از ${total} کانفیگ از شبکه شما قابل دسترسی هستند.\n\nمیخوای از بهترین‌ها یک لینک ساب بسازی؟`);
+                if (createSub) {
+                    const format = coreName === 'xray' ? 'xray' : 'singbox';
+                    window.generateSubscription(coreName, 'auto', format, 'copy');
+                }
+            }, 1500);
+        }
     };
-    
-    function sortConfigsByPing(coreName) {
+
+    function sortConfigsByRealPing(coreName) {
         const wrapper = coreName === 'xray' ? xrayWrapper : singboxWrapper;
         const protocolGroups = wrapper.querySelectorAll('.protocol-group');
-        
         protocolGroups.forEach(group => {
             const configList = group.querySelector('.config-list');
             if (!configList) return;
-            
             const items = Array.from(configList.querySelectorAll('.config-item'));
-            
             items.sort((a, b) => {
                 const keyA = a.dataset.configKey;
                 const keyB = b.dataset.configKey;
-                
-                const pingA = pingResults[keyA] || 9999;
-                const pingB = pingResults[keyB] || 9999;
-                
+                const pingA = realPingResults[keyA] || 9999;
+                const pingB = realPingResults[keyB] || 9999;
                 return pingA - pingB;
             });
-            
             items.forEach(item => configList.appendChild(item));
         });
-        
-        console.log(`📊 ${coreName} configs sorted by ping`);
+        console.log(`📊 ${coreName} configs sorted by real ping from user network`);
     }
 
     fetchAndRender();
