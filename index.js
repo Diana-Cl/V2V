@@ -9,9 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'https://winter-hill-0307.mbrgh87.workers.dev',
     ];
     
-    let activeWorkers = [];
-    let workerAvailable = false;
-    
     const getEl = (id) => document.getElementById(id);
     const statusBar = getEl('status-bar');
     const xrayWrapper = getEl('xray-content-wrapper');
@@ -25,40 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toastEl.className = `toast show ${isError ? 'error' : ''}`;
         setTimeout(() => toastEl.classList.remove('show'), 3000);
     };
-
-    async function detectActiveWorkers() {
-        console.log('🔍 Testing workers...');
-        activeWorkers = [];
-        const testPromises = WORKER_URLS.map(async (url, index) => {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000);
-                const testStart = Date.now();
-                const response = await fetch(`${url}/ping`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ host: '8.8.8.8', port: 53 }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                const latency = Date.now() - testStart;
-                if (response.ok) {
-                    console.log(`✅ Worker ${index + 1} OK (${latency}ms)`);
-                    return { url, latency, index: index + 1 };
-                }
-            } catch (e) {
-                console.log(`❌ Worker ${index + 1} failed`);
-            }
-            return null;
-        });
-        const results = await Promise.all(testPromises);
-        const validWorkers = results.filter(w => w !== null);
-        validWorkers.sort((a, b) => a.latency - b.latency);
-        activeWorkers = validWorkers.map(w => w.url);
-        workerAvailable = activeWorkers.length > 0;
-        console.log(`📊 Active: ${activeWorkers.length}/${WORKER_URLS.length}`);
-        return workerAvailable;
-    }
 
     window.copyToClipboard = async (text, successMessage = 'کپی شد!') => {
         try {
@@ -139,14 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.generateSubscription = async (coreName, scope, format, action) => {
-        if (!workerAvailable || activeWorkers.length === 0) {
-            showToast('در حال بررسی Workers...', false);
-            await detectActiveWorkers();
-            if (!workerAvailable) {
-                showToast('هیچ Worker فعالی یافت نشد', true);
-                return;
-            }
-        }
         let configs = [];
         if (scope === 'selected') {
             const checkboxes = document.querySelectorAll(`input.config-checkbox[data-core="${coreName}"]:checked`);
@@ -167,57 +122,64 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('کانفیگی یافت نشد!', true);
             return;
         }
-        const createPromises = activeWorkers.map(async (workerUrl, index) => {
+        
+        showToast(`در حال ساخت ${format}...`);
+        
+        const createPromises = WORKER_URLS.map(async (workerUrl, index) => {
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
                 const response = await fetch(`${workerUrl}/create-sub`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ configs, format, core: coreName }),
+                    body: JSON.stringify({ configs, format }),
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);
                 if (response.ok) {
                     const data = await response.json();
-                    return { success: true, workerUrl, id: data.id, urls: data.urls, workerIndex: index + 1 };
+                    if (data.url) {
+                        return { success: true, url: data.url, workerIndex: index + 1 };
+                    }
                 }
             } catch (error) {
                 console.error(`Worker ${index + 1} failed:`, error);
             }
             return { success: false };
         });
+        
         try {
             const firstSuccess = await Promise.race(
                 createPromises.map(p => p.then(result => result.success ? result : Promise.reject(result)))
             ).catch(() => null);
+            
             if (firstSuccess) {
-                const subUrl = firstSuccess.urls[format];
                 if (action === 'copy') {
-                    await window.copyToClipboard(subUrl, `لینک ${format} کپی شد! (از Worker ${firstSuccess.workerIndex})`);
+                    await window.copyToClipboard(firstSuccess.url, `✅ لینک ${format} کپی شد! (Worker ${firstSuccess.workerIndex})`);
                 } else if (action === 'qr') {
-                    window.openQrModal(subUrl);
-                    showToast(`QR ${format} ساخته شد`);
+                    window.openQrModal(firstSuccess.url);
+                    showToast(`✅ QR ${format} ساخته شد!`);
                 }
                 return;
             }
+            
             const allResults = await Promise.all(createPromises);
             const successResult = allResults.find(r => r.success);
+            
             if (successResult) {
-                const subUrl = successResult.urls[format];
                 if (action === 'copy') {
-                    await window.copyToClipboard(subUrl, `لینک ${format} کپی شد!`);
+                    await window.copyToClipboard(successResult.url, `✅ لینک ${format} کپی شد!`);
                 } else if (action === 'qr') {
-                    window.openQrModal(subUrl);
-                    showToast(`QR ${format} ساخته شد`);
+                    window.openQrModal(successResult.url);
+                    showToast(`✅ QR ${format} ساخته شد!`);
                 }
                 return;
             }
+            
             throw new Error('All workers failed');
         } catch (error) {
             console.error('Subscription creation failed:', error);
-            showToast(`خطا در ساخت لینک ${format}!`, true);
-            await detectActiveWorkers();
+            showToast(`❌ خطا در ساخت ${format}!`, true);
         }
     };
 
@@ -246,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('🚀 Starting V2V Client...');
         statusBar.textContent = 'بارگذاری...';
         try {
-            detectActiveWorkers().catch(e => console.warn('Worker test failed:', e));
             console.log('📥 Fetching configs from:', STATIC_CONFIG_URL);
             const configResponse = await fetch(STATIC_CONFIG_URL, { 
                 cache: 'no-store',
@@ -356,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.copyToClipboard(configs.join('\n'), `${configs.length} کانفیگ کپی شد!`);
     };
 
-    async function tcpPingReal(server, port, protocol, attempts = 3) {
+    async function tcpPingReal(server, port, protocol, attempts = 2) {
         const latencies = [];
         let useHttps = false;
         const httpsProtocols = ['vless', 'vmess', 'trojan', 'tuic', 'hy2'];
@@ -373,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const timeout = setTimeout(() => {
                         img.src = '';
                         reject(new Error('timeout'));
-                    }, 8000);
+                    }, 4000);
                     img.onload = img.onerror = () => {
                         clearTimeout(timeout);
                         resolve();
@@ -381,12 +342,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     img.src = `${connectionProtocol}://${server}:${port}/favicon.ico?_=${Date.now()}_${i}`;
                 });
                 const latency = Math.round(performance.now() - start);
-                if (latency < 8000) {
+                if (latency < 4000) {
                     latencies.push(latency);
                 }
             } catch {}
-            if (i < attempts - 1) {
-                await new Promise(r => setTimeout(r, 300));
+            if (i < attempts - 1 && latencies.length === 0) {
+                await new Promise(r => setTimeout(r, 150));
             }
         }
         if (latencies.length === 0) {
@@ -397,18 +358,17 @@ document.addEventListener('DOMContentLoaded', () => {
             status: 'Live',
             latency: avg,
             min: Math.min(...latencies),
-            max: Math.max(...latencies),
-            successRate: Math.round((latencies.length / attempts) * 100)
+            max: Math.max(...latencies)
         };
     }
 
     window.startRealPingTest = async (coreName) => {
         const btn = getEl(`real-test-${coreName}-btn`);
         if (!btn) return;
-        const confirmTest = confirm(`🌐 تست واقعی از شبکه شما\n\nاین تست مستقیماً از اینترنت شما در ایران انجام میشه.\nممکنه چند دقیقه طول بکشه.\n\n📌 نکته: کانفیگ‌ها قبلاً توسط سرور تست شدن و زنده هستن.\nاین تست فقط برای بررسی دسترسی از شبکه شماست.\n\nادامه میدی؟`);
+        const confirmTest = confirm(`🌐 تست واقعی از شبکه شما\n\nاین تست مستقیماً از اینترنت شما در ایران انجام میشه.\n\n✅ همه پروتکل‌ها پشتیبانی میشن: VMess, VLESS, Trojan, SS, Hy2, TUIC\n⚡ سرعت بالا با تست موازی 50 کانفیگ همزمان\n⏱️ زمان تقریبی: 2-4 دقیقه\n\nادامه میدی؟`);
         if (!confirmTest) return;
         btn.disabled = true;
-        btn.innerHTML = `<span class="loader-small"></span> در حال تست واقعی...`;
+        btn.innerHTML = `<span class="loader-small"></span> در حال تست...`;
         realPingResults = {};
         const coreData = allLiveConfigsData[coreName];
         const allConfigs = [];
@@ -424,37 +384,41 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = allConfigs.length;
         let liveCount = 0;
         let deadCount = 0;
-        showToast(`شروع تست ${total} کانفیگ از شبکه شما...`);
-        for (const item of allConfigs) {
-            const { config, protocol, idx, server, port } = item;
-            const resultEl = getEl(`ping-${coreName}-${protocol}-${idx}`);
-            if (!resultEl) continue;
-            resultEl.innerHTML = '<span class="loader-mini"></span>';
-            const result = await tcpPingReal(server, port, protocol, 3);
-            if (result.status === 'Live') {
-                const color = result.latency < 200 ? '#4CAF50' : result.latency < 500 ? '#FFC107' : '#F44336';
-                resultEl.innerHTML = `<span style="color: ${color}; font-weight: bold;" title="از شبکه شما: کمترین ${result.min}ms | بیشترین ${result.max}ms | موفقیت ${result.successRate}%">${result.latency}ms</span>`;
-                realPingResults[`${coreName}-${protocol}-${idx}`] = result.latency;
-                liveCount++;
-            } else {
-                resultEl.innerHTML = '<span style="color: #F44336;" title="از شبکه شما غیرقابل دسترس">✗</span>';
-                realPingResults[`${coreName}-${protocol}-${idx}`] = 9999;
-                deadCount++;
-            }
-            completed++;
-            const progress = Math.round((completed / total) * 100);
-            btn.textContent = `تست ${progress}% (${completed}/${total}) - زنده: ${liveCount} | مرده: ${deadCount}`;
-            if (completed % 50 === 0) {
-                showToast(`${completed}/${total} تست شد - زنده: ${liveCount}`);
-            }
+        showToast(`شروع تست ${total} کانفیگ...`);
+        const BATCH_SIZE = 50;
+        const startTime = Date.now();
+        for (let i = 0; i < allConfigs.length; i += BATCH_SIZE) {
+            const batch = allConfigs.slice(i, i + BATCH_SIZE);
+            await Promise.all(batch.map(async (item) => {
+                const { config, protocol, idx, server, port } = item;
+                const resultEl = getEl(`ping-${coreName}-${protocol}-${idx}`);
+                if (!resultEl) return;
+                resultEl.innerHTML = '<span class="loader-mini"></span>';
+                const result = await tcpPingReal(server, port, protocol, 2);
+                if (result.status === 'Live') {
+                    const color = result.latency < 200 ? '#4CAF50' : result.latency < 500 ? '#FFC107' : '#F44336';
+                    resultEl.innerHTML = `<span style="color: ${color}; font-weight: bold;" title="تست واقعی: ${result.min}-${result.max}ms">${result.latency}ms</span>`;
+                    realPingResults[`${coreName}-${protocol}-${idx}`] = result.latency;
+                    liveCount++;
+                } else {
+                    resultEl.innerHTML = '<span style="color: #F44336;" title="غیرقابل دسترس">✗</span>';
+                    realPingResults[`${coreName}-${protocol}-${idx}`] = 9999;
+                    deadCount++;
+                }
+                completed++;
+                const progress = Math.round((completed / total) * 100);
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                btn.textContent = `تست ${progress}% (${completed}/${total}) - ${elapsed}s`;
+            }));
         }
+        const totalTime = Math.round((Date.now() - startTime) / 1000);
         btn.disabled = false;
         btn.innerHTML = `🌐 تست واقعی از شبکه شما (${total} کانفیگ)`;
-        showToast(`✅ تست کامل شد! زنده: ${liveCount} | مرده: ${deadCount}`);
+        showToast(`✅ تست ${totalTime}s - زنده: ${liveCount} | مرده: ${deadCount}`);
         sortConfigsByRealPing(coreName);
         if (liveCount > 0) {
             setTimeout(() => {
-                const createSub = confirm(`✅ تست تکمیل شد!\n\n${liveCount} کانفیگ از ${total} کانفیگ از شبکه شما قابل دسترسی هستند.\n\nمیخوای از بهترین‌ها یک لینک ساب بسازی؟`);
+                const createSub = confirm(`✅ تست تکمیل شد در ${totalTime} ثانیه!\n\n${liveCount} کانفیگ از ${total} از شبکه شما قابل دسترسی هستند.\n\nساب لینک از بهترین‌ها بسازیم؟`);
                 if (createSub) {
                     const format = coreName === 'xray' ? 'xray' : 'singbox';
                     window.generateSubscription(coreName, 'auto', format, 'copy');
@@ -479,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             items.forEach(item => configList.appendChild(item));
         });
-        console.log(`📊 ${coreName} configs sorted by real ping from user network`);
+        console.log(`📊 ${coreName} sorted by real ping`);
     }
 
     fetchAndRender();
