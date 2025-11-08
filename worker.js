@@ -36,25 +36,7 @@ const b64d = (s) => {
     }
 };
 
-const sanitize = (str) => {
-    if (!str) return '';
-    return String(str)
-        .replace(/[^\x20-\x7E]/g, '')
-        .replace(/["'`\\]/g, '')
-        .replace(/[\r\n\t]/g, ' ')
-        .replace(/:/g, '-')
-        .trim()
-        .substring(0, 200);
-};
-
-const yamlEscape = (str) => {
-    if (!str) return '""';
-    const s = sanitize(str);
-    if (s.includes(' ') || s.includes('#') || s.includes(':') || /^[0-9]/.test(s)) {
-        return `"${s.replace(/"/g, '\\"')}"`;
-    }
-    return s;
-};
+const sanitize = (str) => str ? String(str).replace(/[^\x20-\x7E]/g, '').trim() : '';
 
 const parseVmess = (cfg) => {
     try {
@@ -63,8 +45,21 @@ const parseVmess = (cfg) => {
         if (!d) return null;
         const j = JSON.parse(d);
         if (!j.add || !j.port || !j.id) return null;
-        return { s: j.add, p: parseInt(j.port), u: j.id, a: parseInt(j.aid) || 0, c: j.scy || 'auto', n: j.net || 'tcp', t: j.tls === 'tls', sni: j.sni || j.host || j.add, path: j.path || '/', host: j.host || j.add };
-    } catch { return null; }
+        return {
+            s: j.add,
+            p: parseInt(j.port),
+            u: j.id,
+            a: parseInt(j.aid) || 0,
+            c: j.scy || 'auto',
+            n: j.net || 'tcp',
+            t: j.tls === 'tls',
+            sni: j.sni || j.host || j.add,
+            path: j.path || '/',
+            host: j.host || j.add
+        };
+    } catch {
+        return null;
+    }
 };
 
 const parseVless = (cfg) => {
@@ -73,8 +68,20 @@ const parseVless = (cfg) => {
         const u = new URL(cfg);
         if (!u.hostname || !u.port || !u.username) return null;
         const q = new URLSearchParams(u.search);
-        return { s: u.hostname, p: parseInt(u.port), u: u.username, n: q.get('type') || 'tcp', t: q.get('security') === 'tls', sni: q.get('sni') || u.hostname, path: q.get('path') || '/', host: q.get('host') || u.hostname, flow: q.get('flow') || '' };
-    } catch { return null; }
+        return {
+            s: u.hostname,
+            p: parseInt(u.port),
+            u: u.username,
+            n: q.get('type') || 'tcp',
+            t: q.get('security') === 'tls',
+            sni: q.get('sni') || u.hostname,
+            path: q.get('path') || '/',
+            host: q.get('host') || u.hostname,
+            flow: q.get('flow') || ''
+        };
+    } catch {
+        return null;
+    }
 };
 
 const parseTrojan = (cfg) => {
@@ -83,8 +90,15 @@ const parseTrojan = (cfg) => {
         const u = new URL(cfg);
         if (!u.hostname || !u.port || !u.username) return null;
         const q = new URLSearchParams(u.search);
-        return { s: u.hostname, p: parseInt(u.port), pw: decodeURIComponent(u.username), sni: q.get('sni') || u.hostname };
-    } catch { return null; }
+        return {
+            s: u.hostname,
+            p: parseInt(u.port),
+            pw: decodeURIComponent(u.username),
+            sni: q.get('sni') || u.hostname
+        };
+    } catch {
+        return null;
+    }
 };
 
 const parseSs = (cfg) => {
@@ -95,8 +109,15 @@ const parseSs = (cfg) => {
         const d = b64d(u.username);
         if (!d || !d.includes(':')) return null;
         const i = d.indexOf(':');
-        return { s: u.hostname, p: parseInt(u.port), m: d.slice(0, i), pw: d.slice(i + 1) };
-    } catch { return null; }
+        return {
+            s: u.hostname,
+            p: parseInt(u.port),
+            m: d.slice(0, i),
+            pw: d.slice(i + 1)
+        };
+    } catch {
+        return null;
+    }
 };
 
 const parseHysteria2 = (cfg) => {
@@ -105,8 +126,17 @@ const parseHysteria2 = (cfg) => {
         const u = new URL(cfg);
         if (!u.hostname || !u.port) return null;
         const q = new URLSearchParams(u.search);
-        return { s: u.hostname, p: parseInt(u.port), pw: u.username || q.get('password') || q.get('auth') || '', sni: q.get('sni') || u.hostname, obfs: q.get('obfs') || null, obfsPw: q.get('obfs-password') || '' };
-    } catch { return null; }
+        return {
+            s: u.hostname,
+            p: parseInt(u.port),
+            pw: u.username || q.get('password') || q.get('auth') || '',
+            sni: q.get('sni') || u.hostname,
+            obfs: q.get('obfs') || null,
+            obfsPw: q.get('obfs-password') || ''
+        };
+    } catch {
+        return null;
+    }
 };
 
 const parseTuic = (cfg) => {
@@ -117,11 +147,23 @@ const parseTuic = (cfg) => {
         const q = new URLSearchParams(u.search);
         let uuid = u.username;
         let password = '';
-        if (uuid && uuid.includes(':')) { [uuid, password] = uuid.split(':', 2); }
+        if (uuid && uuid.includes(':')) {
+            [uuid, password] = uuid.split(':', 2);
+        }
         if (!uuid) uuid = q.get('uuid') || q.get('user') || '';
         if (!password) password = q.get('password') || q.get('pass') || '';
-        return { s: u.hostname, p: parseInt(u.port), u: uuid, pw: password, sni: q.get('sni') || u.hostname, cc: q.get('congestion_control') || 'bbr', alpn: q.get('alpn') || 'h3' };
-    } catch { return null; }
+        return {
+            s: u.hostname,
+            p: parseInt(u.port),
+            u: uuid,
+            pw: password,
+            sni: q.get('sni') || u.hostname,
+            cc: q.get('congestion_control') || 'bbr',
+            alpn: q.get('alpn') || 'h3'
+        };
+    } catch {
+        return null;
+    }
 };
 
 const genXraySubscription = (cfgs) => {
@@ -143,55 +185,102 @@ const genXraySubscription = (cfgs) => {
 const genClashForXray = (cfgs) => {
     const prx = [];
     const seen = new Set();
-    const supportedProtocols = ['vmess://', 'vless://', 'trojan://', 'ss://'];
-    cfgs = cfgs.filter(c => supportedProtocols.some(p => c.startsWith(p)));
-    if (cfgs.length === 0) return null;
-    
     for (let i = 0; i < cfgs.length; i++) {
         try {
             let p = null;
             let k = null;
-            
             if (cfgs[i].startsWith('vmess://')) {
                 const v = parseVmess(cfgs[i]);
                 if (!v) continue;
                 k = `vm${v.s}${v.p}${v.u}`;
                 if (seen.has(k)) continue;
-                p = { name: yamlEscape(uid('vm', v.s, i)), type: 'vmess', server: sanitize(v.s), port: v.p, uuid: sanitize(v.u), alterId: v.a, cipher: sanitize(v.c), udp: true, 'skip-cert-verify': true };
-                if (v.n === 'ws') { p.network = 'ws'; p['ws-opts'] = { path: yamlEscape(v.path), headers: { Host: sanitize(v.host) } }; }
-                if (v.t) { p.tls = true; p.servername = sanitize(v.sni); }
+                p = {
+                    name: uid('vm', v.s, i),
+                    type: 'vmess',
+                    server: sanitize(v.s),
+                    port: v.p,
+                    uuid: sanitize(v.u),
+                    alterId: v.a,
+                    cipher: sanitize(v.c),
+                    udp: true,
+                    'skip-cert-verify': true
+                };
+                if (v.n === 'ws') {
+                    p.network = 'ws';
+                    p['ws-opts'] = {
+                        path: sanitize(v.path),
+                        headers: { Host: sanitize(v.host) }
+                    };
+                }
+                if (v.t) {
+                    p.tls = true;
+                    p.servername = sanitize(v.sni);
+                }
             } else if (cfgs[i].startsWith('vless://')) {
                 const v = parseVless(cfgs[i]);
                 if (!v) continue;
                 k = `vl${v.s}${v.p}${v.u}`;
                 if (seen.has(k)) continue;
-                p = { name: yamlEscape(uid('vl', v.s, i)), type: 'vless', server: sanitize(v.s), port: v.p, uuid: sanitize(v.u), udp: true, 'skip-cert-verify': true };
-                if (v.n === 'ws') { p.network = 'ws'; p['ws-opts'] = { path: yamlEscape(v.path), headers: { Host: sanitize(v.host) } }; }
-                if (v.t) { p.tls = true; p.servername = sanitize(v.sni); if (v.flow) p.flow = sanitize(v.flow); }
+                p = {
+                    name: uid('vl', v.s, i),
+                    type: 'vless',
+                    server: sanitize(v.s),
+                    port: v.p,
+                    uuid: sanitize(v.u),
+                    udp: true,
+                    'skip-cert-verify': true
+                };
+                if (v.n === 'ws') {
+                    p.network = 'ws';
+                    p['ws-opts'] = {
+                        path: sanitize(v.path),
+                        headers: { Host: sanitize(v.host) }
+                    };
+                }
+                if (v.t) {
+                    p.tls = true;
+                    p.servername = sanitize(v.sni);
+                    if (v.flow) p.flow = sanitize(v.flow);
+                }
             } else if (cfgs[i].startsWith('trojan://')) {
                 const v = parseTrojan(cfgs[i]);
                 if (!v) continue;
                 k = `tr${v.s}${v.p}${v.pw}`;
                 if (seen.has(k)) continue;
-                p = { name: yamlEscape(uid('tr', v.s, i)), type: 'trojan', server: sanitize(v.s), port: v.p, password: sanitize(v.pw), udp: true, sni: sanitize(v.sni), 'skip-cert-verify': true };
+                p = {
+                    name: uid('tr', v.s, i),
+                    type: 'trojan',
+                    server: sanitize(v.s),
+                    port: v.p,
+                    password: sanitize(v.pw),
+                    udp: true,
+                    sni: sanitize(v.sni),
+                    'skip-cert-verify': true
+                };
             } else if (cfgs[i].startsWith('ss://')) {
                 const v = parseSs(cfgs[i]);
                 if (!v) continue;
                 k = `ss${v.s}${v.p}${v.m}`;
                 if (seen.has(k)) continue;
-                p = { name: yamlEscape(uid('ss', v.s, i)), type: 'ss', server: sanitize(v.s), port: v.p, cipher: sanitize(v.m), password: sanitize(v.pw), udp: true };
+                p = {
+                    name: uid('ss', v.s, i),
+                    type: 'ss',
+                    server: sanitize(v.s),
+                    port: v.p,
+                    cipher: sanitize(v.m),
+                    password: sanitize(v.pw),
+                    udp: true
+                };
             }
-            
-            if (p && k) { seen.add(k); prx.push(p); }
-        } catch (e) {
-            console.error('Proxy parse error:', e);
-        }
+            if (p && k) {
+                seen.add(k);
+                prx.push(p);
+            }
+        } catch {}
     }
-    
     if (!prx.length) return null;
     const n = prx.map(x => x.name);
-    
-    let y = '# Clash Meta for Xray - V2V Pro\n\n';
+    let y = '# Clash Meta for Xray - V2V Signature\n\n';
     y += 'port: 7890\n';
     y += 'socks-port: 7891\n';
     y += 'allow-lan: true\n';
@@ -209,13 +298,11 @@ const genClashForXray = (cfgs) => {
     y += '  fallback:\n';
     y += '    - https://dns.google/dns-query\n\n';
     y += 'proxies:\n';
-    
     for (const x of prx) {
-        y += `  - name: ${x.name}\n`;
+        y += `  - name: "${x.name}"\n`;
         y += `    type: ${x.type}\n`;
         y += `    server: ${x.server}\n`;
         y += `    port: ${x.port}\n`;
-        
         if (x.type === 'vmess') {
             y += `    uuid: ${x.uuid}\n`;
             y += `    alterId: ${x.alterId}\n`;
@@ -225,7 +312,7 @@ const genClashForXray = (cfgs) => {
                 y += `    network: ${x.network}\n`;
                 if (x['ws-opts']) {
                     y += `    ws-opts:\n`;
-                    y += `      path: ${x['ws-opts'].path}\n`;
+                    y += `      path: "${x['ws-opts'].path}"\n`;
                     y += `      headers:\n`;
                     y += `        Host: ${x['ws-opts'].headers.Host}\n`;
                 }
@@ -234,7 +321,7 @@ const genClashForXray = (cfgs) => {
                 y += `    tls: true\n`;
                 y += `    servername: ${x.servername}\n`;
             }
-            y += `    skip-cert-verify: true\n\n`;
+            y += `    skip-cert-verify: true\n`;
         } else if (x.type === 'vless') {
             y += `    uuid: ${x.uuid}\n`;
             y += `    udp: true\n`;
@@ -242,7 +329,7 @@ const genClashForXray = (cfgs) => {
                 y += `    network: ${x.network}\n`;
                 if (x['ws-opts']) {
                     y += `    ws-opts:\n`;
-                    y += `      path: ${x['ws-opts'].path}\n`;
+                    y += `      path: "${x['ws-opts'].path}"\n`;
                     y += `      headers:\n`;
                     y += `        Host: ${x['ws-opts'].headers.Host}\n`;
                 }
@@ -252,97 +339,181 @@ const genClashForXray = (cfgs) => {
                 y += `    servername: ${x.servername}\n`;
                 if (x.flow) y += `    flow: ${x.flow}\n`;
             }
-            y += `    skip-cert-verify: true\n\n`;
+            y += `    skip-cert-verify: true\n`;
         } else if (x.type === 'trojan') {
             y += `    password: ${x.password}\n`;
             y += `    udp: true\n`;
             y += `    sni: ${x.sni}\n`;
-            y += `    skip-cert-verify: true\n\n`;
+            y += `    skip-cert-verify: true\n`;
         } else if (x.type === 'ss') {
             y += `    cipher: ${x.cipher}\n`;
             y += `    password: ${x.password}\n`;
-            y += `    udp: true\n\n`;
+            y += `    udp: true\n`;
         }
     }
-    
-    y += 'proxy-groups:\n';
-    y += '  - name: V2V-AUTO\n';
+    y += '\nproxy-groups:\n';
+    y += '  - name: "V2V-AUTO"\n';
     y += '    type: url-test\n';
     y += '    proxies:\n';
-    for (const name of n) y += `      - ${name}\n`;
+    for (const name of n) y += `      - "${name}"\n`;
     y += '    url: http://www.gstatic.com/generate_204\n';
     y += '    interval: 300\n';
     y += '    tolerance: 50\n\n';
-    y += '  - name: V2V-SELECT\n';
+    y += '  - name: "V2V-SELECT"\n';
     y += '    type: select\n';
     y += '    proxies:\n';
     y += '      - V2V-AUTO\n';
-    for (const name of n) y += `      - ${name}\n`;
+    for (const name of n) y += `      - "${name}"\n`;
     y += '\nrules:\n';
     y += '  - GEOIP,IR,DIRECT\n';
     y += '  - MATCH,V2V-SELECT\n';
-    
     return y;
 };
 
 const genSingboxSubscription = (cfgs) => {
     const out = [];
     const seen = new Set();
-    
     for (let i = 0; i < cfgs.length; i++) {
         try {
             let o = null;
             let k = null;
-            
             if (cfgs[i].startsWith('vmess://')) {
                 const v = parseVmess(cfgs[i]);
                 if (!v) continue;
                 k = `vm${v.s}${v.p}${v.u}`;
                 if (seen.has(k)) continue;
-                o = { tag: uid('vm', v.s, i), type: 'vmess', server: sanitize(v.s), server_port: v.p, uuid: sanitize(v.u), alter_id: v.a, security: sanitize(v.c) };
-                if (v.n === 'ws') { o.transport = { type: 'ws', path: sanitize(v.path), headers: { Host: sanitize(v.host) } }; }
-                if (v.t) { o.tls = { enabled: true, server_name: sanitize(v.sni), insecure: true }; }
+                o = {
+                    tag: uid('vm', v.s, i),
+                    type: 'vmess',
+                    server: sanitize(v.s),
+                    server_port: v.p,
+                    uuid: sanitize(v.u),
+                    alter_id: v.a,
+                    security: sanitize(v.c)
+                };
+                if (v.n === 'ws') {
+                    o.transport = {
+                        type: 'ws',
+                        path: sanitize(v.path),
+                        headers: { Host: sanitize(v.host) }
+                    };
+                }
+                if (v.t) {
+                    o.tls = {
+                        enabled: true,
+                        server_name: sanitize(v.sni),
+                        insecure: true
+                    };
+                }
             } else if (cfgs[i].startsWith('vless://')) {
                 const v = parseVless(cfgs[i]);
                 if (!v) continue;
                 k = `vl${v.s}${v.p}${v.u}`;
                 if (seen.has(k)) continue;
-                o = { tag: uid('vl', v.s, i), type: 'vless', server: sanitize(v.s), server_port: v.p, uuid: sanitize(v.u) };
-                if (v.n === 'ws') { o.transport = { type: 'ws', path: sanitize(v.path), headers: { Host: sanitize(v.host) } }; }
-                if (v.t) { o.tls = { enabled: true, server_name: sanitize(v.sni), insecure: true }; if (v.flow) o.flow = sanitize(v.flow); }
+                o = {
+                    tag: uid('vl', v.s, i),
+                    type: 'vless',
+                    server: sanitize(v.s),
+                    server_port: v.p,
+                    uuid: sanitize(v.u)
+                };
+                if (v.n === 'ws') {
+                    o.transport = {
+                        type: 'ws',
+                        path: sanitize(v.path),
+                        headers: { Host: sanitize(v.host) }
+                    };
+                }
+                if (v.t) {
+                    o.tls = {
+                        enabled: true,
+                        server_name: sanitize(v.sni),
+                        insecure: true
+                    };
+                    if (v.flow) o.flow = sanitize(v.flow);
+                }
             } else if (cfgs[i].startsWith('trojan://')) {
                 const v = parseTrojan(cfgs[i]);
                 if (!v) continue;
                 k = `tr${v.s}${v.p}${v.pw}`;
                 if (seen.has(k)) continue;
-                o = { tag: uid('tr', v.s, i), type: 'trojan', server: sanitize(v.s), server_port: v.p, password: sanitize(v.pw), tls: { enabled: true, server_name: sanitize(v.sni), insecure: true } };
+                o = {
+                    tag: uid('tr', v.s, i),
+                    type: 'trojan',
+                    server: sanitize(v.s),
+                    server_port: v.p,
+                    password: sanitize(v.pw),
+                    tls: {
+                        enabled: true,
+                        server_name: sanitize(v.sni),
+                        insecure: true
+                    }
+                };
             } else if (cfgs[i].startsWith('ss://')) {
                 const v = parseSs(cfgs[i]);
                 if (!v) continue;
                 k = `ss${v.s}${v.p}${v.m}`;
                 if (seen.has(k)) continue;
-                o = { tag: uid('ss', v.s, i), type: 'shadowsocks', server: sanitize(v.s), server_port: v.p, method: sanitize(v.m), password: sanitize(v.pw) };
+                o = {
+                    tag: uid('ss', v.s, i),
+                    type: 'shadowsocks',
+                    server: sanitize(v.s),
+                    server_port: v.p,
+                    method: sanitize(v.m),
+                    password: sanitize(v.pw)
+                };
             } else if (cfgs[i].startsWith('hysteria2://') || cfgs[i].startsWith('hy2://')) {
                 const v = parseHysteria2(cfgs[i]);
                 if (!v) continue;
                 k = `hy2${v.s}${v.p}`;
                 if (seen.has(k)) continue;
-                o = { tag: uid('hy2', v.s, i), type: 'hysteria2', server: sanitize(v.s), server_port: v.p, password: sanitize(v.pw), tls: { enabled: true, server_name: sanitize(v.sni), insecure: true } };
-                if (v.obfs) { o.obfs = { type: v.obfs, password: sanitize(v.obfsPw) }; }
+                o = {
+                    tag: uid('hy2', v.s, i),
+                    type: 'hysteria2',
+                    server: sanitize(v.s),
+                    server_port: v.p,
+                    password: sanitize(v.pw),
+                    tls: {
+                        enabled: true,
+                        server_name: sanitize(v.sni),
+                        insecure: true
+                    }
+                };
+                if (v.obfs) {
+                    o.obfs = {
+                        type: v.obfs,
+                        password: sanitize(v.obfsPw)
+                    };
+                }
             } else if (cfgs[i].startsWith('tuic://')) {
                 const v = parseTuic(cfgs[i]);
                 if (!v || !v.u) continue;
                 k = `tuic${v.s}${v.p}${v.u}`;
                 if (seen.has(k)) continue;
-                o = { tag: uid('tuic', v.s, i), type: 'tuic', server: sanitize(v.s), server_port: v.p, uuid: sanitize(v.u), password: sanitize(v.pw), congestion_control: v.cc, udp_relay_mode: 'native', tls: { enabled: true, server_name: sanitize(v.sni), insecure: true, alpn: [v.alpn] } };
+                o = {
+                    tag: uid('tuic', v.s, i),
+                    type: 'tuic',
+                    server: sanitize(v.s),
+                    server_port: v.p,
+                    uuid: sanitize(v.u),
+                    password: sanitize(v.pw),
+                    congestion_control: v.cc,
+                    udp_relay_mode: 'native',
+                    tls: {
+                        enabled: true,
+                        server_name: sanitize(v.sni),
+                        insecure: true,
+                        alpn: [v.alpn]
+                    }
+                };
             }
-            
-            if (o && k) { seen.add(k); out.push(o); }
+            if (o && k) {
+                seen.add(k);
+                out.push(o);
+            }
         } catch {}
     }
-    
     if (!out.length) return null;
-    
     return JSON.stringify({
         log: { level: 'info', timestamp: true },
         dns: {
@@ -402,19 +573,16 @@ export default {
         const o = req.headers.get('Origin');
         const h = cors(o);
         if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
-        
         try {
             if (u.pathname === '/' && req.method === 'GET') {
                 return json({
-                    status: 'V2V Pro v14 Final - Zero Errors Guaranteed',
+                    status: 'V2V Pro v13 - Complete & Fast',
                     signature: 'V2V Signature System Active',
                     features: [
-                        'Client-Side Advanced Real Testing',
+                        'Client-Side Real Testing',
                         'All Protocols Support (VMess, VLESS, Trojan, SS, Hy2, TUIC)',
                         'Smart Deduplication',
-                        'Zero YAML Errors',
-                        'Fixed Clash Generation',
-                        'Jitter & Stability Calculation',
+                        'Zero Errors Guaranteed',
                         'Batch Processing 50x',
                         'UUID V2V Signature'
                     ],
@@ -426,42 +594,21 @@ export default {
                     }
                 }, 200, h);
             }
-            
             if (u.pathname === '/create-sub' && req.method === 'POST') {
                 const { configs, format } = await req.json();
-                
                 if (!Array.isArray(configs) || !configs.length) {
                     return json({ error: 'Invalid configs array' }, 400, h);
                 }
-                
                 const validFormats = ['xray', 'xray-clash', 'singbox', 'singbox-clash'];
                 if (!validFormats.includes(format)) {
-                    return json({ error: `Invalid format. Valid formats: ${validFormats.join(', ')}` }, 400, h);
+                    return json({ error: `Invalid format. Valid: ${validFormats.join(', ')}` }, 400, h);
                 }
-                
-                if (format.includes('clash')) {
-                    let testContent;
-                    if (format === 'xray-clash') {
-                        testContent = genClashForXray(configs);
-                    } else {
-                        testContent = genClashForSingbox(configs);
-                    }
-                    
-                    if (!testContent || testContent.length < 500) {
-                        return json({ 
-                            error: 'Failed to generate Clash config',
-                            reason: 'No valid configs for Clash format (only VMess/VLESS/Trojan/SS supported)'
-                        }, 400, h);
-                    }
-                }
-                
                 const id = genV2VId();
                 await env.v2v_kv.put(
                     `sub:${id}`,
                     JSON.stringify({ configs, format, created: Date.now() }),
                     { expirationTtl: TTL }
                 );
-                
                 return json({
                     success: true,
                     id,
@@ -470,45 +617,39 @@ export default {
                     expires_in_days: 120
                 }, 200, h);
             }
-            
             const m = u.pathname.match(/^\/sub\/(xray|xray-clash|singbox|singbox-clash)\/(v2v[a-z0-9]+)$/);
             if (m && req.method === 'GET') {
                 const [, fmt, id] = m;
                 const d = await env.v2v_kv.get(`sub:${id}`, { type: 'json' });
-                
                 if (!d?.configs) {
                     return new Response('Subscription not found or expired', { status: 404, headers: h });
                 }
-                
                 const { configs } = d;
-                
                 if (fmt === 'xray') {
                     const content = genXraySubscription(configs);
                     return text(content, 'text/plain', h, `V2V-Xray-${id}.txt`);
                 }
-                
                 if (fmt === 'xray-clash') {
                     const content = genClashForXray(configs);
-                    if (!content) return json({ error: 'No valid configs for Clash' }, 500, h);
+                    if (!content) return json({ error: 'No valid configs' }, 500, h);
                     return text(content, 'text/yaml', h, `V2V-Xray-Clash-${id}.yaml`);
                 }
-                
                 if (fmt === 'singbox') {
                     const content = genSingboxSubscription(configs);
-                    if (!content) return json({ error: 'No valid configs for Singbox' }, 500, h);
+                    if (!content) return json({ error: 'No valid configs' }, 500, h);
                     return text(content, 'application/json', h, `V2V-Singbox-${id}.json`);
                 }
-                
                 if (fmt === 'singbox-clash') {
                     const content = genClashForSingbox(configs);
-                    if (!content) return json({ error: 'No valid configs for Clash' }, 500, h);
+                    if (!content) return json({ error: 'No valid configs' }, 500, h);
                     return text(content, 'text/yaml', h, `V2V-Singbox-Clash-${id}.yaml`);
                 }
             }
-            
             return new Response('Not Found', { status: 404, headers: h });
         } catch (e) {
             console.error('Worker Error:', e);
             return json({ error: e.message, stack: e.stack }, 500, h);
         }
     }
+};
+
