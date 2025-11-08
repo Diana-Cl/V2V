@@ -87,30 +87,6 @@ jobs:
           echo "All files generated successfully"
         fi
 
-    - name: Prepare Public Directory
-      if: steps.verify.outputs.files_valid == 'true'
-      run: |
-        echo "Creating public directory for deployment..."
-        mkdir -p public
-        
-        # Copy generated data files
-        cp all_live_configs.json public/
-        cp cache_version.txt public/
-        cp clash_subscription.yml public/ 2>/dev/null || true
-        
-        # Copy UI files
-        cp index.html public/
-        cp index.js public/
-        cp logo.png public/ 2>/dev/null || true
-        cp manifest.json public/ 2>/dev/null || true
-        
-        # Verify public directory
-        echo "Public directory contents:"
-        ls -lah public/
-        
-        echo "File sizes:"
-        du -sh public/*
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -152,9 +128,6 @@ jobs:
         
         echo "Uploading to Arvan Cloud: $BUCKET"
         
-        # Upload from public directory
-        cd public
-        
         CRITICAL_FILES="all_live_configs.json clash_subscription.yml cache_version.txt"
         for file in $CRITICAL_FILES; do
           if [ -f "$file" ]; then
@@ -181,8 +154,6 @@ jobs:
               || echo "$file upload skipped"
           fi
         done
-        
-        cd ..
         
         echo ""
         echo "Arvan URL: https://$BUCKET.s3-website.ir-thr-at1.arvanstorage.ir/"
@@ -219,7 +190,7 @@ jobs:
       if: steps.verify.outputs.files_valid == 'true'
       uses: actions/upload-pages-artifact@v3
       with:
-        path: 'public'
+        path: '.'
 
     - name: Deploy to GitHub Pages
       if: steps.verify.outputs.files_valid == 'true'
@@ -236,17 +207,12 @@ jobs:
         
         export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
         
-        # Deploy from public directory
-        cd public
+        vercel pull --yes --environment=production --token="$VERCEL_TOKEN" 2>&1 | tee vercel-pull.log || true
         
-        vercel pull --yes --environment=production --token="$VERCEL_TOKEN" 2>&1 | tee ../vercel-pull.log || true
+        vercel build --prod --token="$VERCEL_TOKEN" 2>&1 | tee vercel-build.log || true
         
-        vercel build --prod --token="$VERCEL_TOKEN" 2>&1 | tee ../vercel-build.log || true
-        
-        DEPLOY_OUTPUT=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" 2>&1 | tee ../vercel-deploy.log)
+        DEPLOY_OUTPUT=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" 2>&1 | tee vercel-deploy.log)
         DEPLOY_EXIT=$?
-        
-        cd ..
         
         if [ $DEPLOY_EXIT -eq 0 ]; then
           VERCEL_URL=$(echo "$DEPLOY_OUTPUT" | grep -Eo 'https://[^ ]+' | tail -1)
