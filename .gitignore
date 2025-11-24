@@ -3,16 +3,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
 env/
 venv/
 ENV/
-*.egg-info/
 
 # Node
 node_modules/
 npm-debug.log
 yarn-error.log
+packages-lock.json
 .vercel
 
 # Wrangler
@@ -22,18 +21,10 @@ wrangler.toml.bak
 # OS
 .DS_Store
 Thumbs.db
-*.swp
-*.swo
-*~
 
 # IDE
 .vscode/
-.idea/
 *.sublime-*
-
-# Logs
-*.log
-logs/
 
 # Temporary files
 tmp/
